@@ -21,6 +21,9 @@ import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EntityRenderDispatcher.class)
 public class EntityRenderDispatcherMixin {
@@ -31,8 +34,15 @@ public class EntityRenderDispatcherMixin {
      * @author JellySquid
      * @reason Reduce vertex assembly overhead for shadow rendering
      */
-    @Overwrite
-    private static void renderShadowPart(MatrixStack.Entry entry, VertexConsumer vertices, Chunk chunk, WorldView world, BlockPos pos, double x, double y, double z, float radius, float opacity) {
+    @Inject(method = "renderShadowPart", at = @At("HEAD"), cancellable = true)
+    private static void renderShadowPartFast(MatrixStack.Entry entry, VertexConsumer vertices, Chunk chunk, WorldView world, BlockPos pos, double x, double y, double z, float radius, float opacity, CallbackInfo ci) {
+        var writer = VertexBufferWriter.tryOf(vertices);
+
+        if (writer == null)
+            return;
+
+        ci.cancel();
+
         BlockPos blockPos = pos.down();
         BlockState blockState = world.getBlockState(blockPos);
 
@@ -70,12 +80,20 @@ public class EntityRenderDispatcherMixin {
             float minZ = (float) ((pos.getZ() + box.minZ) - z);
             float maxZ = (float) ((pos.getZ() + box.maxZ) - z);
 
-            renderShadowPart(entry, vertices, radius, alpha, minX, maxX, minY, minZ, maxZ);
+            renderShadowPart(entry, writer, radius, alpha, minX, maxX, minY, minZ, maxZ);
         }
     }
 
+    /**
+     * @deprecated don't call, but just in case...
+     */
+    @Deprecated
+    private static void renderShadowPart(MatrixStack.Entry matrices, VertexConsumer consumer, float radius, float alpha, float minX, float maxX, float minY, float minZ, float maxZ) {
+        renderShadowPart(matrices, VertexBufferWriter.of(consumer), radius, alpha, minX, maxX, minY, minZ, maxZ);
+    }
+
     @Unique
-    private static void renderShadowPart(MatrixStack.Entry matrices, VertexConsumer vertices, float radius, float alpha, float minX, float maxX, float minY, float minZ, float maxZ) {
+    private static void renderShadowPart(MatrixStack.Entry matrices, VertexBufferWriter writer, float radius, float alpha, float minX, float maxX, float minY, float minZ, float maxZ) {
         float size = 0.5F * (1.0F / radius);
 
         float u1 = (-minX * size) + 0.5F;
@@ -106,7 +124,7 @@ public class EntityRenderDispatcherMixin {
             writeShadowVertex(ptr, matPosition, maxX, minY, minZ, u2, v1, color, normal);
             ptr += ModelVertex.STRIDE;
 
-            VertexBufferWriter.of(vertices)
+            writer
                     .push(stack, buffer, 4, ModelVertex.FORMAT);
         }
     }

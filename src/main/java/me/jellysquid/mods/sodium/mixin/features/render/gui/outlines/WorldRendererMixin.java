@@ -15,6 +15,9 @@ import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WorldRenderer.class)
 public class WorldRendererMixin {
@@ -22,10 +25,17 @@ public class WorldRendererMixin {
      * @author JellySquid
      * @reason Use intrinsics where possible to speed up vertex writing
      */
-    @Overwrite
-    public static void drawBox(MatrixStack matrices, VertexConsumer vertexConsumer, double x1, double y1, double z1,
-                               double x2, double y2, double z2, float red, float green, float blue, float alpha,
-                               float xAxisRed, float yAxisGreen, float zAxisBlue) {
+    @Inject(method = "drawBox(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;DDDDDDFFFFFFF)V", at = @At("HEAD"), cancellable = true)
+    private static void drawBoxFast(MatrixStack matrices, VertexConsumer vertexConsumer, double x1, double y1, double z1,
+                                    double x2, double y2, double z2, float red, float green, float blue, float alpha,
+                                    float xAxisRed, float yAxisGreen, float zAxisBlue, CallbackInfo ci) {
+        var writer = VertexBufferWriter.tryOf(vertexConsumer);
+
+        if (writer == null)
+            return;
+
+        ci.cancel();
+
         Matrix4f position = matrices.peek().getPositionMatrix();
         Matrix3f normal = matrices.peek().getNormalMatrix();
 
@@ -69,8 +79,6 @@ public class WorldRendererMixin {
         float v8x = Math.fma(position.m00(), x2f, Math.fma(position.m10(), y2f, Math.fma(position.m20(), z2f, position.m30())));
         float v8y = Math.fma(position.m01(), x2f, Math.fma(position.m11(), y2f, Math.fma(position.m21(), z2f, position.m31())));
         float v8z = Math.fma(position.m02(), x2f, Math.fma(position.m12(), y2f, Math.fma(position.m22(), z2f, position.m32())));
-
-        var writer = VertexBufferWriter.of(vertexConsumer);
 
         writeLineVertices(writer, v1x, v1y, v1z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), NormI8.pack(normal.m00(), normal.m01(), normal.m02()));
         writeLineVertices(writer, v2x, v2y, v2z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), NormI8.pack(normal.m00(), normal.m01(), normal.m02()));
