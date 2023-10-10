@@ -307,8 +307,10 @@ public class RenderSectionManager {
             result.deleteAfterUpload();
         }
 
-        // TODO: only needed if the tasks actually changed the visibility (sort tasks don't count, though there would never be a sort task without camera movement so it likely doesn't matter)
-        this.needsGraphUpdate = true; 
+        // TODO: only needed if the tasks actually changed the visibility (sort tasks
+        // don't count, though there would never be a sort task without camera movement
+        // so it likely doesn't matter)
+        this.needsGraphUpdate = true;
     }
 
     private void processChunkBuildResults(ArrayList<BuilderTaskOutput> results) {
@@ -339,7 +341,8 @@ public class RenderSectionManager {
     }
 
     private void updateSectionInfo(RenderSection render, BuiltSectionInfo info) {
-        // TODO: make this work with translucent data and figure out a nice way to use BuilderTaskOutput
+        // TODO: make this work with translucent data and figure out a nice way to use
+        // BuilderTaskOutput
         render.setInfo(info);
 
         if (info == null || ArrayUtils.isEmpty(info.globalBlockEntities)) {
@@ -403,8 +406,11 @@ public class RenderSectionManager {
 
                 section.setTaskCancellationToken(job);
             } else {
-                // TODO: why does this exist and where is this data read? is null translucent data ok?
-                var result = ChunkJobResult.successfully(new ChunkBuildOutput(section, frame, null, BuiltSectionInfo.EMPTY, Collections.emptyMap()));
+                // TODO: why does this exist and where is this data read? is null translucent
+                // data ok?
+                var result = ChunkJobResult.successfully(new ChunkBuildOutput(
+                        section, frame, null, 
+                        BuiltSectionInfo.EMPTY, Collections.emptyMap()));
                 this.buildResults.add(result);
 
                 section.setTaskCancellationToken(null);
@@ -495,7 +501,8 @@ public class RenderSectionManager {
             if (this.shouldPrioritizeTask(section)) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_SORT;
             }
-            if  (ChunkUpdateType.canPromote(section.getPendingUpdate(), pendingUpdate)) {
+            pendingUpdate = ChunkUpdateType.getPromotionUpdateType(section.getPendingUpdate(), pendingUpdate);
+            if (pendingUpdate != null) {
                 section.setPendingUpdate(pendingUpdate);
             }
         }
@@ -515,7 +522,8 @@ public class RenderSectionManager {
                 pendingUpdate = ChunkUpdateType.REBUILD;
             }
 
-            if (ChunkUpdateType.canPromote(section.getPendingUpdate(), pendingUpdate)) {
+            pendingUpdate = ChunkUpdateType.getPromotionUpdateType(section.getPendingUpdate(), pendingUpdate);
+            if (pendingUpdate != null) {
                 section.setPendingUpdate(pendingUpdate);
 
                 this.needsGraphUpdate = true;

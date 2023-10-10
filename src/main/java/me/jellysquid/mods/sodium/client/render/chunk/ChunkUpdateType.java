@@ -13,11 +13,16 @@ public enum ChunkUpdateType {
         this.maximumQueueSize = maximumQueueSize;
     }
 
-    public static boolean canPromote(ChunkUpdateType prev, ChunkUpdateType next) {
-        return prev == null
-                || prev == SORT
-                || (prev == REBUILD && next == IMPORTANT_REBUILD)
-                || (prev == IMPORTANT_SORT && next == IMPORTANT_REBUILD);
+    public static ChunkUpdateType getPromotionUpdateType(ChunkUpdateType prev, ChunkUpdateType next) {
+        if (prev == null || prev == SORT || prev == next) {
+            return next;
+        }
+        if (next == IMPORTANT_REBUILD
+                || (prev == IMPORTANT_SORT && next == REBUILD)
+                || (prev == REBUILD && next == IMPORTANT_SORT)) {
+            return IMPORTANT_REBUILD;
+        }
+        return null;
     }
 
     public int getMaximumQueueSize() {
