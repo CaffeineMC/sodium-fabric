@@ -48,8 +48,9 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                     .bindAttribute("in_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
                     .bindAttribute("in_TextureUv", ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV)
                     .bindAttribute("in_DrawParamsLight", ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS_LIGHT);
-        } else
+        } else {
             throw new IllegalArgumentException("Unexpected vertex type");
+        }
     }
 
     private GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {

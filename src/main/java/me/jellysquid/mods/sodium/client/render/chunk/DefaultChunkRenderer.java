@@ -225,13 +225,13 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     }
 
     private GlVertexAttributeBinding[] getBindingsForType() {
-        if(this.vertexType == ChunkMeshFormats.COMPACT) {
+        if (this.vertexType == ChunkMeshFormats.COMPACT) {
             GlVertexFormat<ChunkMeshAttribute> compactFormat = (GlVertexFormat<ChunkMeshAttribute>)this.vertexFormat;
             return new GlVertexAttributeBinding[] {
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
                             compactFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
             };
-        } else if(this.vertexType == ChunkMeshFormats.VANILLA_LIKE) {
+        } else if (this.vertexType == ChunkMeshFormats.VANILLA_LIKE) {
             GlVertexFormat<VanillaLikeChunkMeshAttribute> vanillaFormat = (GlVertexFormat<VanillaLikeChunkMeshAttribute>)this.vertexFormat;
             return new GlVertexAttributeBinding[] {
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
@@ -243,8 +243,9 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS_LIGHT,
                             vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.DRAW_PARAMS_LIGHT)),
             };
-        } else
+        } else {
             return null; // assume Oculus/Iris will take over
+        }
     }
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
