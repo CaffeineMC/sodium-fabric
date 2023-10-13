@@ -61,7 +61,7 @@ public class VertexSorters {
 
         @Override
         protected float getKey(Vector3f position) {
-            return sign * position.get(this.axis);
+            return -sign * position.get(this.axis);
         }
     }
 
@@ -78,6 +78,9 @@ public class VertexSorters {
         }
     }
 
+    /**
+     * Sorts the keys given by the subclass by descending value.
+     */
     private static abstract class AbstractVertexSorter implements VertexSorter {
         @Override
         public final int[] sort(Vector3f[] positions) {
