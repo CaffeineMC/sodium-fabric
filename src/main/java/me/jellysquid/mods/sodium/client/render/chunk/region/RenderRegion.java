@@ -123,7 +123,7 @@ public class RenderRegion {
         var storage = this.sectionRenderData.get(pass);
 
         if (storage == null) {
-            this.sectionRenderData.put(pass, storage = new SectionRenderDataStorage());
+            this.sectionRenderData.put(pass, storage = new SectionRenderDataStorage(false));
         }
 
         return storage;
@@ -131,7 +131,7 @@ public class RenderRegion {
 
     public SectionRenderDataStorage createTranslucentStorage() {
         if (this.translucentIndexData == null) {
-            return this.translucentIndexData = new SectionRenderDataStorage();
+            return this.translucentIndexData = new SectionRenderDataStorage(true);
         }
 
         return this.translucentIndexData;

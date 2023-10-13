@@ -14,6 +14,16 @@ import org.lwjgl.system.MemoryUtil;
 //
 // Please never try to write performance critical code in Java. This is what it will do to you. And you will still be
 // three times slower than the most naive solution in literally any other language that LLVM can compile.
+
+// the structure is roughly as follows:
+// struct SectionRenderData { // 64 bytes
+//   mask: u32,
+//   ranges: [VertexRange; 7]
+// }
+// struct VertexRange { // 8 bytes
+//   offset: u32,
+//   count: u32
+// }
 public class SectionRenderDataUnsafe {
     private static final long OFFSET_SLICE_MASK = 0;
     private static final long OFFSET_SLICE_RANGES = 8;

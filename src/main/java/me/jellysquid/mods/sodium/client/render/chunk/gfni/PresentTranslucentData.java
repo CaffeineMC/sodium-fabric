@@ -4,6 +4,9 @@ import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Super class for translucent data that contains an actual buffer.
+ */
 public abstract class PresentTranslucentData extends TranslucentData {
     public NativeBuffer buffer;
 

@@ -11,9 +11,11 @@ public class SectionRenderDataStorage {
     private final GlBufferSegment[] allocations = new GlBufferSegment[RenderRegion.REGION_SIZE];
 
     private final long pMeshDataArray;
+    private final boolean storesIndices;
 
-    public SectionRenderDataStorage() {
+    public SectionRenderDataStorage(boolean storesIndices) {
         this.pMeshDataArray = SectionRenderDataUnsafe.allocateHeap(RenderRegion.REGION_SIZE);
+        this.storesIndices = storesIndices;
     }
 
     public void setMeshes(int localSectionIndex,
@@ -41,13 +43,14 @@ public class SectionRenderDataStorage {
             }
 
             SectionRenderDataUnsafe.setVertexOffset(pMeshData, facingIndex, vertexOffset);
-            SectionRenderDataUnsafe.setElementCount(pMeshData, facingIndex, (vertexCount >> 2) * 6);
+            var elementCount = (vertexCount >> 2) * 6;
+            SectionRenderDataUnsafe.setElementCount(pMeshData, facingIndex, elementCount);
 
             if (vertexCount > 0) {
                 sliceMask |= 1 << facingIndex;
             }
 
-            vertexOffset += vertexCount;
+            vertexOffset += this.storesIndices ? elementCount : vertexCount;
         }
 
         SectionRenderDataUnsafe.setSliceMask(pMeshData, sliceMask);
@@ -84,7 +87,8 @@ public class SectionRenderDataStorage {
             SectionRenderDataUnsafe.setVertexOffset(data, facing, offset);
 
             var count = SectionRenderDataUnsafe.getElementCount(data, facing);
-            offset += (count / 6) * 4; // convert elements back into vertices
+            // TODO: fix this when storesIndices is true, it currently just explodes
+            offset += this.storesIndices ? count : (count / 6) * 4; // convert elements back into vertices
         }
     }
 

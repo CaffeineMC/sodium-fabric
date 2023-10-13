@@ -96,8 +96,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
 
                 // add the vertex start converted to quads to the offset to get the real quad
                 // index and not just the index local to the direction's set of quads
-                TranslucentData.writeQuadVertexIndexesOffset(bufferBuilder, sorter.sort(centers[i]),
-                        range.vertexStart() / TranslucentData.VERTICES_PER_QUAD);
+                TranslucentData.writeQuadVertexIndexes(bufferBuilder, sorter.sort(centers[i]));
             }
         }
 
