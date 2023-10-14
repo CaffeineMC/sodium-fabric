@@ -30,8 +30,9 @@ public abstract class TranslucentData {
     }
 
     public void sort(Vector3fc cameraPos) {
-        // there should be no sort calls to data that doesn't need dynamic sorting
-        throw new UnsupportedOperationException();
+        // noop sorting when this is called on non-dynamic data.
+        // this can happen when the section is rebuilt as non-dynamic after it's been
+        // scheduled for sorting
     }
 
     public void timedSort(Vector3fc cameraPos) {
