@@ -24,10 +24,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * visible, if there are idle threads.
  * - sort only up to a certain number of quads to limit rebuild time to some
  * fixed value. determine how many that is by observing timings.
- * - there's a scheduling issue when moving around flowing water on the floor
- * and adding blocks in movement. Probably an issue with upgrading sort tasks to
- * rebuild while they're running. Maybe it marks sections as built when
- * they've been sorted even though it shouldn't?
+ * - implement angle-based triggering for difficult or large sections
  * - De-epsilon all the geometry by snapping to multiples of 0.005 or sth like
  * that. Would simplify the ComplexSorting code so that it doesn't need to deal
  * with the existence of error margins (epsilons in the trigger distances and
