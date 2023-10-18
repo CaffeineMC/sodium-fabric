@@ -12,5 +12,6 @@ accessible class net/minecraft/client/render/BackgroundRenderer$FogData
 accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier
 accessible class net/minecraft/client/texture/TextureStitcher$Holder
 accessible class net/minecraft/world/biome/Biome$Weather
+accessible method net/minecraft/class_8901 <init> (Ljava/util/List;)V
 
 accessible method net/minecraft/client/util/math/MatrixStack$Entry <init> (Lorg/joml/Matrix4f;Lorg/joml/Matrix3f;)V
