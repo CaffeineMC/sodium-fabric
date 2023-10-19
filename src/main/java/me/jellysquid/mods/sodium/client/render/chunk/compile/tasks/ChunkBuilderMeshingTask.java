@@ -161,6 +161,11 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             }
         }
 
+        // cancellation opportunity right before translucent sorting
+        if (cancellationToken.isCancelled()) {
+            return null;
+        }
+
         TranslucentData translucentData = null;
         if (collector != null) {
             translucentData = collector.getTranslucentData(meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
