@@ -34,7 +34,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Map;
 
-import org.joml.Vector3fc;
+import org.joml.Vector3dc;
 
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
@@ -46,7 +46,7 @@ import org.joml.Vector3fc;
 public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> {
     private final ChunkRenderContext renderContext;
 
-    public ChunkBuilderMeshingTask(RenderSection render, int buildTime, Vector3fc cameraPos, ChunkRenderContext renderContext) {
+    public ChunkBuilderMeshingTask(RenderSection render, int buildTime, Vector3dc cameraPos, ChunkRenderContext renderContext) {
         super(render, buildTime, cameraPos);
         this.renderContext = renderContext;
     }

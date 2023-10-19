@@ -103,6 +103,7 @@ public class ComplexSorting {
             keys[i] = cameraPos.distanceSquared(quads[i].center());
         }
 
+        // TODO: use sort algorithm other than merge sort
         return MergeSort.mergeSort(keys);
     }
 

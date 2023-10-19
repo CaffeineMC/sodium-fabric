@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.CameraMovement;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTracker;
@@ -31,6 +32,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.SortedSet;
 
+import org.joml.Vector3d;
+
 /**
  * Provides an extension to vanilla's {@link WorldRenderer}.
  */
@@ -40,7 +43,7 @@ public class SodiumWorldRenderer {
     private ClientWorld world;
     private int renderDistance;
 
-    private double lastCameraX, lastCameraY, lastCameraZ;
+    private Vector3d lastCameraPos;
     private double lastCameraPitch, lastCameraYaw;
     private float lastFogDistance;
 
@@ -163,12 +166,16 @@ public class SodiumWorldRenderer {
             throw new IllegalStateException("Client instance has no active player entity");
         }
 
-        Vec3d pos = camera.getPos();
+        Vec3d posRaw = camera.getPos();
+        Vector3d pos = new Vector3d(posRaw.getX(), posRaw.getY(), posRaw.getZ());
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
         float fogDistance = RenderSystem.getShaderFogEnd();
 
-        boolean cameraLocationChanged = pos.x != this.lastCameraX || pos.y != this.lastCameraY || pos.z != this.lastCameraZ;
+        if (this.lastCameraPos == null) {
+            this.lastCameraPos = new Vector3d(pos);
+        }
+        boolean cameraLocationChanged = !pos.equals(this.lastCameraPos);
         boolean dirty = cameraLocationChanged ||
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
 
@@ -192,16 +199,17 @@ public class SodiumWorldRenderer {
         if (this.renderSectionManager.needsUpdate()) {
             profiler.swap("chunk_render_lists");
 
-            this.renderSectionManager.update(pos.toVector3f(), camera, viewport, frame, spectator);
+            this.renderSectionManager.update(pos, camera, viewport, frame, spectator);
         }
 
         if (cameraLocationChanged) {
             profiler.swap("gfni_query");
 
-            this.renderSectionManager.processGFNIMovement(lastCameraX, lastCameraY, lastCameraZ, pos.x, pos.y, pos.z);
-            this.lastCameraX = pos.x;
-            this.lastCameraY = pos.y;
-            this.lastCameraZ = pos.z;
+            this.renderSectionManager.processGFNIMovement(
+                new CameraMovement(lastCameraPos, new Vector3d(pos.x, pos.y, pos.z)));
+            this.lastCameraPos.x = pos.x;
+            this.lastCameraPos.y = pos.y;
+            this.lastCameraPos.z = pos.z;
         }
 
         if (updateChunksImmediately) {

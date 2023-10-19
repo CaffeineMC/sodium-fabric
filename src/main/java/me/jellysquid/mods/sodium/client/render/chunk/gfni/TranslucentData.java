@@ -29,15 +29,23 @@ public abstract class TranslucentData {
     public void delete() {
     }
 
-    public void sort(Vector3fc cameraPos) {
-        // noop sorting when this is called on non-dynamic data.
-        // this can happen when the section is rebuilt as non-dynamic after it's been
-        // scheduled for sorting
+    public void sortOnTrigger(Vector3fc cameraPos) {
+        // no-op for other translucent data than dynamic
     }
 
-    public void timedSort(Vector3fc cameraPos) {
-        // TODO: collect and analyze timing data, actually call this method instead of
-        // sort
+    /**
+     * Prepares the translucent data for triggering of the given type. This is run
+     * on the main thread before a sort task is scheduled. If true is returned, the
+     * sort task will not be scheduled and it will be removed from angle triggering.
+     * Returning true if isAngleTrigger is false is a no-op.
+     * 
+     * @param isAngleTrigger Whether the trigger is an angle trigger
+     * @return True if the sort task should not be scheduled and the section should
+     *         be removed from angle triggering
+     */
+    public boolean prepareTrigger(boolean isAngleTrigger) {
+        // no-op for other translucent data than dynamic
+        return false;
     }
 
     static int vertexCountToIndexBytes(int vertexCount) {

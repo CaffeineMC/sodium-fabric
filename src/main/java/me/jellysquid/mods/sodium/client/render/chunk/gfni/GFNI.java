@@ -1,10 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiFunction;
 
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.joml.Vector3fc;
 
+import it.unimi.dsi.fastutil.doubles.Double2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
@@ -29,6 +32,13 @@ import net.minecraft.util.math.ChunkSectionPos;
  * that. Would simplify the ComplexSorting code so that it doesn't need to deal
  * with the existence of error margins (epsilons in the trigger distances and
  * the centers).
+ * - Groups of quads that form convex shapes in a single plane without holes can
+ * be sorted as one "quad". Their internal sorting can be arbitrary. Detecting
+ * and grouping/ungrouping them might prove difficult. Finding all quad groups
+ * is hard but finding one quad group at a time per direction is doable during
+ * building. Using the extents calculated for aligned quads, continuity can be
+ * easily tested and then convexity confirmed. How to deal with groups of quads
+ * that are only convex if a few of the quads are ignored?
  * 
  * @author douira
  */
@@ -49,11 +59,28 @@ public class GFNI {
     private Object2ReferenceOpenHashMap<Vector3fc, NormalList> normalLists = new Object2ReferenceOpenHashMap<>(50);
 
     /**
+     * A tree map of the directly (angle-based) triggered sections, indexed by their
+     * minimum required camera movement. When the given camera movement is exceeded,
+     * they are tested for triggering the angle-condition.
+     * 
+     * The accumulated distance is monotonically increasing and is never reset. This
+     * only becomes a problem when the camera moves more than 10^15 blocks in total.
+     * There will be precision issues at around 10^10 maybe, but it's still not a
+     * concern.
+     */
+    private Double2ObjectAVLTreeMap<AngleSortData> angleTriggerSections = new Double2ObjectAVLTreeMap<>();
+    private double accumulatedDistance = 0;
+
+    /**
      * To avoid generating a collection of the triggered sections, this callback is
      * used to process the triggered sections directly as they are queried from the
-     * normal lists' interval trees.
+     * normal lists' interval trees. The callback is given the section coordinates,
+     * and a boolean indicating if the trigger was an angle-based trigger. In the
+     * case of an angle trigger, it turns true if the section should be removed from
+     * future triggering (when the translucent data no longer hast the corresponding
+     * flag set)
      */
-    private Consumer<ChunkSectionPos> triggerSectionCallback;
+    private BiFunction<Long, Boolean, Boolean> triggerSectionCallback;
 
     /**
      * A set of all the sections that were triggered the last time something was
@@ -76,6 +103,16 @@ public class GFNI {
      */
     private final int[] sortTypeCounters = new int[SortType.values().length];
 
+    private void decrementSortTypeCounter(TranslucentData oldData) {
+        if (oldData != null) {
+            this.sortTypeCounters[oldData.getSortType().ordinal()]--;
+        }
+    }
+
+    private void incrementSortTypeCounter(TranslucentData newData) {
+        this.sortTypeCounters[newData.getSortType().ordinal()]++;
+    }
+
     /**
      * Triggers the sections that the given camera movement crosses face planes of.
      * 
@@ -87,17 +124,14 @@ public class GFNI {
      * @param cameraY                the camera y position after the movement
      * @param cameraZ                the camera z position after the movement
      */
-    public void triggerSections(
-            Consumer<ChunkSectionPos> triggerSectionCallback,
-            double lastCameraX, double lastCameraY, double lastCameraZ,
-            double cameraX, double cameraY, double cameraZ) {
+    public void triggerSections(BiFunction<Long, Boolean, Boolean> triggerSectionCallback,
+            CameraMovement movement) {
         triggeredSections.clear();
         triggeredNormals.clear();
         this.triggerSectionCallback = triggerSectionCallback;
 
-        for (var normalList : this.normalLists.values()) {
-            normalList.processMovement(this, lastCameraX, lastCameraY, lastCameraZ, cameraX, cameraY, cameraZ);
-        }
+        processGFNITriggers(movement);
+        processAngleTriggers(movement);
 
         var newTriggeredSectionsCount = this.triggeredSections.size();
         var newTriggeredNormalCount = this.triggeredNormals.size();
@@ -119,41 +153,150 @@ public class GFNI {
         triggerSectionCallback = null;
     }
 
-    void triggerSection(ChunkSectionPos section, int collectorKey) {
-        this.triggeredSections.add(section.asLong());
+    private void processGFNITriggers(CameraMovement movement) {
+        for (var normalList : this.normalLists.values()) {
+            normalList.processMovement(this, movement);
+        }
+    }
+
+    /**
+     * Degrees of movement from last sort position before the section is sorted
+     * again. TODO: put in a setting somewhere? or just determine what works best
+     */
+    private static final double TRIGGER_ANGLE = Math.toRadians(5);
+    private static final double TRIGGER_ANGLE_COS = Math.cos(TRIGGER_ANGLE);
+    private static final double SECTION_CENTER_DIST = Math.sqrt(3 * (16 / 2) * (16 / 2));
+
+    private class AngleSortData {
+        ChunkSectionPos sectionPos;
+
+        /**
+         * Absolute camera position at the time of the last sort.
+         */
+        Vector3dc sortCameraPos;
+
+        AngleSortData(ChunkSectionPos sectionPos, Vector3dc sortCameraPos) {
+            this.sectionPos = sectionPos;
+            this.sortCameraPos = sortCameraPos;
+        }
+    }
+
+    // TODO: use faster code for this
+    private static double angleCos(double ax, double ay, double az, double bx, double by, double bz) {
+        double length1Squared = Math.fma(ax, ax, Math.fma(ay, ay, az * az));
+        double length2Squared = Math.fma(bx, bx, Math.fma(by,by, bz * bz));
+        double dot = Math.fma(ax, bx, Math.fma(ay, by, az * bz));
+        return dot / Math.sqrt(length1Squared * length2Squared);
+    }
+
+    private void processAngleTriggers(CameraMovement movement) {
+        var lastCamera = movement.lastCamera();
+        var camera = movement.currentCamera();
+        double distance = camera.distance(lastCamera);
+        this.accumulatedDistance += distance;
+
+        // iterate all elements with a key of at most accumulatedDistance
+        var head = this.angleTriggerSections.headMap(this.accumulatedDistance);
+        for (var entry : head.double2ObjectEntrySet()) {
+            this.angleTriggerSections.remove(entry.getDoubleKey());
+            var data = entry.getValue();
+            var sectionPos = data.sectionPos;
+            var sortCameraPos = data.sortCameraPos;
+            var sectionCenter = new Vector3d(
+                    sectionPos.getMinX() + 8, sectionPos.getMinY() + 8, sectionPos.getMinZ() + 8);
+
+            // check if the angle since the last sort exceeds the threshold
+            var angleCos = angleCos(
+                    sectionCenter.x() - sortCameraPos.x(),
+                    sectionCenter.y() - sortCameraPos.y(),
+                    sectionCenter.z() - sortCameraPos.z(),
+                    sectionCenter.x() - camera.x(),
+                    sectionCenter.y() - camera.y(),
+                    sectionCenter.z() - camera.z());
+            var remainingAngle = TRIGGER_ANGLE;
+            var addBack = true;
+
+            // compare angles inverted because cosine flips it
+            if (angleCos <= TRIGGER_ANGLE_COS) {
+                // angle exceeded, trigger the section
+                if (this.triggerSectionAngle(sectionPos)) {
+                    // section was marked as removed from angle trigger
+                    addBack = false;
+                }
+                data.sortCameraPos = camera;
+                sortCameraPos = camera;
+            } else {
+                remainingAngle -= Math.acos(angleCos);
+            }
+
+            if (addBack) {
+                insertAngleTrigger(data, remainingAngle);
+            }
+        }
+    }
+
+    private void insertAngleTrigger(AngleSortData data, double remainingAngle) {
+        var sectionPos = data.sectionPos;
+        var sortCameraPos = data.sortCameraPos;
+
+        // re-insert with new minimum required camera movement
+        var dx = sectionPos.getMinX() + 8 - sortCameraPos.x();
+        var dy = sectionPos.getMinY() + 8 - sortCameraPos.y();
+        var dz = sectionPos.getMinZ() + 8 - sortCameraPos.z();
+        var centerMinDistance = Math.tan(remainingAngle)
+                * (Math.sqrt(dx * dx + dy * dy + dz * dz) - SECTION_CENTER_DIST);
+        if (centerMinDistance <= 0) {
+            // too close to section, TODO: sort more often/differently
+            // throw new NotImplementedException();
+            return;
+        }
+
+        this.angleTriggerSections.put(centerMinDistance + this.accumulatedDistance, data);
+    }
+
+    void triggerSectionGFNI(long sectionPos, int collectorKey) {
         this.triggeredNormals.add(collectorKey);
-
-        // by simply setting a chunk update type on the section, it naturally only gets
-        // updated once the section becomes visible.
-        // by definition, all sections in GFNI have SortType.DYNAMIC
-        this.triggerSectionCallback.accept(section);
+        this.triggeredSections.add(sectionPos);
+        this.triggerSectionCallback.apply(sectionPos, false);
     }
 
-    private void removeSectionFromList(NormalList normalList, long chunkSectionLongPos) {
-        normalList.removeSection(chunkSectionLongPos);
-        if (normalList.isEmpty()) {
-            this.normalLists.remove(normalList.getNormal());
+    private boolean triggerSectionAngle(ChunkSectionPos sectionPos) {
+        var sectionPosLong = sectionPos.asLong();
+        if (this.triggerSectionCallback.apply(sectionPosLong, true)) {
+            return true;
+        } else {
+            this.triggeredSections.add(sectionPosLong);
+            return false;
         }
     }
 
-    private void decrementSortTypeCounter(TranslucentData oldTranslucentData) {
-        if (oldTranslucentData != null) {
-            this.sortTypeCounters[oldTranslucentData.getSortType().ordinal()]--;
+    public void applyTriggerChanges(DynamicData data, ChunkSectionPos pos, Vector3dc cameraPos) {
+        if (data.turnAngleTriggerOn) {
+            enableAngleTriggering(data, pos, cameraPos);
         }
+        if (data.turnGFNITriggerOff) {
+            disableGFNITriggering(data, pos.asLong());
+        }
+    }
+
+    private void enableAngleTriggering(DynamicData data, ChunkSectionPos section, Vector3dc cameraPos) {
+        insertAngleTrigger(new AngleSortData(section, cameraPos), TRIGGER_ANGLE);
     }
 
     /**
      * Removes a section from GFNI. This removes all its face planes.
      * 
-     * @param oldTranslucentData  the data of the section to remove
-     * @param chunkSectionLongPos the section to remove
+     * This doesn't remove sections from angle triggering since that would require
+     * another data structure to keep track of the inverse mapping from section to
+     * key. Instead, sections that shouldn't be angle triggered anymore are marked
+     * and then not re-added to the angle trigger tree.
+     * 
+     * @param oldData    the data of the section to remove
+     * @param sectionPos the section to remove
      */
-    public void removeSection(TranslucentData oldTranslucentData, long chunkSectionLongPos) {
-        for (var normalList : this.normalLists.values()) {
-            removeSectionFromList(normalList, chunkSectionLongPos);
-        }
-
-        decrementSortTypeCounter(oldTranslucentData);
+    public void removeSection(TranslucentData oldData, long sectionPos) {
+        disableGFNITriggering(oldData, sectionPos);
+        decrementSortTypeCounter(oldData);
     }
 
     private void addSectionInNewNormalLists(DynamicData dynamicData, AccumulationGroup accGroup) {
@@ -166,32 +309,21 @@ public class GFNI {
         }
     }
 
-    /**
-     * Integrates the data from a geometry collector into GFNI. The geometry
-     * collector
-     * contains the translucent face planes of a single section. This method may
-     * also remove the section if it has become irrelevant.
-     * 
-     * @param builder the geometry collector to integrate
-     * @return the sort type that the geometry collector's relevance heuristic
-     *         determined
-     */
-    public void integrateTranslucentData(TranslucentData oldTranslucentData, TranslucentData translucentData) {
-        long chunkSectionLongPos = translucentData.sectionPos.asLong();
-
-        // remove the section if the data doesn't need to trigger on face planes
-        // TODO: only do the heuristic and topo sort if the hashes are different?
-        SortType sortType = translucentData.getSortType();
-        this.sortTypeCounters[sortType.ordinal()]++;
-        if (!sortType.needsPlaneTrigger) {
-            removeSection(oldTranslucentData, chunkSectionLongPos);
-            return;
+    private void removeSectionFromList(NormalList normalList, long sectionPos) {
+        normalList.removeSection(sectionPos);
+        if (normalList.isEmpty()) {
+            this.normalLists.remove(normalList.getNormal());
         }
+    }
 
-        decrementSortTypeCounter(oldTranslucentData);
+    private void disableGFNITriggering(TranslucentData oldData, long sectionPos) {
+        for (var normalList : this.normalLists.values()) {
+            removeSectionFromList(normalList, sectionPos);
+        }
+    }
 
-        var dynamicData = (DynamicData) translucentData;
-        var collector = dynamicData.getCollector();
+    private void initiallyEnableGFNITriggering(DynamicData data, long sectionPos) {
+        var collector = data.getCollector();
 
         // go through all normal lists and check against the normals that the group
         // builder has. if the normal list has data for the section, but the group
@@ -199,14 +331,14 @@ public class GFNI {
         for (var normalList : this.normalLists.values()) {
             // check if the geometry collector includes data for this normal.
             var accGroup = collector.getGroupForNormal(normalList);
-            if (normalList.hasSection(chunkSectionLongPos)) {
+            if (normalList.hasSection(sectionPos)) {
                 if (accGroup == null) {
-                    removeSectionFromList(normalList, chunkSectionLongPos);
+                    removeSectionFromList(normalList, sectionPos);
                 } else {
-                    normalList.updateSection(accGroup, chunkSectionLongPos);
+                    normalList.updateSection(accGroup, sectionPos);
                 }
             } else if (accGroup != null) {
-                normalList.addSection(accGroup, chunkSectionLongPos);
+                normalList.addSection(accGroup, sectionPos);
             }
         }
 
@@ -217,17 +349,52 @@ public class GFNI {
         if (collector.axisAlignedDistances != null) {
             for (var accGroup : collector.axisAlignedDistances) {
                 if (accGroup != null) {
-                    addSectionInNewNormalLists(dynamicData, accGroup);
+                    addSectionInNewNormalLists(data, accGroup);
                 }
             }
         }
         if (collector.unalignedDistances != null) {
             for (var accGroup : collector.unalignedDistances.values()) {
-                addSectionInNewNormalLists(dynamicData, accGroup);
+                addSectionInNewNormalLists(data, accGroup);
             }
         }
 
-        dynamicData.finishIntegration();
+        data.deleteCollector();
+    }
+
+    /**
+     * Integrates the data from a geometry collector into GFNI. The geometry
+     * collector
+     * contains the translucent face planes of a single section. This method may
+     * also remove the section if it has become irrelevant.
+     * 
+     * @param builder the geometry collector to integrate
+     * @return the sort type that the geometry collector's relevance heuristic
+     *         determined
+     */
+    public void integrateTranslucentData(TranslucentData oldData, TranslucentData newData, Vector3dc cameraPos) {
+        long sectionPos = newData.sectionPos.asLong();
+
+        incrementSortTypeCounter(newData);
+
+        // remove the section if the data doesn't need to trigger on face planes
+        // TODO: only do the heuristic and topo sort if the hashes are different?
+        if (newData instanceof DynamicData dynamicData) {
+            decrementSortTypeCounter(oldData);
+            if (dynamicData.GFNITrigger) {
+                initiallyEnableGFNITriggering(dynamicData, sectionPos);
+            } else {
+                // remove the collector since this section is never going to get gfni triggering
+                // (there's no option to add sections to GFNI later currently)
+                dynamicData.deleteCollector();
+            }
+            if (dynamicData.angleTrigger) {
+                enableAngleTriggering(dynamicData, newData.sectionPos, cameraPos);
+            }
+        } else {
+            removeSection(oldData, sectionPos);
+            return;
+        }
     }
 
     public void addDebugStrings(List<String> list) {
@@ -237,6 +404,7 @@ public class GFNI {
         list.add("N=" + this.sortTypeCounters[SortType.NONE.ordinal()]
                 + " SNR=" + this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()]
                 + " STA=" + this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()]
-                + " DYN=" + this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()]);
+                + " DYN=" + this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()]
+                + " ANG=" + this.angleTriggerSections.size());
     }
 }

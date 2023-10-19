@@ -86,11 +86,10 @@ class NormalList {
         return collectorKey;
     }
 
-    void processMovement(GFNI gfni, double lastCameraX, double lastCameraY, double lastCameraZ,
-            double cameraX, double cameraY, double cameraZ) {
+    void processMovement(GFNI gfni, CameraMovement movement) {
         // calculate the distance range of the movement with respect to the normal
-        double start = this.normal.dot(lastCameraX, lastCameraY, lastCameraZ);
-        double end = this.normal.dot(cameraX, cameraY, cameraZ);
+        double start = this.normal.dot(movement.lastCamera());
+        double end = this.normal.dot(movement.currentCamera());
 
         // stop if the movement is reverse with regards to the normal
         // since this means it's moving against the normal
@@ -137,30 +136,30 @@ class NormalList {
         groups.add(group);
     }
 
-    boolean hasSection(long chunkSectionLongPos) {
-        return this.groupsBySection.containsKey(chunkSectionLongPos);
+    boolean hasSection(long sectionPos) {
+        return this.groupsBySection.containsKey(sectionPos);
     }
 
     boolean isEmpty() {
         return this.groupsBySection.isEmpty();
     }
 
-    void addSection(AccumulationGroup accGroup, long chunkSectionLongPos) {
+    void addSection(AccumulationGroup accGroup, long sectionPos) {
         var group = new Group(accGroup);
 
-        this.groupsBySection.put(chunkSectionLongPos, group);
+        this.groupsBySection.put(sectionPos, group);
         addGroupInterval(group);
     }
 
-    void removeSection(long chunkSectionLongPos) {
-        Group group = this.groupsBySection.remove(chunkSectionLongPos);
+    void removeSection(long sectionPos) {
+        Group group = this.groupsBySection.remove(sectionPos);
         if (group != null) {
             removeGroupInterval(group);
         }
     }
 
-    void updateSection(AccumulationGroup accGroup, long chunkSectionLongPos) {
-        Group group = this.groupsBySection.get(chunkSectionLongPos);
+    void updateSection(AccumulationGroup accGroup, long sectionPos) {
+        Group group = this.groupsBySection.get(sectionPos);
 
         // only update on changes to translucent geometry
         if (group.equalsAccGroup(accGroup)) {

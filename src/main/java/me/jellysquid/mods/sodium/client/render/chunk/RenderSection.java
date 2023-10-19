@@ -344,6 +344,13 @@ public class RenderSection {
         this.pendingUpdateType = type;
     }
 
+    public boolean prepareTrigger(boolean isAngleTrigger) {
+        if (this.translucentData != null) {
+            return this.translucentData.prepareTrigger(isAngleTrigger);
+        }
+        return false;
+    }
+
     public int getLastUploadFrame() {
         return this.lastUploadFrame;
     }

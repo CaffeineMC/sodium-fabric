@@ -21,6 +21,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderM
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderSortingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.CameraMovement;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.DynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
@@ -51,7 +53,7 @@ import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3fc;
+import org.joml.Vector3dc;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -89,7 +91,7 @@ public class RenderSectionManager {
     private boolean needsGraphUpdate;
 
     private @Nullable BlockPos cameraBlockPos;
-    private @Nullable Vector3fc cameraPosition;
+    private @Nullable Vector3dc cameraPosition;
 
     public RenderSectionManager(ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
@@ -115,7 +117,7 @@ public class RenderSectionManager {
         }
     }
 
-    public void update(Vector3fc cameraPosition, Camera camera, Viewport viewport, int frame, boolean spectator) {
+    public void update(Vector3dc cameraPosition, Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.cameraBlockPos = camera.getBlockPos();
         this.cameraPosition = cameraPosition;
 
@@ -202,8 +204,8 @@ public class RenderSectionManager {
     }
 
     public void onSectionRemoved(int x, int y, int z) {
-        long chunkSectionLongPos = ChunkSectionPos.asLong(x, y, z);
-        RenderSection section = this.sectionByPosition.remove(chunkSectionLongPos);
+        long sectionPos = ChunkSectionPos.asLong(x, y, z);
+        RenderSection section = this.sectionByPosition.remove(sectionPos);
 
         if (section == null) {
             return;
@@ -220,7 +222,7 @@ public class RenderSectionManager {
 
         section.delete();
 
-        this.gfni.removeSection(section.getTranslucentData(), chunkSectionLongPos);
+        this.gfni.removeSection(section.getTranslucentData(), sectionPos);
 
         this.needsGraphUpdate = true;
     }
@@ -323,11 +325,14 @@ public class RenderSectionManager {
             if (result instanceof ChunkBuildOutput chunkBuildOutput) {
                 this.updateSectionInfo(result.render, chunkBuildOutput.info);
                 if (chunkBuildOutput.translucentData != null) {
-                    this.gfni.integrateTranslucentData(oldData, chunkBuildOutput.translucentData);
+                    this.gfni.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition);
                 }
             }
             if (result instanceof ChunkSortOutput chunkSortOutput && chunkSortOutput.translucentData != null) {
                 result.render.setTranslucentData(chunkSortOutput.translucentData);
+                if (chunkSortOutput.translucentData instanceof DynamicData dynamicData && dynamicData.hasTriggerChanges()) {
+                    this.gfni.applyTriggerChanges(dynamicData, result.render.getPosition(), this.cameraPosition);
+                }
             }
 
             var job = result.render.getTaskCancellationToken();
@@ -435,12 +440,8 @@ public class RenderSectionManager {
         return new ChunkBuilderSortingTask(render, frame, this.cameraPosition);
     }
 
-    public void processGFNIMovement(
-        double lastCameraX, double lastCameraY, double lastCameraZ,
-        double cameraX, double cameraY, double cameraZ) {
-        this.gfni.triggerSections(this::scheduleSort,
-        lastCameraX, lastCameraY, lastCameraZ,
-        cameraX, cameraY, cameraZ);
+    public void processGFNIMovement(CameraMovement movement) {
+        this.gfni.triggerSections(this::scheduleSort, movement);
     }
 
     public void markGraphDirty() {
@@ -491,10 +492,10 @@ public class RenderSectionManager {
         return sections;
     }
 
-    public void scheduleSort(ChunkSectionPos pos) {
+    public boolean scheduleSort(long sectionPos, boolean isAngleTrigger) {
         // TODO: Does this need to invalidate the section cache?
 
-        RenderSection section = this.sectionByPosition.get(pos.asLong());
+        RenderSection section = this.sectionByPosition.get(sectionPos);
 
         if (section != null) {
             var pendingUpdate = ChunkUpdateType.SORT;
@@ -504,8 +505,13 @@ public class RenderSectionManager {
             pendingUpdate = ChunkUpdateType.getPromotionUpdateType(section.getPendingUpdate(), pendingUpdate);
             if (pendingUpdate != null) {
                 section.setPendingUpdate(pendingUpdate);
+                return section.prepareTrigger(isAngleTrigger);
             }
+        } else {
+            // remove unloaded sections from triggering
+            return true;
         }
+        return false;
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {

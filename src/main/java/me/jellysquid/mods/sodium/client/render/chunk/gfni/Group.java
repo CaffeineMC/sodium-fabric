@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 import com.lodborg.intervaltree.DoubleInterval;
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrays;
-import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * A group represents a set of face planes of the same normal within a section.
@@ -15,7 +14,7 @@ class Group {
     /**
      * The section this group is for
      */
-    ChunkSectionPos sectionPos;
+    long sectionPos;
 
     /**
      * A sorted list of all the face plane distances in this group. Relative to the
@@ -42,7 +41,7 @@ class Group {
     }
 
     void replaceWith(AccumulationGroup accGroup) {
-        this.sectionPos = accGroup.sectionPos;
+        this.sectionPos = accGroup.sectionPos.asLong();
         this.distances = accGroup.distances;
         this.relDistanceHash = accGroup.relDistanceHash;
         this.facePlaneDistances = accGroup.facePlaneDistances;
@@ -80,7 +79,7 @@ class Group {
         if (start < this.distances.getEnd() && end > this.distances.getStart()
                 && queryRange(this.facePlaneDistances,
                         start - this.baseDistance, end - this.baseDistance)) {
-            gfni.triggerSection(this.sectionPos, collectorKey);
+            gfni.triggerSectionGFNI(this.sectionPos, collectorKey);
         }
     }
 

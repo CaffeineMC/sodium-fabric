@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -23,13 +24,20 @@ public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> {
     protected final int submitTime;
     protected final Vector3fc cameraPos;
 
-    public ChunkBuilderTask(RenderSection render, int time, Vector3fc absoluteCameraPos) {
+    /**
+     * Constructs a new build task for the given chunk and converts the absolute camera position to a relative position. While the absolute position is stored as a double vector, the relative position is stored as a float vector.
+     * 
+     * @param render            The chunk to build
+     * @param time              The frame in which this task was created
+     * @param absoluteCameraPos The absolute position of the camera
+     */
+    public ChunkBuilderTask(RenderSection render, int time, Vector3dc absoluteCameraPos) {
         this.render = render;
         this.submitTime = time;
         this.cameraPos = new Vector3f(
-                absoluteCameraPos.x() - (float) render.getOriginX(),
-                absoluteCameraPos.y() - (float) render.getOriginY(),
-                absoluteCameraPos.z() - (float) render.getOriginZ());
+                (float) (absoluteCameraPos.x() - (double) render.getOriginX()),
+                (float) (absoluteCameraPos.y() - (double) render.getOriginY()),
+                (float) (absoluteCameraPos.z() - (double) render.getOriginZ()));
     }
 
     /**
