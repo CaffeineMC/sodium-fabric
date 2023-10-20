@@ -161,9 +161,9 @@ public class GFNI {
 
     /**
      * Degrees of movement from last sort position before the section is sorted
-     * again. TODO: put in a setting somewhere? or just determine what works best
+     * again.
      */
-    private static final double TRIGGER_ANGLE = Math.toRadians(5);
+    private static final double TRIGGER_ANGLE = Math.toRadians(20);
     private static final double TRIGGER_ANGLE_COS = Math.cos(TRIGGER_ANGLE);
     private static final double SECTION_CENTER_DIST = Math.sqrt(3 * (16 / 2) * (16 / 2));
 
@@ -190,8 +190,8 @@ public class GFNI {
     }
 
     private void processAngleTriggers(CameraMovement movement) {
-        var lastCamera = movement.lastCamera();
-        var camera = movement.currentCamera();
+        Vector3dc lastCamera = movement.lastCamera();
+        Vector3dc camera = movement.currentCamera();
         double distance = camera.distance(lastCamera);
         this.accumulatedDistance += distance;
 
@@ -200,20 +200,20 @@ public class GFNI {
         for (var entry : head.double2ObjectEntrySet()) {
             this.angleTriggerSections.remove(entry.getDoubleKey());
             var data = entry.getValue();
-            var sectionPos = data.sectionPos;
-            var sortCameraPos = data.sortCameraPos;
-            var sectionCenter = new Vector3d(
+            ChunkSectionPos sectionPos = data.sectionPos;
+            Vector3dc sortCameraPos = data.sortCameraPos;
+            Vector3dc sectionCenter = new Vector3d(
                     sectionPos.getMinX() + 8, sectionPos.getMinY() + 8, sectionPos.getMinZ() + 8);
 
             // check if the angle since the last sort exceeds the threshold
-            var angleCos = angleCos(
+            double angleCos = angleCos(
                     sectionCenter.x() - sortCameraPos.x(),
                     sectionCenter.y() - sortCameraPos.y(),
                     sectionCenter.z() - sortCameraPos.z(),
                     sectionCenter.x() - camera.x(),
                     sectionCenter.y() - camera.y(),
                     sectionCenter.z() - camera.z());
-            var remainingAngle = TRIGGER_ANGLE;
+            double remainingAngle = TRIGGER_ANGLE;
             var addBack = true;
 
             // compare angles inverted because cosine flips it
@@ -236,14 +236,14 @@ public class GFNI {
     }
 
     private void insertAngleTrigger(AngleSortData data, double remainingAngle) {
-        var sectionPos = data.sectionPos;
-        var sortCameraPos = data.sortCameraPos;
+        ChunkSectionPos sectionPos = data.sectionPos;
+        Vector3dc sortCameraPos = data.sortCameraPos;
 
         // re-insert with new minimum required camera movement
-        var dx = sectionPos.getMinX() + 8 - sortCameraPos.x();
-        var dy = sectionPos.getMinY() + 8 - sortCameraPos.y();
-        var dz = sectionPos.getMinZ() + 8 - sortCameraPos.z();
-        var centerMinDistance = Math.tan(remainingAngle)
+        double dx = sectionPos.getMinX() + 8 - sortCameraPos.x();
+        double dy = sectionPos.getMinY() + 8 - sortCameraPos.y();
+        double dz = sectionPos.getMinZ() + 8 - sortCameraPos.z();
+        double centerMinDistance = Math.tan(remainingAngle)
                 * (Math.sqrt(dx * dx + dy * dy + dz * dz) - SECTION_CENTER_DIST);
         if (centerMinDistance <= 0) {
             // too close to section, TODO: sort more often/differently
