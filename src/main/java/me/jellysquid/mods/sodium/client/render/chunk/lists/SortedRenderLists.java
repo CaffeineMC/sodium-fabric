@@ -4,6 +4,9 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.util.iterator.ReversibleObjectArrayIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.Comparator;
 
 public class SortedRenderLists implements ChunkRenderListIterable {
     private static final SortedRenderLists EMPTY = new SortedRenderLists(ObjectArrayList.of());
@@ -24,6 +27,7 @@ public class SortedRenderLists implements ChunkRenderListIterable {
     }
 
     public static class Builder {
+        private static final Comparator<ChunkRenderList> LIST_DISTANCE_COMPARATOR = Comparator.comparingDouble(ChunkRenderList::getDistanceFromCamera);
         private final ObjectArrayList<ChunkRenderList> lists = new ObjectArrayList<>();
         private final int frame;
 
@@ -44,7 +48,17 @@ public class SortedRenderLists implements ChunkRenderListIterable {
             list.add(section);
         }
 
-        public SortedRenderLists build() {
+        public SortedRenderLists build(Vec3d cameraPos) {
+            //noinspection ForLoopReplaceableByForEach
+            for (int i = 0; i < this.lists.size(); i++) {
+                ChunkRenderList renderList = this.lists.get(i);
+                RenderRegion region = renderList.getRegion();
+                double dx = cameraPos.x - region.getOriginX();
+                double dy = cameraPos.y - region.getOriginY();
+                double dz = cameraPos.z - region.getOriginZ();
+                renderList.setDistanceFromCamera((dx * dx) + (dy * dy) + (dz * dz));
+            }
+            this.lists.sort(LIST_DISTANCE_COMPARATOR);
             return new SortedRenderLists(this.lists);
         }
     }

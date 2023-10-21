@@ -122,7 +122,7 @@ public class RenderSectionManager {
 
         this.occlusionCuller.findVisible(visitor, viewport, searchDistance, useOcclusionCulling, frame);
 
-        this.renderLists = visitor.createRenderLists();
+        this.renderLists = visitor.createRenderLists(camera.getPos());
         this.rebuildLists = visitor.getRebuildLists();
     }
 
