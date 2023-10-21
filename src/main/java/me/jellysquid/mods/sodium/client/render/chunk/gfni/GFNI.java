@@ -284,6 +284,7 @@ public class GFNI {
         if (data.turnGFNITriggerOff) {
             disableGFNITriggering(data, pos.asLong());
         }
+        data.clearTriggerChanges();
     }
 
     private void enableAngleTriggering(DynamicData data, ChunkSectionPos section, Vector3dc cameraPos) {
@@ -412,6 +413,6 @@ public class GFNI {
                 + " SNR=" + this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()]
                 + " STA=" + this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()]
                 + " DYN=" + this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()]
-                + " ANG=" + this.angleTriggerSections.size());
+                + " (ANG=" + this.angleTriggerSections.size() + ")");
     }
 }

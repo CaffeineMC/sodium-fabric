@@ -125,6 +125,11 @@ public class DynamicData extends MixedDirectionData {
         }
     }
 
+    public void clearTriggerChanges() {
+        this.turnAngleTriggerOn = false;
+        this.turnGFNITriggerOff = false;
+    }
+
     public boolean hasTriggerChanges() {
         return this.turnAngleTriggerOn || this.turnGFNITriggerOff;
     }
