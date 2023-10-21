@@ -1,10 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
 import java.nio.IntBuffer;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
@@ -24,6 +21,9 @@ public class DynamicData extends MixedDirectionData {
     private TranslucentGeometryCollector collector;
     private Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal;
 
+    private static final int MAX_TOPO_SORT_QUADS = 1000;
+    private static final int MAX_TOPO_SORT_TIME_NS = 750000;
+
     DynamicData(ChunkSectionPos sectionPos,
             NativeBuffer buffer, VertexRange range, TQuad[] quads,
             TranslucentGeometryCollector collector,
@@ -37,47 +37,6 @@ public class DynamicData extends MixedDirectionData {
     @Override
     public SortType getSortType() {
         return SortType.DYNAMIC_ALL;
-    }
-
-    private static final Collection<Pair<Integer, Long>> sortTimingData = new ConcurrentLinkedDeque<>();
-
-    private static void updateTimingData(int quadCount, long sortTime) {
-        sortTimingData.add(Pair.of(quadCount, sortTime));
-        if (sortTimingData.size() > 3000) {
-            synchronized (sortTimingData) {
-                if (sortTimingData.size() <= 3000) {
-                    return;
-                }
-                var totalQuads = sortTimingData.stream().mapToLong(Pair::getLeft).sum();
-                var totalTime = sortTimingData.stream().mapToLong(Pair::getRight).sum();
-                var averageTime = totalTime / (double) sortTimingData.size();
-                var averageQuads = totalQuads / (double) sortTimingData.size();
-                System.out.println("Average sort time: " + averageTime + "ms for " + averageQuads + " quads");
-
-                // print whole data as csv
-                var builder = new StringBuilder();
-                builder.append("\nquads,time\n");
-                for (var pair : sortTimingData) {
-                    builder.append(pair.getLeft()).append(",").append(pair.getRight()).append(";");
-                }
-                System.out.println(builder.toString());
-
-                sortTimingData.clear();
-            }
-        }
-    }
-
-    private long sortStart;
-
-    void startSortTimer() {
-        this.sortStart = System.nanoTime();
-    }
-
-    void endSortTimer() {
-        // var sortTime = System.nanoTime() - this.sortStart;
-        // if (this instanceof PresentTranslucentData present) {
-        //     updateTimingData(present.getQuadLength(), sortTime);
-        // }
     }
 
     @Override
@@ -94,42 +53,59 @@ public class DynamicData extends MixedDirectionData {
 
     @Override
     public void sortOnTrigger(Vector3fc cameraPos) {
-        this.sortWithTiming(cameraPos, this.pendingTriggerIsAngle);
+        this.sort(cameraPos, this.pendingTriggerIsAngle);
     }
 
-    private void sortWithTiming(Vector3fc cameraPos, boolean isAngleTrigger) {
-        this.startSortTimer();
-        this.sort(cameraPos, isAngleTrigger);
-        this.endSortTimer();
+    private void turnGFNITriggerOff() {
+        if (this.GFNITrigger) {
+            this.GFNITrigger = false;
+            this.turnGFNITriggerOff = true;
+        }
+    }
+
+    private void turnAngleTriggerOn() {
+        if (!this.angleTrigger) {
+            this.angleTrigger = true;
+            this.turnAngleTriggerOn = true;
+        }
     }
 
     private void sort(Vector3fc cameraPos, boolean isAngleTrigger) {
         // uses a topo sort or a distance sort depending on what is enabled
         IntBuffer indexBuffer = this.buffer.getDirectBuffer().asIntBuffer();
 
+        if (this.quads.length > MAX_TOPO_SORT_QUADS) {
+            turnGFNITriggerOff();
+            turnAngleTriggerOn();
+        }
+
         if (this.GFNITrigger && !isAngleTrigger) {
-            if (ComplexSorting.topoSortDepthFirstCyclic(indexBuffer, this.quads, this.distancesByNormal, cameraPos)) {
+            var sortStart = System.nanoTime();
+
+            var result = ComplexSorting.topoSortDepthFirstCyclic(
+                    indexBuffer, this.quads, this.distancesByNormal, cameraPos);
+
+            var sortTime = System.nanoTime() - sortStart;
+            if (sortTime > MAX_TOPO_SORT_TIME_NS) {
+                turnGFNITriggerOff();
+                turnAngleTriggerOn();
+            }
+
+            if (result) {
                 // disable distance sorting because topo sort seems to be possible.
                 // removal from angle triggering happens automatically by setting this to false.
                 this.angleTrigger = false;
                 return;
             } else {
                 // topo sort failure, the topo sort algorithm doesn't work on all cases
-                System.out.println("Failed to sort at " + this.sectionPos);
 
-                // TODO: implement different give-up heuristic. this gives up after the second
-                // failure.
+                // gives up after the second failure. it keeps GFNI triggering with topo sort on
+                // while the angle triggering is also active to maybe get a topo sort success
+                // from a different angle.
                 if (this.angleTrigger) {
-                    // turn off if currently on and signal change
-                    if (this.GFNITrigger) {
-                        this.GFNITrigger = false;
-                        this.turnGFNITriggerOff = true;
-                    }
+                    turnGFNITriggerOff();
                 }
-                if (!this.angleTrigger) {
-                    this.angleTrigger = true;
-                    this.turnAngleTriggerOn = true;
-                }
+                turnAngleTriggerOn();
             }
         }
         if (this.angleTrigger) {
@@ -184,7 +160,7 @@ public class DynamicData extends MixedDirectionData {
 
         var dynamicData = new DynamicData(sectionPos, buffer, range, quads, collector, distancesByNormal);
 
-        dynamicData.sortWithTiming(cameraPos, false);
+        dynamicData.sort(cameraPos, false);
 
         return dynamicData;
     }
