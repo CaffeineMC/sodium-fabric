@@ -53,9 +53,9 @@ public class SortedRenderLists implements ChunkRenderListIterable {
             for (int i = 0; i < this.lists.size(); i++) {
                 ChunkRenderList renderList = this.lists.get(i);
                 RenderRegion region = renderList.getRegion();
-                double dx = cameraPos.x - region.getOriginX();
-                double dy = cameraPos.y - region.getOriginY();
-                double dz = cameraPos.z - region.getOriginZ();
+                double dx = cameraPos.x - region.getCenterX();
+                double dy = cameraPos.y - region.getCenterY();
+                double dz = cameraPos.z - region.getCenterZ();
                 renderList.setDistanceFromCamera((dx * dx) + (dy * dy) + (dz * dz));
             }
             this.lists.sort(LIST_DISTANCE_COMPARATOR);

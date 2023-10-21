@@ -87,6 +87,18 @@ public class RenderRegion {
         return this.getChunkZ() << 4;
     }
 
+    public int getCenterX() {
+        return (this.getChunkX() + REGION_WIDTH / 2) << 4;
+    }
+
+    public int getCenterY() {
+        return (this.getChunkY() + REGION_HEIGHT / 2) << 4;
+    }
+
+    public int getCenterZ() {
+        return (this.getChunkZ() + REGION_LENGTH / 2) << 4;
+    }
+
     public void delete(CommandList commandList) {
         for (var storage : this.sectionRenderData.values()) {
             storage.delete();
