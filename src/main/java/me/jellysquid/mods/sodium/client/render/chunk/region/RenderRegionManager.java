@@ -69,7 +69,7 @@ public class RenderRegionManager {
                     var storage = region.getStorage(pass);
 
                     if (storage != null) {
-                        storage.removeMeshes(renderSectionIndex);
+                        storage.removeVertexData(renderSectionIndex);
                     }
 
                     BuiltSectionMeshParts mesh = chunkBuildOutput.getMesh(pass);
@@ -82,13 +82,18 @@ public class RenderRegionManager {
             }
 
             if (result instanceof ChunkSortOutput chunkSortOutput) {
-                var translucentStorage = region.getTranslucentStorage();
-                if (translucentStorage != null) {
-                    translucentStorage.removeMeshes(renderSectionIndex);
+                var storage = region.getStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
+                if (storage != null) {
+                    storage.removeIndexData(renderSectionIndex);
                 }
 
                 var translucentData = chunkSortOutput.translucentData;
                 if (translucentData != null && translucentData instanceof PresentTranslucentData presentTranslucentData) {
+                    // TODO: debug this, seems to sometimes happen when flying around with spectator mode
+                    // maybe related to setting all sections to angle triggering mode?
+                    if (presentTranslucentData.buffer == null) {
+                        throw new IllegalStateException("Translucent data buffer is null");
+                    }
                     indexUploads.add(new PendingSectionIndexBufferUpload(result.render, presentTranslucentData,
                     new PendingUpload(presentTranslucentData.buffer)));
                 }
@@ -103,8 +108,8 @@ public class RenderRegionManager {
         var resources = region.createResources(commandList);
 
         if (!uploads.isEmpty()) {
-            var geometryArena = resources.getGeometryArena();
-            boolean bufferChanged = geometryArena.upload(commandList, uploads.stream()
+            var arena = resources.getArena();
+            boolean bufferChanged = arena.upload(commandList, uploads.stream()
                     .map(upload -> upload.vertexUpload));
 
             // If any of the buffers changed, the tessellation will need to be updated
@@ -116,14 +121,14 @@ public class RenderRegionManager {
             // Collect the upload results
             for (PendingSectionMeshUpload upload : uploads) {
                 var storage = region.createStorage(upload.pass);
-                storage.setMeshes(upload.section.getSectionIndex(),
+                storage.setVertexData(upload.section.getSectionIndex(),
                         upload.vertexUpload.getResult(), upload.meshData.getVertexRanges());
             }
         }
 
         if (!indexUploads.isEmpty()) {
-            var indexArena = resources.getIndexArena();
-            boolean bufferChanged = indexArena.upload(commandList, indexUploads.stream()
+            var arena = resources.getArena();
+            boolean bufferChanged = arena.upload(commandList, indexUploads.stream()
                     .map(upload -> upload.indexBufferUpload));
 
             if (bufferChanged) {
@@ -131,9 +136,8 @@ public class RenderRegionManager {
             }
 
             for (PendingSectionIndexBufferUpload upload : indexUploads) {
-                var storage = region.createTranslucentStorage();
-                storage.setMeshes(upload.section.getSectionIndex(),
-                upload.indexBufferUpload.getResult(), upload.translucentData.getVertexRanges());
+                var storage = region.createStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
+                storage.setIndexData(upload.section.getSectionIndex(), upload.indexBufferUpload.getResult());
             }
         }
     }

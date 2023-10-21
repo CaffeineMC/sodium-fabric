@@ -8,18 +8,20 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import java.util.Arrays;
 
 public class SectionRenderDataStorage {
-    private final GlBufferSegment[] allocations = new GlBufferSegment[RenderRegion.REGION_SIZE];
+    private final GlBufferSegment[] allocations;
 
     private final long pMeshDataArray;
     private final boolean storesIndices;
 
     public SectionRenderDataStorage(boolean storesIndices) {
+        var allocationCount = RenderRegion.REGION_SIZE * (storesIndices ? 2 : 1);
+        this.allocations = new GlBufferSegment[allocationCount];
         this.pMeshDataArray = SectionRenderDataUnsafe.allocateHeap(RenderRegion.REGION_SIZE);
         this.storesIndices = storesIndices;
     }
 
-    public void setMeshes(int localSectionIndex,
-                          GlBufferSegment allocation, VertexRange[] ranges) {
+    public void setVertexData(int localSectionIndex,
+            GlBufferSegment allocation, VertexRange[] ranges) {
         if (this.allocations[localSectionIndex] != null) {
             this.allocations[localSectionIndex].delete();
             this.allocations[localSectionIndex] = null;
@@ -43,20 +45,37 @@ public class SectionRenderDataStorage {
             }
 
             SectionRenderDataUnsafe.setVertexOffset(pMeshData, facingIndex, vertexOffset);
-            var elementCount = (vertexCount >> 2) * 6;
-            SectionRenderDataUnsafe.setElementCount(pMeshData, facingIndex, elementCount);
+            SectionRenderDataUnsafe.setElementCount(pMeshData, facingIndex, (vertexCount >> 2) * 6);
 
             if (vertexCount > 0) {
                 sliceMask |= 1 << facingIndex;
             }
 
-            vertexOffset += this.storesIndices ? elementCount : vertexCount;
+            vertexOffset += vertexCount;
         }
 
         SectionRenderDataUnsafe.setSliceMask(pMeshData, sliceMask);
     }
 
-    public void removeMeshes(int localSectionIndex) {
+    public void setIndexData(int localSectionIndex, GlBufferSegment allocation) {
+        if (!this.storesIndices) {
+            throw new IllegalStateException("Cannot set index data when storesIndices is false");
+        }
+
+        var indexAllocationIndex = localSectionIndex + RenderRegion.REGION_SIZE;
+        if (this.allocations[indexAllocationIndex] != null) {
+            this.allocations[indexAllocationIndex].delete();
+            this.allocations[indexAllocationIndex] = null;
+        }
+
+        this.allocations[indexAllocationIndex] = allocation;
+
+        var pMeshData = this.getDataPointer(localSectionIndex);
+
+        SectionRenderDataUnsafe.setIndexOffset(pMeshData, allocation.getOffset());
+    }
+
+    public void removeVertexData(int localSectionIndex) {
         if (this.allocations[localSectionIndex] == null) {
             return;
         }
@@ -64,7 +83,23 @@ public class SectionRenderDataStorage {
         this.allocations[localSectionIndex].delete();
         this.allocations[localSectionIndex] = null;
 
+        // also clear index allocation
+        if (this.storesIndices) {
+            removeIndexData(localSectionIndex);
+        }
+
         SectionRenderDataUnsafe.clear(this.getDataPointer(localSectionIndex));
+    }
+
+    public void removeIndexData(int localSectionIndex) {
+        if (!this.storesIndices) {
+            throw new IllegalStateException("Cannot remove index data when storesIndices is false");
+        }
+        var indexAllocationIndex = localSectionIndex + RenderRegion.REGION_SIZE;
+        if (this.allocations[indexAllocationIndex] != null) {
+            this.allocations[indexAllocationIndex].delete();
+            this.allocations[indexAllocationIndex] = null;
+        }
     }
 
     public void onBufferResized() {
@@ -87,8 +122,14 @@ public class SectionRenderDataStorage {
             SectionRenderDataUnsafe.setVertexOffset(data, facing, offset);
 
             var count = SectionRenderDataUnsafe.getElementCount(data, facing);
-            // TODO: fix this when storesIndices is true, it currently just explodes
-            offset += this.storesIndices ? count : (count / 6) * 4; // convert elements back into vertices
+            offset += (count / 6) * 4; // convert elements back into vertices
+        }
+
+        if (this.storesIndices) {
+            var indexAllocation = this.allocations[sectionIndex + RenderRegion.REGION_SIZE];
+            if (indexAllocation != null) {
+                SectionRenderDataUnsafe.setIndexOffset(data, indexAllocation.getOffset());
+            }
         }
     }
 

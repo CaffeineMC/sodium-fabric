@@ -16,8 +16,9 @@ import org.lwjgl.system.MemoryUtil;
 // three times slower than the most naive solution in literally any other language that LLVM can compile.
 
 // the structure is roughly as follows:
-// struct SectionRenderData { // 64 bytes
+// struct SectionRenderData { // 68 bytes
 //   mask: u32,
+//   index_offset: u32
 //   ranges: [VertexRange; 7]
 // }
 // struct VertexRange { // 8 bytes
@@ -26,6 +27,7 @@ import org.lwjgl.system.MemoryUtil;
 // }
 public class SectionRenderDataUnsafe {
     private static final long OFFSET_SLICE_MASK = 0;
+    private static final long OFFSET_SLICE_INDEX_OFFSETS = 4;
     private static final long OFFSET_SLICE_RANGES = 8;
 
     private static final long STRIDE = 64;
@@ -52,6 +54,14 @@ public class SectionRenderDataUnsafe {
 
     public static int getSliceMask(long ptr) {
         return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_MASK);
+    }
+
+    public static void setIndexOffset(long ptr, int value) {
+        MemoryUtil.memPutInt(ptr + OFFSET_SLICE_INDEX_OFFSETS, value);
+    }
+
+    public static int getIndexOffset(long ptr) {
+        return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_INDEX_OFFSETS);
     }
 
     public static void setVertexOffset(long ptr, int facing, int value) {

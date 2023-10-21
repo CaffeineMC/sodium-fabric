@@ -65,16 +65,12 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
             var region = renderList.getRegion();
             var storage = region.getStorage(renderPass);
-            SectionRenderDataStorage indexDataStorage = null;
-            if (isTranslucent) {
-                indexDataStorage = region.getTranslucentStorage();
-            }
 
             if (storage == null) {
                 continue;
             }
 
-            fillCommandBuffer(this.batch, region, storage, indexDataStorage, renderList, camera, renderPass, useBlockFaceCulling);
+            fillCommandBuffer(this.batch, region, storage, renderList, camera, renderPass, useBlockFaceCulling);
 
             if (this.batch.isEmpty()) {
                 continue;
@@ -98,7 +94,6 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     private static void fillCommandBuffer(MultiDrawBatch batch,
                                           RenderRegion renderRegion,
                                           SectionRenderDataStorage renderDataStorage,
-                                          SectionRenderDataStorage indexDataStorage,
                                           ChunkRenderList renderList,
                                           CameraTransform camera,
                                           TerrainRenderPass pass,
@@ -123,11 +118,6 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             int chunkZ = originZ + LocalSectionIndex.unpackZ(sectionIndex);
 
             long pMeshData = renderDataStorage.getDataPointer(sectionIndex);
-            long pIndexData = -1;
-            if (indexDataStorage != null) {
-                pIndexData = indexDataStorage.getDataPointer(sectionIndex);
-            }
-
             int slices;
 
             if (useBlockFaceCulling) {
@@ -139,24 +129,32 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             slices &= SectionRenderDataUnsafe.getSliceMask(pMeshData);
 
             if (slices != 0) {
-                addDrawCommands(batch, pMeshData, slices, pIndexData);
+                addDrawCommands(batch, pMeshData, slices);
             }
         }
     }
 
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
-    private static void addDrawCommands(MultiDrawBatch batch, long pMeshData, int mask, long pIndexData) {
+    private static void addDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
         final var pElementPointer = batch.pElementPointer;
         final var pBaseVertex = batch.pBaseVertex;
         final var pElementCount = batch.pElementCount;
 
         int size = batch.size;
+        int indexDataOffset = SectionRenderDataUnsafe.getIndexOffset(pMeshData);
 
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
             MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
-            MemoryUtil.memPutInt(pElementCount + (size << 2), SectionRenderDataUnsafe.getElementCount(pMeshData, facing));
-            if (pIndexData != -1) {
-                MemoryUtil.memPutAddress(pElementPointer + (size << 3), SectionRenderDataUnsafe.getVertexOffset(pIndexData, facing) << 2);
+            var elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
+            MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
+
+            // zero check for when we're not rendering any translucent data
+            // TODO: unclear if the offset can naturally be zero sometimes
+            if (indexDataOffset != 0) {
+                // * 4 to convert to bytes (the buffer contains ints)
+                // the section render data storage for the indices stores the offset in indices (also called elements)
+                MemoryUtil.memPutAddress(pElementPointer + (size << 3), indexDataOffset << 2);
+                indexDataOffset += elementCount;
             } else {
                 MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
             }
@@ -256,7 +254,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), new GlVertexAttributeBinding[] {
+                TessellationBinding.forVertexBuffer(resources.getBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
                 }),
@@ -266,11 +264,11 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createIndexedRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), new GlVertexAttributeBinding[] {
+                TessellationBinding.forVertexBuffer(resources.getBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
                 }),
-                TessellationBinding.forElementBuffer(resources.getIndexBuffer())
+                TessellationBinding.forElementBuffer(resources.getBuffer()) // the indices are stored next to the vertices
         });
     }
 
