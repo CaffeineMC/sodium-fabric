@@ -112,18 +112,17 @@ public class ComplexSorting {
         TranslucentData.writeQuadVertexIndexes(indexBuffer, indexes);
     }
 
-    private static boolean orthoExtentWithinHalfspace(TQuad halfspace, TQuad otherQuad) {
-        var halfspaceDirection = halfspace.facing().ordinal();
-        var otherQuadOppositeDirection = halfspace.facing().getOpposite().ordinal();
-        var sign = halfspace.facing().getSign();
+    private static boolean orthogonalQuadVisibleThrough(TQuad halfspace, TQuad otherQuad) {
+        var hd = halfspace.facing().ordinal();
+        var hdOpposite = halfspace.facing().getOpposite().ordinal();
+        var od = otherQuad.facing().ordinal();
+        var hSign = halfspace.facing().getSign();
+        var otherSign = otherQuad.facing().getSign();
 
-        return sign * halfspace.extents()[halfspaceDirection] - QUERY_EPSILON > sign * otherQuad.extents()[otherQuadOppositeDirection];
-    }
-
-    private static boolean orthogonalQuadVisibleThrough(TQuad quad, TQuad otherQuad) {
         // A: test that the other quad has an extent within this quad's halfspace
-        // B: test that this quad has an extent outside the other quad's halfspace
-        return orthoExtentWithinHalfspace(quad, otherQuad) && !orthoExtentWithinHalfspace(otherQuad, quad);
+        return hSign * halfspace.extents()[hd] - QUERY_EPSILON > hSign * otherQuad.extents()[hdOpposite]
+                // B: test that this quad is not fully within the other quad's halfspace
+                && !(otherSign * otherQuad.extents()[od] - QUERY_EPSILON >= otherSign * halfspace.extents()[od]);
     }
 
     /**
