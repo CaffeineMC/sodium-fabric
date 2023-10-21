@@ -230,8 +230,11 @@ public class FluidRenderer {
             this.writeQuad(meshBuilder, collector, material, offset, quad, facing, false);
 
             if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
+                boolean aligned = northEastHeight == northWestHeight 
+                        && northWestHeight == southEastHeight 
+                        && southEastHeight == southWestHeight;
                 this.writeQuad(meshBuilder, collector, material, offset, quad,
-                        ModelQuadFacing.UNASSIGNED, true);
+                        aligned ? ModelQuadFacing.NEG_Y : ModelQuadFacing.UNASSIGNED, true);
 
             }
 
