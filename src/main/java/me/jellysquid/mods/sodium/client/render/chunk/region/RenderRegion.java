@@ -122,9 +122,10 @@ public class RenderRegion {
         return storage;
     }
 
-    public void refresh(CommandList commandList) {
+    public void refreshTesselation(CommandList commandList) {
         if (this.resources != null) {
             this.resources.deleteTessellations(commandList);
+            this.resources.deleteIndexedTessellation(commandList);
         }
 
         for (var storage : this.sectionRenderData.values()) {
@@ -132,12 +133,12 @@ public class RenderRegion {
         }
     }
 
-    public void refreshTranslucent(CommandList commandList) {
+    public void refreshIndexedTesselation(CommandList commandList) {
         if (this.resources != null) {
             this.resources.deleteIndexedTessellation(commandList);
         }
 
-        this.sectionRenderData.get(DefaultTerrainRenderPasses.TRANSLUCENT).onBufferResized();
+        this.sectionRenderData.get(DefaultTerrainRenderPasses.TRANSLUCENT).onIndexBufferResized();
     }
 
     public void addSection(RenderSection section) {
@@ -198,13 +199,19 @@ public class RenderRegion {
     }
 
     public static class DeviceResources {
-        private final GlBufferArena arena;
+        private final GlBufferArena geometryArena;
+        private final GlBufferArena indexArena;
         private GlTessellation tessellation;
         private GlTessellation indexedTessellation;
 
         public DeviceResources(CommandList commandList, StagingBuffer stagingBuffer) {
             int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
-            this.arena = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
+
+            // the magic number 756 for the initial size is arbitrary, it was made up.
+            var initialVertices = 756;
+            this.geometryArena = new GlBufferArena(commandList, REGION_SIZE * initialVertices, stride, stagingBuffer);
+            var initialIndices = (initialVertices / 4) * 6;
+            this.indexArena = new GlBufferArena(commandList, REGION_SIZE * initialIndices, Integer.BYTES, stagingBuffer);
         }
 
         public void updateTessellation(CommandList commandList, GlTessellation tessellation) {
@@ -245,22 +252,31 @@ public class RenderRegion {
             }
         }
 
-        public GlBuffer getBuffer() {
-            return this.arena.getBufferObject();
+        public GlBuffer getGeometryBuffer() {
+            return this.geometryArena.getBufferObject();
+        }
+
+        public GlBuffer getIndexBuffer() {
+            return this.indexArena.getBufferObject();
         }
 
         public void delete(CommandList commandList) {
             this.deleteTessellations(commandList);
             this.deleteIndexedTessellation(commandList);
-            this.arena.delete(commandList);
+            this.geometryArena.delete(commandList);
+            this.indexArena.delete(commandList);
         }
 
-        public GlBufferArena getArena() {
-            return this.arena;
+        public GlBufferArena getGeometryArena() {
+            return this.geometryArena;
+        }
+
+        public GlBufferArena getIndexArena() {
+            return this.indexArena;
         }
 
         public boolean shouldDelete() {
-            return this.arena.isEmpty();
+            return this.geometryArena.isEmpty() && this.indexArena.isEmpty();
         }
     }
 }

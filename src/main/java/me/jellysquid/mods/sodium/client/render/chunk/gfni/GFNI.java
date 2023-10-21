@@ -39,6 +39,13 @@ import net.minecraft.util.math.ChunkSectionPos;
  * building. Using the extents calculated for aligned quads, continuity can be
  * easily tested and then convexity confirmed. How to deal with groups of quads
  * that are only convex if a few of the quads are ignored?
+ * - Movement prediction and preemptive task scheduling to avoid needing to
+ * perform blocking sorts of close sections. Maybe not an issue? Might reduce
+ * stutter in high fps situations. However, high complexity with regards to
+ * processing the results of preemptive sorts.
+ * - Does fluid renderer sometimes produce aligned faces that it doesn't
+ * classify as such? they could be detected and then correctly assigned in the
+ * fluid renderer directly.
  * 
  * @author douira
  */
@@ -184,7 +191,7 @@ public class GFNI {
     // TODO: use faster code for this
     private static double angleCos(double ax, double ay, double az, double bx, double by, double bz) {
         double length1Squared = Math.fma(ax, ax, Math.fma(ay, ay, az * az));
-        double length2Squared = Math.fma(bx, bx, Math.fma(by,by, bz * bz));
+        double length2Squared = Math.fma(bx, bx, Math.fma(by, by, bz * bz));
         double dot = Math.fma(ax, bx, Math.fma(ay, by, az * bz));
         return dot / Math.sqrt(length1Squared * length2Squared);
     }

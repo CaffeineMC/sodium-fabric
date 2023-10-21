@@ -154,6 +154,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                 // * 4 to convert to bytes (the buffer contains ints)
                 // the section render data storage for the indices stores the offset in indices (also called elements)
                 MemoryUtil.memPutAddress(pElementPointer + (size << 3), indexDataOffset << 2);
+
+                // adding the number of elements works because the index data has one index per element (which are the indices)
                 indexDataOffset += elementCount;
             } else {
                 MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
@@ -254,7 +256,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getBuffer(), new GlVertexAttributeBinding[] {
+                TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
                 }),
@@ -264,11 +266,11 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createIndexedRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getBuffer(), new GlVertexAttributeBinding[] {
+                TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
                 }),
-                TessellationBinding.forElementBuffer(resources.getBuffer()) // the indices are stored next to the vertices
+                TessellationBinding.forElementBuffer(resources.getIndexBuffer())
         });
     }
 

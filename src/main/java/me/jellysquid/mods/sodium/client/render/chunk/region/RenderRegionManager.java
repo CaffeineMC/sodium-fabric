@@ -108,14 +108,14 @@ public class RenderRegionManager {
         var resources = region.createResources(commandList);
 
         if (!uploads.isEmpty()) {
-            var arena = resources.getArena();
+            var arena = resources.getGeometryArena();
             boolean bufferChanged = arena.upload(commandList, uploads.stream()
                     .map(upload -> upload.vertexUpload));
 
             // If any of the buffers changed, the tessellation will need to be updated
             // Once invalidated the tessellation will be re-created on the next attempted use
             if (bufferChanged) {
-                region.refresh(commandList);
+                region.refreshTesselation(commandList);
             }
 
             // Collect the upload results
@@ -127,12 +127,12 @@ public class RenderRegionManager {
         }
 
         if (!indexUploads.isEmpty()) {
-            var arena = resources.getArena();
+            var arena = resources.getIndexArena();
             boolean bufferChanged = arena.upload(commandList, indexUploads.stream()
                     .map(upload -> upload.indexBufferUpload));
 
             if (bufferChanged) {
-                region.refreshTranslucent(commandList);
+                region.refreshIndexedTesselation(commandList);
             }
 
             for (PendingSectionIndexBufferUpload upload : indexUploads) {

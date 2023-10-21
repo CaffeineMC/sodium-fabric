@@ -55,6 +55,9 @@ public class SectionRenderDataStorage {
         }
 
         SectionRenderDataUnsafe.setSliceMask(pMeshData, sliceMask);
+
+        // reset index offset to make sure it never renders with wrong index data
+        SectionRenderDataUnsafe.setIndexOffset(pMeshData, 0);
     }
 
     public void setIndexData(int localSectionIndex, GlBufferSegment allocation) {
@@ -124,8 +127,19 @@ public class SectionRenderDataStorage {
             var count = SectionRenderDataUnsafe.getElementCount(data, facing);
             offset += (count / 6) * 4; // convert elements back into vertices
         }
+    }
 
+    public void onIndexBufferResized() {
         if (this.storesIndices) {
+            for (int sectionIndex = 0; sectionIndex < RenderRegion.REGION_SIZE; sectionIndex++) {
+                this.updateIndexes(sectionIndex);
+            }
+        }
+    }
+
+    private void updateIndexes(int sectionIndex) {
+        if (this.storesIndices) {
+            var data = this.getDataPointer(sectionIndex);
             var indexAllocation = this.allocations[sectionIndex + RenderRegion.REGION_SIZE];
             if (indexAllocation != null) {
                 SectionRenderDataUnsafe.setIndexOffset(data, indexAllocation.getOffset());
