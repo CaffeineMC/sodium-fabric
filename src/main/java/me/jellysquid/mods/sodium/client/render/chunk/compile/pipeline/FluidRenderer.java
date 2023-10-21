@@ -42,6 +42,10 @@ import net.minecraft.world.BlockRenderView;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableInt;
 
+/**
+ * The fluid renderer produces the quads for block of fluid. It generates inside
+ * and outside quads for each face of the block.
+ */
 public class FluidRenderer {
     // TODO: allow this to be changed by vertex format
     // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly

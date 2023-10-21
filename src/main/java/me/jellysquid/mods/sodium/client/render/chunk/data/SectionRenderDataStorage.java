@@ -7,6 +7,22 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 
 import java.util.Arrays;
 
+/**
+ * The section render data storage stores the gl buffer segments of uploaded
+ * data on the gpu. There's one storage object per region. It stores information
+ * about vertex and optionally index buffer data. The array of buffer segment is
+ * indexed by the region-local section index. The data about the contents of
+ * buffer segments is stored in a natively allocated piece of memory referenced
+ * by {@code pMeshDataArray} and accessed through
+ * {@link SectionRenderDataUnsafe}.
+ * 
+ * When the backing buffer (from the gl buffer arena) is resized, the storage
+ * object is notified and then it updates the changed offsets of the buffer
+ * segments. Since the index data's size and alignment directly corresponds to
+ * that of the vertex data except for the vertex/index scaling of two thirds,
+ * only an offset to the index data within the index data buffer arena is
+ * stored.
+ */
 public class SectionRenderDataStorage {
     private final GlBufferSegment[] allocations;
 

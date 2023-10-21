@@ -41,6 +41,11 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         this.sharedIndexBuffer = new SharedQuadIndexBuffer(device.createCommandList(), SharedQuadIndexBuffer.IndexType.INTEGER);
     }
 
+    /**
+     * Renders the terrain for a particular render pass. Each region is rendered
+     * with one draw call. The command buffer for each draw command is filled by
+     * iterating the sections and adding the draw commands for each section.
+     */
     @Override
     public void render(ChunkRenderMatrices matrices,
                        CommandList commandList,
@@ -134,6 +139,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
+    /**
+     * Add the draw command into the multi draw batch of the current region for one
+     * section. The section's mesh data is given as a pointer into the render data
+     * storage's allocated memory. It goes through each direction and writes the
+     * offsets and lengths of the already uploaded vertex and index data. The multi
+     * draw batch provides pointers to arrays where each of the section's data is
+     * stored. The batch's size counts how many commands it contains.
+     */
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     private static void addDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
         final var pElementPointer = batch.pElementPointer;

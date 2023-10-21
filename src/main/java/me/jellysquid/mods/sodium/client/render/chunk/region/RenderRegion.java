@@ -204,6 +204,14 @@ public class RenderRegion {
         private GlTessellation tessellation;
         private GlTessellation indexedTessellation;
 
+        /**
+         * The buffer arenas return offsets in terms of how many stride units big things
+         * are. This means that if the stride is the length of a vertex, the buffer
+         * arena works with vertices and returns vertex offsets. The arena working with
+         * indices has as stride of four corresponding to the length of an integer. The
+         * two can't easily be combined because integers and vertices require different
+         * amounts of data which makes the returned offsets incompatible.
+         */
         public DeviceResources(CommandList commandList, StagingBuffer stagingBuffer) {
             int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
 
