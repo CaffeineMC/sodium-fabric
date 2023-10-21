@@ -17,12 +17,15 @@ public class DynamicData extends MixedDirectionData {
     boolean angleTrigger = false;
     boolean turnAngleTriggerOn = false;
     boolean turnGFNITriggerOff = false;
+    private int consecutiveTopoSortFailures = 0;
     private boolean pendingTriggerIsAngle;
     private TranslucentGeometryCollector collector;
     private Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal;
 
     private static final int MAX_TOPO_SORT_QUADS = 1000;
-    private static final int MAX_TOPO_SORT_TIME_NS = 750000;
+    private static final int MAX_TOPO_SORT_TIME_NS = 1_000_000;
+    private static final int MAX_FAILING_TOPO_SORT_TIME_NS = 750_000;
+    private static final int MAX_TOPO_SORT_PATIENT_TIME_NS = 250_000;
 
     DynamicData(ChunkSectionPos sectionPos,
             NativeBuffer buffer, VertexRange range, TQuad[] quads,
@@ -86,7 +89,12 @@ public class DynamicData extends MixedDirectionData {
                     indexBuffer, this.quads, this.distancesByNormal, cameraPos);
 
             var sortTime = System.nanoTime() - sortStart;
-            if (sortTime > MAX_TOPO_SORT_TIME_NS) {
+
+            // if we've already failed, there's reduced patience for sorting since the
+            // probability of failure and wasted compute time is higher
+            if (sortTime > (this.consecutiveTopoSortFailures > 0
+                    ? MAX_FAILING_TOPO_SORT_TIME_NS
+                    : MAX_TOPO_SORT_TIME_NS)) {
                 turnGFNITriggerOff();
                 turnAngleTriggerOn();
             }
@@ -95,14 +103,16 @@ public class DynamicData extends MixedDirectionData {
                 // disable distance sorting because topo sort seems to be possible.
                 // removal from angle triggering happens automatically by setting this to false.
                 this.angleTrigger = false;
+                this.consecutiveTopoSortFailures = 0;
                 return;
             } else {
                 // topo sort failure, the topo sort algorithm doesn't work on all cases
 
-                // gives up after the second failure. it keeps GFNI triggering with topo sort on
-                // while the angle triggering is also active to maybe get a topo sort success
-                // from a different angle.
-                if (this.angleTrigger) {
+                // gives up after a certain number of failures. it keeps GFNI triggering with
+                // topo sort on while the angle triggering is also active to maybe get a topo
+                // sort success from a different angle.
+                this.consecutiveTopoSortFailures++;
+                if (this.consecutiveTopoSortFailures >= (sortTime <= MAX_TOPO_SORT_PATIENT_TIME_NS ? 5 : 2)) {
                     turnGFNITriggerOff();
                 }
                 turnAngleTriggerOn();
