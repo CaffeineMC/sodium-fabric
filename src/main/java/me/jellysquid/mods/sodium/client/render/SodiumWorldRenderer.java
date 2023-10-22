@@ -393,6 +393,7 @@ public class SodiumWorldRenderer {
         // bail on very large entities to avoid checking many sections
         double entityVolume = (box.maxX - box.minX) * (box.maxY - box.minY) * (box.maxZ - box.minZ);
         if (entityVolume > MAX_ENTITY_CHECK_VOLUME) {
+            // TODO: do a frustum check instead, even large entities aren't visible if they're outside the frustum
             return true;
         }
 
