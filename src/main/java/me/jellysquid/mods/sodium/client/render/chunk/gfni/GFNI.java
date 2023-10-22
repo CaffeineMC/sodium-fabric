@@ -25,9 +25,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * may result in many sections suddenly needing sorting when the camera moves.
  * Maybe it's better to schedule them to be sorted gradually even if not
  * visible, if there are idle threads.
- * - sort only up to a certain number of quads to limit rebuild time to some
- * fixed value. determine how many that is by observing timings.
- * - implement angle-based triggering for difficult or large sections
  * - De-epsilon all the geometry by snapping to multiples of 0.005 or sth like
  * that. Would simplify the ComplexSorting code so that it doesn't need to deal
  * with the existence of error margins (epsilons in the trigger distances and
@@ -46,6 +43,9 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - Does fluid renderer sometimes produce aligned faces that it doesn't
  * classify as such? they could be detected and then correctly assigned in the
  * fluid renderer directly.
+ * - Check that separators still work on aligned geomtry. It seems that a lot of
+ * things are not topo sortable after the most recent fix to the quad visibility
+ * check.
  * 
  * @author douira
  */
