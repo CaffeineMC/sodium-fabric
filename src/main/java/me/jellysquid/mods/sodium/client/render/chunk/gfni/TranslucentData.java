@@ -35,17 +35,12 @@ public abstract class TranslucentData {
 
     /**
      * Prepares the translucent data for triggering of the given type. This is run
-     * on the main thread before a sort task is scheduled. If true is returned, the
-     * sort task will not be scheduled and it will be removed from angle triggering.
-     * Returning true if isAngleTrigger is false is a no-op.
+     * on the main thread before a sort task is scheduled.
      * 
      * @param isAngleTrigger Whether the trigger is an angle trigger
-     * @return True if the sort task should not be scheduled and the section should
-     *         be removed from angle triggering
      */
-    public boolean prepareTrigger(boolean isAngleTrigger) {
+    public void prepareTrigger(boolean isAngleTrigger) {
         // no-op for other translucent data than dynamic
-        return false;
     }
 
     static int vertexCountToIndexBytes(int vertexCount) {

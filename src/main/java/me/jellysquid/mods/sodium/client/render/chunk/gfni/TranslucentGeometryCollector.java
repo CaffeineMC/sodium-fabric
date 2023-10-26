@@ -19,21 +19,14 @@ import net.minecraft.util.math.ChunkSectionPos;
  * determines the best sort type for the section and constructs various types of
  * translucent data objects that then perform sorting and get registered with
  * GFNI for triggering.
- * 
- * TODO: can use a bunch more optimizations, this is a prototype.
- * TODO list:
- * - use continuous arrays for the quad centers and quad storage
- * - use more accurate normals for unaligned topo sort? do we do topo sort on
- * unaligned faces at all?
- * - bail early during rendering if we decide not to topo sort, then we don't
- * need to gather all of the data
- * - detail how the graph construction and the topo sort works in the GFNI doc
+ *
+ * TODO:
+ * - use continuous arrays for the quad centers and quad storage if necessary
+ * - use more accurate normals for unaligned topo sort?
  * - optionally add a way to attempt full acyclic topo sort even if the
  * heuristic doesn't expect it to be possible. The caveat is that this costs
  * doing it once without invisible quad exclusion and once with if the first
  * attempt fails.
- * - disable translucent data collection when setting is set to OFF to prevent
- * overhead if no sorting is wanted.
  */
 public class TranslucentGeometryCollector {
     AccumulationGroup[] axisAlignedDistances;

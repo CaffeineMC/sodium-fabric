@@ -14,9 +14,11 @@ import net.minecraft.util.math.ChunkSectionPos;
 public class DynamicData extends MixedDirectionData {
     private final TQuad[] quads;
     boolean GFNITrigger = true;
-    boolean angleTrigger = false;
-    boolean turnAngleTriggerOn = false;
+    boolean directTrigger = false;
     boolean turnGFNITriggerOff = false;
+    boolean turnDirectTriggerOn = false;
+    boolean turnDirectTriggerOff = false;
+    double directTriggerKey = -1;
     private int consecutiveTopoSortFailures = 0;
     private boolean pendingTriggerIsAngle;
     private TranslucentGeometryCollector collector;
@@ -26,6 +28,8 @@ public class DynamicData extends MixedDirectionData {
     private static final int MAX_TOPO_SORT_TIME_NS = 1_000_000;
     private static final int MAX_FAILING_TOPO_SORT_TIME_NS = 750_000;
     private static final int MAX_TOPO_SORT_PATIENT_TIME_NS = 250_000;
+    private static final int PATIENT_TOPO_ATTEMPTS = 5;
+    private static final int REGULAR_TOPO_ATTEMPTS = 2;
 
     DynamicData(ChunkSectionPos sectionPos,
             NativeBuffer buffer, VertexRange range, TQuad[] quads,
@@ -43,15 +47,8 @@ public class DynamicData extends MixedDirectionData {
     }
 
     @Override
-    public boolean prepareTrigger(boolean isAngleTrigger) {
-        // if an angle trigger was scheduled but isn't needed, return true to signal
-        // removal from angle triggering
-        if (isAngleTrigger && !this.angleTrigger) {
-            return true;
-        }
-
+    public void prepareTrigger(boolean isAngleTrigger) {
         this.pendingTriggerIsAngle = isAngleTrigger;
-        return false;
     }
 
     @Override
@@ -66,11 +63,22 @@ public class DynamicData extends MixedDirectionData {
         }
     }
 
-    private void turnAngleTriggerOn() {
-        if (!this.angleTrigger) {
-            this.angleTrigger = true;
-            this.turnAngleTriggerOn = true;
+    private void turnDirectTriggerOn() {
+        if (!this.directTrigger) {
+            this.directTrigger = true;
+            this.turnDirectTriggerOn = true;
         }
+    }
+
+    private void turnDirectTriggerOff() {
+        if (this.directTrigger) {
+            this.directTrigger = false;
+            this.turnDirectTriggerOff = true;
+        }
+    }
+
+    private static int getAttemptsForTime(long ns) {
+        return ns <= MAX_TOPO_SORT_PATIENT_TIME_NS ? PATIENT_TOPO_ATTEMPTS : REGULAR_TOPO_ATTEMPTS;
     }
 
     private void sort(Vector3fc cameraPos, boolean isAngleTrigger) {
@@ -79,7 +87,7 @@ public class DynamicData extends MixedDirectionData {
 
         if (this.quads.length > MAX_TOPO_SORT_QUADS) {
             turnGFNITriggerOff();
-            turnAngleTriggerOn();
+            turnDirectTriggerOn();
         }
 
         if (this.GFNITrigger && !isAngleTrigger) {
@@ -96,13 +104,12 @@ public class DynamicData extends MixedDirectionData {
                     ? MAX_FAILING_TOPO_SORT_TIME_NS
                     : MAX_TOPO_SORT_TIME_NS)) {
                 turnGFNITriggerOff();
-                turnAngleTriggerOn();
+                turnDirectTriggerOn();
             }
 
             if (result) {
                 // disable distance sorting because topo sort seems to be possible.
-                // removal from angle triggering happens automatically by setting this to false.
-                this.angleTrigger = false;
+                turnDirectTriggerOff();
                 this.consecutiveTopoSortFailures = 0;
                 return;
             } else {
@@ -112,13 +119,13 @@ public class DynamicData extends MixedDirectionData {
                 // topo sort on while the angle triggering is also active to maybe get a topo
                 // sort success from a different angle.
                 this.consecutiveTopoSortFailures++;
-                if (this.consecutiveTopoSortFailures >= (sortTime <= MAX_TOPO_SORT_PATIENT_TIME_NS ? 5 : 2)) {
+                if (this.consecutiveTopoSortFailures >= getAttemptsForTime(sortTime)) {
                     turnGFNITriggerOff();
                 }
-                turnAngleTriggerOn();
+                turnDirectTriggerOn();
             }
         }
-        if (this.angleTrigger) {
+        if (this.directTrigger) {
             indexBuffer.rewind();
             ComplexSorting.distanceSortDirect(indexBuffer, this.quads, cameraPos);
             return;
@@ -126,12 +133,13 @@ public class DynamicData extends MixedDirectionData {
     }
 
     public void clearTriggerChanges() {
-        this.turnAngleTriggerOn = false;
         this.turnGFNITriggerOff = false;
+        this.turnDirectTriggerOn = false;
+        this.turnDirectTriggerOff = false;
     }
 
     public boolean hasTriggerChanges() {
-        return this.turnAngleTriggerOn || this.turnGFNITriggerOff;
+        return this.turnGFNITriggerOff || this.turnDirectTriggerOn || this.turnDirectTriggerOff;
     }
 
     TranslucentGeometryCollector getCollector() {

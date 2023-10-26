@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.Vector3fc;
 
-import it.unimi.dsi.fastutil.doubles.Double2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
@@ -46,6 +46,14 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - Check that separators still work on aligned geomtry. It seems that a lot of
  * things are not topo sortable after the most recent fix to the quad visibility
  * check.
+ * - figure out why when the player moves at high speed there end up being more
+ * direct trigger entries than sections with the dynamic sort type, even if
+ * everything is set to only direct trigger and not GFNI trigger. (the numbers
+ * should be the same, somehow they're not being bookkept correctly)
+ * - determine the right distance for angle/distance triggering. It seems just
+ * the diagonal of a section is too small, angle triggering is broken at close
+ * distances.
+ * - separate this class into GFNI and direct triggering?
  * 
  * @author douira
  */
@@ -66,28 +74,25 @@ public class GFNI {
     private Object2ReferenceOpenHashMap<Vector3fc, NormalList> normalLists = new Object2ReferenceOpenHashMap<>(50);
 
     /**
-     * A tree map of the directly (angle-based) triggered sections, indexed by their
+     * A tree map of the directly triggered sections, indexed by their
      * minimum required camera movement. When the given camera movement is exceeded,
-     * they are tested for triggering the angle-condition.
+     * they are tested for triggering the angle or distance condition.
      * 
      * The accumulated distance is monotonically increasing and is never reset. This
      * only becomes a problem when the camera moves more than 10^15 blocks in total.
      * There will be precision issues at around 10^10 maybe, but it's still not a
      * concern.
      */
-    private Double2ObjectAVLTreeMap<AngleSortData> angleTriggerSections = new Double2ObjectAVLTreeMap<>();
+    private Double2ObjectRBTreeMap<DirectTriggerData> directTriggerSections = new Double2ObjectRBTreeMap<>();
     private double accumulatedDistance = 0;
 
     /**
      * To avoid generating a collection of the triggered sections, this callback is
      * used to process the triggered sections directly as they are queried from the
      * normal lists' interval trees. The callback is given the section coordinates,
-     * and a boolean indicating if the trigger was an angle-based trigger. In the
-     * case of an angle trigger, it turns true if the section should be removed from
-     * future triggering (when the translucent data no longer hast the corresponding
-     * flag set)
+     * and a boolean indicating if the trigger was an direct trigger.
      */
-    private BiFunction<Long, Boolean, Boolean> triggerSectionCallback;
+    private BiConsumer<Long, Boolean> triggerSectionCallback;
 
     /**
      * A set of all the sections that were triggered the last time something was
@@ -131,14 +136,13 @@ public class GFNI {
      * @param cameraY                the camera y position after the movement
      * @param cameraZ                the camera z position after the movement
      */
-    public void triggerSections(BiFunction<Long, Boolean, Boolean> triggerSectionCallback,
-            CameraMovement movement) {
+    public void triggerSections(BiConsumer<Long, Boolean> triggerSectionCallback, CameraMovement movement) {
         triggeredSections.clear();
         triggeredNormals.clear();
         this.triggerSectionCallback = triggerSectionCallback;
 
         processGFNITriggers(movement);
-        processAngleTriggers(movement);
+        processDirectTriggers(movement);
 
         var newTriggeredSectionsCount = this.triggeredSections.size();
         var newTriggeredNormalCount = this.triggeredNormals.size();
@@ -167,24 +171,74 @@ public class GFNI {
     }
 
     /**
+     * The factor by which the trigger distance and angle are multiplied to get a
+     * smaller threshold that is used for the actual trigger check but not the
+     * remaining distance calculation. This prevents curved movements from taking
+     * sections out of the tree and re-inserting without triggering many times near
+     * the actual trigger distance. It cuts the repeating unsuccessful trigger
+     * attempts off early.
+     */
+    private static final double EARLY_TRIGGER_FACTOR = 0.9;
+
+    /**
      * Degrees of movement from last sort position before the section is sorted
      * again.
      */
     private static final double TRIGGER_ANGLE = Math.toRadians(20);
-    private static final double TRIGGER_ANGLE_COS = Math.cos(TRIGGER_ANGLE);
-    private static final double SECTION_CENTER_DIST = Math.sqrt(3 * (16 / 2) * (16 / 2));
+    private static final double EARLY_TRIGGER_ANGLE_COS = Math.cos(TRIGGER_ANGLE * EARLY_TRIGGER_FACTOR);
+    private static final double SECTION_CENTER_DIST_SQUARED = 40 * 3 * Math.pow(16 / 2, 2);
+    private static final double SECTION_CENTER_DIST = Math.sqrt(SECTION_CENTER_DIST_SQUARED);
 
-    private class AngleSortData {
-        ChunkSectionPos sectionPos;
+    /**
+     * How far the player must travel in blocks from the last position at which a
+     * section was sorted for it to be sorted again, if direct distance triggering
+     * is used (for close sections).
+     */
+    private static final double DIRECT_TRIGGER_DISTANCE = 1;
+    private static final double EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED = Math
+            .pow(DIRECT_TRIGGER_DISTANCE * EARLY_TRIGGER_FACTOR, 2);
+
+    private class DirectTriggerData {
+        final ChunkSectionPos sectionPos;
+        private Vector3dc sectionCenter;
+        final DynamicData dynamicData;
 
         /**
-         * Absolute camera position at the time of the last sort.
+         * Absolute camera position at the time of the last trigger.
          */
-        Vector3dc sortCameraPos;
+        Vector3dc triggerCameraPos;
 
-        AngleSortData(ChunkSectionPos sectionPos, Vector3dc sortCameraPos) {
+        DirectTriggerData(DynamicData dynamicData, ChunkSectionPos sectionPos, Vector3dc triggerCameraPos) {
+            this.dynamicData = dynamicData;
             this.sectionPos = sectionPos;
-            this.sortCameraPos = sortCameraPos;
+            this.triggerCameraPos = triggerCameraPos;
+        }
+
+        Vector3dc getSectionCenter() {
+            if (this.sectionCenter == null) {
+                this.sectionCenter = new Vector3d(
+                        sectionPos.getMinX() + 8,
+                        sectionPos.getMinY() + 8,
+                        sectionPos.getMinZ() + 8);
+            }
+            return this.sectionCenter;
+        }
+
+        /**
+         * Returns the distance between the sort camera pos and the center of the
+         * section.
+         */
+        double getSectionCenterTriggerCameraDist() {
+            return Math.sqrt(getSectionCenterDistSquared(this.triggerCameraPos));
+        }
+
+        double getSectionCenterDistSquared(Vector3dc vector) {
+            Vector3dc sectionCenter = getSectionCenter();
+            return sectionCenter.distanceSquared(vector);
+        }
+
+        boolean isAngleTriggering(Vector3dc vector) {
+            return getSectionCenterDistSquared(vector) > SECTION_CENTER_DIST_SQUARED;
         }
     }
 
@@ -196,114 +250,152 @@ public class GFNI {
         return dot / Math.sqrt(length1Squared * length2Squared);
     }
 
-    private void processAngleTriggers(CameraMovement movement) {
+    private void processDirectTriggers(CameraMovement movement) {
         Vector3dc lastCamera = movement.lastCamera();
         Vector3dc camera = movement.currentCamera();
-        double distance = camera.distance(lastCamera);
-        this.accumulatedDistance += distance;
+        this.accumulatedDistance += lastCamera.distance(camera);
 
         // iterate all elements with a key of at most accumulatedDistance
-        var head = this.angleTriggerSections.headMap(this.accumulatedDistance);
+        var head = this.directTriggerSections.headMap(this.accumulatedDistance);
         for (var entry : head.double2ObjectEntrySet()) {
-            this.angleTriggerSections.remove(entry.getDoubleKey());
-            var data = entry.getValue();
-            ChunkSectionPos sectionPos = data.sectionPos;
-            Vector3dc sortCameraPos = data.sortCameraPos;
-            Vector3dc sectionCenter = new Vector3d(
-                    sectionPos.getMinX() + 8, sectionPos.getMinY() + 8, sectionPos.getMinZ() + 8);
+            this.directTriggerSections.remove(entry.getDoubleKey());
+            DirectTriggerData data = entry.getValue();
 
-            // check if the angle since the last sort exceeds the threshold
-            double angleCos = angleCos(
-                    sectionCenter.x() - sortCameraPos.x(),
-                    sectionCenter.y() - sortCameraPos.y(),
-                    sectionCenter.z() - sortCameraPos.z(),
-                    sectionCenter.x() - camera.x(),
-                    sectionCenter.y() - camera.y(),
-                    sectionCenter.z() - camera.z());
-            double remainingAngle = TRIGGER_ANGLE;
-            var addBack = true;
+            boolean isAngle = data.isAngleTriggering(camera);
+            if (isAngle) {
+                double remainingAngle = TRIGGER_ANGLE;
 
-            // compare angles inverted because cosine flips it
-            if (angleCos <= TRIGGER_ANGLE_COS) {
-                // angle exceeded, trigger the section
-                if (this.triggerSectionAngle(sectionPos)) {
-                    // section was marked as removed from angle trigger
-                    addBack = false;
+                // check if the angle since the last sort exceeds the threshold
+                Vector3dc sectionCenter = data.getSectionCenter();
+                double angleCos = angleCos(
+                        sectionCenter.x() - data.triggerCameraPos.x(),
+                        sectionCenter.y() - data.triggerCameraPos.y(),
+                        sectionCenter.z() - data.triggerCameraPos.z(),
+                        sectionCenter.x() - camera.x(),
+                        sectionCenter.y() - camera.y(),
+                        sectionCenter.z() - camera.z());
+
+                // compare angles inverted because cosine flips it
+                if (angleCos <= EARLY_TRIGGER_ANGLE_COS) {
+                    this.triggerSectionDirect(data.sectionPos);
+                    data.triggerCameraPos = camera;
+                } else {
+                    remainingAngle -= Math.acos(angleCos);
                 }
-                data.sortCameraPos = camera;
-                sortCameraPos = camera;
-            } else {
-                remainingAngle -= Math.acos(angleCos);
-            }
 
-            if (addBack) {
-                insertAngleTrigger(data, remainingAngle);
+                insertDirectAngleTrigger(data, camera, remainingAngle);
+            } else {
+                double remainingDistance = DIRECT_TRIGGER_DISTANCE;
+                double lastTriggerCurrentCameraDistSquared = data.triggerCameraPos.distanceSquared(camera);
+
+                if (lastTriggerCurrentCameraDistSquared >= EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED) {
+                    this.triggerSectionDirect(data.sectionPos);
+                    data.triggerCameraPos = camera;
+                } else {
+                    remainingDistance -= Math.sqrt(lastTriggerCurrentCameraDistSquared);
+                }
+
+                insertDirectDistanceTrigger(data, camera, remainingDistance);
             }
         }
     }
 
-    private void insertAngleTrigger(AngleSortData data, double remainingAngle) {
-        ChunkSectionPos sectionPos = data.sectionPos;
-        Vector3dc sortCameraPos = data.sortCameraPos;
+    private void insertDirectAngleTrigger(DirectTriggerData data, Vector3dc cameraPos, double remainingAngle) {
+        double triggerCameraSectionCenterDist = data.getSectionCenterTriggerCameraDist();
+        double centerMinDistance = Math.tan(remainingAngle) * (triggerCameraSectionCenterDist - SECTION_CENTER_DIST);
+        insertJitteredTrigger(this.accumulatedDistance + centerMinDistance, data);
+    }
 
-        // re-insert with new minimum required camera movement
-        double dx = sectionPos.getMinX() + 8 - sortCameraPos.x();
-        double dy = sectionPos.getMinY() + 8 - sortCameraPos.y();
-        double dz = sectionPos.getMinZ() + 8 - sortCameraPos.z();
-        double centerMinDistance = Math.tan(remainingAngle)
-                * (Math.sqrt(dx * dx + dy * dy + dz * dz) - SECTION_CENTER_DIST);
-        if (centerMinDistance <= 0) {
-            // too close to section, TODO: sort more often/differently
-            // throw new NotImplementedException();
+    private void insertDirectDistanceTrigger(DirectTriggerData data, Vector3dc cameraPos, double remainingDistance) {
+        insertJitteredTrigger(this.accumulatedDistance + remainingDistance, data);
+    }
+
+    // jitters the double values to never overwrite the same key. abuses that
+    // doubles have more precision than we need to make them a kind of hash table
+    private double lastJittered = -1;
+    private double lastJitterResult = -1;
+
+    private void insertJitteredTrigger(double key, DirectTriggerData data) {
+        // attempt insert without jittering
+        if (this.directTriggerSections.putIfAbsent(key, data) == null) {
+            data.dynamicData.directTriggerKey = key;
             return;
         }
 
-        this.angleTriggerSections.put(centerMinDistance + this.accumulatedDistance, data);
+        // if this is the same key as last time, skip all the identical keys that have
+        // already been jittered
+        if (this.lastJittered == key) {
+            key = this.lastJitterResult;
+        } else {
+            this.lastJittered = key;
+        }
+
+        // Go to the next lower double to avoid collisions in the map. This slightly
+        // changes the key but doesn't significantly change its value. Subtraction is
+        // necessary to avoid delaying a trigger for too long. It's ok if it's too early
+        // though. This approach brings with it the disadvantages of linear probing but
+        // bad cases are unlikely to happen so it's fine.
+        do {
+            key = Math.nextDown(key);
+        } while (this.directTriggerSections.putIfAbsent(key, data) != null);
+        data.dynamicData.directTriggerKey = key;
+        this.lastJitterResult = key;
     }
 
     void triggerSectionGFNI(long sectionPos, int collectorKey) {
         this.triggeredNormals.add(collectorKey);
         this.triggeredSections.add(sectionPos);
-        this.triggerSectionCallback.apply(sectionPos, false);
+        this.triggerSectionCallback.accept(sectionPos, false);
     }
 
-    private boolean triggerSectionAngle(ChunkSectionPos sectionPos) {
+    private void triggerSectionDirect(ChunkSectionPos sectionPos) {
         var sectionPosLong = sectionPos.asLong();
-        if (this.triggerSectionCallback.apply(sectionPosLong, true)) {
-            return true;
-        } else {
-            this.triggeredSections.add(sectionPosLong);
-            return false;
-        }
+        this.triggerSectionCallback.accept(sectionPosLong, true);
+        this.triggeredSections.add(sectionPosLong);
     }
 
     public void applyTriggerChanges(DynamicData data, ChunkSectionPos pos, Vector3dc cameraPos) {
-        if (data.turnAngleTriggerOn) {
-            enableAngleTriggering(data, pos, cameraPos);
-        }
         if (data.turnGFNITriggerOff) {
             disableGFNITriggering(data, pos.asLong());
+        }
+        if (data.turnDirectTriggerOn) {
+            enableDirectTriggering(data, pos, cameraPos);
+        }
+        if (data.turnDirectTriggerOff) {
+            disableDirectTriggering(data);
         }
         data.clearTriggerChanges();
     }
 
-    private void enableAngleTriggering(DynamicData data, ChunkSectionPos section, Vector3dc cameraPos) {
-        insertAngleTrigger(new AngleSortData(section, cameraPos), TRIGGER_ANGLE);
+    private void enableDirectTriggering(DynamicData data, ChunkSectionPos section, Vector3dc cameraPos) {
+        var newData = new DirectTriggerData(data, section, cameraPos);
+        if (newData.isAngleTriggering(cameraPos)) {
+            insertDirectAngleTrigger(newData, cameraPos, TRIGGER_ANGLE);
+        } else {
+            insertDirectDistanceTrigger(newData, cameraPos, DIRECT_TRIGGER_DISTANCE);
+        }
+    }
+
+    private void disableDirectTriggering(TranslucentData data) {
+        if (data instanceof DynamicData dynamicData) {
+            var key = dynamicData.directTriggerKey;
+            if (key != -1) {
+                this.directTriggerSections.remove(key);
+                dynamicData.directTriggerKey = -1;
+            }
+        }
     }
 
     /**
-     * Removes a section from GFNI. This removes all its face planes.
-     * 
-     * This doesn't remove sections from angle triggering since that would require
-     * another data structure to keep track of the inverse mapping from section to
-     * key. Instead, sections that shouldn't be angle triggered anymore are marked
-     * and then not re-added to the angle trigger tree.
+     * Removes a section from direct and GFNI triggering. This removes all its face
+     * planes.
      * 
      * @param oldData    the data of the section to remove
      * @param sectionPos the section to remove
      */
     public void removeSection(TranslucentData oldData, long sectionPos) {
         disableGFNITriggering(oldData, sectionPos);
+        disableDirectTriggering(oldData);
         decrementSortTypeCounter(oldData);
     }
 
@@ -372,9 +464,8 @@ public class GFNI {
 
     /**
      * Integrates the data from a geometry collector into GFNI. The geometry
-     * collector
-     * contains the translucent face planes of a single section. This method may
-     * also remove the section if it has become irrelevant.
+     * collector contains the translucent face planes of a single section. This
+     * method may also remove the section if it has become irrelevant.
      * 
      * @param builder the geometry collector to integrate
      * @return the sort type that the geometry collector's relevance heuristic
@@ -388,6 +479,7 @@ public class GFNI {
         // remove the section if the data doesn't need to trigger on face planes
         // TODO: only do the heuristic and topo sort if the hashes are different?
         if (newData instanceof DynamicData dynamicData) {
+            disableDirectTriggering(oldData);
             decrementSortTypeCounter(oldData);
             if (dynamicData.GFNITrigger) {
                 initiallyEnableGFNITriggering(dynamicData, sectionPos);
@@ -396,8 +488,8 @@ public class GFNI {
                 // (there's no option to add sections to GFNI later currently)
                 dynamicData.deleteCollector();
             }
-            if (dynamicData.angleTrigger) {
-                enableAngleTriggering(dynamicData, newData.sectionPos, cameraPos);
+            if (dynamicData.directTrigger) {
+                enableDirectTriggering(dynamicData, newData.sectionPos, cameraPos);
             }
         } else {
             removeSection(oldData, sectionPos);
@@ -413,6 +505,6 @@ public class GFNI {
                 + " SNR=" + this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()]
                 + " STA=" + this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()]
                 + " DYN=" + this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()]
-                + " (ANG=" + this.angleTriggerSections.size() + ")");
+                + " (DIR=" + this.directTriggerSections.size() + ")");
     }
 }
