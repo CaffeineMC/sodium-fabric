@@ -183,7 +183,6 @@ public class SodiumWorldRenderer {
             this.renderSectionManager.markGraphDirty();
         }
 
-
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
@@ -203,13 +202,10 @@ public class SodiumWorldRenderer {
         }
 
         if (cameraLocationChanged) {
-            profiler.swap("gfni_query");
+            profiler.swap("translucent_triggering");
 
-            this.renderSectionManager.processGFNIMovement(
-                new CameraMovement(lastCameraPos, new Vector3d(pos.x, pos.y, pos.z)));
-            this.lastCameraPos.x = pos.x;
-            this.lastCameraPos.y = pos.y;
-            this.lastCameraPos.z = pos.z;
+            this.renderSectionManager.processGFNIMovement(new CameraMovement(lastCameraPos, pos));
+            this.lastCameraPos = new Vector3d(pos);
         }
 
         if (updateChunksImmediately) {
