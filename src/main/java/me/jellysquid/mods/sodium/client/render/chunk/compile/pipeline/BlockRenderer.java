@@ -1,12 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
+import me.jellysquid.mods.sodium.client.frapi.helper.ColorHelper;
+import me.jellysquid.mods.sodium.client.frapi.mesh.EncodingFormat;
+import me.jellysquid.mods.sodium.client.frapi.mesh.MutableQuadViewImpl;
+import me.jellysquid.mods.sodium.client.frapi.render.AbstractBlockRenderContext;
 import me.jellysquid.mods.sodium.client.model.color.ColorProvider;
 import me.jellysquid.mods.sodium.client.model.color.ColorProviderRegistry;
-import me.jellysquid.mods.sodium.client.model.light.LightMode;
-import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
-import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
+import me.jellysquid.mods.sodium.client.model.light.*;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
-import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
@@ -15,163 +16,161 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMat
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
+import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
+import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
+import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
+import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
+import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.LocalRandom;
-import net.minecraft.util.math.random.Random;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.List;
-
-public class BlockRenderer {
-    private final Random random = new LocalRandom(42L);
-
+public class BlockRenderer extends AbstractBlockRenderContext {
     private final ColorProviderRegistry colorProviderRegistry;
-    private final BlockOcclusionCache occlusionCache;
-
-    private final QuadLightData quadLightData = new QuadLightData();
-
-    private final LightPipelineProvider lighters;
-
-    private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
-
-    private final boolean useAmbientOcclusion;
 
     private final int[] quadColors = new int[4];
+    private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
+
+    // Holders for state used in FRAPI as we can't pass them via parameters
+    private ChunkBuildBuffers buffers;
+    // Offset of model
+    private Vec3d renderOffset;
+    // Default AO mode for model (can be overridden by material property)
+    private LightMode defaultLightMode;
+    // Default material (can be overridden by blend mode per-quad)
+    private Material defaultMaterial;
+    private ChunkModelBuilder defaultModelBuilder;
+    // Colorizer for the current block state
+    @Nullable
+    private ColorProvider<BlockState> colorizer;
+
+    private final MutableQuadViewImpl editorQuad = new MutableQuadViewImpl() {
+        {
+            data = new int[EncodingFormat.TOTAL_STRIDE];
+            clear();
+        }
+
+        @Override
+        public void emitDirectly() {
+            renderQuad(this);
+        }
+    };
 
     public BlockRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lighters) {
         this.colorProviderRegistry = colorRegistry;
         this.lighters = lighters;
-
-        this.occlusionCache = new BlockOcclusionCache();
-        this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
     public void renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers) {
-        var material = DefaultMaterials.forBlockState(ctx.state());
-        var meshBuilder = buffers.get(material);
+        // Store parameters
+        this.ctx = ctx;
+        this.buffers = buffers;
 
-        ColorProvider<BlockState> colorizer = this.colorProviderRegistry.getColorProvider(ctx.state().getBlock());
+        // Clear old state
+        this.resetCullState(true);
 
-        LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(ctx.state(), ctx.model()));
-        Vec3d renderOffset;
-        
-        if (ctx.state().hasModelOffset()) {
-            renderOffset = ctx.state().getModelOffset(ctx.world(), ctx.pos());
+        // Prepare
+        this.renderOffset = ctx.state().getModelOffset(ctx.world(), ctx.pos());
+        this.defaultLightMode = this.getLightingMode(ctx.state(), ctx.model());
+        this.defaultMaterial = DefaultMaterials.forBlockState(ctx.state());
+        this.defaultModelBuilder = buffers.get(this.defaultMaterial);
+        this.colorizer = this.colorProviderRegistry.getColorProvider(ctx.state().getBlock());
+
+        // Actually render
+        ctx.model().emitBlockQuads(ctx.world(), ctx.state(), ctx.pos(), this.randomSupplier, this);
+    }
+
+    /**
+     * Process quad, after quad transforms and the culling check have been applied.
+     */
+    @Override
+    protected void processQuad(MutableQuadViewImpl quad) {
+        final RenderMaterial mat = quad.material();
+        final int colorIndex = mat.disableColorIndex() ? -1 : quad.colorIndex();
+        final TriState aoMode = mat.ambientOcclusion();
+        final LightMode lightMode;
+        if (aoMode == TriState.DEFAULT) {
+            lightMode = this.defaultLightMode;
         } else {
-            renderOffset = Vec3d.ZERO;
+            lightMode = this.useAmbientOcclusion && aoMode.get() ? LightMode.SMOOTH : LightMode.FLAT;
+        }
+        final boolean emissive = mat.emissive();
+        final BlendMode blendMode = mat.blendMode();
+        final Material material;
+        final ChunkModelBuilder modelBuilder;
+        if (blendMode == BlendMode.DEFAULT) {
+            material = this.defaultMaterial;
+            modelBuilder = this.defaultModelBuilder;
+        } else {
+            material = DefaultMaterials.forRenderLayer(blendMode.blockRenderLayer);
+            modelBuilder = this.buffers.get(material);
         }
 
-        for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
-            List<BakedQuad> quads = this.getGeometry(ctx, face);
+        BlockRenderContext ctx = this.ctx;
 
-            if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
-                this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, quads, face);
+        this.colorizeQuad(ctx, quad, colorIndex);
+        QuadLightData lightData = this.quadLightData;
+        this.shadeQuad(ctx, quad, lightMode, emissive, lightData);
+        this.bufferQuad(ctx, quad, lightData.br, material, modelBuilder);
+    }
+
+    private void colorizeQuad(BlockRenderContext ctx, MutableQuadViewImpl quad, int colorIndex) {
+        if (colorIndex != -1) {
+            ColorProvider<BlockState> colorProvider = this.colorizer;
+            int[] vertexColors = this.quadColors;
+
+            if (colorProvider != null) {
+                // I'm sorry for this cast Jelly
+                // TODO: better solution
+                colorProvider.getColors((WorldSlice) ctx.world(), ctx.pos(), ctx.state(), quad, vertexColors);
+
+                for (int i = 0; i < 4; i++) {
+                    // Set alpha to 0xFF in case a quad transform inspects the color.
+                    // We do not support per-vertex alpha, however, so this will get discarded at vertex encoding time.
+                    quad.color(i, ColorHelper.multiplyColor(0xFF000000 | vertexColors[i], quad.color(i)));
+                }
             }
         }
-
-        List<BakedQuad> all = this.getGeometry(ctx, null);
-
-        if (!all.isEmpty()) {
-            this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, all, null);
-        }
     }
 
-    private List<BakedQuad> getGeometry(BlockRenderContext ctx, Direction face) {
-        var random = this.random;
-        random.setSeed(ctx.seed());
+    private void bufferQuad(BlockRenderContext ctx, MutableQuadViewImpl quad, float[] brightness, Material material, ChunkModelBuilder modelBuilder) {
+        ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(brightness, quad);
+        ChunkVertexEncoder.Vertex[] vertices = this.vertices;
 
-        return ctx.model().getQuads(ctx.state(), face, random);
-    }
-
-    private boolean isFaceVisible(BlockRenderContext ctx, Direction face) {
-        return this.occlusionCache.shouldDrawSide(ctx.state(), ctx.world(), ctx.pos(), face);
-    }
-
-    private void renderQuadList(BlockRenderContext ctx, Material material, LightPipeline lighter, ColorProvider<BlockState> colorizer, Vec3d offset,
-                                ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace) {
-
-        // This is a very hot allocation, iterate over it manually
-        // noinspection ForLoopReplaceableByForEach
-        for (int i = 0, quadsSize = quads.size(); i < quadsSize; i++) {
-            BakedQuadView quad = (BakedQuadView) quads.get(i);
-
-            final var lightData = this.getVertexLight(ctx, lighter, cullFace, quad);
-            final var vertexColors = this.getVertexColors(ctx, colorizer, quad);
-
-            this.writeGeometry(ctx, builder, offset, material, quad, vertexColors, lightData);
-
-            Sprite sprite = quad.getSprite();
-
-            if (sprite != null) {
-                builder.addSprite(sprite);
-            }
-        }
-    }
-
-    private QuadLightData getVertexLight(BlockRenderContext ctx, LightPipeline lighter, Direction cullFace, BakedQuadView quad) {
-        QuadLightData light = this.quadLightData;
-        lighter.calculate(quad, ctx.pos(), light, cullFace, quad.getLightFace(), quad.hasShade());
-
-        return light;
-    }
-
-    private int[] getVertexColors(BlockRenderContext ctx, ColorProvider<BlockState> colorProvider, BakedQuadView quad) {
-        final int[] vertexColors = this.quadColors;
-
-        if (colorProvider != null && quad.hasColor()) {
-            colorProvider.getColors(ctx.world(), ctx.pos(), ctx.state(), quad, vertexColors);
-        } else {
-            Arrays.fill(vertexColors, 0xFFFFFFFF);
-        }
-
-        return vertexColors;
-    }
-
-    private void writeGeometry(BlockRenderContext ctx,
-                               ChunkModelBuilder builder,
-                               Vec3d offset,
-                               Material material,
-                               BakedQuadView quad,
-                               int[] colors,
-                               QuadLightData light)
-    {
-        ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br, light.lm);
-        var vertices = this.vertices;
-
-        ModelQuadFacing normalFace = quad.getNormalFace();
+        // TODO: this should be precomputed and stored in the QuadViewImpl
+        ModelQuadFacing normalFace = ModelQuadUtil.findNormalFace(quad.packedFaceNormal());
+        Vec3d offset = this.renderOffset;
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
 
             var out = vertices[dstIndex];
-            out.x = ctx.origin().x() + quad.getX(srcIndex) + (float) offset.getX();
-            out.y = ctx.origin().y() + quad.getY(srcIndex) + (float) offset.getY();
-            out.z = ctx.origin().z() + quad.getZ(srcIndex) + (float) offset.getZ();
+            out.x = ctx.origin().x() + quad.x(srcIndex) + (float) offset.getX();
+            out.y = ctx.origin().y() + quad.y(srcIndex) + (float) offset.getY();
+            out.z = ctx.origin().z() + quad.z(srcIndex) + (float) offset.getZ();
 
-            out.color = ColorABGR.withAlpha(colors != null ? colors[srcIndex] : 0xFFFFFFFF, light.br[srcIndex]);
+            // FRAPI implementation uses ARGB color format, convert to ABGR.
+            // Due to our vertex format, the alpha from the quad color is ignored entirely.
+            out.color = ColorABGR.withAlpha(ColorARGB.toABGR(quad.color(srcIndex)), brightness[srcIndex]);
 
-            out.u = quad.getTexU(srcIndex);
-            out.v = quad.getTexV(srcIndex);
+            out.u = quad.u(srcIndex);
+            out.v = quad.v(srcIndex);
 
-            out.light = light.lm[srcIndex];
+            out.light = quad.lightmap(srcIndex);
         }
 
-        var vertexBuffer = builder.getVertexBuffer(normalFace);
+        var vertexBuffer = modelBuilder.getVertexBuffer(normalFace);
         vertexBuffer.push(vertices, material);
+
+        modelBuilder.addSprite(quad.getSprite(this.spriteFinder));
     }
 
-    private LightMode getLightingMode(BlockState state, BakedModel model) {
-        if (this.useAmbientOcclusion && model.useAmbientOcclusion() && state.getLuminance() == 0) {
-            return LightMode.SMOOTH;
-        } else {
-            return LightMode.FLAT;
-        }
+    @Override
+    public QuadEmitter getEmitter() {
+        editorQuad.clear();
+        return editorQuad;
     }
 }

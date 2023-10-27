@@ -91,4 +91,10 @@ public class ColorARGB implements ColorU8 {
     public static int withAlpha(int rgb, int alpha) {
         return (alpha << ALPHA_COMPONENT_OFFSET) | (rgb & ~(COMPONENT_MASK << ALPHA_COMPONENT_OFFSET));
     }
+
+    // TODO: better name
+    public static int toABGRKeepAlpha(int color) {
+        // ARGB to ABGR
+        return (color & 0xFF00FF00) | ((color & 0x00FF0000) >>> 16) | ((color & 0x000000FF) << 16);
+    }
 }

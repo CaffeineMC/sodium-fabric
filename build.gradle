@@ -83,6 +83,7 @@ dependencies {
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-block-view-api-v2", project.fabric_version))
+    modIncludeImplementation(fabricApi.module("fabric-renderer-api-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
     // `fabricApi.module` does not work with deprecated modules, so add the module dependency manually.
     // This is planned to be fixed in Loom 1.4.

@@ -30,6 +30,9 @@ public class MixinConfig {
 
         this.addMixinRule("features", true);
 
+        this.addMixinRule("features.frapi.block_non_terrain", true);
+        this.addMixinRule("features.frapi.item", true);
+
         this.addMixinRule("features.gui", true);
 
         this.addMixinRule("features.gui.hooks", true);
