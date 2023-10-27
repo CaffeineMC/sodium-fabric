@@ -94,11 +94,11 @@ dependencies {
 
 def getVersionMetadata() {
     // CI builds only
-    if (project.hasProperty("build.release")) {
+    //if (project.hasProperty("build.release")) {
         return "" // no tag whatsoever
-    }
+    //}
 
-    if (grgit != null) {
+    /*if (grgit != null) {
         def head = grgit.head()
         def id = head.abbreviatedId
 
@@ -111,5 +111,5 @@ def getVersionMetadata() {
     }
 
     // No tracking information could be found about the build
-    return "+unknown"
+    return "+unknown"*/
 }
