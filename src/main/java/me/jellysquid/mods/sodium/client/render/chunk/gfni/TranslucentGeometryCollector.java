@@ -55,11 +55,6 @@ public class TranslucentGeometryCollector {
         float ySum = 0;
         float zSum = 0;
 
-        // initialize extents to positive or negative infinity
-        // POS_X, POS_Y, POS_Z, NEG_X, NEG_Y, NEG_Z
-        float[] extents = new float[] {
-                Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY,
-                Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY };
 
         // keep track of distinct vertices to compute the center accurately for
         // degenerate quads
@@ -68,12 +63,12 @@ public class TranslucentGeometryCollector {
         float lastZ = vertices[3].z;
         int uniqueQuads = 0;
 
-        float minX = Float.POSITIVE_INFINITY;
-        float minY = Float.POSITIVE_INFINITY;
-        float minZ = Float.POSITIVE_INFINITY;
-        float maxX = Float.NEGATIVE_INFINITY;
-        float maxY = Float.NEGATIVE_INFINITY;
-        float maxZ = Float.NEGATIVE_INFINITY;
+        float negXExtent = Float.POSITIVE_INFINITY;
+        float negYExtent = Float.POSITIVE_INFINITY;
+        float negZExtent = Float.POSITIVE_INFINITY;
+        float posXExtent = Float.NEGATIVE_INFINITY;
+        float posYExtent = Float.NEGATIVE_INFINITY;
+        float posZExtent = Float.NEGATIVE_INFINITY;
 
         for (int i = 0; i < 4; i++) {
             float x = vertices[i].x;
@@ -81,20 +76,20 @@ public class TranslucentGeometryCollector {
             float z = vertices[i].z;
 
             // TODO: see if this is faster than using Math.min and Math.max
-            if (x < minX) {
-                minX = x;
-            } else if (x > maxX) {
-                maxX = x;
+            if (x < negXExtent) {
+                negXExtent = x;
+            } else if (x > posXExtent) {
+                posXExtent = x;
             }
-            if (y < minY) {
-                minY = y;
-            } else if (y > maxY) {
-                maxY = y;
+            if (y < negYExtent) {
+                negYExtent = y;
+            } else if (y > posYExtent) {
+                posYExtent = y;
             }
-            if (z < minZ) {
-                minZ = z;
-            } else if (z > maxZ) {
-                maxZ = z;
+            if (z < negZExtent) {
+                negZExtent = z;
+            } else if (z > posZExtent) {
+                posZExtent = z;
             }
 
             if (x != lastX || y != lastY || z != lastZ) {
@@ -110,24 +105,19 @@ public class TranslucentGeometryCollector {
             }
         }
 
-        var invCount = 1.0f / uniqueQuads;
-        var center = new Vector3f(xSum * invCount, ySum * invCount, zSum * invCount);
+        var center = new Vector3f(xSum / uniqueQuads, ySum / uniqueQuads, zSum / uniqueQuads);
 
         if (facing != ModelQuadFacing.UNASSIGNED && this.unalignedDistances == null) {
-            minBounds.x = Math.min(minBounds.x, minX);
-            minBounds.y = Math.min(minBounds.y, minY);
-            minBounds.z = Math.min(minBounds.z, minZ);
-            maxBounds.x = Math.max(maxBounds.x, maxX);
-            maxBounds.y = Math.max(maxBounds.y, maxY);
-            maxBounds.z = Math.max(maxBounds.z, maxZ);
+            minBounds.x = Math.min(minBounds.x, negXExtent);
+            minBounds.y = Math.min(minBounds.y, negYExtent);
+            minBounds.z = Math.min(minBounds.z, negZExtent);
+            maxBounds.x = Math.max(maxBounds.x, posXExtent);
+            maxBounds.y = Math.max(maxBounds.y, posYExtent);
+            maxBounds.z = Math.max(maxBounds.z, posZExtent);
         }
 
-        extents[0] = maxX;
-        extents[1] = maxY;
-        extents[2] = maxZ;
-        extents[3] = minX;
-        extents[4] = minY;
-        extents[5] = minZ;
+        // POS_X, POS_Y, POS_Z, NEG_X, NEG_Y, NEG_Z
+        float[] extents = new float[] { posXExtent, posYExtent, posZExtent, negXExtent, negYExtent, negZExtent };
 
         // TODO: does it make a difference if we compute the center as the average of
         // the unique vertices or as the center of the extents? (the latter would be
