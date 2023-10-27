@@ -61,35 +61,77 @@ public class TranslucentGeometryCollector {
                 Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY,
                 Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY };
 
+        // keep track of distinct vertices to compute the center accurately for
+        // degenerate quads
+        float lastX = vertices[3].x;
+        float lastY = vertices[3].y;
+        float lastZ = vertices[3].z;
+        int uniqueQuads = 0;
+
+        float minX = Float.POSITIVE_INFINITY;
+        float minY = Float.POSITIVE_INFINITY;
+        float minZ = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY;
+        float maxY = Float.NEGATIVE_INFINITY;
+        float maxZ = Float.NEGATIVE_INFINITY;
+
         for (int i = 0; i < 4; i++) {
-            var x = vertices[i].x;
-            var y = vertices[i].y;
-            var z = vertices[i].z;
+            float x = vertices[i].x;
+            float y = vertices[i].y;
+            float z = vertices[i].z;
 
-            if (facing != ModelQuadFacing.UNASSIGNED && this.unalignedDistances == null) {
-                minBounds.x = Math.min(minBounds.x, x);
-                minBounds.y = Math.min(minBounds.y, y);
-                minBounds.z = Math.min(minBounds.z, z);
-
-                maxBounds.x = Math.max(maxBounds.x, x);
-                maxBounds.y = Math.max(maxBounds.y, y);
-                maxBounds.z = Math.max(maxBounds.z, z);
+            // TODO: see if this is faster than using Math.min and Math.max
+            if (x < minX) {
+                minX = x;
+            } else if (x > maxX) {
+                maxX = x;
+            }
+            if (y < minY) {
+                minY = y;
+            } else if (y > maxY) {
+                maxY = y;
+            }
+            if (z < minZ) {
+                minZ = z;
+            } else if (z > maxZ) {
+                maxZ = z;
             }
 
-            extents[0] = Math.max(extents[0], x);
-            extents[1] = Math.max(extents[1], y);
-            extents[2] = Math.max(extents[2], z);
-            extents[3] = Math.min(extents[3], x);
-            extents[4] = Math.min(extents[4], y);
-            extents[5] = Math.min(extents[5], z);
-
-            // TODO: can we also just use two vertices at opposite corners of the quad?
-            xSum += x;
-            ySum += y;
-            zSum += z;
+            if (x != lastX || y != lastY || z != lastZ) {
+                xSum += x;
+                ySum += y;
+                zSum += z;
+                uniqueQuads++;
+            }
+            if (i != 3) {
+                lastX = x;
+                lastY = y;
+                lastZ = z;
+            }
         }
 
-        var center = new Vector3f(xSum * 0.25f, ySum * 0.25f, zSum * 0.25f);
+        var invCount = 1.0f / uniqueQuads;
+        var center = new Vector3f(xSum * invCount, ySum * invCount, zSum * invCount);
+
+        if (facing != ModelQuadFacing.UNASSIGNED && this.unalignedDistances == null) {
+            minBounds.x = Math.min(minBounds.x, minX);
+            minBounds.y = Math.min(minBounds.y, minY);
+            minBounds.z = Math.min(minBounds.z, minZ);
+            maxBounds.x = Math.max(maxBounds.x, maxX);
+            maxBounds.y = Math.max(maxBounds.y, maxY);
+            maxBounds.z = Math.max(maxBounds.z, maxZ);
+        }
+
+        extents[0] = maxX;
+        extents[1] = maxY;
+        extents[2] = maxZ;
+        extents[3] = minX;
+        extents[4] = minY;
+        extents[5] = minZ;
+
+        // TODO: does it make a difference if we compute the center as the average of
+        // the unique vertices or as the center of the extents? (the latter would be
+        // less work)
 
         // TODO: some of these things should probably only be computed on demand, and an
         // allocation of a Quad object should be avoided
