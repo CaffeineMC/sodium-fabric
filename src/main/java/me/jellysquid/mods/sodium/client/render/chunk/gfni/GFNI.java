@@ -25,10 +25,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * may result in many sections suddenly needing sorting when the camera moves.
  * Maybe it's better to schedule them to be sorted gradually even if not
  * visible, if there are idle threads.
- * - De-epsilon all the geometry by snapping to multiples of 0.005 or sth like
- * that. Would simplify the ComplexSorting code so that it doesn't need to deal
- * with the existence of error margins (epsilons in the trigger distances and
- * the centers).
  * - Groups of quads that form convex shapes in a single plane without holes can
  * be sorted as one "quad". Their internal sorting can be arbitrary. Detecting
  * and grouping/ungrouping them might prove difficult. Finding all quad groups

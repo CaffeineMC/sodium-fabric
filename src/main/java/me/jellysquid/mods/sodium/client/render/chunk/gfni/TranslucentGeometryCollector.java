@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -50,11 +51,25 @@ public class TranslucentGeometryCollector {
         this.sectionPos = sectionPos;
     }
 
+    private static final float INV_QUANTIZE_EPSILON = 256f;
+    private static final float QUANTIZE_EPSILON = 1f / INV_QUANTIZE_EPSILON;
+
+    static {
+        // ensure it fits with the fluid renderer epsilon and that it's a power-of-two fraction
+        var targetEpsilon = FluidRenderer.EPSILON * 2.1f;
+        if (QUANTIZE_EPSILON <= targetEpsilon && Integer.bitCount((int) INV_QUANTIZE_EPSILON) == 1) {
+            throw new RuntimeException("epsilon is invalid: " + QUANTIZE_EPSILON);
+        }
+    }
+
+    private static float quantizeEpsilon(float value) {
+        return (float) Math.floor(value * INV_QUANTIZE_EPSILON + 0.5) * QUANTIZE_EPSILON;
+    }
+
     public void appendQuad(ModelQuadView quadView, ChunkVertexEncoder.Vertex[] vertices, ModelQuadFacing facing) {
         float xSum = 0;
         float ySum = 0;
         float zSum = 0;
-
 
         // keep track of distinct vertices to compute the center accurately for
         // degenerate quads
@@ -105,7 +120,17 @@ public class TranslucentGeometryCollector {
             }
         }
 
-        var center = new Vector3f(xSum / uniqueQuads, ySum / uniqueQuads, zSum / uniqueQuads);
+        var centerX = quantizeEpsilon(xSum / uniqueQuads);
+        var centerY = quantizeEpsilon(ySum / uniqueQuads);
+        var centerZ = quantizeEpsilon(zSum / uniqueQuads);
+        var center = new Vector3f(centerX, centerY, centerZ);
+
+        negXExtent = quantizeEpsilon(negXExtent);
+        negYExtent = quantizeEpsilon(negYExtent);
+        negZExtent = quantizeEpsilon(negZExtent);
+        posXExtent = quantizeEpsilon(posXExtent);
+        posYExtent = quantizeEpsilon(posYExtent);
+        posZExtent = quantizeEpsilon(posZExtent);
 
         if (facing != ModelQuadFacing.UNASSIGNED && this.unalignedDistances == null) {
             minBounds.x = Math.min(minBounds.x, negXExtent);

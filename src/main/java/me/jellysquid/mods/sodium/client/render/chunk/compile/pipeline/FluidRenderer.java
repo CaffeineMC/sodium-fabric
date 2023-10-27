@@ -47,9 +47,9 @@ import org.apache.commons.lang3.mutable.MutableInt;
  * and outside quads for each face of the block.
  */
 public class FluidRenderer {
-    // TODO: allow this to be changed by vertex format
+    // TODO: allow this to be changed by vertex format, WARNING: make sure TranslucentGeometryCollector knows about EPSILON
     // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
-    private static final float EPSILON = 0.001f;
+    public static final float EPSILON = 0.001f;
 
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
     private final MutableFloat scratchHeight = new MutableFloat(0);

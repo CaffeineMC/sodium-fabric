@@ -120,9 +120,9 @@ public class ComplexSorting {
         var otherSign = otherQuad.facing().getSign();
 
         // A: test that the other quad has an extent within this quad's halfspace
-        return hSign * halfspace.extents()[hd] - QUERY_EPSILON > hSign * otherQuad.extents()[hdOpposite]
+        return hSign * halfspace.extents()[hd] > hSign * otherQuad.extents()[hdOpposite]
                 // B: test that this quad is not fully within the other quad's halfspace
-                && !(otherSign * otherQuad.extents()[od] - QUERY_EPSILON >= otherSign * halfspace.extents()[od]);
+                && !(otherSign * otherQuad.extents()[od] >= otherSign * halfspace.extents()[od]);
     }
 
     /**
@@ -331,15 +331,13 @@ public class ComplexSorting {
         return true;
     }
 
-    private static final float QUERY_EPSILON = 0.0011f;
-
     private static boolean testSeparatorRange(Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal,
             Vector3fc normal, float start, float end) {
         var distances = distancesByNormal.get(normal);
         if (distances == null) {
             return false;
         }
-        return Group.queryRange(distances, start - QUERY_EPSILON, end + QUERY_EPSILON);
+        return Group.queryRange(distances, start, end);
     }
 
     private static boolean visibilityWithSeparator(TQuad quadA, TQuad quadB,
