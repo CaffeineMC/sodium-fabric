@@ -492,7 +492,7 @@ public class RenderSectionManager {
         return sections;
     }
 
-    public void scheduleSort(long sectionPos, boolean isAngleTrigger) {
+    public void scheduleSort(long sectionPos, boolean isDirectTrigger) {
         // TODO: Does this need to invalidate the section cache?
 
         RenderSection section = this.sectionByPosition.get(sectionPos);
@@ -505,7 +505,7 @@ public class RenderSectionManager {
             pendingUpdate = ChunkUpdateType.getPromotionUpdateType(section.getPendingUpdate(), pendingUpdate);
             if (pendingUpdate != null) {
                 section.setPendingUpdate(pendingUpdate);
-                section.prepareTrigger(isAngleTrigger);
+                section.prepareTrigger(isDirectTrigger);
             }
         }
     }

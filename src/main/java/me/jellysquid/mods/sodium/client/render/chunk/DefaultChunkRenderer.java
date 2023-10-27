@@ -166,6 +166,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             if (indexDataOffset != 0) {
                 // * 4 to convert to bytes (the buffer contains ints)
                 // the section render data storage for the indices stores the offset in indices (also called elements)
+                // the << 3 is * 8 to convert to 8 byte offsets
                 MemoryUtil.memPutAddress(pElementPointer + (size << 3), indexDataOffset << 2);
 
                 // adding the number of elements works because the index data has one index per element (which are the indices)

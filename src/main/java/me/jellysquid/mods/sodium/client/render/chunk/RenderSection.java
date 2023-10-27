@@ -51,7 +51,6 @@ public class RenderSection {
     @Nullable
     private TranslucentData translucentData; // TODO: is this the right category?
 
-
     // Pending Update State
     @Nullable
     private CancellationToken taskCancellationToken = null;
@@ -344,10 +343,8 @@ public class RenderSection {
         this.pendingUpdateType = type;
     }
 
-    public void prepareTrigger(boolean isAngleTrigger) {
-
-             this.translucentData.prepareTrigger(isAngleTrigger);
-      
+    public void prepareTrigger(boolean isDirectTrigger) {
+        this.translucentData.prepareTrigger(isDirectTrigger);
     }
 
     public int getLastUploadFrame() {
