@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.sync;
 
-import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL46C;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
@@ -20,14 +20,14 @@ public class GlFence {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer count = stack.callocInt(1);
-            result = GL32C.glGetSynci(this.id, GL32C.GL_SYNC_STATUS, count);
+            result = GL46C.glGetSynci(this.id, GL46C.GL_SYNC_STATUS, count);
 
             if (count.get(0) != 1) {
                 throw new RuntimeException("glGetSync returned more than one value");
             }
         }
 
-        return result == GL32C.GL_SIGNALED;
+        return result == GL46C.GL_SIGNALED;
     }
 
     public void sync() {
@@ -37,11 +37,11 @@ public class GlFence {
 
     public void sync(long timeout) {
         this.checkDisposed();
-        GL32C.glWaitSync(this.id, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+        GL46C.glWaitSync(this.id, GL46C.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
     }
 
     public void delete() {
-        GL32C.glDeleteSync(this.id);
+        GL46C.glDeleteSync(this.id);
         this.disposed = true;
     }
 

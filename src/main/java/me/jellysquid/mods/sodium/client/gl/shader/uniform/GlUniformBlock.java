@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.shader.uniform;
 
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
-import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL46C;
 
 public class GlUniformBlock {
     private final int binding;
@@ -11,6 +11,6 @@ public class GlUniformBlock {
     }
 
     public void bindBuffer(GlBuffer buffer) {
-        GL32C.glBindBufferBase(GL32C.GL_UNIFORM_BUFFER, this.binding, buffer.handle());
+        GL46C.glBindBufferBase(GL46C.GL_UNIFORM_BUFFER, this.binding, buffer.handle());
     }
 }

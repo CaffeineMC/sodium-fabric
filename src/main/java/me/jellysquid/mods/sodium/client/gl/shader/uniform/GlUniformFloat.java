@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.shader.uniform;
 
-import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL46C;
 
 public class GlUniformFloat extends GlUniform<Float> {
     public GlUniformFloat(int index) {
@@ -13,6 +13,6 @@ public class GlUniformFloat extends GlUniform<Float> {
     }
 
     public void setFloat(float value) {
-        GL30C.glUniform1f(this.index, value);
+        GL46C.glUniform1f(this.index, value);
     }
 }

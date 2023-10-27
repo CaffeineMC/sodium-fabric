@@ -7,7 +7,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL11C;
+import org.lwjgl.opengl.GL46C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +47,9 @@ public class PostLaunchChecks {
 
     @Nullable
     private static GLContextInfo getGraphicsContextInfo() {
-        String vendor = GL11C.glGetString(GL11C.GL_VENDOR);
-        String renderer = GL11C.glGetString(GL11C.GL_RENDERER);
-        String version = GL11C.glGetString(GL11C.GL_VERSION);
+        String vendor = GL46C.glGetString(GL46C.GL_VENDOR);
+        String renderer = GL46C.glGetString(GL46C.GL_RENDERER);
+        String version = GL46C.glGetString(GL46C.GL_VERSION);
 
         if (vendor == null || renderer == null || version == null) {
             return null;

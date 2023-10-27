@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
 import me.jellysquid.mods.sodium.client.util.TextureUtil;
 import org.joml.Matrix4fc;
-import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -46,7 +46,7 @@ public class ChunkShaderInterface {
 
     @Deprecated(forRemoval = true) // should be handled properly in GFX instead.
     private void bindTexture(ChunkShaderTextureSlot slot, int textureId) {
-        GlStateManager._activeTexture(GL32C.GL_TEXTURE0 + slot.ordinal());
+        GlStateManager._activeTexture(GL46C.GL_TEXTURE0 + slot.ordinal());
         GlStateManager._bindTexture(textureId);
 
         var uniform = this.uniformTextures.get(slot);

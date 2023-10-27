@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.array;
 
 import me.jellysquid.mods.sodium.client.gl.GlObject;
-import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL46C;
 
 /**
  * Provides Vertex Array functionality on supported platforms.
@@ -10,6 +10,6 @@ public class GlVertexArray extends GlObject {
     public static final int NULL_ARRAY_ID = 0;
 
     public GlVertexArray() {
-        this.setHandle(GL30C.glGenVertexArrays());
+        this.setHandle(GL46C.glGenVertexArrays());
     }
 }

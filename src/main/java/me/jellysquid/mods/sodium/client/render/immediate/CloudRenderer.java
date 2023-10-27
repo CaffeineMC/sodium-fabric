@@ -28,7 +28,7 @@ import net.minecraft.util.math.Vec3d;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL46C;
 import org.lwjgl.system.MemoryStack;
 
 import java.io.IOException;
@@ -146,7 +146,7 @@ public class CloudRenderer {
         RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
         RenderSystem.depthMask(false);
         RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(GL30C.GL_EQUAL);
+        RenderSystem.depthFunc(GL46C.GL_EQUAL);
         RenderSystem.colorMask(true, true, true, true);
 
         this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.shader);
@@ -156,7 +156,7 @@ public class CloudRenderer {
         VertexBuffer.unbind();
 
         RenderSystem.disableBlend();
-        RenderSystem.depthFunc(GL30C.GL_LEQUAL);
+        RenderSystem.depthFunc(GL46C.GL_LEQUAL);
 
         RenderSystem.enableCull();
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
