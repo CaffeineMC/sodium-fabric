@@ -5,6 +5,10 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * TODO: figure out why it sometimes breaks and how to fix it (if the heuristic
+ * thinks there can't be a cycle, why does this not work?)
+ */
 public class StaticTopoAcyclicData extends MixedDirectionData {
     StaticTopoAcyclicData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range) {
         super(sectionPos, buffer, range);
@@ -22,7 +26,7 @@ public class StaticTopoAcyclicData extends MixedDirectionData {
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
         if (!ComplexSorting.topoSortDepthFirstCyclic(indexBuffer, quads, null, null)) {
-            System.out.println("Failed to sort topo static because there was a cycle");
+            System.out.println("Failed to sort topo static because there was a cycle at " + sectionPos + "! Please report this alongside the seed and coordinates of the chunk.");
         }
 
         return new StaticTopoAcyclicData(sectionPos, buffer, range);
