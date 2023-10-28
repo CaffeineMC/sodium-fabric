@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.OutputWithIndexData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.PresentTranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
@@ -64,6 +64,10 @@ public class RenderRegionManager {
         for (BuilderTaskOutput result : results) {
             int renderSectionIndex = result.render.getSectionIndex();
 
+            if (result.render.isDisposed()) {
+                throw new IllegalStateException("Render section is disposed");
+            }
+
             if (result instanceof ChunkBuildOutput chunkBuildOutput) {
                 for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
                     var storage = region.getStorage(pass);
@@ -81,21 +85,21 @@ public class RenderRegionManager {
                 }
             }
 
-            if (result instanceof ChunkSortOutput chunkSortOutput) {
+            if (result instanceof OutputWithIndexData indexDataOutput) {
                 var storage = region.getStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
                 if (storage != null) {
                     storage.removeIndexData(renderSectionIndex);
                 }
 
-                var translucentData = chunkSortOutput.translucentData;
-                if (translucentData != null && translucentData instanceof PresentTranslucentData presentTranslucentData) {
+                var indexData = indexDataOutput.getTranslucentData();
+                if (indexData != null) {
                     // TODO: debug this, seems to sometimes happen when flying around with spectator mode
-                    // maybe related to setting all sections to angle triggering mode?
-                    if (presentTranslucentData.buffer == null) {
+                    // even happens without all sections as direct triggering, maybe the data on the render section is being replaced before it gets here?
+                    if (indexData.buffer == null) {
                         throw new IllegalStateException("Translucent data buffer is null");
                     }
-                    indexUploads.add(new PendingSectionIndexBufferUpload(result.render, presentTranslucentData,
-                    new PendingUpload(presentTranslucentData.buffer)));
+                    indexUploads.add(new PendingSectionIndexBufferUpload(result.render, indexData,
+                    new PendingUpload(indexData.buffer)));
                 }
             }
         }

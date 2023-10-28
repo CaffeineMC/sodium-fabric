@@ -117,6 +117,9 @@ public class RenderSection {
     }
 
     public void setTranslucentData(TranslucentData translucentData) {
+        if (translucentData == null) {
+            throw new IllegalArgumentException("new translucentData cannot be null");
+        }
         if (this.translucentData != null && this.translucentData != translucentData) {
             this.translucentData.delete();
         }

@@ -476,7 +476,6 @@ public class GFNI {
         incrementSortTypeCounter(newData);
 
         // remove the section if the data doesn't need to trigger on face planes
-        // TODO: only do the heuristic and topo sort if the hashes are different?
         if (newData instanceof DynamicData dynamicData) {
             disableDirectTriggering(oldData);
             decrementSortTypeCounter(oldData);
@@ -490,6 +489,10 @@ public class GFNI {
             if (dynamicData.directTrigger) {
                 enableDirectTriggering(dynamicData, newData.sectionPos, cameraPos);
             }
+
+            // clear trigger changes on data change because the current state of trigger
+            // types was just set
+            dynamicData.clearTriggerChanges();
         } else {
             removeSection(oldData, sectionPos);
             return;
@@ -497,13 +500,15 @@ public class GFNI {
     }
 
     public void addDebugStrings(List<String> list) {
-        list.add("GFNI NL=" + this.normalLists.size()
-                + " TrS=" + this.triggeredSectionCount
-                + " TrN=" + this.triggeredNormalCount);
-        list.add("N=" + this.sortTypeCounters[SortType.NONE.ordinal()]
-                + " SNR=" + this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()]
-                + " STA=" + this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()]
-                + " DYN=" + this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()]
-                + " (DIR=" + this.directTriggerSections.size() + ")");
+        list.add(String.format("GFNI NL=%02d TrS=%03d TrN=%02d",
+                this.normalLists.size(),
+                this.triggeredSectionCount,
+                this.triggeredNormalCount));
+        list.add(String.format("N=%05d SNR=%05d STA=%03d DYN=%04d (DIR=%04d)",
+                this.sortTypeCounters[SortType.NONE.ordinal()],
+                this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()],
+                this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()],
+                this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()],
+                this.directTriggerSections.size()));
     }
 }
