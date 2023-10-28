@@ -306,7 +306,7 @@ public class RenderSectionManager {
         this.processChunkBuildResults(results);
 
         for (var result : results) {
-            result.deleteAfterUpload();
+            result.deleteAfterUploadSafe();
         }
 
         // TODO: only needed if the tasks actually changed the visibility (sort tasks
@@ -361,7 +361,10 @@ public class RenderSectionManager {
         var map = new Reference2ReferenceLinkedOpenHashMap<RenderSection, BuilderTaskOutput>();
 
         for (var output : outputs) {
+            // when outdated or duplicate outputs are thrown out, make sure to delete their
+            // buffers to avoid memory leaks
             if (output.render.isDisposed() || output.render.getLastUploadFrame() > output.submitTime) {
+                output.deleteFully();
                 continue;
             }
 
@@ -370,6 +373,9 @@ public class RenderSectionManager {
 
             if (previous == null || previous.submitTime < output.submitTime) {
                 map.put(render, output);
+                if (previous != null) {
+                    previous.deleteFully();
+                }
             }
         }
 
