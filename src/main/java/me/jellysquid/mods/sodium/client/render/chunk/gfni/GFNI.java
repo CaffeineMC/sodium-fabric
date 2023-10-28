@@ -352,7 +352,7 @@ public class GFNI {
 
     public void applyTriggerChanges(DynamicData data, ChunkSectionPos pos, Vector3dc cameraPos) {
         if (data.turnGFNITriggerOff) {
-            disableGFNITriggering(data, pos.asLong());
+            disableGFNITriggering(pos.asLong());
         }
         if (data.turnDirectTriggerOn) {
             enableDirectTriggering(data, pos, cameraPos);
@@ -390,7 +390,10 @@ public class GFNI {
      * @param sectionPos the section to remove
      */
     public void removeSection(TranslucentData oldData, long sectionPos) {
-        disableGFNITriggering(oldData, sectionPos);
+        if (oldData == null) {
+            return;
+        }
+        disableGFNITriggering(sectionPos);
         disableDirectTriggering(oldData);
         decrementSortTypeCounter(oldData);
     }
@@ -412,7 +415,7 @@ public class GFNI {
         }
     }
 
-    private void disableGFNITriggering(TranslucentData oldData, long sectionPos) {
+    private void disableGFNITriggering(long sectionPos) {
         for (var normalList : this.normalLists.values()) {
             removeSectionFromList(normalList, sectionPos);
         }
