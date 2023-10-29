@@ -26,8 +26,10 @@ public class AnyOrderData extends SplitDirectionData {
     }
 
     static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos) {
-        var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
+            TQuad[] quads, ChunkSectionPos sectionPos, NativeBuffer buffer) {
+        if (buffer == null) {
+            buffer = PresentTranslucentData.nativeBufferForQuads(quads);
+        }
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
         var counter = 0;
         var lastFacing = quads[0].facing();

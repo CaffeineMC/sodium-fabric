@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -39,8 +40,6 @@ public class TranslucentGeometryCollector {
     private Vector3f minBounds = new Vector3f(16, 16, 16);
     private Vector3f maxBounds = new Vector3f(0, 0, 0);
 
-    private int unalignedQuadCount = 0;
-
     @SuppressWarnings("unchecked")
     private ReferenceArrayList<TQuad>[] quadLists = new ReferenceArrayList[ModelQuadFacing.COUNT];
     private TQuad[] quads;
@@ -55,7 +54,8 @@ public class TranslucentGeometryCollector {
     private static final float QUANTIZE_EPSILON = 1f / INV_QUANTIZE_EPSILON;
 
     static {
-        // ensure it fits with the fluid renderer epsilon and that it's a power-of-two fraction
+        // ensure it fits with the fluid renderer epsilon and that it's a power-of-two
+        // fraction
         var targetEpsilon = FluidRenderer.EPSILON * 2.1f;
         if (QUANTIZE_EPSILON <= targetEpsilon && Integer.bitCount((int) INV_QUANTIZE_EPSILON) == 1) {
             throw new RuntimeException("epsilon is invalid: " + QUANTIZE_EPSILON);
@@ -182,7 +182,6 @@ public class TranslucentGeometryCollector {
             }
 
             quadList.add(new TQuad(facing, accGroup.normal, center, extents));
-            this.unalignedQuadCount++;
         } else {
             if (this.axisAlignedDistances == null) {
                 this.axisAlignedDistances = new AccumulationGroup[ModelQuadFacing.DIRECTIONS];
@@ -251,15 +250,8 @@ public class TranslucentGeometryCollector {
      * normal-relative distance. The ordering between the two normals is irrelevant
      * as they can't be seen through each other anyways.
      * 
-     * E: If there are only three axis-aligned normals or only two normals if there
-     * is at least one unaligned normal, a static topological sort of the
-     * see-through graph is enough. The sort is performed on the see-through graph
-     * consisting of quads as nodes and edges between two quads if the one can be
-     * seen through the other. The see-through condition is not checked transitively
-     * which avoids needing to do complex projections of quads onto each other. A
-     * static sort exists if this graph is acyclic. In the aforementioned cases, the
-     * graph is known to be acyclic. It can also be acyclic if there are more
-     * normals, but this would require a search of the graph for cycles.
+     * E: If there are only three normals a static topological sort of the
+     * see-through graph is often possible.
      * 
      * More heuristics can be performed here to conservatively determine if this
      * section could possibly have more than one translucent sort order.
@@ -324,11 +316,6 @@ public class TranslucentGeometryCollector {
             if (twoOpposingNormals || Integer.bitCount(this.alignedNormalBitmap) == 1) {
                 return SortType.STATIC_NORMAL_RELATIVE;
             }
-
-            // special case E
-            if (Integer.bitCount(this.alignedNormalBitmap) <= 3) {
-                return SortType.STATIC_TOPO_ACYCLIC;
-            }
         } else if (this.alignedNormalBitmap == 0) {
             if (this.unalignedDistances.size() == 1) {
                 // special case D but for one unaligned normal
@@ -348,7 +335,7 @@ public class TranslucentGeometryCollector {
 
         // special case E
         if (Integer.bitCount(this.alignedNormalBitmap)
-                + (this.unalignedDistances == null ? 0 : this.unalignedDistances.size()) <= 2) {
+                + (this.unalignedDistances == null ? 0 : this.unalignedDistances.size()) <= 3) {
             return SortType.STATIC_TOPO_ACYCLIC;
         }
 
@@ -385,7 +372,7 @@ public class TranslucentGeometryCollector {
         }
 
         if (this.sortType == SortType.NONE) {
-            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos);
+            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos, null);
         }
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
@@ -394,24 +381,24 @@ public class TranslucentGeometryCollector {
 
         // from this point on we know the estimated sort type requires direction mixing
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
+        NativeBuffer buffer = PresentTranslucentData.nativeBufferForQuads(this.quads);
         if (this.sortType == SortType.STATIC_TOPO_ACYCLIC) {
-            if (this.unalignedQuadCount > 0) {
-                // TODO: implement topo sort with unaligned quads
-                this.sortType = SortType.DYNAMIC_ALL;
-            } else {
-                return StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, sectionPos);
+            var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, sectionPos, buffer);
+            if (result != null) {
+                return result;
             }
+            this.sortType = SortType.DYNAMIC_ALL;
         }
 
         // filter the sort type with the user setting and re-evaluate
         this.sortType = filterSortType(this.sortType);
 
         if (this.sortType == SortType.NONE) {
-            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos);
+            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos, buffer);
         }
 
         if (this.sortType == SortType.DYNAMIC_ALL) {
-            return DynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, this);
+            return DynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, this, buffer);
         }
 
         throw new IllegalStateException("Unknown sort type: " + this.sortType);

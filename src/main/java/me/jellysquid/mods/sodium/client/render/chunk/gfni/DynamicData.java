@@ -151,7 +151,7 @@ public class DynamicData extends MixedDirectionData {
     }
 
     static DynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector) {
+            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector, NativeBuffer buffer) {
         // prepare accumulation groups for GFNI integration and copy
         var size = 0;
         if (collector.axisAlignedDistances != null) {
@@ -179,7 +179,9 @@ public class DynamicData extends MixedDirectionData {
         }
 
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
-        var buffer = new NativeBuffer(TranslucentData.quadCountToIndexBytes(quads.length));
+        if (buffer == null) {
+            buffer = PresentTranslucentData.nativeBufferForQuads(quads);
+        }
 
         var dynamicData = new DynamicData(sectionPos, buffer, range, quads, collector, distancesByNormal);
 

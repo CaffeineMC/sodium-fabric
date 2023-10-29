@@ -46,8 +46,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
             keys[i] = quad.center().dot(quad.normal());
         }
 
-        var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(
-                ranges[ModelQuadFacing.UNASSIGNED.ordinal()].vertexCount()));
+        var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
         TranslucentData.writeQuadVertexIndexes(bufferBuilder, MergeSort.mergeSort(keys));
@@ -77,7 +76,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
             }
         }
 
-        var buffer = new NativeBuffer(TranslucentData.quadCountToIndexBytes(quads.length));
+        var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
         // in this case there can only be up to one unaligned normal.
