@@ -24,7 +24,7 @@ public class ChunkRenderList {
 
     private int lastVisibleFrame;
 
-    private double distanceFromCamera;
+    private double sqrDistanceFromCamera;
 
     public ChunkRenderList(RenderRegion region) {
         this.region = region;
@@ -106,11 +106,11 @@ public class ChunkRenderList {
     /**
      * Get the squared distance of this region from the camera.
      */
-    public double getDistanceFromCamera() {
-        return this.distanceFromCamera;
+    public double getSqrDistanceFromCamera() {
+        return this.sqrDistanceFromCamera;
     }
 
-    public void setDistanceFromCamera(double d) {
-        this.distanceFromCamera = d;
+    public void setSqrDistanceFromCamera(double d) {
+        this.sqrDistanceFromCamera = d;
     }
 }

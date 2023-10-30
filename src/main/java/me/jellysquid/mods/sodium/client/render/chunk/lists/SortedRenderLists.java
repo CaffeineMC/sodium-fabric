@@ -27,7 +27,7 @@ public class SortedRenderLists implements ChunkRenderListIterable {
     }
 
     public static class Builder {
-        private static final Comparator<ChunkRenderList> LIST_DISTANCE_COMPARATOR = Comparator.comparingDouble(ChunkRenderList::getDistanceFromCamera);
+        private static final Comparator<ChunkRenderList> LIST_DISTANCE_COMPARATOR = Comparator.comparingDouble(ChunkRenderList::getSqrDistanceFromCamera);
         private final ObjectArrayList<ChunkRenderList> lists = new ObjectArrayList<>();
         private final int frame;
 
@@ -56,7 +56,7 @@ public class SortedRenderLists implements ChunkRenderListIterable {
                 double dx = cameraPos.x - region.getCenterX();
                 double dy = cameraPos.y - region.getCenterY();
                 double dz = cameraPos.z - region.getCenterZ();
-                renderList.setDistanceFromCamera((dx * dx) + (dy * dy) + (dz * dz));
+                renderList.setSqrDistanceFromCamera((dx * dx) + (dy * dy) + (dz * dz));
             }
             this.lists.sort(LIST_DISTANCE_COMPARATOR);
             return new SortedRenderLists(this.lists);
