@@ -28,7 +28,7 @@ public class Kernel32 {
                 MemoryUtil.memUTF16(value, true, lpValueBuf);
             }
 
-            JNI.callJJI(MemoryUtil.memAddress0(lpNameBuf), MemoryUtil.memAddressSafe(lpValueBuf), PFN_SetEnvironmentVariableW);
+            JNI.callPPI(MemoryUtil.memAddress0(lpNameBuf), MemoryUtil.memAddressSafe(lpValueBuf), PFN_SetEnvironmentVariableW);
         }
     }
 
