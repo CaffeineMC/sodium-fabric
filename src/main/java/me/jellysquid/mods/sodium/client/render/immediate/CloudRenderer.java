@@ -69,6 +69,7 @@ public class CloudRenderer {
 
         float cloudHeight = world.getDimensionEffects().getCloudsHeight();
 
+        // Vanilla uses NaN height as a way to disable cloud rendering
         if (Float.isNaN(cloudHeight)) {
             return;
         }
