@@ -224,6 +224,13 @@ public class TranslucentGeometryCollector {
     }
 
     /**
+     * Array of how many quads a section can have with a given number of unique
+     * normals so that a static topo sort is attempted on it. -1 means the value is
+     * unused and doesn't make sense to give.
+     */
+    private static int[] STATIC_TOPO_SORT_ATTEMPT_LIMITS = new int[] { -1, -1, 250, 100, 50, 30 };
+
+    /**
      * Determines the sort type for the collected geometry from the section. It
      * determines a sort type, which is either no sorting, a static sort or a
      * dynamic sort (section in GFNI only in this case).
@@ -253,9 +260,6 @@ public class TranslucentGeometryCollector {
      * This ordering sorts the two sets of face planes by their ascending
      * normal-relative distance. The ordering between the two normals is irrelevant
      * as they can't be seen through each other anyways.
-     * 
-     * E: If there are only three normals a static topological sort of the
-     * see-through graph is often possible.
      * 
      * More heuristics can be performed here to conservatively determine if this
      * section could possibly have more than one translucent sort order.
@@ -337,9 +341,12 @@ public class TranslucentGeometryCollector {
             }
         }
 
-        // special case E
-        if (Integer.bitCount(this.alignedNormalBitmap)
-                + (this.unalignedDistances == null ? 0 : this.unalignedDistances.size()) <= 3) {
+        // use the given set of quad count limits to determine if a static topo sort
+        // should be attempted
+        var uniqueNormals = Integer.bitCount(this.alignedNormalBitmap)
+                + (this.unalignedDistances == null ? 0 : this.unalignedDistances.size());
+        uniqueNormals = Math.max(Math.min(uniqueNormals, STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1), 2);
+        if (this.quads.length <= STATIC_TOPO_SORT_ATTEMPT_LIMITS[uniqueNormals]) {
             return SortType.STATIC_TOPO_ACYCLIC;
         }
 
