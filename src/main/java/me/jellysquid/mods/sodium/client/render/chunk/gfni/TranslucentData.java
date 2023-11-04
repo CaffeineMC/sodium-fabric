@@ -17,6 +17,7 @@ public abstract class TranslucentData {
     public static final int INDICES_PER_QUAD = 6;
     public static final int VERTICES_PER_QUAD = 4;
     public static final int BYTES_PER_INDEX = 4;
+    public static final int BYTES_PER_QUAD = INDICES_PER_QUAD * BYTES_PER_INDEX;
 
     public final ChunkSectionPos sectionPos;
 
@@ -45,11 +46,15 @@ public abstract class TranslucentData {
 
     static int vertexCountToIndexBytes(int vertexCount) {
         // convert vertex count to quads, and then to indices, and then to bytes
-        return vertexCount / VERTICES_PER_QUAD * INDICES_PER_QUAD * BYTES_PER_INDEX;
+        return vertexCount / VERTICES_PER_QUAD * BYTES_PER_QUAD;
     }
 
     static int quadCountToIndexBytes(int quadCount) {
-        return quadCount * INDICES_PER_QUAD * BYTES_PER_INDEX;
+        return quadCount * BYTES_PER_QUAD;
+    }
+
+    static int indexBytesToQuadCount(int indexBytes) {
+        return indexBytes / BYTES_PER_QUAD;
     }
 
     static void putMappedQuadVertexIndexes(IntBuffer intBuffer, int quadIndex, int[] indexMapping) {

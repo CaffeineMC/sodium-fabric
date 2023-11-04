@@ -47,7 +47,7 @@ class AccumulationGroup {
             this.facePlaneDistances[i++] = relDistance;
 
             long distanceBits = Double.doubleToLongBits(relDistance);
-            this.relDistanceHash ^= distanceBits;
+            this.relDistanceHash ^= this.relDistanceHash * 31L + distanceBits;
         }
 
         // sort the array ascending

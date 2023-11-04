@@ -22,6 +22,9 @@ import java.util.Arrays;
  * that of the vertex data except for the vertex/index scaling of two thirds,
  * only an offset to the index data within the index data buffer arena is
  * stored.
+ * 
+ * Index and vertex data storage can be managed separately since they may be
+ * updated independently of each other (in both directions).
  */
 public class SectionRenderDataStorage {
     private final GlBufferSegment[] allocations;
@@ -71,9 +74,6 @@ public class SectionRenderDataStorage {
         }
 
         SectionRenderDataUnsafe.setSliceMask(pMeshData, sliceMask);
-
-        // reset index offset to make sure it never renders with wrong index data
-        SectionRenderDataUnsafe.setIndexOffset(pMeshData, 0);
     }
 
     public void setIndexData(int localSectionIndex, GlBufferSegment allocation) {
@@ -94,7 +94,18 @@ public class SectionRenderDataStorage {
         SectionRenderDataUnsafe.setIndexOffset(pMeshData, allocation.getOffset());
     }
 
+    public void removeData(int localSectionIndex) {
+        this.removeVertexData(localSectionIndex, false);
+        if (this.storesIndices) {
+            removeIndexData(localSectionIndex);
+        }
+    }
+
     public void removeVertexData(int localSectionIndex) {
+        this.removeVertexData(localSectionIndex, true);
+    }
+
+    private void removeVertexData(int localSectionIndex, boolean retainIndexData) {
         if (this.allocations[localSectionIndex] == null) {
             return;
         }
@@ -102,12 +113,10 @@ public class SectionRenderDataStorage {
         this.allocations[localSectionIndex].delete();
         this.allocations[localSectionIndex] = null;
 
-        // also clear index allocation
-        if (this.storesIndices) {
-            removeIndexData(localSectionIndex);
-        }
-
-        SectionRenderDataUnsafe.clear(this.getDataPointer(localSectionIndex));
+        var pMeshData = this.getDataPointer(localSectionIndex);
+        var indexOffset = SectionRenderDataUnsafe.getIndexOffset(pMeshData);
+        SectionRenderDataUnsafe.clear(pMeshData);
+        SectionRenderDataUnsafe.setIndexOffset(pMeshData, indexOffset);
     }
 
     public void removeIndexData(int localSectionIndex) {

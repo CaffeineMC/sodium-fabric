@@ -8,11 +8,15 @@ import net.minecraft.util.math.ChunkSectionPos;
  * Super class for translucent data that contains an actual buffer.
  */
 public abstract class PresentTranslucentData extends TranslucentData {
-    public NativeBuffer buffer;
+    private NativeBuffer buffer;
+    private boolean reuseUploadedData;
+    private int quadHash;
+    private int length;
 
     PresentTranslucentData(ChunkSectionPos sectionPos, NativeBuffer buffer) {
         super(sectionPos);
         this.buffer = buffer;
+        this.length = TranslucentData.indexBytesToQuadCount(buffer.getLength());
     }
 
     public abstract VertexRange[] getVertexRanges();
@@ -26,8 +30,32 @@ public abstract class PresentTranslucentData extends TranslucentData {
         }
     }
 
-    public int getQuadLength() {
-        return this.buffer.getLength() / BYTES_PER_INDEX / VERTICES_PER_QUAD;
+    void setQuadHash(int hash) {
+        this.quadHash = hash;
+    }
+
+    int getQuadHash() {
+        return this.quadHash;
+    }
+
+    int getLength() {
+        return this.length;
+    }
+
+    public NativeBuffer getBuffer() {
+        return this.buffer;
+    }
+
+    public boolean isReusingUploadedData() {
+        return this.reuseUploadedData;
+    }
+
+    void setReuseUploadedData() {
+        this.reuseUploadedData = true;
+    }
+
+    void unsetReuseUploadedData() {
+        this.reuseUploadedData = false;
     }
 
     static NativeBuffer nativeBufferForQuads(TQuad[] quads) {

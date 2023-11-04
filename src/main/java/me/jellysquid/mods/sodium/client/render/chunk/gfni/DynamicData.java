@@ -82,8 +82,11 @@ public class DynamicData extends MixedDirectionData {
     }
 
     private void sort(Vector3fc cameraPos, boolean isAngleTrigger) {
+        // mark as not being reused to ensure the updated buffer is actually uploaded
+        this.unsetReuseUploadedData();
+
         // uses a topo sort or a distance sort depending on what is enabled
-        IntBuffer indexBuffer = this.buffer.getDirectBuffer().asIntBuffer();
+        IntBuffer indexBuffer = this.getBuffer().getDirectBuffer().asIntBuffer();
 
         if (this.quads.length > MAX_TOPO_SORT_QUADS) {
             turnGFNITriggerOff();

@@ -14,6 +14,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
+import java.util.Arrays;
 
 /**
  * The translucent geometry collector collects the data from the renderers and
@@ -45,6 +46,9 @@ public class TranslucentGeometryCollector {
     private TQuad[] quads;
 
     private SortType sortType;
+
+    private boolean quadHashPresent = false;
+    private int quadHash = 0;
 
     public TranslucentGeometryCollector(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
@@ -365,12 +369,7 @@ public class TranslucentGeometryCollector {
         return this.sortType;
     }
 
-    public TranslucentData getTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
-        // means there is no translucent geometry
-        if (translucentMesh == null) {
-            return new NoData(sectionPos);
-        }
-
+    private TranslucentData getTranslucentDataNew(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
         if (this.sortType == SortType.NONE) {
             return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos, null);
         }
@@ -402,6 +401,57 @@ public class TranslucentGeometryCollector {
         }
 
         throw new IllegalStateException("Unknown sort type: " + this.sortType);
+    }
+
+    private int getQuadHash(TQuad[] quads) {
+        if (this.quadHashPresent) {
+            return this.quadHash;
+        }
+
+        for (TQuad quad : quads) {
+            this.quadHash ^= this.quadHash * 31 + quad.hashCode();
+        }
+        return this.quadHash;
+    }
+
+    public TranslucentData getTranslucentData(
+            TranslucentData oldData, BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
+        // means there is no translucent geometry
+        if (translucentMesh == null) {
+            return new NoData(sectionPos);
+        }
+
+        // re-use the original translucent data if it's the same. This reduces the
+        // amount of generated and uploaded index data when sections are rebuilt without
+        // relevant changes to translucent geometry. Rebuilds happen when any part of
+        // the section changes, including the here irrelevant cases of changes to opaque
+        // geometry or light levels.
+        if (oldData != null) {
+            // for the NONE sort type the ranges need to be the same, the actual geometry
+            // doesn't matter
+            if (this.sortType == SortType.NONE && oldData instanceof AnyOrderData oldAnyData
+                    && oldAnyData.getLength() == this.quads.length
+                    && Arrays.equals(oldAnyData.getVertexRanges(), translucentMesh.getVertexRanges())) {
+                oldAnyData.setReuseUploadedData();
+                return oldAnyData;
+            }
+
+            // for the other sort types the geometry needs to be the same (checked with
+            // length and hash)
+            if (oldData instanceof PresentTranslucentData oldPresentData) {
+                if (oldPresentData.getLength() == this.quads.length
+                        && oldPresentData.getQuadHash() == getQuadHash(this.quads)) {
+                    oldPresentData.setReuseUploadedData();
+                    return oldPresentData;
+                }
+            }
+        }
+
+        var newData = getTranslucentDataNew(translucentMesh, cameraPos);
+        if (newData instanceof PresentTranslucentData presentData) {
+            presentData.setQuadHash(getQuadHash(this.quads));
+        }
+        return newData;
     }
 
     AccumulationGroup getGroupForNormal(NormalList normalList) {

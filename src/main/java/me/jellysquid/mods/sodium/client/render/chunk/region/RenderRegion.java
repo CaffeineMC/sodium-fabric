@@ -164,7 +164,7 @@ public class RenderRegion {
         }
 
         for (var storage : this.sectionRenderData.values()) {
-            storage.removeVertexData(sectionIndex);
+            storage.removeData(sectionIndex);
         }
 
         this.sections[sectionIndex] = null;

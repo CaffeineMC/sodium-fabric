@@ -471,6 +471,10 @@ public class GFNI {
      *         determined
      */
     public void integrateTranslucentData(TranslucentData oldData, TranslucentData newData, Vector3dc cameraPos) {
+        if (oldData == newData) {
+            return;
+        }
+
         long sectionPos = newData.sectionPos.asLong();
 
         incrementSortTypeCounter(newData);

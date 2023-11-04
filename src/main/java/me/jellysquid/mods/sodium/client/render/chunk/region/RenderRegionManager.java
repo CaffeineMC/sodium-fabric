@@ -86,20 +86,30 @@ public class RenderRegionManager {
             }
 
             if (result instanceof OutputWithIndexData indexDataOutput) {
-                var storage = region.getStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
-                if (storage != null) {
-                    storage.removeIndexData(renderSectionIndex);
+                var indexData = indexDataOutput.getTranslucentData();
+                boolean retainIndexData = false;
+                if (indexData != null) {
+                    if (indexData.isReusingUploadedData()) {
+                        retainIndexData = true;
+                    } else {
+                        var buffer = indexData.getBuffer();
+
+                        // TODO: sometimes the buffer is null even when reuse isn't happening. maybe the data on the
+                        // render section is being replaced before it gets here?
+                        if (buffer == null) {
+                            throw new IllegalStateException("Translucent data buffer is null");
+                        }
+
+                        indexUploads.add(new PendingSectionIndexBufferUpload(result.render, indexData,
+                                new PendingUpload(buffer)));
+                    }
                 }
 
-                var indexData = indexDataOutput.getTranslucentData();
-                if (indexData != null) {
-                    // TODO: debug this, seems to sometimes happen when flying around with spectator mode
-                    // even happens without all sections as direct triggering, maybe the data on the render section is being replaced before it gets here?
-                    if (indexData.buffer == null) {
-                        throw new IllegalStateException("Translucent data buffer is null");
+                if (!retainIndexData) {
+                    var storage = region.getStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
+                    if (storage != null) {
+                        storage.removeIndexData(renderSectionIndex);
                     }
-                    indexUploads.add(new PendingSectionIndexBufferUpload(result.render, indexData,
-                    new PendingUpload(indexData.buffer)));
                 }
             }
         }
