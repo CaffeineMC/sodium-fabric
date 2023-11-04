@@ -504,7 +504,7 @@ public class GFNI {
                 this.normalLists.size(),
                 this.triggeredSectionCount,
                 this.triggeredNormalCount));
-        list.add(String.format("N=%05d SNR=%05d STA=%03d DYN=%04d (DIR=%04d)",
+        list.add(String.format("N=%05d SNR=%05d STA=%04d DYN=%04d (DIR=%04d)",
                 this.sortTypeCounters[SortType.NONE.ordinal()],
                 this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()],
                 this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()],
