@@ -89,8 +89,8 @@ public class DynamicData extends MixedDirectionData {
         IntBuffer indexBuffer = this.getBuffer().getDirectBuffer().asIntBuffer();
 
         if (this.quads.length > MAX_TOPO_SORT_QUADS) {
-            turnGFNITriggerOff();
-            turnDirectTriggerOn();
+            this.turnGFNITriggerOff();
+            this.turnDirectTriggerOn();
         }
 
         if (this.GFNITrigger && !isAngleTrigger) {
@@ -106,13 +106,13 @@ public class DynamicData extends MixedDirectionData {
             if (sortTime > (this.consecutiveTopoSortFailures > 0
                     ? MAX_FAILING_TOPO_SORT_TIME_NS
                     : MAX_TOPO_SORT_TIME_NS)) {
-                turnGFNITriggerOff();
-                turnDirectTriggerOn();
+                this.turnGFNITriggerOff();
+                this.turnDirectTriggerOn();
             }
 
             if (result) {
                 // disable distance sorting because topo sort seems to be possible.
-                turnDirectTriggerOff();
+                this.turnDirectTriggerOff();
                 this.consecutiveTopoSortFailures = 0;
                 return;
             } else {
@@ -123,9 +123,9 @@ public class DynamicData extends MixedDirectionData {
                 // sort success from a different angle.
                 this.consecutiveTopoSortFailures++;
                 if (this.consecutiveTopoSortFailures >= getAttemptsForTime(sortTime)) {
-                    turnGFNITriggerOff();
+                    this.turnGFNITriggerOff();
                 }
-                turnDirectTriggerOn();
+                this.turnDirectTriggerOn();
             }
         }
         if (this.directTrigger) {

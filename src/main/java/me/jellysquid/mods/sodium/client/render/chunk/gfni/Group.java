@@ -37,7 +37,7 @@ class Group {
     double baseDistance;
 
     Group(AccumulationGroup accGroup) {
-        replaceWith(accGroup);
+        this.replaceWith(accGroup);
     }
 
     void replaceWith(AccumulationGroup accGroup) {

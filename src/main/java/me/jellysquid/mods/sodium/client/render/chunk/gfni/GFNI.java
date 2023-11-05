@@ -137,8 +137,8 @@ public class GFNI {
         triggeredNormals.clear();
         this.triggerSectionCallback = triggerSectionCallback;
 
-        processGFNITriggers(movement);
-        processDirectTriggers(movement);
+        this.processGFNITriggers(movement);
+        this.processDirectTriggers(movement);
 
         var newTriggeredSectionsCount = this.triggeredSections.size();
         var newTriggeredNormalCount = this.triggeredNormals.size();
@@ -279,7 +279,7 @@ public class GFNI {
                     remainingAngle -= Math.acos(angleCos);
                 }
 
-                insertDirectAngleTrigger(data, camera, remainingAngle);
+                this.insertDirectAngleTrigger(data, camera, remainingAngle);
             } else {
                 double remainingDistance = DIRECT_TRIGGER_DISTANCE;
                 double lastTriggerCurrentCameraDistSquared = data.triggerCameraPos.distanceSquared(camera);
@@ -291,7 +291,7 @@ public class GFNI {
                     remainingDistance -= Math.sqrt(lastTriggerCurrentCameraDistSquared);
                 }
 
-                insertDirectDistanceTrigger(data, camera, remainingDistance);
+                this.insertDirectDistanceTrigger(data, camera, remainingDistance);
             }
         }
     }
@@ -299,13 +299,14 @@ public class GFNI {
     private void insertDirectAngleTrigger(DirectTriggerData data, Vector3dc cameraPos, double remainingAngle) {
         double triggerCameraSectionCenterDist = data.getSectionCenterTriggerCameraDist();
         double centerMinDistance = Math.tan(remainingAngle) * (triggerCameraSectionCenterDist - SECTION_CENTER_DIST);
-        insertJitteredTrigger(this.accumulatedDistance + centerMinDistance, data);
+        this.insertJitteredTrigger(this.accumulatedDistance + centerMinDistance, data);
     }
 
     private void insertDirectDistanceTrigger(DirectTriggerData data, Vector3dc cameraPos, double remainingDistance) {
-        insertJitteredTrigger(this.accumulatedDistance + remainingDistance, data);
+        this.insertJitteredTrigger(this.accumulatedDistance + remainingDistance, data);
     }
 
+    // TODO: instead of jittering use Tree<Object> where object is either a list or an individual record?
     // jitters the double values to never overwrite the same key. abuses that
     // doubles have more precision than we need to make them a kind of hash table
     private double lastJittered = -1;
@@ -352,13 +353,13 @@ public class GFNI {
 
     public void applyTriggerChanges(DynamicData data, ChunkSectionPos pos, Vector3dc cameraPos) {
         if (data.turnGFNITriggerOff) {
-            disableGFNITriggering(pos.asLong());
+            this.disableGFNITriggering(pos.asLong());
         }
         if (data.turnDirectTriggerOn) {
-            enableDirectTriggering(data, pos, cameraPos);
+            this.enableDirectTriggering(data, pos, cameraPos);
         }
         if (data.turnDirectTriggerOff) {
-            disableDirectTriggering(data);
+            this.disableDirectTriggering(data);
         }
         data.clearTriggerChanges();
     }
@@ -366,9 +367,9 @@ public class GFNI {
     private void enableDirectTriggering(DynamicData data, ChunkSectionPos section, Vector3dc cameraPos) {
         var newData = new DirectTriggerData(data, section, cameraPos);
         if (newData.isAngleTriggering(cameraPos)) {
-            insertDirectAngleTrigger(newData, cameraPos, TRIGGER_ANGLE);
+            this.insertDirectAngleTrigger(newData, cameraPos, TRIGGER_ANGLE);
         } else {
-            insertDirectDistanceTrigger(newData, cameraPos, DIRECT_TRIGGER_DISTANCE);
+            this.insertDirectDistanceTrigger(newData, cameraPos, DIRECT_TRIGGER_DISTANCE);
         }
     }
 
@@ -393,9 +394,9 @@ public class GFNI {
         if (oldData == null) {
             return;
         }
-        disableGFNITriggering(sectionPos);
-        disableDirectTriggering(oldData);
-        decrementSortTypeCounter(oldData);
+        this.disableGFNITriggering(sectionPos);
+        this.disableDirectTriggering(oldData);
+        this.decrementSortTypeCounter(oldData);
     }
 
     private void addSectionInNewNormalLists(DynamicData dynamicData, AccumulationGroup accGroup) {
@@ -417,7 +418,7 @@ public class GFNI {
 
     private void disableGFNITriggering(long sectionPos) {
         for (var normalList : this.normalLists.values()) {
-            removeSectionFromList(normalList, sectionPos);
+            this.removeSectionFromList(normalList, sectionPos);
         }
     }
 
@@ -432,7 +433,7 @@ public class GFNI {
             var accGroup = collector.getGroupForNormal(normalList);
             if (normalList.hasSection(sectionPos)) {
                 if (accGroup == null) {
-                    removeSectionFromList(normalList, sectionPos);
+                    this.removeSectionFromList(normalList, sectionPos);
                 } else {
                     normalList.updateSection(accGroup, sectionPos);
                 }
@@ -448,13 +449,13 @@ public class GFNI {
         if (collector.axisAlignedDistances != null) {
             for (var accGroup : collector.axisAlignedDistances) {
                 if (accGroup != null) {
-                    addSectionInNewNormalLists(data, accGroup);
+                    this.addSectionInNewNormalLists(data, accGroup);
                 }
             }
         }
         if (collector.unalignedDistances != null) {
             for (var accGroup : collector.unalignedDistances.values()) {
-                addSectionInNewNormalLists(data, accGroup);
+                this.addSectionInNewNormalLists(data, accGroup);
             }
         }
 
@@ -477,28 +478,28 @@ public class GFNI {
 
         long sectionPos = newData.sectionPos.asLong();
 
-        incrementSortTypeCounter(newData);
+        this.incrementSortTypeCounter(newData);
 
         // remove the section if the data doesn't need to trigger on face planes
         if (newData instanceof DynamicData dynamicData) {
-            disableDirectTriggering(oldData);
-            decrementSortTypeCounter(oldData);
+            this.disableDirectTriggering(oldData);
+            this.decrementSortTypeCounter(oldData);
             if (dynamicData.GFNITrigger) {
-                initiallyEnableGFNITriggering(dynamicData, sectionPos);
+                this.initiallyEnableGFNITriggering(dynamicData, sectionPos);
             } else {
                 // remove the collector since this section is never going to get gfni triggering
                 // (there's no option to add sections to GFNI later currently)
                 dynamicData.deleteCollector();
             }
             if (dynamicData.directTrigger) {
-                enableDirectTriggering(dynamicData, newData.sectionPos, cameraPos);
+                this.enableDirectTriggering(dynamicData, newData.sectionPos, cameraPos);
             }
 
             // clear trigger changes on data change because the current state of trigger
             // types was just set
             dynamicData.clearTriggerChanges();
         } else {
-            removeSection(oldData, sectionPos);
+            this.removeSection(oldData, sectionPos);
             return;
         }
     }

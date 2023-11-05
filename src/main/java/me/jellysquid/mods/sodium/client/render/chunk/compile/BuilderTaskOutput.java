@@ -14,12 +14,12 @@ public abstract class BuilderTaskOutput {
 
     public void deleteFully() {
         this.fullyDeleted = true;
-        deleteAfterUpload();
+        this.deleteAfterUpload();
     }
 
     public void deleteAfterUploadSafe() {
         if (!this.fullyDeleted) {
-            deleteAfterUpload();
+            this.deleteAfterUpload();
         }
     }
 

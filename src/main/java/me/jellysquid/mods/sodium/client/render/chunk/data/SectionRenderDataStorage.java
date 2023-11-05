@@ -97,7 +97,7 @@ public class SectionRenderDataStorage {
     public void removeData(int localSectionIndex) {
         this.removeVertexData(localSectionIndex, false);
         if (this.storesIndices) {
-            removeIndexData(localSectionIndex);
+            this.removeIndexData(localSectionIndex);
         }
     }
 

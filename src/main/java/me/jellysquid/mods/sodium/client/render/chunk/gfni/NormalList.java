@@ -148,13 +148,13 @@ class NormalList {
         var group = new Group(accGroup);
 
         this.groupsBySection.put(sectionPos, group);
-        addGroupInterval(group);
+        this.addGroupInterval(group);
     }
 
     void removeSection(long sectionPos) {
         Group group = this.groupsBySection.remove(sectionPos);
         if (group != null) {
-            removeGroupInterval(group);
+            this.removeGroupInterval(group);
         }
     }
 
@@ -167,8 +167,8 @@ class NormalList {
             return;
         }
 
-        removeGroupInterval(group);
+        this.removeGroupInterval(group);
         group.replaceWith(accGroup);
-        addGroupInterval(group);
+        this.addGroupInterval(group);
     }
 }
