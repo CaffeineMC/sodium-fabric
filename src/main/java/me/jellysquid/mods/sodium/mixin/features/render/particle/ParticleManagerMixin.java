@@ -46,7 +46,10 @@ public abstract class ParticleManagerMixin {
      * is overridden to produce the correct behavior. See the specialcases package for examples.
      */
     @Unique
-    private static final Set<Class<? extends BillboardParticle>> SPECIAL_CASES = Set.of(
+    private static final Set<Class<? extends BillboardParticle>> FAST_PATH_PARTICLES = Set.of(
+            BillboardParticle.class,
+            SpriteBillboardParticle.class,
+
             DustColorTransitionParticle.class,
             FireworksSparkParticle.Explosion.class,
             FireworksSparkParticle.Flash.class
@@ -170,14 +173,12 @@ public abstract class ParticleManagerMixin {
     @Unique
     private boolean testClassOverrides(Class<? extends BillboardParticle> particleClass) {
         try {
-            Class<?> c = particleClass.getDeclaredMethod(
+            return !FAST_PATH_PARTICLES.contains(particleClass.getMethod(
                     BUILD_GEOMETRY_METHOD,
                     VertexConsumer.class,
                     Camera.class,
                     float.class
-            ).getDeclaringClass();
-
-            return !(c == BillboardParticle.class || SPECIAL_CASES.contains(c));
+            ).getDeclaringClass());
         } catch (NoSuchMethodException e) {
             return true;
         }
