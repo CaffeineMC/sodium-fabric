@@ -72,14 +72,14 @@ class Group {
         return false;
     }
 
-    void triggerRange(GFNI gfni, double start, double end, int collectorKey) {
+    void triggerRange(TranslucentSorting ts, double start, double end, int collectorKey) {
         // trigger self on the section if the query range overlaps with the group
         // testing for strict inequality because if the two intervals just touch at the
         // start/end, there can be no overlap
         if (start < this.distances.getEnd() && end > this.distances.getStart()
                 && queryRange(this.facePlaneDistances,
                         start - this.baseDistance, end - this.baseDistance)) {
-            gfni.triggerSectionGFNI(this.sectionPos, collectorKey);
+            ts.triggerSectionGFNI(this.sectionPos, collectorKey);
         }
     }
 

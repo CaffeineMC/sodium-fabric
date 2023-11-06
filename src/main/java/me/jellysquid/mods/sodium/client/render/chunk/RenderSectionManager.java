@@ -22,7 +22,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderS
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.CameraMovement;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentSorting;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
@@ -77,7 +77,7 @@ public class RenderSectionManager {
 
     private final int renderDistance;
 
-    private final GFNI gfni;
+    private final TranslucentSorting ts;
 
     @NotNull
     private SortedRenderLists renderLists;
@@ -96,7 +96,7 @@ public class RenderSectionManager {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.world = world;
-        this.gfni = new GFNI();
+        this.ts = new TranslucentSorting();
 
         this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
 
@@ -211,7 +211,7 @@ public class RenderSectionManager {
         }
 
         if (section.getTranslucentData() != null) {
-            this.gfni.removeSection(section.getTranslucentData(), sectionPos);
+            this.ts.removeSection(section.getTranslucentData(), sectionPos);
         }
 
         RenderRegion region = section.getRegion();
@@ -326,13 +326,13 @@ public class RenderSectionManager {
             if (result instanceof ChunkBuildOutput chunkBuildOutput) {
                 this.updateSectionInfo(result.render, chunkBuildOutput.info);
                 if (chunkBuildOutput.translucentData != null) {
-                    this.gfni.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition);
+                    this.ts.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition);
 
                     // a rebuild always generates new translucent data which means applyTriggerChanges isn't necessary
                     result.render.setTranslucentData(chunkBuildOutput.translucentData);
                 }
             } else if (result instanceof ChunkSortOutput chunkSortOutput && chunkSortOutput.dynamicData.hasTriggerChanges()) {
-                this.gfni.applyTriggerChanges(chunkSortOutput.dynamicData, result.render.getPosition(), this.cameraPosition);
+                this.ts.applyTriggerChanges(chunkSortOutput.dynamicData, result.render.getPosition(), this.cameraPosition);
             }
 
             var job = result.render.getTaskCancellationToken();
@@ -446,7 +446,7 @@ public class RenderSectionManager {
     }
 
     public void processGFNIMovement(CameraMovement movement) {
-        this.gfni.triggerSections(this::scheduleSort, movement);
+        this.ts.triggerSections(this::scheduleSort, movement);
     }
 
     public void markGraphDirty() {
@@ -631,7 +631,7 @@ public class RenderSectionManager {
                 this.taskLists.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
 
-        this.gfni.addDebugStrings(list);
+        this.ts.addDebugStrings(list);
 
         return list;
     }

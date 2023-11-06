@@ -86,7 +86,7 @@ class NormalList {
         return collectorKey;
     }
 
-    void processMovement(GFNI gfni, CameraMovement movement) {
+    void processMovement(TranslucentSorting ts, CameraMovement movement) {
         // calculate the distance range of the movement with respect to the normal
         double start = this.normal.dot(movement.lastCamera());
         double end = this.normal.dot(movement.currentCamera());
@@ -102,7 +102,7 @@ class NormalList {
         var interval = new DoubleInterval(start, end, Bounded.CLOSED);
         for (Interval<Double> groupInterval : groupIntervals.query(interval)) {
             for (Group group : groupsByInterval.get(groupInterval)) {
-                group.triggerRange(gfni, start, end, this.collectorKey);
+                group.triggerRange(ts, start, end, this.collectorKey);
             }
         }
     }

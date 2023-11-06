@@ -380,9 +380,6 @@ public class ComplexSorting {
      * doing a DFS on the implicit graph. Edges are tested as they are searched for
      * and if necessary separator planes are used to disprove visibility.
      * 
-     * TODO: the issue with it sometimes failing to sort is probably from the
-     * separator mechanism not working for unaligned quads yet.
-     * 
      * @param indexBuffer       the buffer to write the topo sort result to
      * @param allQuads          the quads to sort
      * @param distancesByNormal a map of normals to sorted arrays of face plane

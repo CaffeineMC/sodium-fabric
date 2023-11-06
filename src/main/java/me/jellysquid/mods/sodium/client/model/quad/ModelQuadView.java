@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentSorting;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.client.texture.Sprite;
 
@@ -139,9 +139,9 @@ public interface ModelQuadView {
         // in each axis the number of values is 2 * QUANTIZATION_FACTOR + 1.
         // the total number of normals is the number of points on that cube's surface.
         this.setGFNINormal(
-                (int) (normX * GFNI.QUANTIZATION_FACTOR),
-                (int) (normY * GFNI.QUANTIZATION_FACTOR),
-                (int) (normZ * GFNI.QUANTIZATION_FACTOR));
+                (int) (normX * TranslucentSorting.QUANTIZATION_FACTOR),
+                (int) (normY * TranslucentSorting.QUANTIZATION_FACTOR),
+                (int) (normZ * TranslucentSorting.QUANTIZATION_FACTOR));
 
         return packedNormal;
     }
