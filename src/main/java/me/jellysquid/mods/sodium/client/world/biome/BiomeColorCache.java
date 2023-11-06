@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.world.biome;
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur;
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur.ColorBuffer;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
 
@@ -78,9 +79,9 @@ public class BiomeColorCache {
                 int relativeX = worldX - this.minX;
                 int relativeZ = worldZ - this.minZ;
 
-                slice.grass.set(relativeX, relativeZ, biome.getGrassColorAt(worldX, worldZ));
-                slice.foliage.set(relativeX, relativeZ, biome.getFoliageColor());
-                slice.water.set(relativeX, relativeZ, biome.getWaterColor());
+                slice.grass.set(relativeX, relativeZ, BiomeColors.GRASS_COLOR.getColor(biome, worldX, worldZ));
+                slice.foliage.set(relativeX, relativeZ, BiomeColors.FOLIAGE_COLOR.getColor(biome, worldX, worldZ));
+                slice.water.set(relativeX, relativeZ, BiomeColors.WATER_COLOR.getColor(biome, worldX, worldZ));
             }
         }
 

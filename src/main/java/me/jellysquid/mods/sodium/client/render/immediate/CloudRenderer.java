@@ -67,9 +67,14 @@ public class CloudRenderer {
             return;
         }
 
-        Vec3d color = world.getCloudsColor(tickDelta);
-
         float cloudHeight = world.getDimensionEffects().getCloudsHeight();
+
+        // Vanilla uses NaN height as a way to disable cloud rendering
+        if (Float.isNaN(cloudHeight)) {
+            return;
+        }
+
+        Vec3d color = world.getCloudsColor(tickDelta);
 
         double cloudTime = (ticks + tickDelta) * 0.03F;
         double cloudCenterX = (cameraX + cloudTime);
