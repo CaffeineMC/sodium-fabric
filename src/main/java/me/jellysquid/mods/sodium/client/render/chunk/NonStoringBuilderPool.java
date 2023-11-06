@@ -1,35 +1,33 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import com.google.common.collect.Queues;
-import net.minecraft.class_8901;
+import net.minecraft.client.render.chunk.BlockBufferBuilderPool;
 import net.minecraft.client.render.chunk.BlockBufferBuilderStorage;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.List;
 
-public class NonStoringSectionPack extends class_8901 {
-    public NonStoringSectionPack() {
+public class NonStoringBuilderPool extends BlockBufferBuilderPool {
+    public NonStoringBuilderPool() {
         super(Collections.emptyList());
     }
 
     @Nullable
     @Override
-    public BlockBufferBuilderStorage method_54642() {
+    public BlockBufferBuilderStorage acquire() {
         return null;
     }
 
     @Override
-    public void method_54644(BlockBufferBuilderStorage blockBufferBuilderStorage) {
+    public void release(BlockBufferBuilderStorage blockBufferBuilderStorage) {
     }
 
     @Override
-    public boolean method_54645() {
+    public boolean hasNoAvailableBuilder() {
         return true;
     }
 
     @Override
-    public int method_54646() {
+    public int getAvailableBuilderCount() {
         return 0;
     }
 }
