@@ -57,6 +57,7 @@ class DirectTriggers implements SectionTriggers {
 		final ChunkSectionPos sectionPos;
 		private Vector3dc sectionCenter;
 		final DynamicData dynamicData;
+		DirectTriggerData next;
 
 		/**
 		 * Absolute camera position at the time of the last trigger.
@@ -108,45 +109,19 @@ class DirectTriggers implements SectionTriggers {
 	private void insertDirectAngleTrigger(DirectTriggerData data, Vector3dc cameraPos, double remainingAngle) {
 		double triggerCameraSectionCenterDist = data.getSectionCenterTriggerCameraDist();
 		double centerMinDistance = Math.tan(remainingAngle) * (triggerCameraSectionCenterDist - SECTION_CENTER_DIST);
-		this.insertJitteredTrigger(this.accumulatedDistance + centerMinDistance, data);
+		this.insertTrigger(this.accumulatedDistance + centerMinDistance, data);
 	}
 
 	private void insertDirectDistanceTrigger(DirectTriggerData data, Vector3dc cameraPos, double remainingDistance) {
-		this.insertJitteredTrigger(this.accumulatedDistance + remainingDistance, data);
+		this.insertTrigger(this.accumulatedDistance + remainingDistance, data);
 	}
 
-	// TODO: instead of jittering use Tree<Object> where object is either a list or
-	// an individual record?
-	// jitters the double values to never overwrite the same key. abuses that
-	// doubles have more precision than we need to make them a kind of hash table
-	private double lastJittered = -1;
-	private double lastJitterResult = -1;
-
-	private void insertJitteredTrigger(double key, DirectTriggerData data) {
-		// attempt insert without jittering
-		if (this.directTriggerSections.putIfAbsent(key, data) == null) {
-			data.dynamicData.directTriggerKey = key;
-			return;
-		}
-
-		// if this is the same key as last time, skip all the identical keys that have
-		// already been jittered
-		if (this.lastJittered == key) {
-			key = this.lastJitterResult;
-		} else {
-			this.lastJittered = key;
-		}
-
-		// Go to the next lower double to avoid collisions in the map. This slightly
-		// changes the key but doesn't significantly change its value. Subtraction is
-		// necessary to avoid delaying a trigger for too long. It's ok if it's too early
-		// though. This approach brings with it the disadvantages of linear probing but
-		// bad cases are unlikely to happen so it's fine.
-		do {
-			key = Math.nextDown(key);
-		} while (this.directTriggerSections.putIfAbsent(key, data) != null);
+	private void insertTrigger(double key, DirectTriggerData data) {
 		data.dynamicData.directTriggerKey = key;
-		this.lastJitterResult = key;
+
+		// attach the previous value after the current one in the list. if there is none
+		// it's just null
+		data.next = this.directTriggerSections.put(key, data);
 	}
 
 	@Override
@@ -159,43 +134,49 @@ class DirectTriggers implements SectionTriggers {
 		var head = this.directTriggerSections.headMap(this.accumulatedDistance);
 		for (var entry : head.double2ObjectEntrySet()) {
 			this.directTriggerSections.remove(entry.getDoubleKey());
-			DirectTriggerData data = entry.getValue();
+			var data = entry.getValue();
+			while (data != null) {
+				// get the next element before it's modified by the data being re-inserted into
+				// the tree
+				var next = data.next;
 
-			boolean isAngle = data.isAngleTriggering(camera);
-			if (isAngle) {
-				double remainingAngle = TRIGGER_ANGLE;
+				if (data.isAngleTriggering(camera)) {
+					double remainingAngle = TRIGGER_ANGLE;
 
-				// check if the angle since the last sort exceeds the threshold
-				Vector3dc sectionCenter = data.getSectionCenter();
-				double angleCos = angleCos(
-						sectionCenter.x() - data.triggerCameraPos.x(),
-						sectionCenter.y() - data.triggerCameraPos.y(),
-						sectionCenter.z() - data.triggerCameraPos.z(),
-						sectionCenter.x() - camera.x(),
-						sectionCenter.y() - camera.y(),
-						sectionCenter.z() - camera.z());
+					// check if the angle since the last sort exceeds the threshold
+					Vector3dc sectionCenter = data.getSectionCenter();
+					double angleCos = angleCos(
+							sectionCenter.x() - data.triggerCameraPos.x(),
+							sectionCenter.y() - data.triggerCameraPos.y(),
+							sectionCenter.z() - data.triggerCameraPos.z(),
+							sectionCenter.x() - camera.x(),
+							sectionCenter.y() - camera.y(),
+							sectionCenter.z() - camera.z());
 
-				// compare angles inverted because cosine flips it
-				if (angleCos <= EARLY_TRIGGER_ANGLE_COS) {
-					ts.triggerSectionDirect(data.sectionPos);
-					data.triggerCameraPos = camera;
+					// compare angles inverted because cosine flips it
+					if (angleCos <= EARLY_TRIGGER_ANGLE_COS) {
+						ts.triggerSectionDirect(data.sectionPos);
+						data.triggerCameraPos = camera;
+					} else {
+						remainingAngle -= Math.acos(angleCos);
+					}
+
+					this.insertDirectAngleTrigger(data, camera, remainingAngle);
 				} else {
-					remainingAngle -= Math.acos(angleCos);
+					double remainingDistance = DIRECT_TRIGGER_DISTANCE;
+					double lastTriggerCurrentCameraDistSquared = data.triggerCameraPos.distanceSquared(camera);
+
+					if (lastTriggerCurrentCameraDistSquared >= EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED) {
+						ts.triggerSectionDirect(data.sectionPos);
+						data.triggerCameraPos = camera;
+					} else {
+						remainingDistance -= Math.sqrt(lastTriggerCurrentCameraDistSquared);
+					}
+
+					this.insertDirectDistanceTrigger(data, camera, remainingDistance);
 				}
 
-				this.insertDirectAngleTrigger(data, camera, remainingAngle);
-			} else {
-				double remainingDistance = DIRECT_TRIGGER_DISTANCE;
-				double lastTriggerCurrentCameraDistSquared = data.triggerCameraPos.distanceSquared(camera);
-
-				if (lastTriggerCurrentCameraDistSquared >= EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED) {
-					ts.triggerSectionDirect(data.sectionPos);
-					data.triggerCameraPos = camera;
-				} else {
-					remainingDistance -= Math.sqrt(lastTriggerCurrentCameraDistSquared);
-				}
-
-				this.insertDirectDistanceTrigger(data, camera, remainingDistance);
+				data = next;
 			}
 		}
 	}
