@@ -80,7 +80,7 @@ them up to date. For many Linux distributions, these dependencies will be standa
 repositories.
 
 - OpenJDK 17
-    - We recommend using the [Eclipse Termurin](https://adoptium.net/) distribution, as it's known to be high quality 
+    - We recommend using the [Eclipse Temurin](https://adoptium.net/) distribution, as it's known to be high quality 
       and to work without issues.
 - Gradle 8.2.1 (optional)
     - The [Gradle wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:using_wrapper) is provided
