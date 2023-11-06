@@ -36,13 +36,22 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 @Mixin(ParticleManager.class)
 public abstract class ParticleManagerMixin {
+    /**
+     * The set of special cases that can use the fast path, but override buildGeometry.
+     * These classes should have a mixin where {@link BillboardExtended#sodium$buildParticleData}
+     * is overridden to produce the correct behavior. See the specialcases package for examples.
+     */
+    @Unique
+    private static final Set<Class<? extends BillboardParticle>> SPECIAL_CASES = Set.of(
+            DustColorTransitionParticle.class,
+            FireworksSparkParticle.Explosion.class,
+            FireworksSparkParticle.Flash.class
+    );
+
     @Shadow
     protected ClientWorld world;
 
@@ -161,14 +170,16 @@ public abstract class ParticleManagerMixin {
     @Unique
     private boolean testClassOverrides(Class<? extends BillboardParticle> particleClass) {
         try {
-            return particleClass.getDeclaredMethod(
+            Class<?> c = particleClass.getDeclaredMethod(
                     BUILD_GEOMETRY_METHOD,
                     VertexConsumer.class,
                     Camera.class,
                     float.class
-            ).getDeclaringClass() != BillboardParticle.class;
+            ).getDeclaringClass();
+
+            return !(c == BillboardParticle.class || SPECIAL_CASES.contains(c));
         } catch (NoSuchMethodException e) {
-            return false;
+            return true;
         }
     }
 
