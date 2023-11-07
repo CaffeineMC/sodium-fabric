@@ -7,6 +7,10 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentSorting.SectionTriggers;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Performs Global Face Normal Indexing-based triggering as described in
+ * https://hackmd.io/@douira100/sodium-sl-gfni
+ */
 class GFNITriggers implements SectionTriggers {
 	/**
 	 * A map of all the normal lists, indexed by their normal.

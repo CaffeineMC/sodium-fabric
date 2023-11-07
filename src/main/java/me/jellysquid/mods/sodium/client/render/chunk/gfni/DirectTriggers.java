@@ -7,6 +7,10 @@ import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentSorting.SectionTriggers;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Performs direct triggering for sections that can't (or shouldn't) be
+ * topologically sorted and thus aren't eligible for GFNI triggering.
+ */
 class DirectTriggers implements SectionTriggers {
 	/**
 	 * A tree map of the directly triggered sections, indexed by their

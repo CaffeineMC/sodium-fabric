@@ -9,8 +9,9 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
- * Global Face Normal Indexing as described in
- * https://hackmd.io/@douira100/sodium-sl-gfni
+ * This class is the central point in translucency sorting. It counts the number
+ * of translucent data objects for each sort type and delegates triggering of
+ * sections for dynamic sorting to the trigger components.
  * 
  * Distances are stored as doubles and normals are stored as float vectors.
  * 
