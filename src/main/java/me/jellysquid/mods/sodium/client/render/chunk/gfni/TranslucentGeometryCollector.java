@@ -203,8 +203,9 @@ public class TranslucentGeometryCollector {
             quadList.add(new TQuad(facing, accGroup.normal, center, extents));
         }
 
-        var firstVertex = vertices[0];
-        if (accGroup.addPlaneMember(firstVertex.x, firstVertex.y, firstVertex.z)) {
+        // use the center here because it's quantized while the vertices themselves
+        // aren't. If they were to be mixed this would cause issues in the sorting.
+        if (accGroup.addPlaneMember(centerX, centerY, centerZ)) {
             this.facePlaneCount++;
         }
     }
