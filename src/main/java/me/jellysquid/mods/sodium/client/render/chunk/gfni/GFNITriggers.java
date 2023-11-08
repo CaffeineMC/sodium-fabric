@@ -10,6 +10,8 @@ import net.minecraft.util.math.ChunkSectionPos;
 /**
  * Performs Global Face Normal Indexing-based triggering as described in
  * https://hackmd.io/@douira100/sodium-sl-gfni
+ * 
+ * Distances are stored as doubles and normals are stored as float vectors.
  */
 class GFNITriggers implements SectionTriggers {
 	/**

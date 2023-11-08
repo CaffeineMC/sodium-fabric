@@ -13,8 +13,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * of translucent data objects for each sort type and delegates triggering of
  * sections for dynamic sorting to the trigger components.
  * 
- * Distances are stored as doubles and normals are stored as float vectors.
- * 
  * TODO:
  * - many sections can be marked as needing an update but they are only actually
  * scheduled for sorting when the RenderSectionManager makes them visible. This
@@ -45,10 +43,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - re-use distance sort data to accelerate future distance sorting. Sorting
  * mostly sorted data is probably faster than sorting unsorted data (or whatever
  * data comes out of the mesh).
- * - investigate why a small epsilon of 0.001 makes many more sections sortable
- * when it's added as a "slack" distance to the complex sorting's quad
- * visibility check. This suggests that the quad visibility check or the
- * quantization of vertex positions is not working correctly.
  * 
  * @author douira
  */

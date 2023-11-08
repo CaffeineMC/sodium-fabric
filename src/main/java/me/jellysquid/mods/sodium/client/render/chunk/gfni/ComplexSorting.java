@@ -9,6 +9,15 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 
+/**
+ * This class contains the sorting algorithms that do topological or distance
+ * sorting. The algorithms are combined in this class to separate them from the
+ * general management code in other classes.
+ * 
+ * Rough attempts at underapproximation of the visibility graph where the
+ * conditions for visibility between quads are made more strict did not yield
+ * significantly more robust topo sorting.
+ */
 public class ComplexSorting {
     private ComplexSorting() {
     }
