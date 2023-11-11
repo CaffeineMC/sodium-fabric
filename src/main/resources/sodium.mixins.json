@@ -27,6 +27,7 @@
     "core.checks.VertexBufferMixin",
     "core.checks.VertexFormatMixin",
     "core.checks.WindowFramebufferMixin",
+    "core.gui.DownloadingTerrainScreenMixin",
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
     "core.model.quad.BakedQuadMixin",
