@@ -15,6 +15,6 @@ public class DownloadingTerrainScreenMixin {
         // the "feet" position. This solves a problem where the loading screen can become stuck waiting for the chunk
         // at the player's feet to load, when it is determined to not be visible due to the true location of the
         // player's eyes.
-        return BlockPos.ofFloored(instance.getX(), instance.getEyeY(), instance.getY());
+        return BlockPos.ofFloored(instance.getX(), instance.getEyeY(), instance.getZ());
     }
 }
