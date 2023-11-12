@@ -1,25 +1,17 @@
 #define TEX_COORD_SCALE    1.0 / 65536.0
 #define COLOR_SCALE        1.0 / 255.0
 
-#if defined(VERTEX_FORMAT_COMPACT)
-
 #define MODEL_SCALE        32.0 / 65536.0
 #define MODEL_ORIGIN       8.0
 
-// The packed vertex data which is read from the vertex buffer
+// The packed vertex data which is read from the vertex buffer for compact vertices
 in uvec4 in_VertexData;
 
-#elif defined(VERTEX_FORMAT_FULL)
-
+// Vertex data for standard vertices
 in vec3 in_Pos;
 in uint in_Color;
 in uint in_TextureUv;
 in uint in_DrawParamsLight;
-
-#else
-#error Unsupported vertex format
-#endif
-
 
 
 // The position of the vertex around the model origin
@@ -40,8 +32,7 @@ uint _vert_material;
 // The index of the draw command which this vertex belongs to
 uint _vert_mesh_id;
 
-void _vert_init() {
-#if defined(VERTEX_FORMAT_COMPACT)
+void _vert_init_compact() {
     // Vertex Position
     uvec3 packed_position = uvec3(
         (in_VertexData[0] >>  0) & 0xFFFFu,
@@ -67,7 +58,9 @@ void _vert_init() {
     // Vertex Texture Coords
     uvec2 packed_tex_coord = (uvec2(in_VertexData[3]) >> uvec2(0, 16)) & uvec2(0xFFFFu);
     _vert_tex_coord = vec2(packed_tex_coord) * TEX_COORD_SCALE;
-#elif defined(VERTEX_FORMAT_FULL)
+}
+
+void _vert_init_full() {
     _vert_position = in_Pos;
 
     uint packed_draw_params = (in_DrawParamsLight & 0xFFFFu);
@@ -75,7 +68,7 @@ void _vert_init() {
     _vert_material = (packed_draw_params) & 0xFFu;
 
     // Vertex Mesh ID
-    _vert_mesh_id  = (packed_draw_params >> 8) & 0xFFu;
+    _vert_mesh_id = (packed_draw_params >> 8) & 0xFFu;
 
     // Vertex Color
     uvec3 packed_color = (uvec3(in_Color) >> uvec3(0, 8, 16)) & uvec3(0xFFu);
@@ -87,5 +80,12 @@ void _vert_init() {
     // Vertex Texture Coords
     uvec2 packed_tex_coord = (uvec2(in_TextureUv) >> uvec2(0, 16)) & uvec2(0xFFFFu);
     _vert_tex_coord = vec2(packed_tex_coord) * TEX_COORD_SCALE;
+}
+
+void _vert_init() {
+#if defined(VERTEX_FORMAT_COMPACT)
+    _vert_init_compact();
+#elif defined(VERTEX_FORMAT_FULL)
+    _vert_init_full();
 #endif
 }
