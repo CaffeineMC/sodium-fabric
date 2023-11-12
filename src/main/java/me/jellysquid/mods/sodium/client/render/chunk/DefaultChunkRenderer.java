@@ -23,7 +23,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.VanillaLikeChunkMeshAttribute;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.StandardChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import org.lwjgl.system.MemoryUtil;
@@ -232,16 +232,16 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                             compactFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
             };
         } else if (this.vertexType == ChunkMeshFormats.VANILLA_LIKE) {
-            GlVertexFormat<VanillaLikeChunkMeshAttribute> vanillaFormat = (GlVertexFormat<VanillaLikeChunkMeshAttribute>)this.vertexFormat;
+            GlVertexFormat<StandardChunkMeshAttribute> vanillaFormat = (GlVertexFormat<StandardChunkMeshAttribute>)this.vertexFormat;
             return new GlVertexAttributeBinding[] {
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
-                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.POSITION)),
+                            vanillaFormat.getAttribute(StandardChunkMeshAttribute.POSITION)),
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
-                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.COLOR)),
+                            vanillaFormat.getAttribute(StandardChunkMeshAttribute.COLOR)),
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV,
-                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.TEXTURE_UV)),
+                            vanillaFormat.getAttribute(StandardChunkMeshAttribute.TEXTURE_UV)),
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS_LIGHT,
-                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.DRAW_PARAMS_LIGHT)),
+                            vanillaFormat.getAttribute(StandardChunkMeshAttribute.DRAW_PARAMS_LIGHT)),
             };
         } else {
             return null; // assume Oculus/Iris will take over

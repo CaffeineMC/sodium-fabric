@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.VanillaLikeChunkMeshAttribute;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.StandardChunkMeshAttribute;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import org.lwjgl.system.MemoryUtil;
@@ -14,20 +14,20 @@ import org.lwjgl.system.MemoryUtil;
  * This vertex format is less performant and uses more VRAM than {@link CompactChunkVertex}, but should be completely
  * compatible with mods & resource packs that need high precision for models.
  */
-public class VanillaLikeChunkVertex implements ChunkVertexType {
+public class StandardChunkVertex implements ChunkVertexType {
     public static final int STRIDE = 24;
 
     private static final int TEXTURE_MAX_VALUE = 65536;
 
-    public static final GlVertexFormat<VanillaLikeChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(VanillaLikeChunkMeshAttribute.class, STRIDE)
-            .addElement(VanillaLikeChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.FLOAT, 3, false, false)
-            .addElement(VanillaLikeChunkMeshAttribute.COLOR, 12, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
-            .addElement(VanillaLikeChunkMeshAttribute.TEXTURE_UV, 16, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
-            .addElement(VanillaLikeChunkMeshAttribute.DRAW_PARAMS_LIGHT, 20, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+    public static final GlVertexFormat<StandardChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(StandardChunkMeshAttribute.class, STRIDE)
+            .addElement(StandardChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.FLOAT, 3, false, false)
+            .addElement(StandardChunkMeshAttribute.COLOR, 12, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+            .addElement(StandardChunkMeshAttribute.TEXTURE_UV, 16, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+            .addElement(StandardChunkMeshAttribute.DRAW_PARAMS_LIGHT, 20, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
             .build();
 
     @Override
-    public GlVertexFormat<VanillaLikeChunkMeshAttribute> getVertexFormat() {
+    public GlVertexFormat<StandardChunkMeshAttribute> getVertexFormat() {
         return VERTEX_FORMAT;
     }
 
