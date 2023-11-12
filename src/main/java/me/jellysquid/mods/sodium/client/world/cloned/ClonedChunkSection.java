@@ -26,6 +26,7 @@ import java.util.Map;
 public class ClonedChunkSection {
     private static final ChunkNibbleArray DEFAULT_SKY_LIGHT_ARRAY = new ChunkNibbleArray(15);
     private static final ChunkNibbleArray DEFAULT_BLOCK_LIGHT_ARRAY = new ChunkNibbleArray(0);
+    private static final PalettedContainer<BlockState> DEFAULT_STATE_CONTAINER = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
 
     private final ChunkSectionPos pos;
 
@@ -81,22 +82,25 @@ public class ClonedChunkSection {
      */
     @NotNull
     private static PalettedContainer<BlockState> constructDebugWorldContainer(ChunkSectionPos pos) {
+        // Fast path for sections which are guaranteed to be empty
+        if (pos.getY() != 3 && pos.getY() != 4)
+            return DEFAULT_STATE_CONTAINER;
+
+        // We use swapUnsafe in the loops to avoid acquiring/releasing the lock on each iteration
         var container = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
-        // We use swapUnsafe to avoid going through the lock when we own the container
-        for (int y = 0; y < 16; y++) {
-            int worldY = ChunkSectionPos.getOffsetPos(pos.getY(), y);
-            if (worldY == 60) {
-                BlockState state = Blocks.BARRIER.getDefaultState();
-                for (int z = 0; z < 16; z++) {
-                    for (int x = 0; x < 16; x++) {
-                        container.swapUnsafe(x, y, z, state);
-                    }
+        if (pos.getY() == 3) {
+            // Set the blocks at relative Y 12 (world Y 60) to barriers
+            BlockState barrier = Blocks.BARRIER.getDefaultState();
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    container.swapUnsafe(x, 12, z, barrier);
                 }
-            } else if (worldY == 70) {
-                for (int z = 0; z < 16; z++) {
-                    for (int x = 0; x < 16; x++) {
-                        container.swapUnsafe(x, y, z, DebugChunkGenerator.getBlockState(ChunkSectionPos.getOffsetPos(pos.getX(), x), ChunkSectionPos.getOffsetPos(pos.getZ(), z)));
-                    }
+            }
+        } else if (pos.getY() == 4) {
+            // Set the blocks at relative Y 6 (world Y 70) to the appropriate state from the generator
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    container.swapUnsafe(x, 6, z, DebugChunkGenerator.getBlockState(ChunkSectionPos.getOffsetPos(pos.getX(), x), ChunkSectionPos.getOffsetPos(pos.getZ(), z)));
                 }
             }
         }
