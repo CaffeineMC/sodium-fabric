@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.util.workarounds;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia.NvidiaGLContextInfo;
+import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.WindowsModuleChecks;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
@@ -23,6 +24,9 @@ public class PostLaunchChecks {
                     "likely cause severe performance issues, graphical issues, and crashes when used with Sodium. This " +
                     "configuration is not supported -- you are on your own!");
         }
+
+        // We should also check that nothing problematic has been injected into the process.
+        WindowsModuleChecks.checkModules();
     }
 
     private static void checkContextImplementation() {
@@ -123,5 +127,4 @@ public class PostLaunchChecks {
     private static boolean isKnownAndroidPathFragment(String path) {
         return path.matches("/data/user/[0-9]+/net\\.kdt\\.pojavlaunch");
     }
-
 }
