@@ -5,7 +5,9 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.ReadableContainerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.BlockBox;
@@ -14,10 +16,8 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.ChunkNibbleArray;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.ReadableContainer;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.chunk.*;
+import net.minecraft.world.gen.chunk.DebugChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +51,11 @@ public class ClonedChunkSection {
 
         if (section != null) {
             if (!section.isEmpty()) {
-                blockData = ReadableContainerExtended.clone(section.getBlockStateContainer());
+                if (!world.isDebugWorld()) {
+                    blockData = ReadableContainerExtended.clone(section.getBlockStateContainer());
+                } else {
+                    blockData = constructDebugWorldContainer(pos);
+                }
                 blockEntityMap = copyBlockEntities(chunk, pos);
 
                 if (blockEntityMap != null) {
@@ -69,6 +73,34 @@ public class ClonedChunkSection {
         this.blockEntityRenderDataMap = blockEntityRenderDataMap;
 
         this.lightDataArrays = copyLightData(world, pos);
+    }
+
+    /**
+     * Construct a fake PalettedContainer whose contents match those of the debug world. This is needed to
+     * match vanilla's odd approach of short-circuiting getBlockState calls inside its render region class.
+     */
+    @NotNull
+    private static PalettedContainer<BlockState> constructDebugWorldContainer(ChunkSectionPos pos) {
+        var container = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
+        // We use swapUnsafe to avoid going through the lock when we own the container
+        for (int y = 0; y < 16; y++) {
+            int worldY = ChunkSectionPos.getOffsetPos(pos.getY(), y);
+            if (worldY == 60) {
+                BlockState state = Blocks.BARRIER.getDefaultState();
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        container.swapUnsafe(x, y, z, state);
+                    }
+                }
+            } else if (worldY == 70) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        container.swapUnsafe(x, y, z, DebugChunkGenerator.getBlockState(ChunkSectionPos.getOffsetPos(pos.getX(), x), ChunkSectionPos.getOffsetPos(pos.getZ(), z)));
+                    }
+                }
+            }
+        }
+        return container;
     }
 
     @NotNull
