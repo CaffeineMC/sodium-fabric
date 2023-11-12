@@ -39,11 +39,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         return program;
     }
 
-    private GlProgram.Builder bindAttributesForType(GlProgram.Builder builder) {
+    private void bindAttributesForType(GlProgram.Builder builder) {
         if (this.vertexType == ChunkMeshFormats.COMPACT) {
-            return builder.bindAttribute("in_VertexData", ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA);
+            builder.bindAttribute("in_VertexData", ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA);
         } else if (this.vertexType == ChunkMeshFormats.VANILLA_LIKE) {
-            return builder
+            builder
                     .bindAttribute("in_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
                     .bindAttribute("in_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
                     .bindAttribute("in_TextureUv", ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV)
@@ -63,9 +63,12 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                 new Identifier("sodium", path + ".fsh"), constants);
 
         try {
-            return bindAttributesForType(GlProgram.builder(new Identifier("sodium", "chunk_shader"))
+            var builder = GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attachShader(vertShader)
-                    .attachShader(fragShader))
+                    .attachShader(fragShader);
+            bindAttributesForType(builder);
+
+            return builder
                     .bindFragmentData("out_FragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                     .link((shader) -> new ChunkShaderInterface(shader, options));
         } finally {
