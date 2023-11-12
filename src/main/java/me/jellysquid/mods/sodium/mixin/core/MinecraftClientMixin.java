@@ -3,18 +3,29 @@ package me.jellysquid.mods.sodium.mixin.core;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
+import me.jellysquid.mods.sodium.client.util.workarounds.InGameChecks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
+import net.minecraft.client.realms.RealmsClient;
+import net.minecraft.resource.ReloadableResourceManagerImpl;
+import net.minecraft.resource.ResourceReload;
 import net.minecraft.util.profiler.Profiler;
 import org.lwjgl.opengl.GL32C;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import java.util.concurrent.CompletableFuture;
 
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
+    @Shadow
+    @Final
+    private ReloadableResourceManagerImpl resourceManager;
     @Unique
     private final LongArrayFIFOQueue fences = new LongArrayFIFOQueue();
 
@@ -71,4 +82,21 @@ public class MinecraftClientMixin {
 
         this.fences.enqueue(fence);
     }
+
+    /**
+     * Check for problematic core shader resource packs after the initial game launch.
+     */
+    @Inject(method = "onInitFinished", at = @At("TAIL"))
+    private void postInit(RealmsClient realms, ResourceReload reload, RunArgs.QuickPlay quickPlay, CallbackInfo ci) {
+        InGameChecks.checkIfCoreShaderLoaded(resourceManager);
+    }
+
+    /**
+     * Check for problematic core shader resource packs after every resource reload.
+     */
+    @Inject(method = "reloadResources()Ljava/util/concurrent/CompletableFuture;", at = @At("TAIL"))
+    private void postResourceReload(CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+        InGameChecks.checkIfCoreShaderLoaded(resourceManager);
+    }
+
 }
