@@ -5,7 +5,9 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.ReadableContainerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.BlockBox;
@@ -14,10 +16,8 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.ChunkNibbleArray;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.ReadableContainer;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.chunk.*;
+import net.minecraft.world.gen.chunk.DebugChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,6 +26,7 @@ import java.util.Map;
 public class ClonedChunkSection {
     private static final ChunkNibbleArray DEFAULT_SKY_LIGHT_ARRAY = new ChunkNibbleArray(15);
     private static final ChunkNibbleArray DEFAULT_BLOCK_LIGHT_ARRAY = new ChunkNibbleArray(0);
+    private static final PalettedContainer<BlockState> DEFAULT_STATE_CONTAINER = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
 
     private final ChunkSectionPos pos;
 
@@ -51,7 +52,11 @@ public class ClonedChunkSection {
 
         if (section != null) {
             if (!section.isEmpty()) {
-                blockData = ReadableContainerExtended.clone(section.getBlockStateContainer());
+                if (!world.isDebugWorld()) {
+                    blockData = ReadableContainerExtended.clone(section.getBlockStateContainer());
+                } else {
+                    blockData = constructDebugWorldContainer(pos);
+                }
                 blockEntityMap = copyBlockEntities(chunk, pos);
 
                 if (blockEntityMap != null) {
@@ -69,6 +74,37 @@ public class ClonedChunkSection {
         this.blockEntityRenderDataMap = blockEntityRenderDataMap;
 
         this.lightDataArrays = copyLightData(world, pos);
+    }
+
+    /**
+     * Construct a fake PalettedContainer whose contents match those of the debug world. This is needed to
+     * match vanilla's odd approach of short-circuiting getBlockState calls inside its render region class.
+     */
+    @NotNull
+    private static PalettedContainer<BlockState> constructDebugWorldContainer(ChunkSectionPos pos) {
+        // Fast path for sections which are guaranteed to be empty
+        if (pos.getY() != 3 && pos.getY() != 4)
+            return DEFAULT_STATE_CONTAINER;
+
+        // We use swapUnsafe in the loops to avoid acquiring/releasing the lock on each iteration
+        var container = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
+        if (pos.getY() == 3) {
+            // Set the blocks at relative Y 12 (world Y 60) to barriers
+            BlockState barrier = Blocks.BARRIER.getDefaultState();
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    container.swapUnsafe(x, 12, z, barrier);
+                }
+            }
+        } else if (pos.getY() == 4) {
+            // Set the blocks at relative Y 6 (world Y 70) to the appropriate state from the generator
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    container.swapUnsafe(x, 6, z, DebugChunkGenerator.getBlockState(ChunkSectionPos.getOffsetPos(pos.getX(), x), ChunkSectionPos.getOffsetPos(pos.getZ(), z)));
+                }
+            }
+        }
+        return container;
     }
 
     @NotNull
