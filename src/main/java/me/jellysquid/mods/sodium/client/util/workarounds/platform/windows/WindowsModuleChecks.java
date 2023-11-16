@@ -27,7 +27,7 @@ public class WindowsModuleChecks {
         }
 
         // RivaTuner hooks the wglCreateContext function, and leaves itself behind as a loaded module
-        if (modules.stream().anyMatch(module -> module.path.equalsIgnoreCase("RTSSHooks64.dll"))) {
+        if (Boolean.parseBoolean(System.getProperty("sodium.checks.win32.rtss", "true")) && modules.stream().anyMatch(module -> module.path.equalsIgnoreCase("RTSSHooks64.dll"))) {
             LOGGER.error("------------------------------------------------------------------------------------------------------------");
             LOGGER.error("READ ME! You appear to be using the RivaTuner Statistics Server (RTSS)!");
             LOGGER.error("  * Rivatuner will cause extreme performance issues when using Sodium, and it will likely fill up your hard drive");
@@ -36,6 +36,10 @@ public class WindowsModuleChecks {
             LOGGER.error("    * If you don't remember installing RivaTuner, check to see if you have MSI Afterburner installed.");
             LOGGER.error("  * For more information on possible workarounds and alternatives to Rivatuner, see the following issue on GitHub:");
             LOGGER.error("    https://github.com/CaffeineMC/sodium-fabric/issues/2048");
+            LOGGER.error("  * HINT: If you believe this is an error, then you can force the game to start anyways by adding the " +
+                "following JVM argument.");
+            LOGGER.error("      -Dsodium.checks.win32.rtss" + "=false");
+            LOGGER.error("  * NOTE: We will not provide support for any issues caused by using this option. You are on your own!");
             LOGGER.error("------------------------------------------------------------------------------------------------------------");
 
             throw new RuntimeException("RivaTuner Statistics Server (RTSS) is not compatible with Sodium, " +
