@@ -28,9 +28,7 @@ public class VisibleChunkCollector implements Consumer<RenderSection> {
 
     @Override
     public void accept(RenderSection section) {
-        if (section.getFlags() != 0) {
-            this.sortedRenderLists.add(section);
-        }
+        this.sortedRenderLists.add(section);
 
         this.addToRebuildLists(section);
     }
