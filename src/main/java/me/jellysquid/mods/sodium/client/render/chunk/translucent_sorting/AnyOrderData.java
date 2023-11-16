@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.gfni;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
 
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;

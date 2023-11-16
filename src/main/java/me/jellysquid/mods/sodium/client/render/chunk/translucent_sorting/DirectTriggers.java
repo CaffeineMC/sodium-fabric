@@ -1,10 +1,10 @@
-package me.jellysquid.mods.sodium.client.render.chunk.gfni;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
 
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentSorting.SectionTriggers;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting.SectionTriggers;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**

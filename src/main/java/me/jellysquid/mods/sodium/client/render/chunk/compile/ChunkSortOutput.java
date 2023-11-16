@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.DynamicData;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.PresentTranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.DynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.PresentTranslucentData;
 
 public class ChunkSortOutput extends BuilderTaskOutput implements OutputWithIndexData {
     public final DynamicData dynamicData;

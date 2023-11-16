@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.Text;

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentSorting;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.client.texture.Sprite;
 

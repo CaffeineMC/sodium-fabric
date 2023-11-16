@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentGeometryCollector;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;

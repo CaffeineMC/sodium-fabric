@@ -5,7 +5,7 @@ import org.joml.Vector3dc;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.DynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.DynamicData;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 
 public class ChunkBuilderSortingTask extends ChunkBuilderTask<ChunkSortOutput> {

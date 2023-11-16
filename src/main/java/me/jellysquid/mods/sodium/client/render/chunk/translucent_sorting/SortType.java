@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.gfni;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
 
 /**
  * What type of sorting to use for a section. Calculated by a heuristic after
