@@ -218,10 +218,20 @@ public class TranslucentGeometryCollector {
      */
     private static SortType filterSortType(SortType sortType) {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
-        if (!sortBehavior.sortTypes.contains(sortType)) {
-            return SortType.NONE;
+        switch (sortBehavior) {
+            case OFF:
+                return SortType.NONE;
+            case STATIC:
+                if (sortType == SortType.NONE) {
+                    return sortType;
+                } else {
+                    return SortType.STATIC_NORMAL_RELATIVE;
+                }
+            case DYNAMIC:
+                return sortType;
+            default:
+                throw new IllegalStateException("Unknown sort behavior: " + sortBehavior);
         }
-        return sortType;
     }
 
     /**
@@ -377,7 +387,7 @@ public class TranslucentGeometryCollector {
         return this.sortType;
     }
 
-    private TranslucentData getTranslucentDataNew(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
+    private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
         if (this.sortType == SortType.NONE) {
             return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos, null);
         }
@@ -455,7 +465,7 @@ public class TranslucentGeometryCollector {
             }
         }
 
-        var newData = getTranslucentDataNew(translucentMesh, cameraPos);
+        var newData = makeNewTranslucentData(translucentMesh, cameraPos);
         if (newData instanceof PresentTranslucentData presentData) {
             presentData.setQuadHash(getQuadHash(this.quads));
         }

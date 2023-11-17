@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.Text;
@@ -16,8 +15,6 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Set;
-import java.util.EnumSet;
 
 public class SodiumGameOptions {
     private static final String DEFAULT_FILE_NAME = "sodium-options.json";
@@ -53,32 +50,19 @@ public class SodiumGameOptions {
     }
 
     public enum SortBehavior implements TextProvider {
-        OFF("options.off", Set.of(SortType.NONE)),
-        STATIC("options.clouds.fast", getUpTo(SortType.STATIC_TOPO_ACYCLIC)),
-        DYNAMIC("options.clouds.fancy", getUpTo(SortType.DYNAMIC_ALL));
+        OFF("options.off"),
+        STATIC("options.clouds.fast"),
+        DYNAMIC("options.clouds.fancy");
 
         private final Text name;
-        public final Set<SortType> sortTypes;
 
-        SortBehavior(String name, Set<SortType> sortTypes) {
+        SortBehavior(String name) {
             this.name = Text.translatable(name);
-            this.sortTypes = sortTypes;
         }
 
         @Override
         public Text getLocalizedName() {
             return this.name;
-        }
-
-        private static final Set<SortType> getUpTo(SortType sortType) {
-            var set = EnumSet.noneOf(SortType.class);
-            for (var type : SortType.values()) {
-                set.add(type);
-                if (type == sortType) {
-                    break;
-                }
-            }
-            return set;
         }
     }
 
