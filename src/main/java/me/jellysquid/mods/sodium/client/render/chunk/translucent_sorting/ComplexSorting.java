@@ -297,7 +297,11 @@ public class ComplexSorting {
             var oppositeDirection = oppositeFacing.ordinal();
             var sign = facing.getSign();
 
-            // test that they're not overlapping in this direction
+            // test that they're not overlapping in this direction. Multiplication with the
+            // sign makes the > work in the other direction which is necessary since the
+            // facing turns the whole space around. The start and end are ordered along the
+            // < relation as is the normal. The normal always points in the direction of
+            // greater values, even if all of the geometry has negative values.
             var separatorRangeStart = sign * quadB.extents()[direction];
             var separatorRangeEnd = sign * quadA.extents()[oppositeDirection];
             if (separatorRangeStart > separatorRangeEnd) {
@@ -311,13 +315,19 @@ public class ComplexSorting {
                 continue;
             }
 
-            // restrict the separator range start to the camera distance
-            separatorRangeStart = Math.max(separatorRangeStart, cameraDistance);
+            // use camera distance as the start because even if there's no geometry that
+            // generates such separator plane itself, if there's any plane that triggers the
+            // section before the camera can see B through A this is enough. The separator
+            // doesn't need to be between B and A if the camera will cross another separator
+            // before any separator that could be between B and A.
+            separatorRangeStart = cameraDistance;
+
+            // swapping the start and end is not necessary since the start is always smaller
+            // than the end value.
 
             // test if there is a separator plane that is outside/on the surface of the
-            // current trigger volume
-            if (testSeparatorRange(distancesByNormal, facingNormal,
-                    separatorRangeStart, separatorRangeEnd)) {
+            // current trigger volume.
+            if (testSeparatorRange(distancesByNormal, facingNormal, separatorRangeStart, separatorRangeEnd)) {
                 return false;
             }
         }
