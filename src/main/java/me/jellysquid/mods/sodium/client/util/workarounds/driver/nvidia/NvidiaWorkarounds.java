@@ -11,8 +11,7 @@ public class NvidiaWorkarounds {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-NvidiaWorkarounds");
 
     public static void install() {
-        LOGGER.warn("Attempting to apply workarounds for the NVIDIA Graphics Driver...");
-        LOGGER.warn("If the game crashes immediately after this point, please make a bug report: https://github.com/CaffeineMC/sodium-fabric/issues");
+        LOGGER.warn("Applying workaround: Prevent the NVIDIA OpenGL driver from using broken optimizations (NVIDIA_THREADED_OPTIMIZATIONS)");
 
         try {
             switch (Util.getOperatingSystem()) {
@@ -30,8 +29,6 @@ public class NvidiaWorkarounds {
                     LibC.setEnvironmentVariable("__GL_THREADED_OPTIMIZATIONS", "0");
                 }
             }
-
-            LOGGER.info("... Successfully applied workarounds for the NVIDIA Graphics Driver!");
         } catch (Throwable t) {
             LOGGER.error("Failure while applying workarounds", t);
 
