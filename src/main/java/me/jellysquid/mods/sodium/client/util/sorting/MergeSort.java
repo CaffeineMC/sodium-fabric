@@ -42,7 +42,7 @@ public class MergeSort extends AbstractSort {
         return indices;
     }
 
-    private static void mergeSort(final int[] indices, final float[] keys) {
+    public static void mergeSort(final int[] indices, final float[] keys) {
         mergeSort(indices, keys, 0, indices.length, null);
     }
 

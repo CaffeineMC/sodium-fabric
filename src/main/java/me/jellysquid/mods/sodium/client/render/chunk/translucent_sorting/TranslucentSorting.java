@@ -40,9 +40,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - determine the right distance for angle/distance triggering. It seems just
  * the diagonal of a section is too small, angle triggering is broken at close
  * distances.
- * - re-use distance sort data to accelerate future distance sorting. Sorting
- * mostly sorted data is probably faster than sorting unsorted data (or whatever
- * data comes out of the mesh).
  * 
  * @author douira
  */

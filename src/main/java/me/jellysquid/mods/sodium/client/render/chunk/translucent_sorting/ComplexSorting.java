@@ -45,19 +45,31 @@ public class ComplexSorting {
         return halfspace(planeAnchor, planeNormal, point) < 0;
     }
 
-    private static int[] distanceSortIndexes(TQuad[] quads, Vector3fc cameraPos) {
-        float[] keys = new float[quads.length];
+    private static ThreadLocal<float[]> distanceSortKeys = new ThreadLocal<>();
+
+    public static int[] distanceSortDirect(int[] indexes,
+            IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
+        if (indexes == null) {
+            indexes = new int[quads.length];
+            for (int i = 0; i < quads.length; i++) {
+                indexes[i] = i;
+            }
+        }
+
+        float[] keys = distanceSortKeys.get();
+        if (keys == null || keys.length < quads.length) {
+            keys = new float[quads.length];
+            distanceSortKeys.set(keys);
+        }
+
         for (int i = 0; i < quads.length; i++) {
             keys[i] = cameraPos.distanceSquared(quads[i].center());
         }
 
-        // TODO: use sort algorithm other than merge sort
-        return MergeSort.mergeSort(keys);
-    }
-
-    public static void distanceSortDirect(IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
-        var indexes = distanceSortIndexes(quads, cameraPos);
+        MergeSort.mergeSort(indexes, keys);
         TranslucentData.writeQuadVertexIndexes(indexBuffer, indexes);
+
+        return indexes;
     }
 
     private static boolean orthogonalQuadVisibleThrough(TQuad halfspace, TQuad otherQuad) {

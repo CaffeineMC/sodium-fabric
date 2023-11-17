@@ -23,6 +23,7 @@ public class DynamicData extends MixedDirectionData {
     private boolean pendingTriggerIsAngle;
     private TranslucentGeometryCollector collector;
     private Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal;
+    private int[] distanceSortIndexes;
 
     private static final int MAX_TOPO_SORT_QUADS = 1000;
     private static final int MAX_TOPO_SORT_TIME_NS = 1_000_000;
@@ -75,6 +76,7 @@ public class DynamicData extends MixedDirectionData {
             this.directTrigger = false;
             this.turnDirectTriggerOff = true;
         }
+        this.distanceSortIndexes = null;
     }
 
     private static int getAttemptsForTime(long ns) {
@@ -129,9 +131,11 @@ public class DynamicData extends MixedDirectionData {
                 this.turnDirectTriggerOn();
             }
         }
+
         if (this.directTrigger) {
             indexBuffer.rewind();
-            ComplexSorting.distanceSortDirect(indexBuffer, this.quads, cameraPos);
+            this.distanceSortIndexes = ComplexSorting.distanceSortDirect(
+                    this.distanceSortIndexes, indexBuffer, this.quads, cameraPos);
             return;
         }
     }
