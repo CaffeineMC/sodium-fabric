@@ -53,7 +53,7 @@ public class DynamicData extends MixedDirectionData {
 
     @Override
     public void sortOnTrigger(Vector3fc cameraPos) {
-        this.sort(cameraPos, this.pendingTriggerIsAngle);
+        this.sort(cameraPos, this.pendingTriggerIsAngle, false);
     }
 
     private void turnGFNITriggerOff() {
@@ -81,7 +81,7 @@ public class DynamicData extends MixedDirectionData {
         return ns <= MAX_TOPO_SORT_PATIENT_TIME_NS ? PATIENT_TOPO_ATTEMPTS : REGULAR_TOPO_ATTEMPTS;
     }
 
-    private void sort(Vector3fc cameraPos, boolean isAngleTrigger) {
+    private void sort(Vector3fc cameraPos, boolean isAngleTrigger, boolean initial) {
         // mark as not being reused to ensure the updated buffer is actually uploaded
         this.unsetReuseUploadedData();
 
@@ -94,23 +94,24 @@ public class DynamicData extends MixedDirectionData {
         }
 
         if (this.GFNITrigger && !isAngleTrigger) {
-            var sortStart = System.nanoTime();
+            var sortStart = initial ? 0 : System.nanoTime();
 
             var result = ComplexSorting.topoSortDepthFirstCyclic(
                     indexBuffer, this.quads, this.distancesByNormal, cameraPos);
 
-            var sortTime = System.nanoTime() - sortStart;
+            var sortTime = initial ? 0 : System.nanoTime() - sortStart;
 
             // if we've already failed, there's reduced patience for sorting since the
-            // probability of failure and wasted compute time is higher
-            if (sortTime > (this.consecutiveTopoSortFailures > 0
+            // probability of failure and wasted compute time is higher. Initial sorting is
+            // often very slow when the cpu is loaded and the JIT isn't ready yet, so it's
+            // ignored here.
+            if (!initial && sortTime > (this.consecutiveTopoSortFailures > 0
                     ? MAX_FAILING_TOPO_SORT_TIME_NS
                     : MAX_TOPO_SORT_TIME_NS)) {
                 this.turnGFNITriggerOff();
                 this.turnDirectTriggerOn();
-            }
-
-            if (result) {
+                System.out.println("topo sort took too long");
+            } else if (result) {
                 // disable distance sorting because topo sort seems to be possible.
                 this.turnDirectTriggerOff();
                 this.consecutiveTopoSortFailures = 0;
@@ -154,7 +155,8 @@ public class DynamicData extends MixedDirectionData {
     }
 
     static DynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector, NativeBuffer buffer) {
+            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector,
+            NativeBuffer buffer) {
         // prepare accumulation groups for GFNI integration and copy
         var size = 0;
         if (collector.axisAlignedDistances != null) {
@@ -188,7 +190,7 @@ public class DynamicData extends MixedDirectionData {
 
         var dynamicData = new DynamicData(sectionPos, buffer, range, quads, collector, distancesByNormal);
 
-        dynamicData.sort(cameraPos, false);
+        dynamicData.sort(cameraPos, false, true);
 
         return dynamicData;
     }
