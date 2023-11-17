@@ -40,17 +40,25 @@ class GFNITriggers implements SectionTriggers {
 		}
 	}
 
-	private void removeSectionFromList(NormalList normalList, long sectionPos) {
+	/**
+	 * Removes the section from the normal list and returns whether the normal list
+	 * is now empty and should itself be removed from the normal lists map. This is
+	 * done with a return value so that the iterator can be used to remove it safely
+	 * without a concurrent modification.
+	 */
+	private boolean removeSectionFromList(NormalList normalList, long sectionPos) {
 		normalList.removeSection(sectionPos);
-		if (normalList.isEmpty()) {
-			this.normalLists.remove(normalList.getNormal());
-		}
+		return normalList.isEmpty();
 	}
 
 	@Override
 	public void removeSection(long sectionPos, TranslucentData data) {
-		for (var normalList : this.normalLists.values()) {
-			this.removeSectionFromList(normalList, sectionPos);
+		var iterator = this.normalLists.values().iterator();
+		while (iterator.hasNext()) {
+			var normalList = iterator.next();
+			if (this.removeSectionFromList(normalList, sectionPos)) {
+				iterator.remove();
+			}
 		}
 	}
 
@@ -62,12 +70,17 @@ class GFNITriggers implements SectionTriggers {
 		// go through all normal lists and check against the normals that the group
 		// builder has. if the normal list has data for the section, but the group
 		// builder doesn't, the group is removed. otherwise, the group is updated.
-		for (var normalList : this.normalLists.values()) {
+		var iterator = this.normalLists.values().iterator();
+		while (iterator.hasNext()) {
+			var normalList = iterator.next();
+
 			// check if the geometry collector includes data for this normal.
 			var accGroup = collector.getGroupForNormal(normalList);
 			if (normalList.hasSection(sectionPos)) {
 				if (accGroup == null) {
-					this.removeSectionFromList(normalList, sectionPos);
+					if (this.removeSectionFromList(normalList, sectionPos)) {
+						iterator.remove();
+					}
 				} else {
 					normalList.updateSection(accGroup, sectionPos);
 				}
