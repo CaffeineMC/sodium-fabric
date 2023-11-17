@@ -30,13 +30,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * perform blocking sorts of close sections. Maybe not an issue? Might reduce
  * stutter in high fps situations. However, high complexity with regards to
  * processing the results of preemptive sorts.
- * - Check that separators still work on aligned geomtry. It seems that a lot of
- * things are not topo sortable after the most recent fix to the quad visibility
- * check.
- * - figure out why when the player moves at high speed there end up being more
- * direct trigger entries than sections with the dynamic sort type, even if
- * everything is set to only direct trigger and not GFNI trigger. (the numbers
- * should be the same, somehow they're not being bookkept correctly)
  * - determine the right distance for angle/distance triggering. It seems just
  * the diagonal of a section is too small, angle triggering is broken at close
  * distances.

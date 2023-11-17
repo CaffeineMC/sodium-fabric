@@ -426,8 +426,9 @@ public class TranslucentGeometryCollector {
             return this.quadHash;
         }
 
-        for (TQuad quad : quads) {
-            this.quadHash ^= this.quadHash * 31 + quad.hashCode();
+        for (int i = 0; i < quads.length; i++) {
+            var quad = quads[i];
+            this.quadHash = this.quadHash * 31 + quad.getQuadHash() + i * 3;
         }
         return this.quadHash;
     }

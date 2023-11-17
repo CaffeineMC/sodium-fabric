@@ -15,40 +15,16 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  *           correctly compared..
  */
 record TQuad(ModelQuadFacing facing, Vector3fc normal, Vector3f center, float[] extents) {
-	@Override
-	public int hashCode() {
-		final int prime = 31;
+	int getQuadHash() {
+		// the hash code needs to be particularly collision resistant
 		int result = 1;
-		result = prime * result + ((facing == null) ? 0 : facing.hashCode());
-		result = prime * result + ((normal == null) ? 0 : normal.hashCode());
-		result = prime * result + ((center == null) ? 0 : center.hashCode());
-		result = prime * result + Arrays.hashCode(extents);
+		result = 31 * result + Arrays.hashCode(this.extents);
+		if (facing == ModelQuadFacing.UNASSIGNED) {
+			result = 31 * result + this.facing.hashCode();
+		} else {
+			result = 31 * result + this.normal.hashCode();
+		}
+		result = 31 * result + this.center.hashCode();
 		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		TQuad other = (TQuad) obj;
-		if (facing != other.facing)
-			return false;
-		if (normal == null) {
-			if (other.normal != null)
-				return false;
-		} else if (!normal.equals(other.normal))
-			return false;
-		if (center == null) {
-			if (other.center != null)
-				return false;
-		} else if (!center.equals(other.center))
-			return false;
-		if (!Arrays.equals(extents, other.extents))
-			return false;
-		return true;
 	}
 }
