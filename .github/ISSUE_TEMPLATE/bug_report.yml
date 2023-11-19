@@ -49,6 +49,10 @@ body:
       label: Log File
       description: >-
         Attach the most recent log file from your client (`logs/latest.log`). This file should always be present.
+
+        **Important:** Upload the file to this issue as an attachment by first selecting the text box below and then dragging your file onto it.
+        GitHub will upload the file as an attachment and generate a link to it. This issue will be automatically closed if you omit a log
+        file or copy-paste its content here.
       placeholder: >-
         Upload the log file here...
     validations:
@@ -58,7 +62,7 @@ body:
     attributes:
       label: Crash Report
       description: >-
-        Attach the most recent crash report from the `crash-reports` folder. This is different from the log file above, and it contains
+        Attach the most recent crash report from the `crash-reports` folder in the same manner as before. This is different from the log file above, and it contains
         important information about your hardware and software configuration.
                 
         **Important:** If your game is not crashing as a result of your problem, then you need to obtain a crash report manually. This can be done
