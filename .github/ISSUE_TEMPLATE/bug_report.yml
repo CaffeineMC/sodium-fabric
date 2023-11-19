@@ -54,8 +54,7 @@ body:
         **Hint:** You can usually find the log files within the folder `.minecraft/logs`. Most often, you will want the `latest.log`
         file, since that file belongs to the last played session of the game.
       placeholder: >-
-        Drag-and-drop the log file here (as a file.) Please do not copy the contents of the log file into this area, or
-        otherwise use a third-party service to upload the file.
+        Drag-and-drop the log file here.
     validations:
       required: true
   - type: textarea
@@ -69,7 +68,6 @@ body:
         
         **Hint:** You can usually find crash reports (with their date and time) in the folder `.minecraft/crash-reports`.
       placeholder: >-
-        Drag-and-drop the crash report here (as a file.) Please do not copy the contents of the log file into this area, or
-        otherwise use a third-party service to upload the file.
+        Drag-and-drop the crash report file here.
     validations:
       required: true
