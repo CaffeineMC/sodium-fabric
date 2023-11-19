@@ -45,7 +45,7 @@ public class MatrixHelper {
      * @return The transformed X-coordinate for the normal vector
      */
     public static float transformNormalX(Matrix3f mat, float x, float y, float z) {
-        return (mat.m00() * x) + (mat.m10() * y) + (mat.m20() * z);
+        return (mat.m00() * x) + ((mat.m10() * y) + (mat.m20() * z));
     }
 
     /**
@@ -56,7 +56,7 @@ public class MatrixHelper {
      * @return The transformed Y-coordinate for the normal vector
      */
     public static float transformNormalY(Matrix3f mat, float x, float y, float z) {
-        return (mat.m01() * x) + (mat.m11() * y) + (mat.m21() * z);
+        return (mat.m01() * x) + ((mat.m11() * y) + (mat.m21() * z));
     }
 
     /**
@@ -67,7 +67,7 @@ public class MatrixHelper {
      * @return The transformed Z-coordinate for the normal vector
      */
     public static float transformNormalZ(Matrix3f mat, float x, float y, float z) {
-        return (mat.m02() * x) + (mat.m12() * y) + (mat.m22() * z);
+        return (mat.m02() * x) + ((mat.m12() * y) + (mat.m22() * z));
     }
 
     /**
@@ -78,7 +78,7 @@ public class MatrixHelper {
      * @return The transformed X-coordinate for the vertex position
      */
     public static float transformPositionX(Matrix4f mat, float x, float y, float z) {
-        return (mat.m00() * x) + (mat.m10() * y) + (mat.m20() * z) + mat.m30();
+        return (mat.m00() * x) + ((mat.m10() * y) + ((mat.m20() * z) + mat.m30()));
     }
 
     /**
@@ -89,7 +89,7 @@ public class MatrixHelper {
      * @return The transformed Y-coordinate for the vertex position
      */
     public static float transformPositionY(Matrix4f mat, float x, float y, float z) {
-        return (mat.m01() * x) + (mat.m11() * y) + (mat.m21() * z) + mat.m31();
+        return (mat.m01() * x) + ((mat.m11() * y) + ((mat.m21() * z) + mat.m31()));
     }
 
     /**
@@ -100,7 +100,7 @@ public class MatrixHelper {
      * @return The transformed Z-coordinate for the vertex position
      */
     public static float transformPositionZ(Matrix4f mat, float x, float y, float z) {
-        return (mat.m02() * x) + (mat.m12() * y) + (mat.m22() * z) + mat.m32();
+        return (mat.m02() * x) + ((mat.m12() * y) + ((mat.m22() * z) + mat.m32()));
     }
 
     /**
