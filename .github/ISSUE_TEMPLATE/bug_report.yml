@@ -1,26 +1,29 @@
 name: Bug Report
-description: "For reporting either bugs or crashes"
+description: "For reporting bugs and other defects"
 labels:
   - S-needs-triage
 body:
   - type: markdown
     attributes:
-      value: >- 
-        Before opening an issue, please make sure you have done the following:
-
-        - **Have you read the [list of known issues](https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility)?** Most problems
-        (such as poor performance) are caused by out-of-date or incompatible graphics drivers.
+      value: >-
+        **Note: This issue tracker is not intended for support requests!** If you need help with crashes or other issues, then
+        you should [ask on our Discord server](https://caffeinemc.net/discord) instead. Unless you are certain that you
+        have found a defect, and you are able to point to where the problem is, you should not open an issue.
         
-        - **Have you used the [search tool](https://github.com/CaffeineMC/sodium-fabric/issues) to see if someone has already
-        reported this problem?** If there is already an issue which describes your problem exactly, you should prefer to
-        add information to that issue, rather than open a new one.
+        Additionally, please make sure you have done the following:
         
         - **Have you ensured that all of your mods (including Sodium) are up-to-date?** The latest version of Sodium
         can always be found [on Modrinth](https://modrinth.com/mod/sodium).
         
-        - **If the issue occurs only with other mods installed, have you determined which mods exactly are causing the problem?** Please do not
-        provide your entire mod list and expect us to be able to find which mods are causing the problem. You may try using
-        a _binary search_ (also known as "divide and conquer") to figure out which mods are problematic.
+        - **Have you read the [list of known driver incompatibilities](https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility)?** Most problems
+        (including "poor performance") are caused by out-of-date or incompatible graphics drivers.
+        
+        - **Have you used the [search tool](https://github.com/CaffeineMC/sodium-fabric/issues) to check whether your issue
+        has already been reported?** If it has been, then consider adding more information to the existing issue instead.
+        
+        - **Have you determined the minimum set of instructions to reproduce the issue?** If your problem only occurs
+        with other mods installed, then you should narrow down exactly which mods are causing the issue. Please do not
+        provide your entire list of mods to us and expect that we will be able to figure out the problem.
   - type: textarea
     id: description
     attributes:
@@ -48,9 +51,11 @@ body:
     attributes:
       label: Log File
       description: >-
-        Attach the most recent log file from your client (`logs/latest.log`). This file should always be present.
+        You can usually find the log files within the folder `.minecraft/logs`. Most often, you will want the `latest.log`
+        file, since that file belongs to the last played session of the game.
       placeholder: >-
-        Upload the log file here...
+        Drag-and-drop the log file here (as a file.) Please do not copy the contents of the log file into this area, or
+        otherwise use a third-party service to upload the file.
     validations:
       required: true
   - type: textarea
@@ -58,12 +63,13 @@ body:
     attributes:
       label: Crash Report
       description: >-
-        Attach the most recent crash report from the `crash-reports` folder. This is different from the log file above, and it contains
-        important information about your hardware and software configuration.
-                
-        **Important:** If your game is not crashing as a result of your problem, then you need to obtain a crash report manually. This can be done
-        by loading the game to the main menu, and holding the F3+C keys together for approximately 10 seconds.
+        **Important:** Even if your game is _not crashing_ as a result of your problem, we still need a crash report. This
+        file contains important information about your hardware and software configuration. You can generate a crash report
+        manually by loading the game to the main menu, and holding the F3+C keys together for approximately 10 seconds.
+        
+        You can usually find crash reports (with their date and time) in the folder `.minecraft/crash-reports`.
       placeholder: >-
-        Upload the crash report file here...
+        Drag-and-drop the crash report here (as a file.) Please do not copy the contents of the log file into this area, or
+        otherwise use a third-party service to upload the file.
     validations:
       required: true
