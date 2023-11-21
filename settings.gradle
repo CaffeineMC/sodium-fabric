@@ -1,10 +1,27 @@
 pluginManagement {
     repositories {
         maven {
-            name = 'Fabric'
-            url = 'https://maven.fabricmc.net/'
+            name 'ObjectWeb'
+            url 'https://repository.ow2.org/nexus/content/repositories/releases'
+            content {
+                includeGroup('org.ow2.asm')
+            }
         }
-        mavenCentral() // backup mirror for JCenter's Bintray, which is ordinarily used to resolve Eclipse's JGit
-        gradlePluginPortal()
+        maven {
+            name 'Fabric'
+            url 'https://maven.fabricmc.net'
+            content {
+                includeModule('fabric-loom', 'fabric-loom.gradle.plugin')
+                includeGroup('net.fabricmc.unpick')
+                includeGroup('net.fabricmc')
+            }
+        }
+        gradlePluginPortal {
+            content {
+                includeModule('io.github.juuxel.loom-vineflower', 'io.github.juuxel.loom-vineflower.gradle.plugin')
+                includeModule('io.github.juuxel', 'loom-vineflower')
+            }
+        }
+        mavenCentral()
     }
 }
