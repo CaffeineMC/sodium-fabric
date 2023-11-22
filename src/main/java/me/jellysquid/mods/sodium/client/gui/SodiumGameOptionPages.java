@@ -20,7 +20,6 @@ import net.minecraft.text.Text;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 
-import javax.sound.sampled.BooleanControl;
 import java.util.ArrayList;
 import java.util.List;
 
