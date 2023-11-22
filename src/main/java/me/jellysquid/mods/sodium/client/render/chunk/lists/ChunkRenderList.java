@@ -101,4 +101,7 @@ public class ChunkRenderList {
         return this.region;
     }
 
+    public int size() {
+        return this.size;
+    }
 }
