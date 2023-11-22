@@ -86,6 +86,8 @@
     "features.textures.animations.tracking.DrawContextMixin",
     "features.textures.animations.tracking.SpriteAtlasTextureMixin",
     "features.textures.animations.tracking.SpriteBillboardParticleMixin",
+    "features.textures.animations.tracking.SpriteContentsAnimationAccessor",
+    "features.textures.animations.tracking.SpriteContentsAnimationFrameAccessor",
     "features.textures.animations.tracking.SpriteContentsAnimatorImplMixin",
     "features.textures.animations.tracking.SpriteContentsMixin",
     "features.textures.animations.upload.SpriteContentsAccessor",
