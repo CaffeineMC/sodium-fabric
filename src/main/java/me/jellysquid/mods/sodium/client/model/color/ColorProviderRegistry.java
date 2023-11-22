@@ -30,7 +30,7 @@ public class ColorProviderRegistry {
     // TODO: Allow mods to install their own color resolvers here
     private void installOverrides() {
         this.registerBlocks(DefaultColorProviders.GrassColorProvider.BLOCKS,
-                Blocks.GRASS_BLOCK, Blocks.FERN, Blocks.GRASS, Blocks.POTTED_FERN,
+                Blocks.GRASS_BLOCK, Blocks.FERN, Blocks.SHORT_GRASS, Blocks.POTTED_FERN,
                 Blocks.PINK_PETALS, Blocks.SUGAR_CANE, Blocks.LARGE_FERN, Blocks.TALL_GRASS);
 
         this.registerBlocks(DefaultColorProviders.FoliageColorProvider.BLOCKS,
