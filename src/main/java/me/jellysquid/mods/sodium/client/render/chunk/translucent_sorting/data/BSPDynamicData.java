@@ -5,7 +5,6 @@ import org.joml.Vector3fc;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPNode;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPResult;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
@@ -33,7 +32,7 @@ public class BSPDynamicData extends DynamicData {
     }
 
     public static BSPDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector,
+            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos,
             NativeBuffer buffer) {
         var result = BSPNode.buildBSP(quads, sectionPos);
 

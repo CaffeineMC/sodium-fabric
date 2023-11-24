@@ -418,7 +418,7 @@ public class TranslucentGeometryCollector extends AccGroupResult {
 
         if (this.sortType == SortType.DYNAMIC_ALL) {
             try {
-                return BSPDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, this, buffer);
+                return BSPDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, buffer);
             } catch (BSPBuildFailureException e) {
                 System.out.println("BSP build failure: " + sectionPos);
                 return TopoSortDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, this, buffer);
