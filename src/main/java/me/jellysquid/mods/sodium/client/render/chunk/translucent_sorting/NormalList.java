@@ -19,16 +19,16 @@ import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
 /**
  * A normal list contains all the face planes that have the same normal.
  */
-class NormalList {
+public class NormalList {
     /**
      * Size threshold after which group sets in {@link #groupsByInterval} are
      * replaced with hash sets to improve update performance.
      */
-    private static final int HASH_SET_THRESHOLD = 40;
+    private static final int HASH_SET_THRESHOLD = 20;
 
     /**
      * Size threshold under which group sets in {@link #groupsByInterval} are
-     * downgraded to array sets to improve reduce memory usage.
+     * downgraded to array sets to reduce memory usage.
      */
     private static final int ARRAY_SET_THRESHOLD = 10;
 
@@ -40,7 +40,8 @@ class NormalList {
 
     /**
      * If this normal list is for an axis-aligned normal, this is the index of it
-     * for querying in {@link TranslucentGeometryCollector#getGroupForNormal(Vector3fc)}.
+     * for querying in
+     * {@link TranslucentGeometryCollector#getGroupForNormal(Vector3fc)}.
      * 
      * If this normal list is for an unaligned normal, this is the key for the
      * hash map of quantized normals.
@@ -69,7 +70,7 @@ class NormalList {
      * Constructs a new normal list with the given unit normal vector and aligned
      * normal index.
      * 
-     * @param normal          The unit normal vector
+     * @param normal       The unit normal vector
      * @param collectorKey The geometry collector index
      */
     NormalList(Vector3fc normal, int collectorKey) {
@@ -78,7 +79,7 @@ class NormalList {
         this.collectorKey = collectorKey;
     }
 
-    Vector3fc getNormal() {
+    public Vector3fc getNormal() {
         return normalf;
     }
 

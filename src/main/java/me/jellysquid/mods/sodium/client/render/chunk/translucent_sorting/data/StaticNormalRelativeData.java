@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import java.nio.IntBuffer;
 
@@ -9,6 +9,9 @@ import com.mojang.blaze3d.systems.VertexSorter;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
@@ -24,10 +27,6 @@ public class StaticNormalRelativeData extends SplitDirectionData {
         return SortType.STATIC_NORMAL_RELATIVE;
     }
 
-    /**
-     * The vertex sorter for each direction.
-     * TODO: is there a better place to put this
-     */
     private static final VertexSorter[] SORTERS = new VertexSorter[ModelQuadFacing.DIRECTIONS];
 
     static {
@@ -102,9 +101,9 @@ public class StaticNormalRelativeData extends SplitDirectionData {
         return new StaticNormalRelativeData(sectionPos, buffer, ranges);
     }
 
-    static StaticNormalRelativeData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static StaticNormalRelativeData fromMesh(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector) {
-        if (collector.alignedNormalBitmap == 0) {
+        if (collector.getAlignedNormalBitmap() == 0) {
             return fromDoubleUnaligned(translucentMesh, quads, sectionPos, collector);
         } else {
             return fromAligned(translucentMesh, quads, sectionPos);

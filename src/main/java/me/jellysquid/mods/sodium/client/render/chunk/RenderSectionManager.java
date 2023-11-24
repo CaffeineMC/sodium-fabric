@@ -30,8 +30,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.CameraMovement;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
@@ -331,8 +332,9 @@ public class RenderSectionManager {
                     // a rebuild always generates new translucent data which means applyTriggerChanges isn't necessary
                     result.render.setTranslucentData(chunkBuildOutput.translucentData);
                 }
-            } else if (result instanceof ChunkSortOutput chunkSortOutput && chunkSortOutput.dynamicData.hasTriggerChanges()) {
-                this.ts.applyTriggerChanges(chunkSortOutput.dynamicData, result.render.getPosition(), this.cameraPosition);
+            } else if (result instanceof ChunkSortOutput chunkSortOutput 
+                    && chunkSortOutput.dynamicData instanceof TopoSortDynamicData data) {
+                this.ts.applyTriggerChanges(data, result.render.getPosition(), this.cameraPosition);
             }
 
             var job = result.render.getTaskCancellationToken();

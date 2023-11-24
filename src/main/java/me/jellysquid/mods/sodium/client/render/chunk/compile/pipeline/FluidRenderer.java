@@ -230,13 +230,14 @@ public class FluidRenderer {
             setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
             setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
 
+            boolean aligned = northEastHeight == northWestHeight
+                    && northWestHeight == southEastHeight
+                    && southEastHeight == southWestHeight;
+
             this.updateQuad(quad, world, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, collector, material, offset, quad, facing, false);
+            this.writeQuad(meshBuilder, collector, material, offset, quad, aligned ? facing : ModelQuadFacing.UNASSIGNED, false);
 
             if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                boolean aligned = northEastHeight == northWestHeight 
-                        && northWestHeight == southEastHeight 
-                        && southEastHeight == southWestHeight;
                 this.writeQuad(meshBuilder, collector, material, offset, quad,
                         aligned ? ModelQuadFacing.NEG_Y : ModelQuadFacing.UNASSIGNED, true);
 
@@ -432,7 +433,7 @@ public class FluidRenderer {
                 // calculate the current GFNI normal but not the unit normal
                 quad.calculateNormals(false);
             }
-            collector.appendQuad(quad, vertices, facing);
+            collector.appendQuad(quad, vertices, facing, flip);
         }
 
         var vertexBuffer = builder.getVertexBuffer(facing);

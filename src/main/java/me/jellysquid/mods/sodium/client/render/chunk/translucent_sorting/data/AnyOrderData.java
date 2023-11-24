@@ -1,7 +1,9 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -25,11 +27,9 @@ public class AnyOrderData extends SplitDirectionData {
         return SortType.NONE;
     }
 
-    static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, ChunkSectionPos sectionPos, NativeBuffer buffer) {
-        if (buffer == null) {
-            buffer = PresentTranslucentData.nativeBufferForQuads(quads);
-        }
+        buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
         var counter = 0;
         var lastFacing = quads[0].facing();
@@ -39,7 +39,7 @@ public class AnyOrderData extends SplitDirectionData {
                 counter = 0;
             }
             lastFacing = currentFacing;
-            TranslucentData.putQuadVertexIndexes(indexBuffer, counter++);
+            TranslucentData.writeQuadVertexIndexes(indexBuffer, counter++);
         }
         return new AnyOrderData(sectionPos, buffer, translucentMesh.getVertexRanges());
     }

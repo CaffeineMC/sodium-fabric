@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import java.nio.IntBuffer;
 
@@ -7,6 +7,7 @@ import org.joml.Vector3fc;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -41,7 +42,7 @@ public abstract class TranslucentData {
      * @param isAngleTrigger Whether the trigger is an angle trigger
      */
     public void prepareTrigger(boolean isAngleTrigger) {
-        // no-op for other translucent data than dynamic
+        // no-op for other translucent data than GFNI dynamic
     }
 
     static int vertexCountToIndexBytes(int vertexCount) {
@@ -57,15 +58,15 @@ public abstract class TranslucentData {
         return indexBytes / BYTES_PER_QUAD;
     }
 
-    static void putMappedQuadVertexIndexes(IntBuffer intBuffer, int quadIndex, int[] indexMapping) {
+    public static void writeMappedQuadVertexIndexes(IntBuffer intBuffer, int quadIndex, int[] indexMapping) {
         if (indexMapping == null) {
-            putQuadVertexIndexes(intBuffer, quadIndex);
+            writeQuadVertexIndexes(intBuffer, quadIndex);
         } else {
-            putQuadVertexIndexes(intBuffer, indexMapping[quadIndex]);
+            writeQuadVertexIndexes(intBuffer, indexMapping[quadIndex]);
         }
     }
 
-    static void putQuadVertexIndexes(IntBuffer intBuffer, int quadIndex) {
+    public static void writeQuadVertexIndexes(IntBuffer intBuffer, int quadIndex) {
         int vertexOffset = quadIndex * VERTICES_PER_QUAD;
 
         intBuffer.put(vertexOffset + 0);
@@ -77,9 +78,9 @@ public abstract class TranslucentData {
         intBuffer.put(vertexOffset + 0);
     }
 
-    static void writeQuadVertexIndexes(IntBuffer intBuffer, int[] quadIndexes) {
+    public static void writeQuadVertexIndexes(IntBuffer intBuffer, int[] quadIndexes) {
         for (int quadIndexPos = 0; quadIndexPos < quadIndexes.length; quadIndexPos++) {
-            putQuadVertexIndexes(intBuffer, quadIndexes[quadIndexPos]);
+            writeQuadVertexIndexes(intBuffer, quadIndexes[quadIndexPos]);
         }
     }
 

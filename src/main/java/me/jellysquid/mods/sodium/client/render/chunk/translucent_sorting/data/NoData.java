@@ -1,5 +1,6 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**

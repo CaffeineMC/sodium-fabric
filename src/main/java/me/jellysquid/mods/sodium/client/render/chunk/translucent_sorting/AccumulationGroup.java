@@ -5,60 +5,71 @@ import org.joml.Vector3fc;
 import com.lodborg.intervaltree.DoubleInterval;
 import com.lodborg.intervaltree.Interval.Bounded;
 
-import it.unimi.dsi.fastutil.doubles.DoubleArrays;
-import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.floats.FloatArrays;
+import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import net.minecraft.util.math.ChunkSectionPos;
 
-class AccumulationGroup {
-    final DoubleOpenHashSet relativeDistances = new DoubleOpenHashSet(16);
+public class AccumulationGroup {
+    final FloatOpenHashSet relativeDistancesSet = new FloatOpenHashSet(16);
     final Vector3fc normal;
     final int collectorKey;
     final ChunkSectionPos sectionPos;
 
-    double[] facePlaneDistances; // relative to the base distance
-    DoubleInterval distances;
+    float[] relativeDistances; // relative to the base distance
+    DoubleInterval distanceRange;
     long relDistanceHash;
     double baseDistance;
 
-    AccumulationGroup(ChunkSectionPos sectionPos, Vector3fc normal, int collectorKey) {
+    static int collectorKeyFromNormal(int normalX, int normalY, int normalZ) {
+        return 0xFF | (normalX & 0xFF << 8) | (normalY & 0xFF << 15) | (normalZ & 0xFF << 22);
+    }
+
+    public AccumulationGroup(ChunkSectionPos sectionPos, Vector3fc normal, int collectorKey) {
         this.sectionPos = sectionPos;
         this.normal = normal;
         this.collectorKey = collectorKey;
     }
 
     boolean addPlaneMember(float vertexX, float vertexY, float vertexZ) {
-        double distance = this.normal.dot(vertexX, vertexY, vertexZ);
-
-        // add the distance to the set and update the min/max distances if necessary
-        return this.relativeDistances.add(distance);
+        return this.addPlaneMember(this.normal.dot(vertexX, vertexY, vertexZ));
     }
 
-    void prepareIntegration() {
+    public boolean addPlaneMember(float distance) {
+        return this.relativeDistancesSet.add(distance);
+    }
+
+    public void prepareIntegration() {
         // stop if already prepared
-        if (this.facePlaneDistances != null) {
+        if (this.relativeDistances != null) {
             throw new IllegalStateException("Already prepared");
         }
 
         // store the absolute face plane distances in an array
-        var size = this.relativeDistances.size();
-        this.facePlaneDistances = new double[this.relativeDistances.size()];
+        var size = this.relativeDistancesSet.size();
+        this.relativeDistances = new float[this.relativeDistancesSet.size()];
         int i = 0;
-        for (double relDistance : this.relativeDistances) {
-            this.facePlaneDistances[i++] = relDistance;
+        for (float relDistance : this.relativeDistancesSet) {
+            this.relativeDistances[i++] = relDistance;
 
             long distanceBits = Double.doubleToLongBits(relDistance);
             this.relDistanceHash ^= this.relDistanceHash * 31L + distanceBits;
         }
 
         // sort the array ascending
-        DoubleArrays.quickSort(facePlaneDistances);
+        FloatArrays.quickSort(relativeDistances);
 
         this.baseDistance = this.normal.dot(
                 sectionPos.getMinX(), sectionPos.getMinY(), sectionPos.getMinZ());
-        this.distances = new DoubleInterval(
-                this.facePlaneDistances[0] + this.baseDistance,
-                this.facePlaneDistances[size - 1] + this.baseDistance,
+        this.distanceRange = new DoubleInterval(
+                this.relativeDistances[0] + this.baseDistance,
+                this.relativeDistances[size - 1] + this.baseDistance,
                 Bounded.CLOSED);
 
+    }
+
+    public void prepareAndInsert(Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal) {
+        this.prepareIntegration();
+        distancesByNormal.put(this.normal, this.relativeDistances);
     }
 }

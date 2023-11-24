@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
 
 import com.lodborg.intervaltree.DoubleInterval;
 
-import it.unimi.dsi.fastutil.doubles.DoubleArrays;
+import it.unimi.dsi.fastutil.floats.FloatArrays;
 
 /**
  * A group represents a set of face planes of the same normal within a section.
@@ -20,7 +20,7 @@ class Group {
      * A sorted list of all the face plane distances in this group. Relative to the
      * base distance.
      */
-    double[] facePlaneDistances;
+    float[] facePlaneDistances;
 
     /**
      * A hash of all the face plane distances in this group (before adding the base
@@ -42,15 +42,15 @@ class Group {
 
     void replaceWith(AccumulationGroup accGroup) {
         this.sectionPos = accGroup.sectionPos.asLong();
-        this.distances = accGroup.distances;
+        this.distances = accGroup.distanceRange;
         this.relDistanceHash = accGroup.relDistanceHash;
-        this.facePlaneDistances = accGroup.facePlaneDistances;
+        this.facePlaneDistances = accGroup.relativeDistances;
         this.baseDistance = accGroup.baseDistance;
     }
 
-    public static boolean queryRange(double[] sortedDistances, double start, double end) {
+    public static boolean queryRange(float[] sortedDistances, float start, float end) {
         // test that there is actually an entry in the query range
-        int result = DoubleArrays.binarySearch(sortedDistances, start);
+        int result = FloatArrays.binarySearch(sortedDistances, start);
         if (result < 0) {
             // recover the insertion point
             int insertionPoint = -result - 1;
@@ -78,7 +78,7 @@ class Group {
         // start/end, there can be no overlap
         if (start < this.distances.getEnd() && end > this.distances.getStart()
                 && queryRange(this.facePlaneDistances,
-                        start - this.baseDistance, end - this.baseDistance)) {
+                        (float) (start - this.baseDistance), (float) (end - this.baseDistance))) {
             ts.triggerSectionGFNI(this.sectionPos, collectorKey);
         }
     }
@@ -94,8 +94,8 @@ class Group {
      * If they are common, use second hash
      */
     boolean equalsAccGroup(AccumulationGroup accGroup) {
-        return this.facePlaneDistances.length == accGroup.relativeDistances.size()
-                && this.distances.equals(accGroup.distances)
+        return this.facePlaneDistances.length == accGroup.relativeDistancesSet.size()
+                && this.distances.equals(accGroup.distanceRange)
                 && this.relDistanceHash == accGroup.relDistanceHash;
     }
 }

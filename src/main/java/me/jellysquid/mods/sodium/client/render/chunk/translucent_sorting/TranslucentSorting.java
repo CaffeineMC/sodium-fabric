@@ -6,6 +6,9 @@ import java.util.function.BiConsumer;
 import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -19,13 +22,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * may result in many sections suddenly needing sorting when the camera moves.
  * Maybe it's better to schedule them to be sorted gradually even if not
  * visible, if there are idle threads.
- * - Groups of quads that form convex shapes in a single plane without holes can
- * be sorted as one "quad". Their internal sorting can be arbitrary. Detecting
- * and grouping/ungrouping them might prove difficult. Finding all quad groups
- * is hard but finding one quad group at a time per direction is doable during
- * building. Using the extents calculated for aligned quads, continuity can be
- * easily tested and then convexity confirmed. How to deal with groups of quads
- * that are only convex if a few of the quads are ignored?
  * - Movement prediction and preemptive task scheduling to avoid needing to
  * perform blocking sorts of close sections. Maybe not an issue? Might reduce
  * stutter in high fps situations. However, high complexity with regards to
@@ -72,12 +68,12 @@ public class TranslucentSorting {
     private final GFNITriggers gfni = new GFNITriggers();
     private final DirectTriggers direct = new DirectTriggers();
 
-    interface SectionTriggers {
+    interface SectionTriggers<T extends DynamicData> {
         void processTriggers(TranslucentSorting ts, CameraMovement movement);
 
         void removeSection(long sectionPos, TranslucentData data);
 
-        void addSection(ChunkSectionPos sectionPos, DynamicData data, Vector3dc cameraPos);
+        void addSection(ChunkSectionPos sectionPos, T data, Vector3dc cameraPos);
     }
 
     /**
@@ -123,17 +119,16 @@ public class TranslucentSorting {
         this.directTriggerCount++;
     }
 
-    public void applyTriggerChanges(DynamicData data, ChunkSectionPos pos, Vector3dc cameraPos) {
-        if (data.turnGFNITriggerOff) {
+    public void applyTriggerChanges(TopoSortDynamicData data, ChunkSectionPos pos, Vector3dc cameraPos) {
+        if (data.getAndFlushTurnGFNITriggerOff()) {
             this.gfni.removeSection(pos.asLong(), data);
         }
-        if (data.turnDirectTriggerOn) {
+        if (data.getAndFlushTurnDirectTriggerOn()) {
             this.direct.addSection(pos, data, cameraPos);
         }
-        if (data.turnDirectTriggerOff) {
+        if (data.getAndFlushTurnDirectTriggerOff()) {
             this.direct.removeSection(pos.asLong(), data);
         }
-        data.clearTriggerChanges();
     }
 
     private void decrementSortTypeCounter(TranslucentData oldData) {
@@ -180,24 +175,28 @@ public class TranslucentSorting {
 
         this.incrementSortTypeCounter(newData);
 
-        // remove the section if the data doesn't need to trigger on face planes
         if (newData instanceof DynamicData dynamicData) {
             this.direct.removeSection(pos.asLong(), oldData);
             this.decrementSortTypeCounter(oldData);
-            if (dynamicData.GFNITrigger) {
-                this.gfni.addSection(pos, dynamicData, cameraPos);
-            } else {
-                // remove the collector since this section is never going to get gfni triggering
-                // (there's no option to add sections to GFNI later currently)
-                dynamicData.deleteCollector();
-            }
-            if (dynamicData.directTrigger) {
-                this.direct.addSection(pos, dynamicData, cameraPos);
-            }
 
-            // clear trigger changes on data change because the current state of trigger
-            // types was just set
-            dynamicData.clearTriggerChanges();
+            if (dynamicData instanceof TopoSortDynamicData topoSortData) {
+                if (topoSortData.GFNITriggerEnabled()) {
+                    this.gfni.addSection(pos, topoSortData, cameraPos);
+                } else {
+                    // remove the trigger data since this section is never going to get gfni
+                    // triggering (there's no option to add sections to GFNI later currently)
+                    topoSortData.clearAccGroupData();
+                }
+                if (topoSortData.directTriggerEnabled()) {
+                    this.direct.addSection(pos, topoSortData, cameraPos);
+                }
+
+                // clear trigger changes on data change because the current state of trigger
+                // types was just applied
+                topoSortData.clearTriggerChanges();
+            } else {
+                this.gfni.addSection(pos, dynamicData, cameraPos);
+            }
         } else {
             this.removeSection(oldData, pos.asLong());
             return;

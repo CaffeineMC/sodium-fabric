@@ -164,7 +164,7 @@ public class BlockRenderer {
         }
 
         if (material == DefaultMaterials.TRANSLUCENT && ctx.collector != null) {
-            ctx.collector.appendQuad(quad, vertices, normalFace);
+            ctx.collector.appendQuad(quad, vertices, normalFace, false);
         }
 
         var vertexBuffer = builder.getVertexBuffer(normalFace);

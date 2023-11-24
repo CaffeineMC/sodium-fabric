@@ -5,15 +5,19 @@ import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting.SectionTriggers;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * Performs Global Face Normal Indexing-based triggering as described in
  * https://hackmd.io/@douira100/sodium-sl-gfni
  * 
- * Distances are stored as doubles and normals are stored as float vectors.
+ * Global distances are stored as doubles while section-relative distances are
+ * stored as floats. Normals are stored as float vectors unless they're needed
+ * to produce global double distances.
  */
-class GFNITriggers implements SectionTriggers {
+class GFNITriggers implements SectionTriggers<DynamicData> {
 	/**
 	 * A map of all the normal lists, indexed by their normal.
 	 */
@@ -65,7 +69,7 @@ class GFNITriggers implements SectionTriggers {
 	@Override
 	public void addSection(ChunkSectionPos pos, DynamicData data, Vector3dc cameraPos) {
 		long sectionPos = pos.asLong();
-		var collector = data.getCollector();
+		var accGroupResult = data.getAccGroupResult();
 
 		// go through all normal lists and check against the normals that the group
 		// builder has. if the normal list has data for the section, but the group
@@ -75,7 +79,7 @@ class GFNITriggers implements SectionTriggers {
 			var normalList = iterator.next();
 
 			// check if the geometry collector includes data for this normal.
-			var accGroup = collector.getGroupForNormal(normalList);
+			var accGroup = accGroupResult.getGroupForNormal(normalList);
 			if (normalList.hasSection(sectionPos)) {
 				if (accGroup == null) {
 					if (this.removeSectionFromList(normalList, sectionPos)) {
@@ -93,19 +97,21 @@ class GFNITriggers implements SectionTriggers {
 		// normals
 		// for which there are no normal lists yet. This only checks for new normal
 		// lists since new data for existing normal lists is handled above.
-		if (collector.axisAlignedDistances != null) {
-			for (var accGroup : collector.axisAlignedDistances) {
+		var aligned = accGroupResult.getAlignedDistances();
+		if (aligned != null) {
+			for (var accGroup : aligned) {
 				if (accGroup != null) {
 					this.addSectionInNewNormalLists(data, accGroup);
 				}
 			}
 		}
-		if (collector.unalignedDistances != null) {
-			for (var accGroup : collector.unalignedDistances.values()) {
+		var unaligned = accGroupResult.getUnalignedDistances();
+		if (unaligned != null) {
+			for (var accGroup : unaligned) {
 				this.addSectionInNewNormalLists(data, accGroup);
 			}
 		}
 
-		data.deleteCollector();
+		data.clearAccGroupData();
 	}
 }

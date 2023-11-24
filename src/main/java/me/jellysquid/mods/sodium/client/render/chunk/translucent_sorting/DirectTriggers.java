@@ -5,13 +5,15 @@ import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting.SectionTriggers;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * Performs direct triggering for sections that can't (or shouldn't) be
  * topologically sorted and thus aren't eligible for GFNI triggering.
  */
-class DirectTriggers implements SectionTriggers {
+class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
 	/**
 	 * A tree map of the directly triggered sections, indexed by their
 	 * minimum required camera movement. When the given camera movement is exceeded,
@@ -60,7 +62,7 @@ class DirectTriggers implements SectionTriggers {
 	private class DirectTriggerData {
 		final ChunkSectionPos sectionPos;
 		private Vector3dc sectionCenter;
-		final DynamicData dynamicData;
+		final TopoSortDynamicData dynamicData;
 		DirectTriggerData next;
 
 		/**
@@ -68,7 +70,7 @@ class DirectTriggers implements SectionTriggers {
 		 */
 		Vector3dc triggerCameraPos;
 
-		DirectTriggerData(DynamicData dynamicData, ChunkSectionPos sectionPos, Vector3dc triggerCameraPos) {
+		DirectTriggerData(TopoSortDynamicData dynamicData, ChunkSectionPos sectionPos, Vector3dc triggerCameraPos) {
 			this.dynamicData = dynamicData;
 			this.sectionPos = sectionPos;
 			this.triggerCameraPos = triggerCameraPos;
@@ -121,7 +123,7 @@ class DirectTriggers implements SectionTriggers {
 	}
 
 	private void insertTrigger(double key, DirectTriggerData data) {
-		data.dynamicData.directTriggerKey = key;
+		data.dynamicData.setDirectTriggerKey(key);
 
 		// attach the previous value after the current one in the list. if there is none
 		// it's just null
@@ -187,17 +189,17 @@ class DirectTriggers implements SectionTriggers {
 
 	@Override
 	public void removeSection(long sectionPos, TranslucentData data) {
-		if (data instanceof DynamicData dynamicData) {
-			var key = dynamicData.directTriggerKey;
+		if (data instanceof TopoSortDynamicData triggerable) {
+			var key = triggerable.getDirectTriggerKey();
 			if (key != -1) {
 				this.directTriggerSections.remove(key);
-				dynamicData.directTriggerKey = -1;
+				triggerable.setDirectTriggerKey(-1);
 			}
 		}
 	}
 
 	@Override
-	public void addSection(ChunkSectionPos sectionPos, DynamicData data, Vector3dc cameraPos) {
+	public void addSection(ChunkSectionPos sectionPos, TopoSortDynamicData data, Vector3dc cameraPos) {
 		var newData = new DirectTriggerData(data, sectionPos, cameraPos);
 		if (newData.isAngleTriggering(cameraPos)) {
 			this.insertDirectAngleTrigger(newData, cameraPos, TRIGGER_ANGLE);

@@ -6,6 +6,7 @@ import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 
@@ -18,8 +19,8 @@ import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
  * conditions for visibility between quads are made more strict did not yield
  * significantly more robust topo sorting.
  */
-public class ComplexSorting {
-    private ComplexSorting() {
+public class TopoGraphSorting {
+    private TopoGraphSorting() {
     }
 
     private static float halfspace(Vector3fc planeAnchor, Vector3fc planeNormal, Vector3fc point) {
@@ -45,34 +46,7 @@ public class ComplexSorting {
         return halfspace(planeAnchor, planeNormal, point) < 0;
     }
 
-    private static ThreadLocal<float[]> distanceSortKeys = new ThreadLocal<>();
-
-    public static int[] distanceSortDirect(int[] indexes,
-            IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
-        if (indexes == null) {
-            indexes = new int[quads.length];
-            for (int i = 0; i < quads.length; i++) {
-                indexes[i] = i;
-            }
-        }
-
-        float[] keys = distanceSortKeys.get();
-        if (keys == null || keys.length < quads.length) {
-            keys = new float[quads.length];
-            distanceSortKeys.set(keys);
-        }
-
-        for (int i = 0; i < quads.length; i++) {
-            keys[i] = cameraPos.distanceSquared(quads[i].center());
-        }
-
-        MergeSort.mergeSort(indexes, keys);
-        TranslucentData.writeQuadVertexIndexes(indexBuffer, indexes);
-
-        return indexes;
-    }
-
-    private static boolean orthogonalQuadVisibleThrough(TQuad halfspace, TQuad otherQuad) {
+    public static boolean orthogonalQuadVisibleThrough(TQuad halfspace, TQuad otherQuad) {
         var hd = halfspace.facing().ordinal();
         var hdOpposite = halfspace.facing().getOpposite().ordinal();
         var od = otherQuad.facing().ordinal();
@@ -141,7 +115,7 @@ public class ComplexSorting {
                     activeQuads++;
                 } else {
                     // write the invisible quads right away
-                    TranslucentData.putQuadVertexIndexes(indexBuffer, i);
+                    TranslucentData.writeQuadVertexIndexes(indexBuffer, i);
                 }
             }
         } else {
@@ -276,7 +250,7 @@ public class ComplexSorting {
             leafQuads.unset(nextLeafQuadIndex);
 
             // add it to the topo sort result
-            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, nextLeafQuadIndex, activeToRealIndex);
+            TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, nextLeafQuadIndex, activeToRealIndex);
 
             // remove the edges to this quad and mark them as leaves if that was the last
             // outgoing edge they had
@@ -291,7 +265,7 @@ public class ComplexSorting {
         return true;
     }
 
-    private static boolean testSeparatorRange(Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal,
+    private static boolean testSeparatorRange(Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
             Vector3fc normal, float start, float end) {
         var distances = distancesByNormal.get(normal);
         if (distances == null) {
@@ -301,7 +275,7 @@ public class ComplexSorting {
     }
 
     private static boolean visibilityWithSeparator(TQuad quadA, TQuad quadB,
-            Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal, Vector3fc cameraPos) {
+            Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
         // check if there is an aligned separator
         for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
             var facing = ModelQuadFacing.VALUES[direction];
@@ -364,7 +338,7 @@ public class ComplexSorting {
      * @return true if the other quad is visible through the first quad
      */
     private static boolean quadVisibleThrough(TQuad quad, TQuad other,
-            Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal, Vector3fc cameraPos) {
+            Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
         if (quad == other) {
             return false;
         }
@@ -420,7 +394,7 @@ public class ComplexSorting {
      */
     public static boolean topoSortDepthFirstCyclic(
             IntBuffer indexBuffer, TQuad[] allQuads,
-            Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal,
+            Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
             Vector3fc cameraPos) {
         // TODO: quads visibility filter copy-pasted from topoSortAlignedAcyclic
         // if enabled, check for visibility and produce a mapping of indices
@@ -444,7 +418,7 @@ public class ComplexSorting {
                     activeQuads++;
                 } else {
                     // write the invisible quads right away
-                    TranslucentData.putQuadVertexIndexes(indexBuffer, i);
+                    TranslucentData.writeQuadVertexIndexes(indexBuffer, i);
                 }
             }
         } else {
@@ -457,7 +431,7 @@ public class ComplexSorting {
             return true;
         }
         if (activeQuads == 1) {
-            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, 0, activeToRealIndex);
+            TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, 0, activeToRealIndex);
             return true;
         }
 
@@ -469,8 +443,8 @@ public class ComplexSorting {
                 a = 1;
                 b = 0;
             }
-            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, a, activeToRealIndex);
-            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, b, activeToRealIndex);
+            TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, a, activeToRealIndex);
+            TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, b, activeToRealIndex);
             return true;
         }
 
@@ -529,7 +503,7 @@ public class ComplexSorting {
                 stackPos--;
 
                 // write to the index buffer since the order is now correct
-                TranslucentData.putMappedQuadVertexIndexes(indexBuffer, currentQuadIndex, activeToRealIndex);
+                TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, currentQuadIndex, activeToRealIndex);
             }
         }
 

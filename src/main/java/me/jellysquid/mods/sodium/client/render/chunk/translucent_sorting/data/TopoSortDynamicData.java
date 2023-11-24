@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import java.nio.IntBuffer;
 
@@ -8,21 +8,24 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import net.minecraft.util.math.ChunkSectionPos;
 
-public class DynamicData extends MixedDirectionData {
+public class TopoSortDynamicData extends DynamicData {
     private final TQuad[] quads;
-    boolean GFNITrigger = true;
-    boolean directTrigger = false;
-    boolean turnGFNITriggerOff = false;
-    boolean turnDirectTriggerOn = false;
-    boolean turnDirectTriggerOff = false;
-    double directTriggerKey = -1;
+    private boolean GFNITrigger = true;
+    private boolean directTrigger = false;
+    private boolean turnGFNITriggerOff = false;
+    private boolean turnDirectTriggerOn = false;
+    private boolean turnDirectTriggerOff = false;
+    private double directTriggerKey = -1;
     private int consecutiveTopoSortFailures = 0;
     private boolean pendingTriggerIsAngle;
-    private TranslucentGeometryCollector collector;
-    private Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal;
+    private Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal;
     private int[] distanceSortIndexes;
 
     private static final int MAX_TOPO_SORT_QUADS = 1000;
@@ -32,29 +35,27 @@ public class DynamicData extends MixedDirectionData {
     private static final int PATIENT_TOPO_ATTEMPTS = 5;
     private static final int REGULAR_TOPO_ATTEMPTS = 2;
 
-    DynamicData(ChunkSectionPos sectionPos,
+    private TopoSortDynamicData(ChunkSectionPos sectionPos,
             NativeBuffer buffer, VertexRange range, TQuad[] quads,
             TranslucentGeometryCollector collector,
-            Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal) {
-        super(sectionPos, buffer, range);
+            Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal) {
+        super(sectionPos, buffer, range, collector);
         this.quads = quads;
-        this.collector = collector;
         this.distancesByNormal = distancesByNormal;
     }
 
-    @Override
-    public SortType getSortType() {
-        return SortType.DYNAMIC_ALL;
+    public boolean GFNITriggerEnabled() {
+        return this.GFNITrigger;
     }
 
-    @Override
-    public void prepareTrigger(boolean isAngleTrigger) {
-        this.pendingTriggerIsAngle = isAngleTrigger;
+    public boolean directTriggerEnabled() {
+        return this.directTrigger;
     }
 
-    @Override
-    public void sortOnTrigger(Vector3fc cameraPos) {
-        this.sort(cameraPos, this.pendingTriggerIsAngle, false);
+    public void clearTriggerChanges() {
+        this.turnGFNITriggerOff = false;
+        this.turnDirectTriggerOn = false;
+        this.turnDirectTriggerOff = false;
     }
 
     private void turnGFNITriggerOff() {
@@ -79,6 +80,42 @@ public class DynamicData extends MixedDirectionData {
         this.distanceSortIndexes = null;
     }
 
+    public boolean getAndFlushTurnGFNITriggerOff() {
+        var result = this.turnGFNITriggerOff;
+        this.turnGFNITriggerOff = false;
+        return result;
+    }
+
+    public boolean getAndFlushTurnDirectTriggerOn() {
+        var result = this.turnDirectTriggerOn;
+        this.turnDirectTriggerOn = false;
+        return result;
+    }
+
+    public boolean getAndFlushTurnDirectTriggerOff() {
+        var result = this.turnDirectTriggerOff;
+        this.turnDirectTriggerOff = false;
+        return result;
+    }
+
+    public double getDirectTriggerKey() {
+        return this.directTriggerKey;
+    }
+
+    public void setDirectTriggerKey(double key) {
+        this.directTriggerKey = key;
+    }
+
+    @Override
+    public void prepareTrigger(boolean isAngleTrigger) {
+        this.pendingTriggerIsAngle = isAngleTrigger;
+    }
+
+    @Override
+    public void sortOnTrigger(Vector3fc cameraPos) {
+        this.sort(cameraPos, this.pendingTriggerIsAngle, false);
+    }
+
     private static int getAttemptsForTime(long ns) {
         return ns <= MAX_TOPO_SORT_PATIENT_TIME_NS ? PATIENT_TOPO_ATTEMPTS : REGULAR_TOPO_ATTEMPTS;
     }
@@ -98,7 +135,7 @@ public class DynamicData extends MixedDirectionData {
         if (this.GFNITrigger && !isAngleTrigger) {
             var sortStart = initial ? 0 : System.nanoTime();
 
-            var result = ComplexSorting.topoSortDepthFirstCyclic(
+            var result = TopoGraphSorting.topoSortDepthFirstCyclic(
                     indexBuffer, this.quads, this.distancesByNormal, cameraPos);
 
             var sortTime = initial ? 0 : System.nanoTime() - sortStart;
@@ -134,56 +171,58 @@ public class DynamicData extends MixedDirectionData {
 
         if (this.directTrigger) {
             indexBuffer.rewind();
-            this.distanceSortIndexes = ComplexSorting.distanceSortDirect(
+            this.distanceSortIndexes = distanceSortDirect(
                     this.distanceSortIndexes, indexBuffer, this.quads, cameraPos);
             return;
         }
     }
 
-    public void clearTriggerChanges() {
-        this.turnGFNITriggerOff = false;
-        this.turnDirectTriggerOn = false;
-        this.turnDirectTriggerOff = false;
+    private static ThreadLocal<float[]> distanceSortKeys = new ThreadLocal<>();
+
+    public static int[] distanceSortDirect(int[] indexes,
+            IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
+        if (indexes == null) {
+            indexes = new int[quads.length];
+            for (int i = 0; i < quads.length; i++) {
+                indexes[i] = i;
+            }
+        }
+
+        float[] keys = distanceSortKeys.get();
+        if (keys == null || keys.length < quads.length) {
+            keys = new float[quads.length];
+            distanceSortKeys.set(keys);
+        }
+
+        for (int i = 0; i < quads.length; i++) {
+            keys[i] = cameraPos.distanceSquared(quads[i].center());
+        }
+
+        MergeSort.mergeSort(indexes, keys);
+        TranslucentData.writeQuadVertexIndexes(indexBuffer, indexes);
+
+        return indexes;
     }
 
-    public boolean hasTriggerChanges() {
-        return this.turnGFNITriggerOff || this.turnDirectTriggerOn || this.turnDirectTriggerOff;
-    }
-
-    TranslucentGeometryCollector getCollector() {
-        return this.collector;
-    }
-
-    void deleteCollector() {
-        this.collector = null;
-    }
-
-    static DynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static TopoSortDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
             Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector,
             NativeBuffer buffer) {
         // prepare accumulation groups for GFNI integration and copy
-        var size = 0;
-        if (collector.axisAlignedDistances != null) {
-            size += Integer.bitCount(collector.alignedNormalBitmap);
-        }
-        if (collector.unalignedDistances != null) {
-            size += collector.unalignedDistances.size();
-        }
-        var distancesByNormal = new Object2ReferenceOpenHashMap<Vector3fc, double[]>(size);
-        if (collector.axisAlignedDistances != null) {
+        var size = Integer.bitCount(collector.getAlignedNormalBitmap()) + collector.getUnalignedDistanceCount();
+
+        var distancesByNormal = new Object2ReferenceOpenHashMap<Vector3fc, float[]>(size);
+        if (collector.getAlignedDistances() != null) {
             for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
-                var accGroup = collector.axisAlignedDistances[direction];
+                var accGroup = collector.getAlignedDistances()[direction];
                 if (accGroup != null) {
-                    accGroup.prepareIntegration();
-                    distancesByNormal.put(accGroup.normal, accGroup.facePlaneDistances);
+                    accGroup.prepareAndInsert(distancesByNormal);
                 }
             }
         }
-        if (collector.unalignedDistances != null) {
-            for (var accGroup : collector.unalignedDistances.values()) {
+        if (collector.getUnalignedDistanceCount() > 0) {
+            for (var accGroup : collector.getUnalignedDistances()) {
                 // TODO: get rid of collector key and just use the normal vector's hash code
-                accGroup.prepareIntegration();
-                distancesByNormal.put(accGroup.normal, accGroup.facePlaneDistances);
+                accGroup.prepareAndInsert(distancesByNormal);
             }
         }
 
@@ -192,10 +231,11 @@ public class DynamicData extends MixedDirectionData {
             buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         }
 
-        var dynamicData = new DynamicData(sectionPos, buffer, range, quads, collector, distancesByNormal);
+        var dynamicData = new TopoSortDynamicData(sectionPos, buffer, range, quads, collector, distancesByNormal);
 
         dynamicData.sort(cameraPos, false, true);
 
         return dynamicData;
     }
+
 }

@@ -1,6 +1,7 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -30,15 +31,15 @@ public abstract class PresentTranslucentData extends TranslucentData {
         }
     }
 
-    void setQuadHash(int hash) {
+    public void setQuadHash(int hash) {
         this.quadHash = hash;
     }
 
-    int getQuadHash() {
+    public int getQuadHash() {
         return this.quadHash;
     }
 
-    int getLength() {
+    public int getLength() {
         return this.length;
     }
 
@@ -50,15 +51,22 @@ public abstract class PresentTranslucentData extends TranslucentData {
         return this.reuseUploadedData;
     }
 
-    void setReuseUploadedData() {
+    public void setReuseUploadedData() {
         this.reuseUploadedData = true;
     }
 
-    void unsetReuseUploadedData() {
+    public void unsetReuseUploadedData() {
         this.reuseUploadedData = false;
     }
 
-    static NativeBuffer nativeBufferForQuads(TQuad[] quads) {
+    public static NativeBuffer nativeBufferForQuads(TQuad[] quads) {
         return new NativeBuffer(TranslucentData.quadCountToIndexBytes(quads.length));
+    }
+
+    public static NativeBuffer nativeBufferForQuads(NativeBuffer existing, TQuad[] quads) {
+        if (existing != null) {
+            return existing;
+        }
+        return nativeBufferForQuads(quads);
     }
 }

@@ -17,7 +17,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.OutputWithIndexData
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.PresentTranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
 
 import org.jetbrains.annotations.NotNull;
 

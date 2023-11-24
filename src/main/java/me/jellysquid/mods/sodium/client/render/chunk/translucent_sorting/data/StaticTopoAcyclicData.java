@@ -1,7 +1,10 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -17,7 +20,7 @@ public class StaticTopoAcyclicData extends MixedDirectionData {
         return SortType.STATIC_TOPO_ACYCLIC;
     }
 
-    static StaticTopoAcyclicData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static StaticTopoAcyclicData fromMesh(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, ChunkSectionPos sectionPos, NativeBuffer buffer) {
         if (quads.length > MAX_STATIC_TOPO_SORT_QUADS) {
             return null;
@@ -26,7 +29,7 @@ public class StaticTopoAcyclicData extends MixedDirectionData {
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
-        if (!ComplexSorting.topoSortDepthFirstCyclic(indexBuffer, quads, null, null)) {
+        if (!TopoGraphSorting.topoSortDepthFirstCyclic(indexBuffer, quads, null, null)) {
             return null;
         }
 
