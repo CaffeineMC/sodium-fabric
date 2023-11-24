@@ -49,7 +49,7 @@ public class UnmanagedBufferBuilder {
     /**
      * Builds and resets this builder.
      * Make sure to use/upload the return value before pushing more data.
-     * @return a ByteBuffer containing all the data pushed to this builder
+     * @return a built buffer containing all the data pushed to this builder
      */
     public Built end() {
         int endOffset = this.byteOffset;

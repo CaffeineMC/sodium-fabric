@@ -12,7 +12,6 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.particle.*;
 import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
-import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
 import me.jellysquid.mods.sodium.client.render.particle.shader.ParticleShaderInterface;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
 import net.caffeinemc.mods.sodium.api.util.RawUVs;
@@ -41,9 +40,11 @@ import java.util.*;
 @Mixin(ParticleManager.class)
 public abstract class ParticleManagerMixin {
     /**
-     * The set of special cases that can use the fast path, but override buildGeometry.
-     * These classes should have a mixin where {@link BillboardExtended#sodium$buildParticleData}
-     * is overridden to produce the correct behavior. See the specialcases package for examples.
+     * The set of particle classes that can use the GPU fast path.<br>
+     * If the class overrides the build geometry method,
+     * it should have a mixin where {@link BillboardExtended#sodium$buildParticleData}
+     * is overridden to produce the correct behavior.
+     * See the specialcases package for examples.
      */
     @Unique
     private static final Set<Class<? extends BillboardParticle>> FAST_PATH_PARTICLES = Set.of(
@@ -104,7 +105,10 @@ public abstract class ParticleManagerMixin {
     private UnmanagedBufferBuilder dataBufferBuilder;
 
     @Unique
-    private ParticleDataBuffer dataBuffer = null;
+    private UnmanagedBufferBuilder cacheBufferBuilder;
+
+    @Unique
+    private ParticleBuffers buffers = null;
 
     @Unique
     private Identifier prevTexture = null;
@@ -113,6 +117,7 @@ public abstract class ParticleManagerMixin {
     private void postInit(ClientWorld world, TextureManager textureManager, CallbackInfo ci) {
         this.glVertexArray = GlStateManager._glGenVertexArrays();
         this.dataBufferBuilder = new UnmanagedBufferBuilder(1);
+        this.cacheBufferBuilder = new UnmanagedBufferBuilder(1);
         this.renderView = new ParticleRenderView(world);
     }
 
@@ -211,8 +216,8 @@ public abstract class ParticleManagerMixin {
     ) {
         RenderDevice.enterManagedCode();
         try (CommandList commands = RenderDevice.INSTANCE.createCommandList()) {
-            if (this.dataBuffer == null) {
-                this.dataBuffer = new ParticleDataBuffer(commands);
+            if (this.buffers == null) {
+                this.buffers = new ParticleBuffers(commands);
             }
 
             particleRenderer.begin();
@@ -225,7 +230,7 @@ public abstract class ParticleManagerMixin {
                 if (iterable != null && !iterable.isEmpty()) {
                     int numParticles = iterable.size();
                     bindParticleTextureSheet(particleTextureSheet);
-                    this.dataBuffer.bind();
+                    this.buffers.bind();
                     particleRenderer.setupState();
 
                     for (BillboardParticle particle : iterable) {
@@ -275,7 +280,7 @@ public abstract class ParticleManagerMixin {
     @Unique
     private void drawParticleTextureSheet(CommandList commands, ParticleTextureSheet sheet, int numParticles) {
         if (sheet == ParticleTextureSheet.TERRAIN_SHEET || sheet == ParticleTextureSheet.PARTICLE_SHEET_LIT || sheet == ParticleTextureSheet.PARTICLE_SHEET_OPAQUE || sheet == ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT) {
-            uploadParticleBuffer(commands, numParticles);
+            uploadParticleBuffer(commands);
             bindDummyVao();
             GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, numParticles * 6);
         }
@@ -289,7 +294,7 @@ public abstract class ParticleManagerMixin {
     }
 
     @Unique
-    private void uploadParticleBuffer(CommandList commands, int numParticles) {
+    private void uploadParticleBuffer(CommandList commands) {
         RawUVs[] toUpload = this.particleTexCache.update();
         int maxUploadIndex = this.particleTexCache.getTopIndex();
 
@@ -307,15 +312,13 @@ public abstract class ParticleManagerMixin {
                 }
                 ptr += RawUVs.STRIDE;
             }
-            dataBufferBuilder.push(stack, buffer, size);
+            cacheBufferBuilder.push(stack, buffer, size);
         }
 
-        particleRenderer.getActiveProgram()
-                .getInterface()
-                .setTextureOffset((numParticles * BillboardParticleData.STRIDE) / 4);
-
         UnmanagedBufferBuilder.Built data = dataBufferBuilder.end();
-        this.dataBuffer.uploadParticleData(commands, data);
+        UnmanagedBufferBuilder.Built cache = cacheBufferBuilder.end();
+
+        this.buffers.uploadParticleData(commands, data, cache);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))

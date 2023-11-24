@@ -18,9 +18,9 @@ const int INDICES[] = int[](
     0, 2, 3
 );
 
-uniform int u_TextureOffset;
 uniform sampler2D u_LightTex;
-uniform usamplerBuffer u_BufferTexture; // R_32UI
+uniform usamplerBuffer u_ParticleData; // R_32UI
+uniform usamplerBuffer u_TextureCache; // R_32UI
 
 out vec2 texCoord0;
 out vec4 vertexColor;
@@ -39,7 +39,7 @@ vec2 maxTexUV;
 // Returns a collection of 4 bytes
 // ptr is essentially multiplied by 4 since u_BufferTexture is R_32UI
 uint readBuffer(int ptr) {
-    return texelFetch(u_BufferTexture, ptr).x;
+    return texelFetch(u_ParticleData, ptr).x;
 }
 
 float readBufferF(int ptr) {
@@ -58,8 +58,13 @@ ivec2 readBufferLight(int ptr) {
     return ivec2((uvec2(readBuffer(ptr)) >> uvec2(0, 16)) & uvec2(0xFFFFu));
 }
 
+
+float readFloatTex(int ptr) {
+    return uintBitsToFloat(texelFetch(u_TextureCache, ptr).x);
+}
+
 vec2 readBufferTex(int ptr) {
-    return vec2(readBufferF(ptr), readBufferF(ptr + 1));
+    return vec2(readFloatTex(ptr), readFloatTex(ptr + 1));
 }
 
 void init() {
@@ -72,7 +77,7 @@ void init() {
     angle = readBufferF(base + 6);
     int textureIndex = int(readBuffer(base + 7));
 
-    int texturePtr = (textureIndex * TEX_STRIDE) + u_TextureOffset;
+    int texturePtr = textureIndex * TEX_STRIDE;
     minTexUV = readBufferTex(texturePtr);
     maxTexUV = readBufferTex(texturePtr + 2);
 }

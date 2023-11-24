@@ -12,20 +12,20 @@ import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL32C;
 
 public class ParticleShaderInterface {
-    private final GlUniformInt uniformTextureOffset;
     private final GlUniformInt uniformParticleTexture;
     private final GlUniformInt uniformLightTexture;
     private final GlUniformMatrix4f uniformModelViewMatrix;
     private final GlUniformMatrix4f uniformProjectionMatrix;
-    private final GlUniformInt uniformBufferTexture;
+    private final GlUniformInt uniformParticleData;
+    private final GlUniformInt uniformTextureCache;
 
     public ParticleShaderInterface(ShaderBindingContext context) {
-        this.uniformTextureOffset = context.bindUniform("u_TextureOffset", GlUniformInt::new);
         this.uniformParticleTexture = context.bindUniform("u_ParticleTex", GlUniformInt::new);
         this.uniformLightTexture = context.bindUniform("u_LightTex", GlUniformInt::new);
         this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
         this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
-        this.uniformBufferTexture = context.bindUniform("u_BufferTexture", GlUniformInt::new);
+        this.uniformParticleData = context.bindUniform("u_ParticleData", GlUniformInt::new);
+        this.uniformTextureCache = context.bindUniform("u_TextureCache", GlUniformInt::new);
     }
 
     public void setProjectionMatrix(Matrix4fc matrix) {
@@ -36,15 +36,12 @@ public class ParticleShaderInterface {
         this.uniformModelViewMatrix.set(matrix);
     }
 
-    public void setTextureOffset(int dataOffset) {
-        this.uniformTextureOffset.setInt(dataOffset);
-    }
-
     public void setupState() {
         // "BlockTexture" should represent the particle textures if bound correctly
         this.bindParticleTexture(ParticleShaderTextureSlot.TEXTURE, TextureUtil.getBlockTextureId());
         this.bindLightTexture(ParticleShaderTextureSlot.LIGHT, TextureUtil.getLightTextureId());
-        this.bindBufferTexture(ParticleShaderTextureSlot.STORAGE, RenderSystem.getShaderTexture(3));
+        this.bindParticleData(ParticleShaderTextureSlot.PARTICLE_DATA, RenderSystem.getShaderTexture(3));
+        this.bindTextureCache(ParticleShaderTextureSlot.TEXTURE_CACHE, RenderSystem.getShaderTexture(4));
     }
 
     private void bindParticleTexture(ParticleShaderTextureSlot slot, int textureId) {
@@ -61,16 +58,24 @@ public class ParticleShaderInterface {
         uniformLightTexture.setInt(slot.ordinal());
     }
 
-    private void bindBufferTexture(ParticleShaderTextureSlot slot, int textureId) {
+    private void bindParticleData(ParticleShaderTextureSlot slot, int textureId) {
         GlStateManager._activeTexture(GL32C.GL_TEXTURE0 + slot.ordinal());
         GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, textureId);
 
-        uniformBufferTexture.setInt(slot.ordinal());
+        uniformParticleData.setInt(slot.ordinal());
+    }
+
+    private void bindTextureCache(ParticleShaderTextureSlot slot, int textureId) {
+        GlStateManager._activeTexture(GL32C.GL_TEXTURE0 + slot.ordinal());
+        GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, textureId);
+
+        uniformTextureCache.setInt(slot.ordinal());
     }
 
     private enum ParticleShaderTextureSlot {
         TEXTURE,
         LIGHT,
-        STORAGE,
+        PARTICLE_DATA,
+        TEXTURE_CACHE,
     }
 }
