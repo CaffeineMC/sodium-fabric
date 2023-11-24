@@ -187,6 +187,13 @@ public class SodiumWorldRenderer {
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
 
+        if (cameraLocationChanged) {
+            profiler.swap("translucent_triggering");
+
+            this.renderSectionManager.processGFNIMovement(new CameraMovement(lastCameraPos, pos));
+            this.lastCameraPos = new Vector3d(pos);
+        }
+
         profiler.swap("chunk_update");
 
         this.renderSectionManager.updateChunks(updateChunksImmediately);
@@ -199,13 +206,6 @@ public class SodiumWorldRenderer {
             profiler.swap("chunk_render_lists");
 
             this.renderSectionManager.update(pos, camera, viewport, frame, spectator);
-        }
-
-        if (cameraLocationChanged) {
-            profiler.swap("translucent_triggering");
-
-            this.renderSectionManager.processGFNIMovement(new CameraMovement(lastCameraPos, pos));
-            this.lastCameraPos = new Vector3d(pos);
         }
 
         if (updateChunksImmediately) {
