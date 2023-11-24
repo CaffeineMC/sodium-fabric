@@ -52,7 +52,7 @@ public class NormalList {
      * An interval tree of group intervals. Since this only stores intervals, the
      * stored intervals are mapped to groups in a separate hashmap.
      */
-    private final IntervalTree<Double> groupIntervals = new IntervalTree<>();
+    private final IntervalTree<Double> intervalTree = new IntervalTree<>();
 
     /**
      * A separate hashmap of groups. This is what actually stores the groups since
@@ -101,7 +101,7 @@ public class NormalList {
         // perform the interval query on the group intervals and resolve each interval
         // to the collection of groups it maps to
         var interval = new DoubleInterval(start, end, Bounded.CLOSED);
-        for (Interval<Double> groupInterval : groupIntervals.query(interval)) {
+        for (Interval<Double> groupInterval : intervalTree.query(interval)) {
             for (Group group : groupsByInterval.get(groupInterval)) {
                 group.triggerRange(ts, start, end, this.collectorKey);
             }
@@ -109,13 +109,14 @@ public class NormalList {
     }
 
     private void removeGroupInterval(Group group) {
-        this.groupIntervals.remove(group.distances);
-
         var groups = this.groupsByInterval.get(group.distances);
         if (groups != null) {
             groups.remove(group);
             if (groups.isEmpty()) {
                 this.groupsByInterval.remove(group.distances);
+
+                // only remove from the interval tree if no other sections are also using it
+                this.intervalTree.remove(group.distances);
             } else if (groups.size() <= ARRAY_SET_THRESHOLD) {
                 groups = new ReferenceArraySet<>(groups);
                 this.groupsByInterval.put(group.distances, groups);
@@ -124,12 +125,13 @@ public class NormalList {
     }
 
     private void addGroupInterval(Group group) {
-        this.groupIntervals.add(group.distances);
-
         var groups = this.groupsByInterval.get(group.distances);
         if (groups == null) {
             groups = new ReferenceArraySet<>();
             this.groupsByInterval.put(group.distances, groups);
+
+            // only add to the interval tree if it's a new interval
+            this.intervalTree.add(group.distances);
         } else if (groups.size() >= HASH_SET_THRESHOLD) {
             groups = new ReferenceLinkedOpenHashSet<>(groups);
             this.groupsByInterval.put(group.distances, groups);
