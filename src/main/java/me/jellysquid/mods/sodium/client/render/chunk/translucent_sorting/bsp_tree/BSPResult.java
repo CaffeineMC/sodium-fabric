@@ -10,7 +10,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.Accumul
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.NormalList;
 
 public class BSPResult extends AccGroupResult {
-    // TODO: BSP triggering needs to be bidirectional
     Object2ReferenceOpenHashMap<Vector3fc, AccumulationGroup> unalignedDistances;
 
     BSPNode rootNode;
