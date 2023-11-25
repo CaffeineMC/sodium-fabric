@@ -27,4 +27,25 @@ public record TQuad(ModelQuadFacing facing, Vector3fc normal, Vector3f center, f
         result = 31 * result + this.center.hashCode();
         return result;
     }
+
+    public float getAlignedSurfaceArea() {
+        if (this.facing == ModelQuadFacing.UNASSIGNED) {
+            return 0;
+        }
+
+        var dX = this.extents[3] - this.extents[0];
+        var dY = this.extents[4] - this.extents[1];
+        var dZ = this.extents[5] - this.extents[2];
+
+        if (dX == 0) {
+            return (float) (dY * dZ);
+        } else if (dY == 0) {
+            return (float) (dX * dZ);
+        } else if (dZ == 0) {
+            return (float) (dX * dY);
+        } else {
+            // non-flat aligned quad, weird edge case
+            return 0;
+        }
+    }
 }

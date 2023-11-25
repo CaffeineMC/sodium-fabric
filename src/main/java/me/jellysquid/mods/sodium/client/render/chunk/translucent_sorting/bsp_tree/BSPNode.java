@@ -4,6 +4,7 @@ import java.nio.IntBuffer;
 
 import org.joml.Vector3fc;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -35,5 +36,10 @@ public abstract class BSPNode {
         } else {
             return InnerPartitionBSPNode.build(workspace);
         }
+    }
+
+    static BSPNode buildWithIndexes(BSPWorkspace workspace, IntArrayList indexes) {
+        workspace.indexes = indexes;
+        return build(workspace);
     }
 }

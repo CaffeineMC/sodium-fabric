@@ -66,10 +66,12 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     }
 
     static BSPNode build(BSPWorkspace workspace) {
+        var indexes = workspace.indexes;
+
         // special case two quads
-        if (workspace.indexes.size() == 2) {
-            var quadA = workspace.quads[workspace.indexes.getInt(0)];
-            var quadB = workspace.quads[workspace.indexes.getInt(1)];
+        if (indexes.size() == 2) {
+            var quadA = workspace.quads[indexes.getInt(0)];
+            var quadB = workspace.quads[indexes.getInt(1)];
 
             // check for coplanar or mutually invisible quads
             var facingA = quadA.facing();
@@ -95,13 +97,13 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                             && facingB != ModelQuadFacing.UNASSIGNED
                             && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
                             && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA)) {
-                return new LeafMultiBSPNode(workspace.indexes.toIntArray());
+                return new LeafMultiBSPNode(indexes.toIntArray());
             }
         }
 
         ReferenceArrayList<InnerPartitionBSPNode.Partition> partitions = new ReferenceArrayList<>();
         ReferenceArrayList<InnerPartitionBSPNode.IntervalPoint> points = new ReferenceArrayList<>(
-                (int) (workspace.indexes.size() * 1.5));
+                (int) (indexes.size() * 1.5));
 
         // find any aligned partition, search each axis
         for (int axis = 0; axis < 3; axis++) {
@@ -111,7 +113,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
             // collect all the geometry's start and end points in this direction
             points.clear();
-            for (int quadIndex : workspace.indexes) {
+            for (int quadIndex : indexes) {
                 var quad = workspace.quads[quadIndex];
                 var extents = quad.extents();
                 var posExtent = extents[axis];
@@ -196,7 +198,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
             // check a different axis if everything is in one quadsBefore,
             // which means there are no gaps
-            if (quadsBefore != null && quadsBefore.size() == workspace.indexes.size()) {
+            if (quadsBefore != null && quadsBefore.size() == indexes.size()) {
                 // TODO: reuse the sorted point array for child nodes (add to workspace)
                 continue;
             }
@@ -224,12 +226,10 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     BSPNode insideNode = null;
                     BSPNode outsideNode = null;
                     if (inside.quadsBefore() != null) {
-                        workspace.indexes = inside.quadsBefore();
-                        insideNode = BSPNode.build(workspace);
+                        insideNode = BSPNode.buildWithIndexes(workspace,inside.quadsBefore());
                     }
                     if (outside != null) {
-                        workspace.indexes = outside.quadsBefore();
-                        outsideNode = BSPNode.build(workspace);
+                        outsideNode = BSPNode.buildWithIndexes(workspace, outside.quadsBefore());
                     }
                     var onPlane = inside.quadsOn() == null ? null : inside.quadsOn().toIntArray();
 
@@ -263,8 +263,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 }
 
                 if (partition.quadsBefore() != null) {
-                    workspace.indexes = partition.quadsBefore();
-                    partitionNodes[i] = BSPNode.build(workspace);
+                    partitionNodes[i] = BSPNode.buildWithIndexes(workspace, partition.quadsBefore());
                 }
                 if (partition.quadsOn() != null) {
                     onPlaneQuads[i] = partition.quadsOn().toIntArray();
@@ -276,6 +275,50 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         }
 
         // TODO: attempt unaligned partitioning, convex decomposition, etc.
+
+        // test if the geometry intersects with itself
+        // if there is self-intersection, return a multi leaf node to just give up
+        // sorting this geometry. intersecting geometry is rare but when it does happen,
+        // it should simply be accepted and rendered as-is. Whatever artifacts this
+        // causes are considered "ok".
+        // TODO: also do this test with unaligned quads
+        for (int quadAIndex = 0; quadAIndex < indexes.size(); quadAIndex++) {
+            var quadA = workspace.quads[indexes.getInt(quadAIndex)];
+            if (quadA.facing() == ModelQuadFacing.UNASSIGNED) {
+                continue;
+            }
+            for (int quadBIndex = quadAIndex + 1; quadBIndex < indexes.size(); quadBIndex++) {
+                var quadB = workspace.quads[indexes.getInt(quadBIndex)];
+
+                if (quadB.facing() == ModelQuadFacing.UNASSIGNED) {
+                    continue;
+                }
+
+                // aligned quads intersect if their bounding boxes intersect
+                boolean intersects = true;
+                for (int axis = 0; axis < 3; axis++) {
+                    var opposite = axis + 3;
+                    var extentsA = quadA.extents();
+                    var extentsB = quadB.extents();
+
+                    if (extentsA[axis] < extentsB[opposite]
+                            || extentsB[axis] < extentsA[opposite]) {
+                        intersects = false;
+                        break;
+                    }
+                }
+
+                if (intersects) {
+                    // sort quads by size ascending
+                    indexes.sort((a, b) -> {
+                        var quadX = workspace.quads[a];
+                        var quadY = workspace.quads[b];
+                        return Float.compare(quadX.getAlignedSurfaceArea(), quadY.getAlignedSurfaceArea());
+                    });
+                    return new LeafMultiBSPNode(indexes.toIntArray());
+                }
+            }
+        }
 
         throw new BSPBuildFailureException("no partition found");
     }
