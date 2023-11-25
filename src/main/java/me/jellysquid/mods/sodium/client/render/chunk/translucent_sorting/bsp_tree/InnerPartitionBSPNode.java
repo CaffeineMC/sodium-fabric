@@ -5,6 +5,7 @@ import java.util.Comparator;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntComparator;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
@@ -22,6 +23,17 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGra
  * level: convex hulls (like cuboids where the faces point outwards) don't need
  * to be sorted. This could be used to optimize the inside of honey blocks, and
  * other blocks.
+ * - the section full of honey and slime blocks seems to be sorted ok but when
+ * the camera moves too fast across the surface near a corner it breaks. My
+ * theory is that it breaks from the slime blocks having a small inner block
+ * that produces a plane that the camera passes over first but then it's still
+ * sorting when the camera crosses over the second so it sorts it with the
+ * camera between the two and doesn't sort it again when the camera has passed
+ * over the second. This is fixed by making sure the scheduling of sort tasks
+ * makes a new pending task with a new camera position if there's a newer
+ * schedule event. If there's a running task, a new task needs to be scheduled
+ * with an updated camera position, though I think this already works similarly
+ * to how rebuilds can be scheduled during a running rebuild.
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
     final Vector3fc planeNormal;
@@ -46,7 +58,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         static final byte SIDE = 1;
     }
 
-    private static final Comparator<InnerPartitionBSPNode.IntervalPoint> INTERVAL_POINT_COMPARATOR = (a, b) -> {
+    private static final Comparator<IntervalPoint> INTERVAL_POINT_COMPARATOR = (a, b) -> {
         // sort by distance ascending
         float distanceDiff = a.distance() - b.distance();
         if (distanceDiff != 0) {
@@ -101,8 +113,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             }
         }
 
-        ReferenceArrayList<InnerPartitionBSPNode.Partition> partitions = new ReferenceArrayList<>();
-        ReferenceArrayList<InnerPartitionBSPNode.IntervalPoint> points = new ReferenceArrayList<>(
+        ReferenceArrayList<Partition> partitions = new ReferenceArrayList<>();
+        ReferenceArrayList<IntervalPoint> points = new ReferenceArrayList<>(
                 (int) (indexes.size() * 1.5));
 
         // find any aligned partition, search each axis
@@ -134,7 +146,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             IntArrayList quadsBefore = null;
             IntArrayList quadsOn = null;
             int thickness = 0;
-            for (InnerPartitionBSPNode.IntervalPoint point : points) {
+            for (IntervalPoint point : points) {
                 switch (point.type()) {
                     case IntervalPoint.START -> {
                         // unless at the start, flush if there's a gap
@@ -226,7 +238,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     BSPNode insideNode = null;
                     BSPNode outsideNode = null;
                     if (inside.quadsBefore() != null) {
-                        insideNode = BSPNode.buildWithIndexes(workspace,inside.quadsBefore());
+                        insideNode = BSPNode.buildWithIndexes(workspace, inside.quadsBefore());
                     }
                     if (outside != null) {
                         outsideNode = BSPNode.buildWithIndexes(workspace, outside.quadsBefore());
