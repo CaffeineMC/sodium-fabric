@@ -19,6 +19,9 @@ public class ChunkBuilderSortingTask extends ChunkBuilderTask<ChunkSortOutput> {
 
     @Override
     public ChunkSortOutput execute(ChunkBuildContext context, CancellationToken cancellationToken) {
+        if (cancellationToken.isCancelled()) {
+            return null;
+        }
         this.render.getTranslucentData().sortOnTrigger(this.cameraPos);
         return new ChunkSortOutput(this.render, this.submitTime, this.dynamicData);
     }

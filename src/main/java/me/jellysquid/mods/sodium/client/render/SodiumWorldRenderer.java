@@ -196,6 +196,7 @@ public class SodiumWorldRenderer {
 
         profiler.swap("chunk_update");
 
+        this.renderSectionManager.updateCameraState(pos, camera);
         this.renderSectionManager.updateChunks(updateChunksImmediately);
 
         profiler.swap("chunk_upload");
@@ -205,7 +206,7 @@ public class SodiumWorldRenderer {
         if (this.renderSectionManager.needsUpdate()) {
             profiler.swap("chunk_render_lists");
 
-            this.renderSectionManager.update(pos, camera, viewport, frame, spectator);
+            this.renderSectionManager.update(camera, viewport, frame, spectator);
         }
 
         if (updateChunksImmediately) {

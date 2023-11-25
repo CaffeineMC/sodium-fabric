@@ -14,6 +14,10 @@ import net.minecraft.util.math.ChunkSectionPos;
  * A node in the BSP tree. The BSP tree is made up of nodes that split quads
  * into groups on either side of a plane and those that lie on the plane.
  * There's also leaf nodes that contain one or more quads.
+ * 
+ * TODO:
+ * - historgram of BSP build and sort times on a standard world loading scenario
+ * (maybe something like hermitcraft?) with some artificial structures too.
  */
 public abstract class BSPNode {
     public abstract void collectSortedQuads(IntBuffer indexBuffer, Vector3fc cameraPos);

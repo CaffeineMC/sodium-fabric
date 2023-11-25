@@ -117,10 +117,12 @@ public class RenderSectionManager {
         }
     }
 
-    public void update(Vector3dc cameraPosition, Camera camera, Viewport viewport, int frame, boolean spectator) {
+    public void updateCameraState(Vector3dc cameraPosition, Camera camera) {
         this.cameraBlockPos = camera.getBlockPos();
         this.cameraPosition = cameraPosition;
+    }
 
+    public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.createTerrainRenderList(camera, viewport, frame, spectator);
 
         this.needsGraphUpdate = false;
