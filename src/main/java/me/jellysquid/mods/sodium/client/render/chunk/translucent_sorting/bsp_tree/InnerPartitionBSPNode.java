@@ -5,10 +5,8 @@ import java.util.Comparator;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntComparator;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
 
 /**
  * TODO:
@@ -79,39 +77,6 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
     static BSPNode build(BSPWorkspace workspace) {
         var indexes = workspace.indexes;
-
-        // special case two quads
-        if (indexes.size() == 2) {
-            var quadA = workspace.quads[indexes.getInt(0)];
-            var quadB = workspace.quads[indexes.getInt(1)];
-
-            // check for coplanar or mutually invisible quads
-            var facingA = quadA.facing();
-            var facingB = quadB.facing();
-            var normalA = quadA.normal();
-            var normalB = quadB.normal();
-            if (
-            // coplanar quads
-            ((facingA == ModelQuadFacing.UNASSIGNED || facingB == ModelQuadFacing.UNASSIGNED)
-                    ? // opposite normal (distance irrelevant)
-                    normalA.x() == -normalB.x()
-                            && normalA.y() == -normalB.y()
-                            && normalA.z() == -normalB.z()
-                            // same normal and same distance
-                            || normalA.equals(quadB.normal())
-                                    && normalA.dot(quadA.center()) == quadB.normal().dot(quadB.center())
-                    // aligned same distance
-                    : quadA.extents()[facingA.ordinal()] == quadB.extents()[facingB.ordinal()])
-                    // facing away from eachother
-                    || facingA == facingB.getOpposite()
-                    // otherwise mutually invisible
-                    || facingA != ModelQuadFacing.UNASSIGNED
-                            && facingB != ModelQuadFacing.UNASSIGNED
-                            && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
-                            && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA)) {
-                return new LeafMultiBSPNode(indexes.toIntArray());
-            }
-        }
 
         ReferenceArrayList<Partition> partitions = new ReferenceArrayList<>();
         ReferenceArrayList<IntervalPoint> points = new ReferenceArrayList<>(

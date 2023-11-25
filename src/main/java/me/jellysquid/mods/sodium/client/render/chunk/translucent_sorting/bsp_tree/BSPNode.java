@@ -5,7 +5,9 @@ import java.nio.IntBuffer;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -33,9 +35,43 @@ public abstract class BSPNode {
             return null;
         } else if (workspace.indexes.size() == 1) {
             return new LeafSingleBSPNode(workspace.indexes.getInt(0));
-        } else {
-            return InnerPartitionBSPNode.build(workspace);
         }
+
+        // special case two quads
+        var indexes = workspace.indexes;
+        if (indexes.size() == 2) {
+            var quadA = workspace.quads[indexes.getInt(0)];
+            var quadB = workspace.quads[indexes.getInt(1)];
+
+            // check for coplanar or mutually invisible quads
+            var facingA = quadA.facing();
+            var facingB = quadB.facing();
+            var normalA = quadA.normal();
+            var normalB = quadB.normal();
+            if (
+            // coplanar quads
+            ((facingA == ModelQuadFacing.UNASSIGNED || facingB == ModelQuadFacing.UNASSIGNED)
+                    ? // opposite normal (distance irrelevant)
+                    normalA.x() == -normalB.x()
+                            && normalA.y() == -normalB.y()
+                            && normalA.z() == -normalB.z()
+                            // same normal and same distance
+                            || normalA.equals(quadB.normal())
+                                    && normalA.dot(quadA.center()) == quadB.normal().dot(quadB.center())
+                    // aligned same distance
+                    : quadA.extents()[facingA.ordinal()] == quadB.extents()[facingB.ordinal()])
+                    // facing away from eachother
+                    || facingA == facingB.getOpposite()
+                    // otherwise mutually invisible
+                    || facingA != ModelQuadFacing.UNASSIGNED
+                            && facingB != ModelQuadFacing.UNASSIGNED
+                            && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
+                            && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA)) {
+                return new LeafMultiBSPNode(indexes.toIntArray());
+            }
+        }
+
+        return InnerPartitionBSPNode.build(workspace);
     }
 
     static BSPNode buildWithIndexes(BSPWorkspace workspace, IntArrayList indexes) {
