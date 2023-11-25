@@ -287,17 +287,17 @@ public class RenderSectionManager {
         this.sectionCache.cleanup();
         this.regions.update();
 
-        var blockingRebuilds = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
-        var deferredRebuilds = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
-        var optionallyBlockingCollector = updateImmediately ? blockingRebuilds : deferredRebuilds;
+        var blockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
+        var deferredCollector = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
+        var maybeBlockingCollector = updateImmediately ? blockingCollector : deferredCollector;
 
-        this.submitSectionTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_REBUILD);
-        this.submitSectionTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_SORT);
-        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.REBUILD);
-        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.INITIAL_BUILD);
-        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.SORT);
+        this.submitSectionTasks(blockingCollector, ChunkUpdateType.IMPORTANT_REBUILD);
+        this.submitSectionTasks(blockingCollector, ChunkUpdateType.IMPORTANT_SORT);
+        this.submitSectionTasks(maybeBlockingCollector, ChunkUpdateType.REBUILD);
+        this.submitSectionTasks(maybeBlockingCollector, ChunkUpdateType.INITIAL_BUILD);
+        this.submitSectionTasks(maybeBlockingCollector, ChunkUpdateType.SORT);
 
-        blockingRebuilds.awaitCompletion(this.builder);
+        blockingCollector.awaitCompletion(this.builder);
     }
 
     public void uploadChunks() {
