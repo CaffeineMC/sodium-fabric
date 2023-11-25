@@ -74,8 +74,9 @@ public abstract class BSPNode {
         return InnerPartitionBSPNode.build(workspace);
     }
 
-    static BSPNode buildWithIndexes(BSPWorkspace workspace, IntArrayList indexes) {
+    static BSPNode buildChild(BSPWorkspace workspace, IntArrayList indexes, int currentAxisOffset) {
         workspace.indexes = indexes;
+        workspace.axisOffset = (currentAxisOffset + 1) % 3;
         return build(workspace);
     }
 }

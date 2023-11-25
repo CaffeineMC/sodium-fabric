@@ -19,6 +19,11 @@ class BSPWorkspace {
      */
     IntArrayList indexes;
 
+    /**
+     * The axis to start the next recursive BSP build on.
+     */
+    int axisOffset = 1;
+
     BSPResult result = new BSPResult();
 
     BSPWorkspace(TQuad[] quads, ChunkSectionPos sectionPos) {
