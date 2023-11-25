@@ -261,6 +261,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         // it should simply be accepted and rendered as-is. Whatever artifacts this
         // causes are considered "ok".
         // TODO: also do this test with unaligned quads
+        int testsRemaining = 10000;
         for (int quadAIndex = 0; quadAIndex < indexes.size(); quadAIndex++) {
             var quadA = workspace.quads[indexes.getInt(quadAIndex)];
             if (quadA.facing() == ModelQuadFacing.UNASSIGNED) {
@@ -296,6 +297,14 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     });
                     return new LeafMultiBSPNode(indexes.toIntArray());
                 }
+
+                if (--testsRemaining == 0) {
+                    break;
+                }
+            }
+
+            if (testsRemaining == 0) {
+                break;
             }
         }
 
