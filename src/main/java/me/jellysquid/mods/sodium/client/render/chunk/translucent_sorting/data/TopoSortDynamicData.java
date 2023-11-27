@@ -179,7 +179,7 @@ public class TopoSortDynamicData extends DynamicData {
 
     private static ThreadLocal<float[]> distanceSortKeys = new ThreadLocal<>();
 
-    public static int[] distanceSortDirect(int[] indexes,
+    private static int[] distanceSortDirect(int[] indexes,
             IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
         if (indexes == null) {
             indexes = new int[quads.length];
