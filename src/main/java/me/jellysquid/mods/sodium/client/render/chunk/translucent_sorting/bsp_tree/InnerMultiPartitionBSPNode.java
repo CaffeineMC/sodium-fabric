@@ -6,6 +6,11 @@ import org.joml.Vector3fc;
 
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 
+/**
+ * Implementation note: Detecting and avoiding the double array when possible
+ * brings no performance benefit in sorting speed, only a building speed
+ * detriment.
+ */
 class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
     private final float[] planeDistances; // one less than there are partitions
 
