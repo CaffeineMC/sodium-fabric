@@ -6,6 +6,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.Accumul
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Implementation note: Storing the multi partition node's interval points in a
+ * global array instead of making a new one at each tree level doesn't appear to
+ * have any performance benefit.
+ */
 class BSPWorkspace {
     /**
      * All the quads in the section.
