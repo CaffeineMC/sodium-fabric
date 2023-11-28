@@ -44,8 +44,10 @@ public abstract class BSPNode {
         // special case two quads
         var indexes = workspace.indexes;
         if (indexes.size() == 2) {
-            var quadA = workspace.quads[indexes.getInt(0)];
-            var quadB = workspace.quads[indexes.getInt(1)];
+            var quadIndexA = indexes.getInt(0);
+            var quadIndexB = indexes.getInt(1);
+            var quadA = workspace.quads[quadIndexA];
+            var quadB = workspace.quads[quadIndexB];
 
             // check for coplanar or mutually invisible quads
             var facingA = quadA.facing();
@@ -71,7 +73,7 @@ public abstract class BSPNode {
                             && facingB != ModelQuadFacing.UNASSIGNED
                             && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
                             && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA)) {
-                return new LeafMultiBSPNode(indexes.toIntArray());
+                return new LeafDoubleBSPNode(quadIndexA, quadIndexB);
             }
         }
 
