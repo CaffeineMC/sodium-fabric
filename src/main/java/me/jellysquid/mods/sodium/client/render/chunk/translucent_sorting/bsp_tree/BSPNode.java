@@ -15,9 +15,10 @@ import net.minecraft.util.math.ChunkSectionPos;
  * into groups on either side of a plane and those that lie on the plane.
  * There's also leaf nodes that contain one or more quads.
  * 
- * TODO:
- * - historgram of BSP build and sort times on a standard world loading scenario
- * (maybe something like hermitcraft?) with some artificial structures too.
+ * Implementation note:
+ * - Doing a convex box test doesn't seem to bring a performance boost, even if
+ * it does trigger sometimes with man-made structures. The multi partition node
+ * probably does most of the work already.
  */
 public abstract class BSPNode {
     public abstract void collectSortedQuads(IntBuffer indexBuffer, Vector3fc cameraPos);
@@ -36,17 +37,14 @@ public abstract class BSPNode {
     }
 
     static BSPNode build(BSPWorkspace workspace) {
-        // pick which type of node to create for the given workspace
-        // TODO: add more heuristics here
-        if (workspace.indexes.isEmpty()) {
-            return null;
-        } else if (workspace.indexes.size() == 1) {
-            return new LeafSingleBSPNode(workspace.indexes.getInt(0));
-        }
-
-        // special case two quads
         var indexes = workspace.indexes;
-        if (indexes.size() == 2) {
+
+        // pick which type of node to create for the given workspace
+        if (indexes.isEmpty()) {
+            return null;
+        } else if (indexes.size() == 1) {
+            return new LeafSingleBSPNode(indexes.getInt(0));
+        } else if (indexes.size() == 2) {
             var quadIndexA = indexes.getInt(0);
             var quadIndexB = indexes.getInt(1);
             var quadA = workspace.quads[quadIndexA];
