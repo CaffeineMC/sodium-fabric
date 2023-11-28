@@ -211,12 +211,12 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
             // check if there's a trailing plane. Otherwise the last plane has distance -1
             // since it just holds the trailing quads
-            boolean trailingPlane = quadsOn != null;
+            boolean endsWithPlane = quadsOn != null;
 
             // flush the last partition, use the -1 distance to indicate the end if it
             // doesn't use quadsOn (which requires a certain distance to be given)
             if (quadsBefore != null || quadsOn != null) {
-                partitions.add(new Partition(trailingPlane ? distance : -1, quadsBefore, quadsOn));
+                partitions.add(new Partition(endsWithPlane ? distance : -1, quadsBefore, quadsOn));
             }
 
             // check if this can be turned into a binary partition node
@@ -225,7 +225,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 // get the two partitions
                 var inside = partitions.get(0);
                 var outside = partitions.size() == 2 ? partitions.get(1) : null;
-                if (outside == null || !trailingPlane) {
+                if (outside == null || !endsWithPlane) {
                     var partitionDistance = inside.distance();
                     workspace.addAlignedPartitionPlane(axis, partitionDistance);
 
@@ -246,7 +246,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             }
 
             // create a multi-partition node
-            int planeCount = trailingPlane ? partitions.size() : partitions.size() - 1;
+            int planeCount = endsWithPlane ? partitions.size() : partitions.size() - 1;
             float[] planeDistances = new float[planeCount];
             BSPNode[] partitionNodes = new BSPNode[planeCount + 1];
             int[][] onPlaneQuads = new int[planeCount][];
@@ -256,7 +256,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 var partition = partitions.get(i);
 
                 // if the partition actually has a plane
-                if (trailingPlane || i < count - 1) {
+                if (endsWithPlane || i < count - 1) {
                     var partitionDistance = partition.distance();
                     workspace.addAlignedPartitionPlane(axis, partitionDistance);
 
