@@ -32,6 +32,10 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * schedule event. If there's a running task, a new task needs to be scheduled
  * with an updated camera position, though I think this already works similarly
  * to how rebuilds can be scheduled during a running rebuild.
+ * 
+ * Implementation note:
+ * - Presorting the points in block-sized buckets doesn't help. It seems the
+ * sort algorithm is just fast enough to handle this.
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
     final Vector3fc planeNormal;
