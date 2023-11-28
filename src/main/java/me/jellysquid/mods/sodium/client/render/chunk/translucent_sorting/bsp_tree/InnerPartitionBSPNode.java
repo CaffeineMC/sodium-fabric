@@ -108,9 +108,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         LongArrayList points = new LongArrayList((int) (indexes.size() * 1.5));
 
         // find any aligned partition, search each axis
-        var axisOffset = workspace.axisOffset;
+        var depth = workspace.depth;
         for (int axisCount = 0; axisCount < 3; axisCount++) {
-            int axis = (axisCount + axisOffset) % 3;
+            int axis = (axisCount + depth) % 3;
             var facing = ModelQuadFacing.VALUES[axis];
             var oppositeFacing = facing.getOpposite();
             var oppositeDirection = oppositeFacing.ordinal();
@@ -232,10 +232,10 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     BSPNode insideNode = null;
                     BSPNode outsideNode = null;
                     if (inside.quadsBefore() != null) {
-                        insideNode = BSPNode.buildChild(workspace, inside.quadsBefore(), axisOffset);
+                        insideNode = BSPNode.buildChild(workspace, inside.quadsBefore(), depth);
                     }
                     if (outside != null) {
-                        outsideNode = BSPNode.buildChild(workspace, outside.quadsBefore(), axisOffset);
+                        outsideNode = BSPNode.buildChild(workspace, outside.quadsBefore(), depth);
                     }
                     var onPlane = inside.quadsOn() == null ? null : inside.quadsOn().toIntArray();
 
@@ -269,7 +269,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 }
 
                 if (partition.quadsBefore() != null) {
-                    partitionNodes[i] = BSPNode.buildChild(workspace, partition.quadsBefore(), axisOffset);
+                    partitionNodes[i] = BSPNode.buildChild(workspace, partition.quadsBefore(), depth);
                 }
                 if (partition.quadsOn() != null) {
                     onPlaneQuads[i] = partition.quadsOn().toIntArray();

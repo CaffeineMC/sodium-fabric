@@ -25,9 +25,9 @@ class BSPWorkspace {
     IntArrayList indexes;
 
     /**
-     * The axis to start the next recursive BSP build on.
+     * The current depth of the recursive BSP building process.
      */
-    int axisOffset = 1;
+    int depth = 1;
 
     BSPResult result = new BSPResult();
 
