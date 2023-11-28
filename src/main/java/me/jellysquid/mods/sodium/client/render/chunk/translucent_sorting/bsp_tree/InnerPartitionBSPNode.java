@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
-import java.util.Comparator;
-
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongComparator;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
@@ -40,31 +40,57 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         this.planeNormal = planeNormal;
     }
 
-    private static record IntervalPoint(float distance, int quadIndex, byte type) {
-        // the indices of the type are chosen such that tie-breaking items that have the
-        // same distance with the type ascending yields a beneficial sort order
-        // (END of the current interval, on-edge quads, then the START of the next
-        // interval)
-
-        // the start of a quad's extent in this direction
-        static final byte START = 2;
-
-        // end end of a quad's extent in this direction
-        static final byte END = 0;
-
-        // looking at a quad from the side where it has zero thickness
-        static final byte SIDE = 1;
+    private static long encodeIntervalPoint(float distance, int quadIndex, int type) {
+        return ((long) Float.floatToRawIntBits(distance) << 32) | ((long) type << 30) | quadIndex;
     }
 
-    private static final Comparator<IntervalPoint> INTERVAL_POINT_COMPARATOR = (a, b) -> {
+    private static float decodeIntervalPointDistance(long encoded) {
+        return Float.intBitsToFloat((int) (encoded >>> 32));
+    }
+
+    private static int decodeIntervalPointQuadIndex(long encoded) {
+        return (int) (encoded & 0x3FFFFFFF);
+    }
+
+    private static int decodeIntervalPointType(long encoded) {
+        return (int) (encoded >>> 30) & 0b11;
+    }
+
+    public static void validateQuadCount(int quadCount) {
+        if (quadCount * 2 > 0x3FFFFFFF) {
+            throw new IllegalArgumentException("Too many quads: " + quadCount);
+        }
+    }
+
+    // the indices of the type are chosen such that tie-breaking items that have the
+    // same distance with the type ascending yields a beneficial sort order
+    // (END of the current interval, on-edge quads, then the START of the next
+    // interval)
+
+    // the start of a quad's extent in this direction
+    private static final int INTERVAL_START = 2;
+
+    // end end of a quad's extent in this direction
+    private static final int INTERVAL_END = 0;
+
+    // looking at a quad from the side where it has zero thickness
+    private static final int INTERVAL_SIDE = 1;
+
+    private static final LongComparator INTERVAL_POINT_COMPARATOR = (a, b) -> {
+        // an interval point is encoded in a long as
+        // distance (32 bits), type (2 bits), quad index (30 bits)
+
+        float aDistance = decodeIntervalPointDistance(a);
+        float bDistance = decodeIntervalPointDistance(b);
+
         // sort by distance ascending
-        float distanceDiff = a.distance() - b.distance();
+        float distanceDiff = aDistance - bDistance;
         if (distanceDiff != 0) {
             return distanceDiff < 0 ? -1 : 1;
         }
 
         // sort by type ascending
-        return a.type() - b.type();
+        return decodeIntervalPointType(a) - decodeIntervalPointType(b);
     };
 
     /**
@@ -79,8 +105,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         var indexes = workspace.indexes;
 
         ReferenceArrayList<Partition> partitions = new ReferenceArrayList<>();
-        ReferenceArrayList<IntervalPoint> points = new ReferenceArrayList<>(
-                (int) (indexes.size() * 1.5));
+        LongArrayList points = new LongArrayList((int) (indexes.size() * 1.5));
 
         // find any aligned partition, search each axis
         var axisOffset = workspace.axisOffset;
@@ -98,10 +123,10 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 var posExtent = extents[axis];
                 var negExtent = extents[oppositeDirection];
                 if (posExtent == negExtent) {
-                    points.add(new IntervalPoint(posExtent, quadIndex, IntervalPoint.SIDE));
+                    points.add(encodeIntervalPoint(posExtent, quadIndex, INTERVAL_SIDE));
                 } else {
-                    points.add(new IntervalPoint(posExtent, quadIndex, IntervalPoint.END));
-                    points.add(new IntervalPoint(negExtent, quadIndex, IntervalPoint.START));
+                    points.add(encodeIntervalPoint(posExtent, quadIndex, INTERVAL_END));
+                    points.add(encodeIntervalPoint(negExtent, quadIndex, INTERVAL_START));
                 }
             }
 
@@ -113,9 +138,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             IntArrayList quadsBefore = null;
             IntArrayList quadsOn = null;
             int thickness = 0;
-            for (IntervalPoint point : points) {
-                switch (point.type()) {
-                    case IntervalPoint.START -> {
+            for (long point : points) {
+                switch (decodeIntervalPointType(point)) {
+                    case INTERVAL_START -> {
                         // unless at the start, flush if there's a gap
                         if (thickness == 0 && (quadsBefore != null || quadsOn != null)) {
                             partitions.add(new Partition(distance, quadsBefore, quadsOn));
@@ -139,36 +164,38 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                         if (quadsBefore == null) {
                             quadsBefore = new IntArrayList();
                         }
-                        quadsBefore.add(point.quadIndex());
+                        quadsBefore.add(decodeIntervalPointQuadIndex(point));
                     }
-                    case IntervalPoint.END -> {
+                    case INTERVAL_END -> {
                         thickness--;
                         if (quadsOn == null) {
-                            distance = point.distance();
+                            distance = decodeIntervalPointDistance(point);
                         }
                     }
-                    case IntervalPoint.SIDE -> {
+                    case INTERVAL_SIDE -> {
                         // if this point in a gap, it can be put on the plane itself
+                        int pointQuadIndex = decodeIntervalPointQuadIndex(point);
                         if (thickness == 0) {
+                            float pointDistance = decodeIntervalPointDistance(point);
                             if (quadsOn == null) {
                                 // no partition end created yet, set here
                                 quadsOn = new IntArrayList();
-                                distance = point.distance();
-                            } else if (distance != point.distance()) {
+                                distance = pointDistance;
+                            } else if (distance != pointDistance) {
                                 // partition end has passed already, flush for new partition plane distance
                                 partitions.add(new Partition(distance, quadsBefore, quadsOn));
-                                distance = point.distance();
+                                distance = pointDistance;
                                 quadsBefore = null;
                                 quadsOn = new IntArrayList();
                             }
-                            quadsOn.add(point.quadIndex());
+                            quadsOn.add(pointQuadIndex);
                         } else {
                             if (quadsBefore == null) {
                                 throw new IllegalStateException("there must be started intervals here");
                             }
-                            quadsBefore.add(point.quadIndex());
+                            quadsBefore.add(pointQuadIndex);
                             if (quadsOn == null) {
-                                distance = point.distance();
+                                distance = decodeIntervalPointDistance(point);
                             }
                         }
                     }

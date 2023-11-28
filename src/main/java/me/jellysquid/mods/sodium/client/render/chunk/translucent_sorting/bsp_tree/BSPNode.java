@@ -23,6 +23,9 @@ public abstract class BSPNode {
     public abstract void collectSortedQuads(IntBuffer indexBuffer, Vector3fc cameraPos);
 
     public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos) {
+        // throw if there's too many quads
+        InnerPartitionBSPNode.validateQuadCount(quads.length);
+
         // create a workspace and then the nodes figure out the recursive building.
         // throws if the BSP can't be built, null if none is necessary
         var workspace = new BSPWorkspace(quads, sectionPos);
