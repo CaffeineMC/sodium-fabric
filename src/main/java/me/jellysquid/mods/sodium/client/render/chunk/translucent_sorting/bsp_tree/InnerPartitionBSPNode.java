@@ -1,10 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
+import java.util.Arrays;
+
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongComparator;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
@@ -36,6 +37,15 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * Implementation note:
  * - Presorting the points in block-sized buckets doesn't help. It seems the
  * sort algorithm is just fast enough to handle this.
+ * - Eliminating the use of partition objects doesn't help. Since there's
+ * usually just very few partitions, it's not worth it it seems.
+ * 
+ * The encoding doesn't currently support negative distances (nor does such
+ * support appear to be required). Their ordering is wrong when sorting them by
+ * their binary representation. To fix this: "XOR all positive numbers with
+ * 0x8000... and negative numbers with 0xffff... This should flip the sign bit
+ * on both (so negative numbers go first), and then reverse the ordering on
+ * negative numbers." from https://stackoverflow.com/q/43299299
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
     final Vector3fc planeNormal;
@@ -80,23 +90,6 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     // looking at a quad from the side where it has zero thickness
     private static final int INTERVAL_SIDE = 1;
 
-    private static final LongComparator INTERVAL_POINT_COMPARATOR = (a, b) -> {
-        // an interval point is encoded in a long as
-        // distance (32 bits), type (2 bits), quad index (30 bits)
-
-        float aDistance = decodeIntervalPointDistance(a);
-        float bDistance = decodeIntervalPointDistance(b);
-
-        // sort by distance ascending
-        float distanceDiff = aDistance - bDistance;
-        if (distanceDiff != 0) {
-            return distanceDiff < 0 ? -1 : 1;
-        }
-
-        // sort by type ascending
-        return decodeIntervalPointType(a) - decodeIntervalPointType(b);
-    };
-
     /**
      * models a partition of the space into a set of quads that lie inside or on the
      * plane with the specified distance. If the distance is -1 this is the "end"
@@ -134,7 +127,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 }
             }
 
-            points.sort(INTERVAL_POINT_COMPARATOR);
+            // sort interval points by distance ascending and then by type. Sorting the
+            // longs directly has the same effect because of the encoding.
+            Arrays.sort(points.elements(), 0, points.size());
 
             // find gaps
             partitions.clear();
