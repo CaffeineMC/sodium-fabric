@@ -65,7 +65,6 @@
     "features.render.gui.font.GlyphRendererMixin",
     "features.render.gui.outlines.WorldRendererMixin",
     "features.render.immediate.DirectionMixin",
-    "features.render.immediate.buffer_builder.BufferBuilderMixin",
     "features.render.immediate.buffer_builder.intrinsics.BufferBuilderMixin",
     "features.render.immediate.buffer_builder.sorting.BufferBuilderMixin",
     "features.render.immediate.buffer_builder.sorting.VertexSorterMixin",
