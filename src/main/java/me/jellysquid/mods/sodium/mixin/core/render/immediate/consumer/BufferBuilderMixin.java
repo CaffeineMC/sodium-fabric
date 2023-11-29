@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.mixin.core.render.immediate.consumer;
 
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.*;
@@ -295,12 +296,17 @@ public abstract class BufferBuilderMixin extends FixedColorVertexConsumer implem
     }
 
     @Override
-    public VertexConsumer color(int rgba) {
+    public VertexConsumer color(int argb) { // No, this isn't a typo. One method takes RGBA, but this one takes ARGB.
         if (this.colorFixed) {
             throw new IllegalStateException();
         }
 
-        this.putColorAttribute(rgba);
+        // This should be RGBA.
+        // There is no reason it should be anything other than RGBA.
+        // It should certainly never be ABGR.
+        // But it is.
+        // Why?
+        this.putColorAttribute(ColorARGB.toABGR(argb));
 
         return this;
     }
