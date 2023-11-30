@@ -249,7 +249,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         GlTessellation tessellation = resources.getTessellation();
         if (tessellation == null) {
-            tessellation = this.createRegionTessellation(commandList, resources);
+            tessellation = this.createRegionTessellation(commandList, resources, true);
             resources.updateTessellation(commandList, tessellation);
         }
 
@@ -261,30 +261,22 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         GlTessellation tessellation = resources.getIndexedTessellation();
         if (tessellation == null) {
-            tessellation = this.createIndexedRegionTessellation(commandList, resources);
+            tessellation = this.createRegionTessellation(commandList, resources, false);
             resources.updateIndexedTessellation(commandList, tessellation);
         }
 
         return tessellation;
     }
 
-    private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
+    private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources, boolean useSharedIndexBuffer) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
                 TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
                 }),
-                TessellationBinding.forElementBuffer(this.sharedIndexBuffer.getBufferObject())
-        });
-    }
-
-    private GlTessellation createIndexedRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
-        return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), new GlVertexAttributeBinding[] {
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
-                }),
-                TessellationBinding.forElementBuffer(resources.getIndexBuffer())
+                TessellationBinding.forElementBuffer(useSharedIndexBuffer
+                        ? this.sharedIndexBuffer.getBufferObject()
+                        : resources.getIndexBuffer())
         });
     }
 
