@@ -19,7 +19,6 @@ import net.minecraft.world.chunk.Chunk;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -82,14 +81,6 @@ public class EntityRenderDispatcherMixin {
 
             renderShadowPart(entry, writer, radius, alpha, minX, maxX, minY, minZ, maxZ);
         }
-    }
-
-    /**
-     * @deprecated don't call, but just in case...
-     */
-    @Deprecated
-    private static void renderShadowPart(MatrixStack.Entry matrices, VertexConsumer consumer, float radius, float alpha, float minX, float maxX, float minY, float minZ, float maxZ) {
-        renderShadowPart(matrices, VertexBufferWriter.of(consumer), radius, alpha, minX, maxX, minY, minZ, maxZ);
     }
 
     @Unique
