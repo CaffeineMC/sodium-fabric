@@ -115,8 +115,7 @@ public class EntityRenderDispatcherMixin {
             writeShadowVertex(ptr, matPosition, maxX, minY, minZ, u2, v1, color, normal);
             ptr += ModelVertex.STRIDE;
 
-            writer
-                    .push(stack, buffer, 4, ModelVertex.FORMAT);
+            writer.push(stack, buffer, 4, ModelVertex.FORMAT);
         }
     }
 
