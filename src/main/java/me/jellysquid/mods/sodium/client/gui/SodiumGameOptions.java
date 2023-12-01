@@ -51,8 +51,8 @@ public class SodiumGameOptions {
 
     public enum SortBehavior implements TextProvider {
         OFF("options.off"),
-        STATIC("options.clouds.fast"),
-        DYNAMIC("options.clouds.fancy");
+        STATIC("sodium.options.sort_behavior.reduced"),
+        DYNAMIC("sodium.options.sort_behavior.accurate");
 
         private final Text name;
 
