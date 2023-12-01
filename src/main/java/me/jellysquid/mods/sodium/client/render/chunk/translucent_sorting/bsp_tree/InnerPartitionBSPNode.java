@@ -22,23 +22,15 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * level: convex hulls (like cuboids where the faces point outwards) don't need
  * to be sorted. This could be used to optimize the inside of honey blocks, and
  * other blocks.
- * - the section full of honey and slime blocks seems to be sorted ok but when
- * the camera moves too fast across the surface near a corner it breaks. My
- * theory is that it breaks from the slime blocks having a small inner block
- * that produces a plane that the camera passes over first but then it's still
- * sorting when the camera crosses over the second so it sorts it with the
- * camera between the two and doesn't sort it again when the camera has passed
- * over the second. This is fixed by making sure the scheduling of sort tasks
- * makes a new pending task with a new camera position if there's a newer
- * schedule event. If there's a running task, a new task needs to be scheduled
- * with an updated camera position, though I think this already works similarly
- * to how rebuilds can be scheduled during a running rebuild.
  * 
  * Implementation note:
  * - Presorting the points in block-sized buckets doesn't help. It seems the
  * sort algorithm is just fast enough to handle this.
  * - Eliminating the use of partition objects doesn't help. Since there's
  * usually just very few partitions, it's not worth it it seems.
+ * - Using fastutil's LongArrays sorting options (radix and quicksort) is slower
+ * than using Arrays.sort (which uses DualPivotQuicksort internally), even on
+ * worlds with player-built structures.
  * 
  * The encoding doesn't currently support negative distances (nor does such
  * support appear to be required). Their ordering is wrong when sorting them by
