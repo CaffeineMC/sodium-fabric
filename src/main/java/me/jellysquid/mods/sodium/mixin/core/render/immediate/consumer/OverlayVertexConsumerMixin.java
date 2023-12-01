@@ -43,16 +43,16 @@ public class OverlayVertexConsumerMixin implements VertexBufferWriter {
     private float textureScale;
 
     @Unique
-    private boolean isFullWriter;
+    private boolean canUseIntrinsics;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(CallbackInfo ci) {
-        this.isFullWriter = VertexBufferWriter.tryOf(this.delegate) != null;
+        this.canUseIntrinsics = VertexBufferWriter.tryOf(this.delegate) != null;
     }
 
     @Override
-    public boolean isFullWriter() {
-        return this.isFullWriter;
+    public boolean canUseIntrinsics() {
+        return this.canUseIntrinsics;
     }
 
     @Override

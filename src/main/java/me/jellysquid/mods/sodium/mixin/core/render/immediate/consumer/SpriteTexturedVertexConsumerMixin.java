@@ -23,7 +23,7 @@ public class SpriteTexturedVertexConsumerMixin implements VertexBufferWriter {
     private VertexConsumer delegate;
 
     @Unique
-    private boolean isFullWriter;
+    private boolean canUseIntrinsics;
 
     @Unique
     private float minU, minV;
@@ -39,12 +39,12 @@ public class SpriteTexturedVertexConsumerMixin implements VertexBufferWriter {
         this.maxU = sprite.getMaxU();
         this.maxV = sprite.getMaxV();
 
-        this.isFullWriter = VertexBufferWriter.tryOf(this.delegate) != null;
+        this.canUseIntrinsics = VertexBufferWriter.tryOf(this.delegate) != null;
     }
 
     @Override
-    public boolean isFullWriter() {
-        return this.isFullWriter;
+    public boolean canUseIntrinsics() {
+        return this.canUseIntrinsics;
     }
 
     @Override

@@ -23,16 +23,16 @@ public class VertexConsumersMixin {
         @Final
         private VertexConsumer second;
 
-        private boolean isFullWriter;
+        private boolean canUseIntrinsics;
 
         @Inject(method = "<init>", at = @At("RETURN"))
         private void checkFullStatus(CallbackInfo ci) {
-            this.isFullWriter = VertexBufferWriter.tryOf(this.first) != null && VertexBufferWriter.tryOf(this.second) != null;
+            this.canUseIntrinsics = VertexBufferWriter.tryOf(this.first) != null && VertexBufferWriter.tryOf(this.second) != null;
         }
 
         @Override
-        public boolean isFullWriter() {
-            return this.isFullWriter;
+        public boolean canUseIntrinsics() {
+            return this.canUseIntrinsics;
         }
 
         @Override
@@ -48,7 +48,7 @@ public class VertexConsumersMixin {
         @Final
         private VertexConsumer[] delegates;
 
-        private boolean isFullWriter;
+        private boolean canUseIntrinsics;
 
         @Inject(method = "<init>", at = @At("RETURN"))
         private void checkFullStatus(CallbackInfo ci) {
@@ -59,12 +59,12 @@ public class VertexConsumersMixin {
                     break;
                 }
             }
-            this.isFullWriter = !notWriter;
+            this.canUseIntrinsics = !notWriter;
         }
 
         @Override
-        public boolean isFullWriter() {
-            return this.isFullWriter;
+        public boolean canUseIntrinsics() {
+            return this.canUseIntrinsics;
         }
 
         @Override
