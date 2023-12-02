@@ -75,10 +75,6 @@ public class TranslucentGeometryCollector extends AccGroupResult {
         }
     }
 
-    private static float quantizeEpsilon(float value) {
-        return (float) Math.floor(value * INV_QUANTIZE_EPSILON + 0.5) * QUANTIZE_EPSILON;
-    }
-
     public void appendQuad(ModelQuadView quadView, ChunkVertexEncoder.Vertex[] vertices, ModelQuadFacing facing,
             boolean flipNormal) {
         float xSum = 0;
@@ -124,17 +120,34 @@ public class TranslucentGeometryCollector extends AccGroupResult {
             }
         }
 
-        var centerX = quantizeEpsilon(xSum / uniqueQuads);
-        var centerY = quantizeEpsilon(ySum / uniqueQuads);
-        var centerZ = quantizeEpsilon(zSum / uniqueQuads);
+        var centerX = xSum / uniqueQuads;
+        var centerY = ySum / uniqueQuads;
+        var centerZ = zSum / uniqueQuads;
         var center = new Vector3f(centerX, centerY, centerZ);
 
-        posXExtent = quantizeEpsilon(posXExtent);
-        posYExtent = quantizeEpsilon(posYExtent);
-        posZExtent = quantizeEpsilon(posZExtent);
-        negXExtent = quantizeEpsilon(negXExtent);
-        negYExtent = quantizeEpsilon(negYExtent);
-        negZExtent = quantizeEpsilon(negZExtent);
+        // shrink quad in non-normal directions to prevent intersections caused by
+        // epsilon offsets applied by FluidRenderer
+        if (facing != ModelQuadFacing.POS_X && facing != ModelQuadFacing.NEG_X) {
+            posXExtent -= QUANTIZE_EPSILON;
+            negXExtent += QUANTIZE_EPSILON;
+            if (negXExtent > posXExtent) {
+                negXExtent = posXExtent;
+            }
+        }
+        if (facing != ModelQuadFacing.POS_Y && facing != ModelQuadFacing.NEG_Y) {
+            posYExtent -= QUANTIZE_EPSILON;
+            negYExtent += QUANTIZE_EPSILON;
+            if (negYExtent > posYExtent) {
+                negYExtent = posYExtent;
+            }
+        }
+        if (facing != ModelQuadFacing.POS_Z && facing != ModelQuadFacing.NEG_Z) {
+            posZExtent -= QUANTIZE_EPSILON;
+            negZExtent += QUANTIZE_EPSILON;
+            if (negZExtent > posZExtent) {
+                negZExtent = posZExtent;
+            }
+        }
 
         if (facing != ModelQuadFacing.UNASSIGNED && this.unalignedDistances == null) {
             maxBounds.x = Math.max(maxBounds.x, posXExtent);
