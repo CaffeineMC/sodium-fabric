@@ -31,6 +31,9 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * - Using fastutil's LongArrays sorting options (radix and quicksort) is slower
  * than using Arrays.sort (which uses DualPivotQuicksort internally), even on
  * worlds with player-built structures.
+ * - A simple attempt at lazily writing index data to the buffer didn't yield a
+ * performance improvement. Maybe applying it to the multi partition node would
+ * be more effective (but also much more complex and slower).
  * 
  * The encoding doesn't currently support negative distances (nor does such
  * support appear to be required). Their ordering is wrong when sorting them by
