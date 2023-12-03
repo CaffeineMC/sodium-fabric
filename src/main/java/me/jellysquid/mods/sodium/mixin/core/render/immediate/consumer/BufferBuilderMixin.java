@@ -456,6 +456,11 @@ public abstract class BufferBuilderMixin extends FixedColorVertexConsumer implem
     }
 
     @Override
+    public boolean canUseIntrinsics() {
+        return true;
+    }
+
+    @Override
     public void push(MemoryStack stack, long src, int count, VertexFormatDescription format) {
         var length = count * this.vertexStride;
 
