@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.gui.font;
 
+import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.GlyphVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -53,10 +54,11 @@ public class GlyphRendererMixin {
      */
     @Inject(method = "draw", at = @At("HEAD"), cancellable = true)
     private void drawFast(boolean italic, float x, float y, Matrix4f matrix, VertexConsumer vertexConsumer, float red, float green, float blue, float alpha, int light, CallbackInfo ci) {
-        var writer = VertexBufferWriter.tryOf(vertexConsumer);
+        var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
 
-        if (writer == null)
+        if (writer == null) {
             return;
+        }
 
         ci.cancel();
 

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.entity.shadows;
 
+import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -35,10 +36,11 @@ public class EntityRenderDispatcherMixin {
      */
     @Inject(method = "renderShadowPart", at = @At("HEAD"), cancellable = true)
     private static void renderShadowPartFast(MatrixStack.Entry entry, VertexConsumer vertices, Chunk chunk, WorldView world, BlockPos pos, double x, double y, double z, float radius, float opacity, CallbackInfo ci) {
-        var writer = VertexBufferWriter.tryOf(vertices);
+        var writer = VertexConsumerUtils.convertOrLog(vertices);
 
-        if (writer == null)
+        if (writer == null) {
             return;
+        }
 
         ci.cancel();
 
