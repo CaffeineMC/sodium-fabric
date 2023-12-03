@@ -13,6 +13,7 @@ import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.chunk.Chunk;
@@ -88,7 +89,7 @@ public class EntityRenderDispatcherMixin {
         var matPosition = matrices.getPositionMatrix();
 
         var color = ColorABGR.withAlpha(SHADOW_COLOR, alpha);
-        var normal = MatrixHelper.transformNormal(matNormal, 0.0f, 1.0f, 0.0f);
+        var normal = MatrixHelper.transformNormal(matNormal, Direction.UP);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
