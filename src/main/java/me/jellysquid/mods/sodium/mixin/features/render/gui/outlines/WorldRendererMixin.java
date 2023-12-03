@@ -32,8 +32,9 @@ public class WorldRendererMixin {
                                     float xAxisRed, float yAxisGreen, float zAxisBlue, CallbackInfo ci) {
         var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
 
-        if (writer == null)
+        if (writer == null) {
             return;
+        }
 
         ci.cancel();
 
