@@ -92,8 +92,8 @@ repositories.
 
 ## 📜 License
 
-Except where otherwise stated, this source code is provided under the terms of the GNU LGPLv3, a free and open-source
-license. For more information, please see the [license file](LICENSE.txt).
+Except where otherwise stated, the files in this repository are provided under the terms of the GNU LGPLv3, a free and
+open-source license. For more information, please see the [license file](LICENSE.txt).
 
 When submitting pull requests to this repository, it is assumed that you are licensing your contribution under the
 GNU LGPLv3, unless you state otherwise.
