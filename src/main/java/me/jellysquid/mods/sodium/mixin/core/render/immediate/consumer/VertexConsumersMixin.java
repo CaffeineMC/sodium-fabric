@@ -8,6 +8,7 @@ import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -52,14 +53,18 @@ public class VertexConsumersMixin {
 
         @Inject(method = "<init>", at = @At("RETURN"))
         private void checkFullStatus(CallbackInfo ci) {
-            boolean notWriter = false;
-            for(var delegate : this.delegates) {
-                if(VertexBufferWriter.tryOf(delegate) == null) {
-                    notWriter = true;
-                    break;
+            this.canUseIntrinsics = allDelegatesSupportIntrinsics();
+        }
+
+        @Unique
+        private boolean allDelegatesSupportIntrinsics() {
+            for (var delegate : this.delegates) {
+                if (VertexBufferWriter.tryOf(delegate) == null) {
+                    return false;
                 }
             }
-            this.canUseIntrinsics = !notWriter;
+
+            return true;
         }
 
         @Override
