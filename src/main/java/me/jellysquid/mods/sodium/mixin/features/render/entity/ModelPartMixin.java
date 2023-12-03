@@ -106,7 +106,7 @@ public class ModelPartMixin implements ModelPartData {
         }
 
         if (this.pitch != 0.0F || this.yaw != 0.0F || this.roll != 0.0F) {
-            MatrixHelper.rotateZYX(matrixStack.peek(), this.pitch, this.yaw, this.roll);
+            MatrixHelper.rotateZYX(matrixStack.peek(), this.roll, this.yaw, this.pitch);
         }
 
         if (this.xScale != 1.0F || this.yScale != 1.0F || this.zScale != 1.0F) {

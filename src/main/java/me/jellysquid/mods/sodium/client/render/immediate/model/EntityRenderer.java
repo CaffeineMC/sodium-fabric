@@ -176,8 +176,8 @@ public class EntityRenderer {
         buildVertexTexCoord(VERTEX_TEXTURES[FACE_POS_Y], cuboid.u2, cuboid.v1, cuboid.u3, cuboid.v0);
         buildVertexTexCoord(VERTEX_TEXTURES[FACE_NEG_Z], cuboid.u1, cuboid.v1, cuboid.u2, cuboid.v2);
         buildVertexTexCoord(VERTEX_TEXTURES[FACE_POS_Z], cuboid.u4, cuboid.v1, cuboid.u5, cuboid.v2);
-        buildVertexTexCoord(VERTEX_TEXTURES[FACE_POS_X], cuboid.u2, cuboid.v1, cuboid.u4, cuboid.v2);
-        buildVertexTexCoord(VERTEX_TEXTURES[FACE_NEG_X], cuboid.u0, cuboid.v1, cuboid.u1, cuboid.v2);
+        buildVertexTexCoord(VERTEX_TEXTURES[FACE_NEG_X], cuboid.u2, cuboid.v1, cuboid.u4, cuboid.v2);
+        buildVertexTexCoord(VERTEX_TEXTURES[FACE_POS_X], cuboid.u0, cuboid.v1, cuboid.u1, cuboid.v2);
     }
 
     private static void prepareNormals(MatrixStack.Entry matrices) {
