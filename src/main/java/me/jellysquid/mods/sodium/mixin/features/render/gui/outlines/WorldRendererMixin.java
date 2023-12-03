@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.gui.outlines;
 
+import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.LineVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
@@ -29,7 +30,7 @@ public class WorldRendererMixin {
     private static void drawBoxFast(MatrixStack matrices, VertexConsumer vertexConsumer, double x1, double y1, double z1,
                                     double x2, double y2, double z2, float red, float green, float blue, float alpha,
                                     float xAxisRed, float yAxisGreen, float zAxisBlue, CallbackInfo ci) {
-        var writer = VertexBufferWriter.tryOf(vertexConsumer);
+        var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
 
         if (writer == null)
             return;
