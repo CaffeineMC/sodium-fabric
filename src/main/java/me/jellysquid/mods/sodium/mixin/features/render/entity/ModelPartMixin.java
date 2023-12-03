@@ -1,39 +1,65 @@
 package me.jellysquid.mods.sodium.mixin.features.render.entity;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
+import me.jellysquid.mods.sodium.client.render.immediate.model.EntityRenderer;
 import me.jellysquid.mods.sodium.client.render.immediate.model.ModelCuboid;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
-import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import me.jellysquid.mods.sodium.client.render.immediate.model.ModelPartData;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
-import org.lwjgl.system.MemoryStack;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 @Mixin(ModelPart.class)
-public class ModelPartMixin {
-    @Shadow public float pivotX;
-    @Shadow public float pivotY;
-    @Shadow public float pivotZ;
+public class ModelPartMixin implements ModelPartData {
+    @Shadow
+    public float pivotX;
+    @Shadow
+    public float pivotY;
+    @Shadow
+    public float pivotZ;
 
-    @Shadow public float yaw;
-    @Shadow public float pitch;
-    @Shadow public float roll;
+    @Shadow
+    public float xScale;
+    @Shadow
+    public float yScale;
+    @Shadow
+    public float zScale;
 
-    @Shadow public float xScale;
-    @Shadow public float yScale;
-    @Shadow public float zScale;
+    @Shadow
+    public float yaw;
+    @Shadow
+    public float pitch;
+    @Shadow
+    public float roll;
+
+    @Shadow
+    public boolean visible;
+    @Shadow
+    public boolean hidden;
+
+    @Mutable
+    @Shadow
+    @Final
+    private List<ModelPart.Cuboid> cuboids;
+
+    @Mutable
+    @Shadow
+    @Final
+    private Map<String, ModelPart> children;
+
+    @Unique
+    private ModelPart[] sodium$children;
 
     @Unique
     private ModelCuboid[] sodium$cuboids;
@@ -48,52 +74,25 @@ public class ModelPartMixin {
         }
 
         this.sodium$cuboids = copies;
+        this.sodium$children = children.values()
+                .toArray(ModelPart[]::new);
+
+        // Try to catch errors caused by mods touching the collections after we've copied everything.
+        this.cuboids = Collections.unmodifiableList(this.cuboids);
+        this.children = Collections.unmodifiableMap(this.children);
     }
 
-    /**
-     * @author JellySquid
-     * @reason Use optimized vertex writer, avoid allocations, use quick matrix transformations
-     */
-    @Inject(method = "renderCuboids", at = @At("HEAD"), cancellable = true)
-    private void renderCuboidsFast(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
-        var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
-        if(writer == null) {
+    @Inject(method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V", at = @At("HEAD"), cancellable = true)
+    private void onRender(MatrixStack matrices, VertexConsumer vertices, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
+        VertexBufferWriter writer = VertexConsumerUtils.convertOrLog(vertices);
+
+        if (writer == null) {
             return;
         }
 
         ci.cancel();
 
-        int color = ColorABGR.pack(red, green, blue, alpha);
-
-        for (ModelCuboid cuboid : this.sodium$cuboids) {
-            cuboid.updateVertices(matrices.getPositionMatrix());
-
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                long buffer = stack.nmalloc(4 * 6 * ModelVertex.STRIDE);
-                long ptr = buffer;
-
-                int count = 0;
-
-                for (ModelCuboid.Quad quad : cuboid.quads) {
-                    if (quad == null) continue;
-
-                    var normal = quad.getNormal(matrices.getNormalMatrix());
-
-                    for (int i = 0; i < 4; i++) {
-                        var pos = quad.positions[i];
-                        var tex = quad.textures[i];
-
-                        ModelVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, overlay, light, normal);
-
-                        ptr += ModelVertex.STRIDE;
-                    }
-
-                    count += 4;
-                }
-
-                writer.push(stack, buffer, count, ModelVertex.FORMAT);
-            }
-        }
+        EntityRenderer.render(matrices, writer, (ModelPart) (Object) this, light, overlay, ColorABGR.pack(red, green, blue, alpha));
     }
 
     /**
@@ -101,15 +100,37 @@ public class ModelPartMixin {
      * @reason Apply transform more quickly
      */
     @Overwrite
-    public void rotate(MatrixStack matrices) {
-        matrices.translate(this.pivotX * (1.0F / 16.0F), this.pivotY * (1.0F / 16.0F), this.pivotZ * (1.0F / 16.0F));
+    public void rotate(MatrixStack matrixStack) {
+        if (this.pivotX != 0.0F || this.pivotY != 0.0F || this.pivotZ != 0.0F) {
+            matrixStack.translate(this.pivotX * (1.0f / 16.0f), this.pivotY * (1.0f / 16.0f), this.pivotZ * (1.0f / 16.0f));
+        }
 
         if (this.pitch != 0.0F || this.yaw != 0.0F || this.roll != 0.0F) {
-            MatrixHelper.rotateZYX(matrices.peek(), this.roll, this.yaw, this.pitch);
+            MatrixHelper.rotateZYX(matrixStack.peek(), this.pitch, this.yaw, this.roll);
         }
 
         if (this.xScale != 1.0F || this.yScale != 1.0F || this.zScale != 1.0F) {
-            matrices.scale(this.xScale, this.yScale, this.zScale);
+            matrixStack.scale(this.xScale, this.yScale, this.zScale);
         }
+    }
+
+    @Override
+    public ModelCuboid[] getCuboids() {
+        return this.sodium$cuboids;
+    }
+
+    @Override
+    public boolean isVisible() {
+        return this.visible;
+    }
+
+    @Override
+    public boolean isHidden() {
+        return this.hidden;
+    }
+
+    @Override
+    public ModelPart[] getChildren() {
+        return this.sodium$children;
     }
 }
