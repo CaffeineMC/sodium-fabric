@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.util.math.Direction;
 
 /**
  * Provides a read-only view of a model quad. For mutable access to a model
@@ -55,11 +56,11 @@ public interface ModelQuadView {
      * @return The sprite texture used by this quad, or null if none is attached
      */
     Sprite getSprite();
-
+    
     /**
-     * @return The normal vector of the quad in 3-byte packed format
+     * @return The face used by this quad for lighting effects
      */
-    int getNormal();
+    Direction getLightFace();
 
     /**
      * @return The x coordinate of the unit normal vector

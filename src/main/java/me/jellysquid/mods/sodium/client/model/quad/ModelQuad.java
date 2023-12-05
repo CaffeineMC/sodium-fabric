@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.util.math.Direction;
 
 import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
@@ -14,8 +15,9 @@ public class ModelQuad implements ModelQuadViewMutable {
     private int flags;
 
     private Sprite sprite;
+    private Direction direction;
+
     private int colorIdx;
-    private int normal;
     private int GFNINormX;
     private int GFNINormY;
     private int GFNINormZ;
@@ -71,8 +73,8 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public void setNormal(int norm) {
-        this.normal = norm;
+    public void setLightFace(Direction direction) {
+        this.direction = direction;
     }
 
     @Override
@@ -121,8 +123,8 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public int getNormal() {
-        return this.normal;
+    public Direction getLightFace() {
+        return this.direction;
     }
 
     @Override

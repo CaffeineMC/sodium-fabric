@@ -8,6 +8,10 @@ import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 public class VertexConsumersMixin {
     @Mixin(targets = "net/minecraft/client/render/VertexConsumers$Dual")
@@ -19,6 +23,18 @@ public class VertexConsumersMixin {
         @Shadow
         @Final
         private VertexConsumer second;
+
+        private boolean canUseIntrinsics;
+
+        @Inject(method = "<init>", at = @At("RETURN"))
+        private void checkFullStatus(CallbackInfo ci) {
+            this.canUseIntrinsics = VertexBufferWriter.tryOf(this.first) != null && VertexBufferWriter.tryOf(this.second) != null;
+        }
+
+        @Override
+        public boolean canUseIntrinsics() {
+            return this.canUseIntrinsics;
+        }
 
         @Override
         public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
@@ -32,6 +48,29 @@ public class VertexConsumersMixin {
         @Shadow
         @Final
         private VertexConsumer[] delegates;
+
+        private boolean canUseIntrinsics;
+
+        @Inject(method = "<init>", at = @At("RETURN"))
+        private void checkFullStatus(CallbackInfo ci) {
+            this.canUseIntrinsics = allDelegatesSupportIntrinsics();
+        }
+
+        @Unique
+        private boolean allDelegatesSupportIntrinsics() {
+            for (var delegate : this.delegates) {
+                if (VertexBufferWriter.tryOf(delegate) == null) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        @Override
+        public boolean canUseIntrinsics() {
+            return this.canUseIntrinsics;
+        }
 
         @Override
         public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {

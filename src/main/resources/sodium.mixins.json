@@ -1,15 +1,15 @@
 {
-  "package" : "me.jellysquid.mods.sodium.mixin",
-  "required" : true,
-  "compatibilityLevel" : "JAVA_17",
-  "plugin" : "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
-  "injectors" : {
-    "defaultRequire" : 1
+  "package": "me.jellysquid.mods.sodium.mixin",
+  "required": true,
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+  "injectors": {
+    "defaultRequire": 1
   },
-  "overwrites" : {
-    "conformVisibility" : true
+  "overwrites": {
+    "conformVisibility": true
   },
-  "client" : [
+  "client": [
     "core.MinecraftClientMixin",
     "core.WindowMixin",
     "core.checks.AbstractTextureMixin",
@@ -85,6 +85,8 @@
     "features.textures.animations.tracking.DrawContextMixin",
     "features.textures.animations.tracking.SpriteAtlasTextureMixin",
     "features.textures.animations.tracking.SpriteBillboardParticleMixin",
+    "features.textures.animations.tracking.SpriteContentsAnimationAccessor",
+    "features.textures.animations.tracking.SpriteContentsAnimationFrameAccessor",
     "features.textures.animations.tracking.SpriteContentsAnimatorImplMixin",
     "features.textures.animations.tracking.SpriteContentsMixin",
     "features.textures.animations.upload.SpriteContentsAccessor",

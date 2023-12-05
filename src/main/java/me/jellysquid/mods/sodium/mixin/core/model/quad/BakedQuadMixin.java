@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
 @Mixin(BakedQuad.class)
-public abstract class BakedQuadMixin implements BakedQuadView {
+public class BakedQuadMixin implements BakedQuadView {
     @Shadow
     @Final
     protected int[] vertexData;
@@ -84,11 +84,6 @@ public abstract class BakedQuadMixin implements BakedQuadView {
     @Override
     public Sprite getSprite() {
         return this.sprite;
-    }
-
-    @Override
-    public int getNormal() {
-        return this.normal;
     }
 
     @Override

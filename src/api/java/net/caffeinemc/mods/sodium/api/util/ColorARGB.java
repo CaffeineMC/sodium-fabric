@@ -80,7 +80,7 @@ public class ColorARGB implements ColorU8 {
     }
 
     public static int toABGR(int color) {
-        return Integer.reverseBytes(color << 8);
+        return Integer.reverseBytes(Integer.rotateLeft(color, 8));
     }
 
     /**
