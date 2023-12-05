@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.core.checks;
+package me.jellysquid.mods.sodium.mixin.debug.checks;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;

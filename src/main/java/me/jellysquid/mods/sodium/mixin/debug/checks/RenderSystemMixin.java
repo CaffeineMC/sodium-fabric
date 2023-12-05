@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.core.checks;
+package me.jellysquid.mods.sodium.mixin.debug.checks;
 
 import com.mojang.blaze3d.systems.RenderCall;
 import com.mojang.blaze3d.systems.RenderSystem;
