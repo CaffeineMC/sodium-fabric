@@ -43,7 +43,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * negative numbers." from https://stackoverflow.com/q/43299299
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
-    private static int NODE_REUSE_THRESHOLD = 0;
+    private static int NODE_REUSE_THRESHOLD = 30;
 
     final Vector3fc planeNormal;
     final int axis;
