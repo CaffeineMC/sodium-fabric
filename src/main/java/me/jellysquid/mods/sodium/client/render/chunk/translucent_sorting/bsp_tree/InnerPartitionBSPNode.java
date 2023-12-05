@@ -195,7 +195,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
         // find any aligned partition, search each axis
         for (int axisCount = 0; axisCount < 3; axisCount++) {
-            int axis = (axisCount + depth) % 3; // TODO: depth + 1 to start with Y axis
+            int axis = (axisCount + depth + 1) % 3;
             var oppositeDirection = axis + 3;
 
             // collect all the geometry's start and end points in this direction
