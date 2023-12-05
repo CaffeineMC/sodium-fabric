@@ -15,6 +15,36 @@ import org.joml.Vector3f;
  */
 public class MatrixHelper {
     /**
+     * @param mat The transformation matrix to apply to the normal
+     * @param x The X-coordinate of the normal vector
+     * @param y The Y-coordinate of the normal vector
+     * @param z The Z-coordinate of the normal vector
+     * @return The transformed normal vector (in packed format)
+     */
+    public static int transformNormal(Matrix3f mat, float x, float y, float z) {
+        // The transformed normal vector
+        float nxt = transformNormalX(mat, x, y, z);
+        float nyt = transformNormalY(mat, x, y, z);
+        float nzt = transformNormalZ(mat, x, y, z);
+
+        return NormI8.pack(nxt, nyt, nzt);
+    }
+
+    /**
+     * @param mat The transformation matrix to apply to the normal
+     * @param norm The normal vector to transform (in packed format)
+     * @return The transformed normal vector (in packed format)
+     */
+    public static int transformNormal(Matrix3f mat, int norm) {
+        // The unpacked normal vector
+        float x = NormI8.unpackX(norm);
+        float y = NormI8.unpackY(norm);
+        float z = NormI8.unpackZ(norm);
+
+        return transformNormal(mat, x, y, z);
+    }
+
+    /**
      * @param mat The transformation matrix to apply to the normal vector
      * @param x The X-coordinate of the normal vector
      * @param y The Y-coordinate of the normal vector
