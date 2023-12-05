@@ -29,6 +29,11 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - determine the right distance for angle/distance triggering. It seems just
  * the diagonal of a section is too small, angle triggering is broken at close
  * distances.
+ * - Bug: adding a slime block onto one of the corners of the monster cube makes
+ * it invisible. Is this because there's nothing else in this section than just
+ * that one block? Might have something to do with NONE mode behaving weirdly in
+ * that situation. Possibly related to index buffer reuse, since it only happens
+ * after the block has been replaced at least once.
  * 
  * @author douira
  */
