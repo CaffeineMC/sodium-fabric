@@ -1,10 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
-import java.nio.IntBuffer;
-
 import org.joml.Vector3fc;
 
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 
 /**
  * Implementation note: Detecting and avoiding the double array when possible
@@ -17,28 +16,30 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
     private final BSPNode[] partitions;
     private final int[][] onPlaneQuads;
 
-    InnerMultiPartitionBSPNode(float[] planeDistances, Vector3fc planeNormal,
+    InnerMultiPartitionBSPNode(NodeReuseData reuseData, int axis, float[] planeDistances,
             BSPNode[] partitions, int[][] onPlaneQuads) {
-        super(planeNormal);
+        super(reuseData, axis);
         this.planeDistances = planeDistances;
         this.partitions = partitions;
         this.onPlaneQuads = onPlaneQuads;
     }
 
-    private void collectPlaneQuads(IntBuffer indexBuffer, int planeIndex) {
+    private void collectPlaneQuads(BSPSortState sortState, int planeIndex) {
         if (this.onPlaneQuads[planeIndex] != null) {
-            TranslucentData.writeQuadVertexIndexes(indexBuffer, this.onPlaneQuads[planeIndex]);
+            sortState.writeIndexes(this.onPlaneQuads[planeIndex]);
         }
     }
 
-    private void collectPartitionQuads(IntBuffer indexBuffer, int partitionIndex, Vector3fc cameraPos) {
+    private void collectPartitionQuads(BSPSortState sortState, int partitionIndex, Vector3fc cameraPos) {
         if (this.partitions[partitionIndex] != null) {
-            this.partitions[partitionIndex].collectSortedQuads(indexBuffer, cameraPos);
+            this.partitions[partitionIndex].collectSortedQuads(sortState, cameraPos);
         }
     }
 
     @Override
-    public void collectSortedQuads(IntBuffer indexBuffer, Vector3fc cameraPos) {
+    void collectSortedQuads(BSPSortState sortState, Vector3fc cameraPos) {
+        sortState.startNode(this);
+
         // calculate the camera's distance. Then render the partitions in order of
         // distance to the partition the camera is in.
         var cameraDistance = this.planeNormal.dot(cameraPos);
@@ -49,28 +50,92 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
                 // collect the plane the camera is in
                 var isOnPlane = cameraDistance == this.planeDistances[i];
                 if (isOnPlane) {
-                    this.collectPartitionQuads(indexBuffer, i, cameraPos);
+                    this.collectPartitionQuads(sortState, i, cameraPos);
                 }
 
                 // backwards sweep: collect all partitions backwards until the camera is reached
                 for (int j = this.planeDistances.length; j > i; j--) {
-                    this.collectPartitionQuads(indexBuffer, j, cameraPos);
-                    this.collectPlaneQuads(indexBuffer, j - 1);
+                    this.collectPartitionQuads(sortState, j, cameraPos);
+                    this.collectPlaneQuads(sortState, j - 1);
                 }
 
                 if (!isOnPlane) {
-                    this.collectPartitionQuads(indexBuffer, i, cameraPos);
+                    this.collectPartitionQuads(sortState, i, cameraPos);
                 }
 
                 return;
             }
 
             // collect the quads in the partition and on the plane
-            this.collectPartitionQuads(indexBuffer, i, cameraPos);
-            this.collectPlaneQuads(indexBuffer, i);
+            this.collectPartitionQuads(sortState, i, cameraPos);
+            this.collectPlaneQuads(sortState, i);
         }
 
         // collect the last partition
-        this.collectPartitionQuads(indexBuffer, this.planeDistances.length, cameraPos);
+        this.collectPartitionQuads(sortState, this.planeDistances.length, cameraPos);
+    }
+
+    static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode,
+            ReferenceArrayList<Partition> partitions, int axis, boolean endsWithPlane) {
+        int planeCount = endsWithPlane ? partitions.size() : partitions.size() - 1;
+        float[] planeDistances = new float[planeCount];
+        BSPNode[] partitionNodes = new BSPNode[planeCount + 1];
+        int[][] onPlaneQuads = new int[planeCount][];
+
+        BSPNode[] oldPartitionNodes = null;
+        float[] oldPlaneDistances = null;
+        int oldChildIndex = 0;
+        float oldPartitionDistance = 0;
+        if (oldNode instanceof InnerMultiPartitionBSPNode multiNode
+                && multiNode.axis == axis && multiNode.partitions.length > 0) {
+            oldPartitionNodes = multiNode.partitions;
+            oldPlaneDistances = multiNode.planeDistances;
+            oldPartitionDistance = multiNode.planeDistances[0];
+        }
+
+        // write the partition planes and nodes
+        for (int i = 0, count = partitions.size(); i < count; i++) {
+            var partition = partitions.get(i);
+
+            // if the partition actually has a plane
+            float partitionDistance = -1;
+            if (endsWithPlane || i < count - 1) {
+                partitionDistance = partition.distance();
+                workspace.addAlignedPartitionPlane(axis, partitionDistance);
+
+                // TODO: remove
+                if (partitionDistance == -1) {
+                    throw new IllegalStateException("partition distance not set");
+                }
+
+                planeDistances[i] = partitionDistance;
+            }
+
+            if (partition.quadsBefore() != null) {
+                BSPNode oldChild = null;
+
+                if (oldPartitionNodes != null) {
+                    // if there's a node that matches the partition's distance, use it as the old
+                    // node. Search forwards through the old plane distances to find a candidate
+                    while (oldChildIndex < oldPartitionNodes.length && oldPartitionDistance < partitionDistance) {
+                        oldChildIndex++;
+                        oldPartitionDistance = oldChildIndex < oldPlaneDistances.length
+                                ? oldPlaneDistances[oldChildIndex]
+                                : -1;
+                    }
+                    if (oldChildIndex < oldPartitionNodes.length && oldPartitionDistance == partitionDistance) {
+                        oldChild = oldPartitionNodes[oldChildIndex];
+                    }
+                }
+
+                partitionNodes[i] = BSPNode.build(workspace, partition.quadsBefore(), depth, oldChild);
+            }
+            if (partition.quadsOn() != null) {
+                onPlaneQuads[i] = partition.quadsOn().toIntArray();
+            }
+        }
+
+        return new InnerMultiPartitionBSPNode(prepareNodeReuse(workspace, indexes, depth),
+                axis, planeDistances, partitionNodes, onPlaneQuads);
     }
 }

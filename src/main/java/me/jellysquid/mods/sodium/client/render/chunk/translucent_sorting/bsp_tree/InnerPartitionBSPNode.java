@@ -43,10 +43,106 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * negative numbers." from https://stackoverflow.com/q/43299299
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
-    final Vector3fc planeNormal;
+    private static int NODE_REUSE_THRESHOLD = 0;
 
-    InnerPartitionBSPNode(Vector3fc planeNormal) {
-        this.planeNormal = planeNormal;
+    final Vector3fc planeNormal;
+    final int axis;
+
+    int[] indexMap;
+    int fixedIndexOffset = BSPSortState.NO_FIXED_OFFSET;
+    final NodeReuseData reuseData; // nullable
+
+    /**
+     * Stores data required for testing if the node can be re-used. This data is
+     * only generated for select candidate nodes.
+     * 
+     * It only stores the set of indexes that this node was constructed from and
+     * their extents since the BSP construction only cares about the "opaque" quad
+     * geometry and not the normal or facing.
+     */
+    record NodeReuseData(float[][] quadExtents, int[] indexes, int maxIndex) {
+    }
+
+    InnerPartitionBSPNode(NodeReuseData reuseData, int axis) {
+        this.planeNormal = ModelQuadFacing.NORMALS[axis];
+        this.axis = axis;
+        this.reuseData = reuseData;
+    }
+
+    static NodeReuseData prepareNodeReuse(BSPWorkspace workspace, IntArrayList indexes, int depth) {
+        // if node reuse is enabled, only enable on the first level of children (not the
+        // root node and not anything deeper than its children)
+        // TODO: more sophisticated reuse scheduling (make uset configurable, and only
+        // do once the section has been modified at least once already to avoid making
+        // this data on terrain sections that are never touched)
+        if (depth == 1 && indexes.size() > NODE_REUSE_THRESHOLD) {
+            // collect the extents of the indexed quads and hash them
+            var quadExtents = new float[indexes.size()][];
+            int maxIndex = -1;
+            for (int i = 0; i < indexes.size(); i++) {
+                var index = indexes.getInt(i);
+                var quad = workspace.quads[index];
+                var extents = quad.extents();
+                quadExtents[i] = extents;
+                maxIndex = Math.max(maxIndex, index);
+            }
+            return new NodeReuseData(quadExtents, indexes.toIntArray(), maxIndex);
+        }
+        return null;
+    }
+
+    static InnerPartitionBSPNode attemptNodeReuse(BSPWorkspace workspace, IntArrayList newIndexes, int depth,
+            InnerPartitionBSPNode oldNode) {
+        if (oldNode == null) {
+            return null;
+        }
+
+        oldNode.indexMap = null;
+        oldNode.fixedIndexOffset = BSPSortState.NO_FIXED_OFFSET;
+
+        var reuseData = oldNode.reuseData;
+        if (reuseData == null) {
+            return null;
+        }
+
+        var oldExtents = reuseData.quadExtents;
+        if (oldExtents.length != newIndexes.size()) {
+            return null;
+        }
+
+        for (int i = 0; i < newIndexes.size(); i++) {
+            if (!workspace.quads[newIndexes.getInt(i)].extentsEqual(oldExtents[i])) {
+                return null;
+            }
+        }
+
+        // reuse old node and either apply a fixed offset or calculate an index map to
+        // map from old to new indices
+        var oldIndexes = reuseData.indexes;
+        var indexMap = new int[reuseData.maxIndex + 1];
+        final int OFFSET_CHANGED = Integer.MIN_VALUE;
+        int lastOffset = 0;
+        for (int i = 0; i < oldIndexes.length; i++) {
+            var oldIndex = oldIndexes[i];
+            var newIndex = newIndexes.getInt(i);
+            indexMap[oldIndex] = newIndex;
+            var newOffset = newIndex - oldIndex;
+            if (i == 0) {
+                lastOffset = newOffset;
+            } else if (lastOffset != newOffset) {
+                lastOffset = OFFSET_CHANGED;
+            }
+        }
+
+        // use a fixed offset if possible (if all old indices differ from the new ones
+        // by the same amount)
+        if (lastOffset != OFFSET_CHANGED) {
+            oldNode.fixedIndexOffset = lastOffset;
+        } else {
+            oldNode.indexMap = indexMap;
+        }
+
+        return oldNode;
     }
 
     private static long encodeIntervalPoint(float distance, int quadIndex, int type) {
@@ -85,27 +181,22 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     // looking at a quad from the side where it has zero thickness
     private static final int INTERVAL_SIDE = 1;
 
-    /**
-     * models a partition of the space into a set of quads that lie inside or on the
-     * plane with the specified distance. If the distance is -1 this is the "end"
-     * partition after the last partition plane.
-     */
-    private static record Partition(float distance, IntArrayList quadsBefore, IntArrayList quadsOn) {
-    }
-
-    static BSPNode build(BSPWorkspace workspace) {
-        var indexes = workspace.indexes;
+    static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
+        // attempt reuse of the old node if possible
+        if (oldNode instanceof InnerPartitionBSPNode oldInnerNode) {
+            var reusedNode = InnerPartitionBSPNode.attemptNodeReuse(workspace, indexes, depth, oldInnerNode);
+            if (reusedNode != null) {
+                return reusedNode;
+            }
+        }
 
         ReferenceArrayList<Partition> partitions = new ReferenceArrayList<>();
         LongArrayList points = new LongArrayList((int) (indexes.size() * 1.5));
 
         // find any aligned partition, search each axis
-        var depth = workspace.depth;
         for (int axisCount = 0; axisCount < 3; axisCount++) {
-            int axis = (axisCount + depth) % 3;
-            var facing = ModelQuadFacing.VALUES[axis];
-            var oppositeFacing = facing.getOpposite();
-            var oppositeDirection = oppositeFacing.ordinal();
+            int axis = (axisCount + depth) % 3; // TODO: depth + 1 to start with Y axis
+            var oppositeDirection = axis + 3;
 
             // collect all the geometry's start and end points in this direction
             points.clear();
@@ -220,58 +311,14 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 var inside = partitions.get(0);
                 var outside = partitions.size() == 2 ? partitions.get(1) : null;
                 if (outside == null || !endsWithPlane) {
-                    var partitionDistance = inside.distance();
-                    workspace.addAlignedPartitionPlane(axis, partitionDistance);
-
-                    BSPNode insideNode = null;
-                    BSPNode outsideNode = null;
-                    if (inside.quadsBefore() != null) {
-                        insideNode = BSPNode.buildChild(workspace, inside.quadsBefore(), depth);
-                    }
-                    if (outside != null) {
-                        outsideNode = BSPNode.buildChild(workspace, outside.quadsBefore(), depth);
-                    }
-                    var onPlane = inside.quadsOn() == null ? null : inside.quadsOn().toIntArray();
-
-                    return new InnerBinaryPartitionBSPNode(
-                            partitionDistance, ModelQuadFacing.NORMALS[axis],
-                            insideNode, outsideNode, onPlane);
+                    return InnerBinaryPartitionBSPNode.build(workspace, indexes, depth, oldNode,
+                            inside, outside, axis);
                 }
             }
 
             // create a multi-partition node
-            int planeCount = endsWithPlane ? partitions.size() : partitions.size() - 1;
-            float[] planeDistances = new float[planeCount];
-            BSPNode[] partitionNodes = new BSPNode[planeCount + 1];
-            int[][] onPlaneQuads = new int[planeCount][];
-
-            // write the partition planes and nodes
-            for (int i = 0, count = partitions.size(); i < count; i++) {
-                var partition = partitions.get(i);
-
-                // if the partition actually has a plane
-                if (endsWithPlane || i < count - 1) {
-                    var partitionDistance = partition.distance();
-                    workspace.addAlignedPartitionPlane(axis, partitionDistance);
-
-                    // TODO: remove
-                    if (partitionDistance == -1) {
-                        throw new IllegalStateException("partition distance not set");
-                    }
-
-                    planeDistances[i] = partitionDistance;
-                }
-
-                if (partition.quadsBefore() != null) {
-                    partitionNodes[i] = BSPNode.buildChild(workspace, partition.quadsBefore(), depth);
-                }
-                if (partition.quadsOn() != null) {
-                    onPlaneQuads[i] = partition.quadsOn().toIntArray();
-                }
-            }
-
-            return new InnerMultiPartitionBSPNode(planeDistances, ModelQuadFacing.NORMALS[axis],
-                    partitionNodes, onPlaneQuads);
+            return InnerMultiPartitionBSPNode.build(workspace, indexes, depth, oldNode,
+                    partitions, axis, endsWithPlane);
         }
 
         // TODO: attempt unaligned partitioning, convex decomposition, etc.

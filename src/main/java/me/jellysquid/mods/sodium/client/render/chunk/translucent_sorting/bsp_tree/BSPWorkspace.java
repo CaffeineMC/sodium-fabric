@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AccumulationGroup;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
@@ -19,28 +18,11 @@ class BSPWorkspace {
 
     final ChunkSectionPos sectionPos;
 
-    /**
-     * A list of all the quad indexes to process in the next build invocation.
-     */
-    IntArrayList indexes;
-
-    /**
-     * The current depth of the recursive BSP building process.
-     */
-    int depth = 1;
-
-    BSPResult result = new BSPResult();
+    final BSPResult result = new BSPResult();
 
     BSPWorkspace(TQuad[] quads, ChunkSectionPos sectionPos) {
         this.quads = quads;
         this.sectionPos = sectionPos;
-
-        // initialize the indexes to all quads
-        int[] initialIndexes = new int[quads.length];
-        for (int i = 0; i < quads.length; i++) {
-            initialIndexes[i] = i;
-        }
-        this.indexes = new IntArrayList(initialIndexes);
     }
 
     // TODO: better bidirectional triggering: integrate bidirectionality in GFNI if

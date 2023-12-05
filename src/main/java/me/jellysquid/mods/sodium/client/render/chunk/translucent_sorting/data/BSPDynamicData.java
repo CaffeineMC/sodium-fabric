@@ -27,14 +27,18 @@ public class BSPDynamicData extends DynamicData {
     private void sort(Vector3fc cameraPos) {
         this.unsetReuseUploadedData();
 
-        this.rootNode.collectSortedQuads(
-                this.getBuffer().getDirectBuffer().asIntBuffer(), cameraPos);
+        this.rootNode.collectSortedQuads(getBuffer(), cameraPos);
     }
 
     public static BSPDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
             Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos,
-            NativeBuffer buffer) {
-        var result = BSPNode.buildBSP(quads, sectionPos);
+            NativeBuffer buffer, TranslucentData oldData) {
+        BSPNode oldRoot = null;
+        if (oldData instanceof BSPDynamicData oldBSPData) {
+            oldRoot = oldBSPData.rootNode;
+        }
+
+        var result = BSPNode.buildBSP(quads, sectionPos, oldRoot);
 
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
         buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);

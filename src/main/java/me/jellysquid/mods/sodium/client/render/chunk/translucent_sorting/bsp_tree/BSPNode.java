@@ -1,13 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
-import java.nio.IntBuffer;
-
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -21,23 +20,36 @@ import net.minecraft.util.math.ChunkSectionPos;
  * probably does most of the work already.
  */
 public abstract class BSPNode {
-    public abstract void collectSortedQuads(IntBuffer indexBuffer, Vector3fc cameraPos);
 
-    public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos) {
+    abstract void collectSortedQuads(BSPSortState sortState, Vector3fc cameraPos);
+
+    public void collectSortedQuads(NativeBuffer nativeBuffer, Vector3fc cameraPos) {
+        this.collectSortedQuads(new BSPSortState(nativeBuffer), cameraPos);
+    }
+
+    public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos, BSPNode oldRoot) {
         // throw if there's too many quads
         InnerPartitionBSPNode.validateQuadCount(quads.length);
 
         // create a workspace and then the nodes figure out the recursive building.
         // throws if the BSP can't be built, null if none is necessary
         var workspace = new BSPWorkspace(quads, sectionPos);
-        var rootNode = BSPNode.build(workspace);
+
+        // initialize the indexes to all quads
+        int[] initialIndexes = new int[quads.length];
+        for (int i = 0; i < quads.length; i++) {
+            initialIndexes[i] = i;
+        }
+        var allIndexes = new IntArrayList(initialIndexes);
+
+        var rootNode = BSPNode.build(workspace, allIndexes, -1, oldRoot);
         var result = workspace.result;
         result.rootNode = rootNode;
         return result;
     }
 
-    static BSPNode build(BSPWorkspace workspace) {
-        var indexes = workspace.indexes;
+    static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
+        depth++;
 
         // pick which type of node to create for the given workspace
         if (indexes.isEmpty()) {
@@ -78,12 +90,6 @@ public abstract class BSPNode {
             }
         }
 
-        return InnerPartitionBSPNode.build(workspace);
-    }
-
-    static BSPNode buildChild(BSPWorkspace workspace, IntArrayList indexes, int currentDepth) {
-        workspace.indexes = indexes;
-        workspace.depth = currentDepth + 1;
-        return build(workspace);
+        return InnerPartitionBSPNode.build(workspace, indexes, depth, oldNode);
     }
 }

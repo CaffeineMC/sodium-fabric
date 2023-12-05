@@ -401,7 +401,8 @@ public class TranslucentGeometryCollector extends AccGroupResult {
         return this.sortType;
     }
 
-    private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
+    private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos,
+            TranslucentData oldData) {
         if (this.sortType == SortType.NONE) {
             return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos, null);
         }
@@ -431,7 +432,7 @@ public class TranslucentGeometryCollector extends AccGroupResult {
 
         if (this.sortType == SortType.DYNAMIC_ALL) {
             try {
-                return BSPDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, buffer);
+                return BSPDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, buffer, oldData);
             } catch (BSPBuildFailureException e) {
                 System.out.println("BSP build failure: " + sectionPos);
                 return TopoSortDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, this, buffer);
@@ -486,7 +487,7 @@ public class TranslucentGeometryCollector extends AccGroupResult {
             }
         }
 
-        var newData = makeNewTranslucentData(translucentMesh, cameraPos);
+        var newData = makeNewTranslucentData(translucentMesh, cameraPos, oldData);
         if (newData instanceof PresentTranslucentData presentData) {
             presentData.setQuadHash(getQuadHash(this.quads));
         }
