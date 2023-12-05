@@ -27,13 +27,13 @@ public abstract class BSPNode {
         this.collectSortedQuads(new BSPSortState(nativeBuffer), cameraPos);
     }
 
-    public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos, BSPNode oldRoot) {
+    public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos, BSPNode oldRoot, boolean prepareNodeReuse) {
         // throw if there's too many quads
         InnerPartitionBSPNode.validateQuadCount(quads.length);
 
         // create a workspace and then the nodes figure out the recursive building.
         // throws if the BSP can't be built, null if none is necessary
-        var workspace = new BSPWorkspace(quads, sectionPos);
+        var workspace = new BSPWorkspace(quads, sectionPos, prepareNodeReuse);
 
         // initialize the indexes to all quads
         int[] initialIndexes = new int[quads.length];
