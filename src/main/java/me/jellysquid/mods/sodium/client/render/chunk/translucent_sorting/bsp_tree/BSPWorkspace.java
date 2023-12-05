@@ -20,9 +20,12 @@ class BSPWorkspace {
 
     final BSPResult result = new BSPResult();
 
-    BSPWorkspace(TQuad[] quads, ChunkSectionPos sectionPos) {
+    final boolean prepareNodeReuse;
+
+    BSPWorkspace(TQuad[] quads, ChunkSectionPos sectionPos, boolean prepareNodeReuse) {
         this.quads = quads;
         this.sectionPos = sectionPos;
+        this.prepareNodeReuse = prepareNodeReuse;
     }
 
     // TODO: better bidirectional triggering: integrate bidirectionality in GFNI if

@@ -11,12 +11,16 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class BSPDynamicData extends DynamicData {
+    private static final int NODE_REUSE_MIN_GENERATION = 1;
+
     private final BSPNode rootNode;
+    private final int generation;
 
     private BSPDynamicData(ChunkSectionPos sectionPos,
-            NativeBuffer buffer, VertexRange range, BSPResult result) {
+            NativeBuffer buffer, VertexRange range, BSPResult result, int generation) {
         super(sectionPos, buffer, range, result);
         this.rootNode = result.getRootNode();
+        this.generation = generation;
     }
 
     @Override
@@ -34,16 +38,22 @@ public class BSPDynamicData extends DynamicData {
             Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos,
             NativeBuffer buffer, TranslucentData oldData) {
         BSPNode oldRoot = null;
+        int generation = 0;
+        boolean prepareNodeReuse = false;
         if (oldData instanceof BSPDynamicData oldBSPData) {
+            generation = oldBSPData.generation + 1;
             oldRoot = oldBSPData.rootNode;
-        }
 
-        var result = BSPNode.buildBSP(quads, sectionPos, oldRoot);
+            // only enable partial updates after a certain number of generations
+            // (times the section has been built)
+            prepareNodeReuse = generation >= NODE_REUSE_MIN_GENERATION;
+        }
+        var result = BSPNode.buildBSP(quads, sectionPos, oldRoot, prepareNodeReuse);
 
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
         buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
 
-        var dynamicData = new BSPDynamicData(sectionPos, buffer, range, result);
+        var dynamicData = new BSPDynamicData(sectionPos, buffer, range, result, generation);
         dynamicData.sort(cameraPos);
 
         // prepare accumulation groups for integration into GFNI triggering

@@ -75,7 +75,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         // TODO: more sophisticated reuse scheduling (make uset configurable, and only
         // do once the section has been modified at least once already to avoid making
         // this data on terrain sections that are never touched)
-        if (depth == 1 && indexes.size() > NODE_REUSE_THRESHOLD) {
+        if (workspace.prepareNodeReuse && depth == 1 && indexes.size() > NODE_REUSE_THRESHOLD) {
             // collect the extents of the indexed quads and hash them
             var quadExtents = new float[indexes.size()][];
             int maxIndex = -1;
