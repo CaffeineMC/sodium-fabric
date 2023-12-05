@@ -17,9 +17,9 @@ public record TQuad(ModelQuadFacing facing, Vector3fc normal, Vector3f center, f
         int result = 1;
         result = 31 * result + Arrays.hashCode(this.extents);
         if (facing == ModelQuadFacing.UNASSIGNED) {
-            result = 31 * result + this.facing.hashCode();
-        } else {
             result = 31 * result + this.normal.hashCode();
+        } else {
+            result = 31 * result + this.facing.hashCode();
         }
         result = 31 * result + this.center.hashCode();
         return result;
