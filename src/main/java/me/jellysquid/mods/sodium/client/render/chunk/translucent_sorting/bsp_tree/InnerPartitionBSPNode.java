@@ -86,7 +86,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 quadExtents[i] = extents;
                 maxIndex = Math.max(maxIndex, index);
             }
-            return new NodeReuseData(quadExtents, indexes.toIntArray(), maxIndex);
+            return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes), maxIndex);
         }
         return null;
     }
@@ -363,7 +363,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                         var quadY = workspace.quads[b];
                         return Float.compare(quadX.getAlignedSurfaceArea(), quadY.getAlignedSurfaceArea());
                     });
-                    return new LeafMultiBSPNode(indexes.toIntArray());
+                    return new LeafMultiBSPNode(BSPSortState.compressIndexes(indexes));
                 }
 
                 if (--testsRemaining == 0) {

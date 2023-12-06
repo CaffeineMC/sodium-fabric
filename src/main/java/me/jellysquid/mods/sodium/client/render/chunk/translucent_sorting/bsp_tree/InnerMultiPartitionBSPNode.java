@@ -131,7 +131,7 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
                 partitionNodes[i] = BSPNode.build(workspace, partition.quadsBefore(), depth, oldChild);
             }
             if (partition.quadsOn() != null) {
-                onPlaneQuads[i] = partition.quadsOn().toIntArray();
+                onPlaneQuads[i] = BSPSortState.compressIndexes(partition.quadsOn());
             }
         }
 

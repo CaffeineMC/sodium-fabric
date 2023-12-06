@@ -75,7 +75,7 @@ class InnerBinaryPartitionBSPNode extends InnerPartitionBSPNode {
         if (outside != null) {
             outsideNode = BSPNode.build(workspace, outside.quadsBefore(), depth, oldOutsideNode);
         }
-        var onPlane = inside.quadsOn() == null ? null : inside.quadsOn().toIntArray();
+        var onPlane = inside.quadsOn() == null ? null : BSPSortState.compressIndexes(inside.quadsOn());
 
         return new InnerBinaryPartitionBSPNode(
                 prepareNodeReuse(workspace, indexes, depth),
