@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntConsumer;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -86,9 +87,44 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 quadExtents[i] = extents;
                 maxIndex = Math.max(maxIndex, index);
             }
-            return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes), maxIndex);
+
+            // TODO: this could use compression, but then attemptNodeReuse also needs to be
+            // able to decompress it
+            // return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes), maxIndex);
+            return new NodeReuseData(quadExtents, indexes.toIntArray(), maxIndex);
         }
         return null;
+    }
+
+    private static class IndexRemapper implements IntConsumer {
+        private final int[] indexMap;
+        private final IntArrayList newIndexes;
+        private int index = 0;
+        private int lastOffset = 0;
+
+        private static final int OFFSET_CHANGED = Integer.MIN_VALUE;
+
+        IndexRemapper(int length, IntArrayList newIndexes) {
+            this.indexMap = new int[length];
+            this.newIndexes = newIndexes;
+        }
+
+        @Override
+        public void accept(int oldIndex) {
+            var newIndex = newIndexes.getInt(index);
+            indexMap[oldIndex] = newIndex;
+            var newOffset = newIndex - oldIndex;
+            if (index == 0) {
+                lastOffset = newOffset;
+            } else if (lastOffset != newOffset) {
+                lastOffset = OFFSET_CHANGED;
+            }
+            index++;
+        }
+
+        boolean hasFixedOffset() {
+            return lastOffset != OFFSET_CHANGED;
+        }
     }
 
     static InnerPartitionBSPNode attemptNodeReuse(BSPWorkspace workspace, IntArrayList newIndexes, int depth,
@@ -118,28 +154,18 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
         // reuse old node and either apply a fixed offset or calculate an index map to
         // map from old to new indices
-        var oldIndexes = reuseData.indexes;
-        var indexMap = new int[reuseData.maxIndex + 1];
-        final int OFFSET_CHANGED = Integer.MIN_VALUE;
-        int lastOffset = 0;
-        for (int i = 0; i < oldIndexes.length; i++) {
-            var oldIndex = oldIndexes[i];
-            var newIndex = newIndexes.getInt(i);
-            indexMap[oldIndex] = newIndex;
-            var newOffset = newIndex - oldIndex;
-            if (i == 0) {
-                lastOffset = newOffset;
-            } else if (lastOffset != newOffset) {
-                lastOffset = OFFSET_CHANGED;
-            }
-        }
+        // TODO: placing and removing a block from the death cube of slime and honey is
+        // still broken. Did decompression broke when the compression was properly added
+        // on reuse data?
+        var remapper = new IndexRemapper(reuseData.maxIndex + 1, newIndexes);
+        BSPSortState.decompressOrRead(reuseData.indexes, remapper);
 
         // use a fixed offset if possible (if all old indices differ from the new ones
         // by the same amount)
-        if (lastOffset != OFFSET_CHANGED) {
-            oldNode.fixedIndexOffset = lastOffset;
+        if (remapper.hasFixedOffset()) {
+            oldNode.fixedIndexOffset = remapper.lastOffset;
         } else {
-            oldNode.indexMap = indexMap;
+            oldNode.indexMap = remapper.indexMap;
         }
 
         return oldNode;

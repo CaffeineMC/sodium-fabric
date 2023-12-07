@@ -4,13 +4,14 @@ import java.nio.IntBuffer;
 import java.lang.Math;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntConsumer;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 class BSPSortState {
     static final int NO_FIXED_OFFSET = Integer.MIN_VALUE;
 
-    private final IntBuffer indexBuffer;
+    private IntBuffer indexBuffer;
 
     private int indexModificationsRemaining;
     private int[] indexMap;
@@ -133,7 +134,8 @@ class BSPSortState {
             compressed[1] = minDelta;
 
             // System.out.println(
-            //         "Compressed " + indexes.size() + " indexes to 2 ints, compression ratio " + (indexes.size() / 2));
+            // "Compressed " + indexes.size() + " indexes to 2 ints, compression ratio " +
+            // (indexes.size() / 2));
             return compressed;
         }
 
@@ -173,71 +175,94 @@ class BSPSortState {
             }
         }
 
-        // System.out.println("Compressed " + indexes.size() + " indexes to " + size + " ints, compression ratio "
-        //         + (indexes.size() / size));
+        // System.out.println("Compressed " + indexes.size() + " indexes to " + size + "
+        // ints, compression ratio "
+        // + (indexes.size() / size));
         return compressed;
     }
+
+    static int decompressOrRead(int[] indexes, IntConsumer consumer) {
+        if (isCompressed(indexes)) {
+            return decompress(indexes, consumer);
+        } else {
+            for (int i = 0; i < indexes.length; i++) {
+                consumer.accept(indexes[i]);
+            }
+            return indexes.length;
+        }
+    }
+
+    static int decompress(int[] indexes, IntConsumer consumer) {
+        return decompressWithOffset(indexes, 0, consumer);
+    }
+
+    static int decompressWithOffset(int[] indexes, int fixedIndexOffset, IntConsumer consumer) {
+        // read compression header
+        int header1 = indexes[0];
+        int widthIndex = (header1 >> 27) & 0b1111;
+        int currentValue = header1 & 0b11111111111111111 + fixedIndexOffset;
+        int valueCount = ((header1 >> 17) & 0b1111111111) + 1;
+        int baseDelta = indexes[1];
+
+        // handle special case of width index 0, this means there's no delta data
+        if (widthIndex == CONSTANT_DELTA_WIDTH_INDEX) {
+            for (int i = 0; i < valueCount; i++) {
+                consumer.accept(currentValue);
+                currentValue += baseDelta;
+            }
+
+            return valueCount;
+        }
+
+        int width = WIDTHS[widthIndex];
+        int mask = (1 << width) - 1;
+
+        // write value (optionally map), read deltas, apply base delta and loop
+        int readIndex = HEADER_LENGTH;
+        int splitInt = indexes[readIndex++];
+        int splitIntBitPosition = 0;
+        while (valueCount-- > 0) {
+            consumer.accept(currentValue);
+
+            // read the next delta if there is one
+            if (valueCount == 0) {
+                break;
+            }
+
+            int delta = (splitInt >> splitIntBitPosition) & mask;
+            splitIntBitPosition += width;
+            if (splitIntBitPosition >= Integer.SIZE && valueCount > 1) {
+                splitInt = indexes[readIndex++];
+                splitIntBitPosition = 0;
+            }
+
+            // update the current value with the delta and base delta
+            currentValue += baseDelta + delta;
+        }
+
+        return valueCount;
+    }
+
+    static boolean isCompressed(int[] indexes) {
+        return indexes[0] < 0;
+    }
+
+    private IntConsumer indexConsumer = (int index) -> TranslucentData.writeQuadVertexIndexes(
+            this.indexBuffer, index);
+
+    private IntConsumer indexMapConsumer = (int index) -> TranslucentData.writeQuadVertexIndexes(
+            this.indexBuffer, this.indexMap[index]);
 
     void writeIndexes(int[] indexes) {
         boolean useIndexMap = this.indexMap != null;
         boolean useFixedIndexOffset = this.fixedIndexOffset != NO_FIXED_OFFSET;
-        int header1 = indexes[0];
 
-        if (header1 < 0) {
-            // read compression header
-            int widthIndex = (header1 >> 27) & 0b1111;
-            int currentValue = header1 & 0b11111111111111111;
-            int valueCount = ((header1 >> 17) & 0b1111111111) + 1;
-            int baseDelta = indexes[1];
+        if (isCompressed(indexes)) {
+            var consumer = useIndexMap ? this.indexMapConsumer : this.indexConsumer;
             if (useFixedIndexOffset) {
-                currentValue += this.fixedIndexOffset;
-            }
-
-            // handle special case of width index 0, this means there's no delta data
-            if (widthIndex == CONSTANT_DELTA_WIDTH_INDEX) {
-                for (int i = 0; i < valueCount; i++) {
-                    int writeValue = currentValue;
-                    if (useIndexMap) {
-                        writeValue = this.indexMap[currentValue];
-                    }
-                    TranslucentData.writeQuadVertexIndexes(this.indexBuffer, writeValue);
-                    currentValue += baseDelta;
-                }
-
-                if (useIndexMap || useFixedIndexOffset) {
-                    checkModificationCounter(valueCount);
-                }
-                return;
-            }
-
-            int width = WIDTHS[widthIndex];
-            int mask = (1 << width) - 1;
-
-            // write value (optionally map), read deltas, apply base delta and loop
-            int readIndex = HEADER_LENGTH;
-            int splitInt = indexes[readIndex++];
-            int splitIntBitPosition = 0;
-            while (valueCount-- > 0) {
-                int writeValue = currentValue;
-                if (useIndexMap) {
-                    writeValue = this.indexMap[currentValue];
-                }
-                TranslucentData.writeQuadVertexIndexes(this.indexBuffer, writeValue);
-
-                // read the next delta if there is one
-                if (valueCount == 0) {
-                    break;
-                }
-
-                int delta = (splitInt >> splitIntBitPosition) & mask;
-                splitIntBitPosition += width;
-                if (splitIntBitPosition >= Integer.SIZE && valueCount > 1) {
-                    splitInt = indexes[readIndex++];
-                    splitIntBitPosition = 0;
-                }
-
-                // update the current value with the delta and base delta
-                currentValue += baseDelta + delta;
+                decompressWithOffset(indexes, this.fixedIndexOffset, consumer);
+            } else {
+                decompress(indexes, consumer);
             }
         } else {
             // uncompressed indexes
@@ -254,6 +279,8 @@ class BSPSortState {
             }
         }
 
+        // check if the index modification session is over. this is very important or
+        // there's an exception
         if (useIndexMap || useFixedIndexOffset) {
             checkModificationCounter(indexes.length);
         }

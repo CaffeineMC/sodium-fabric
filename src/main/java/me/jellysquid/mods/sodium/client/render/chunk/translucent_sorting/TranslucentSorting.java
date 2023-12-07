@@ -34,6 +34,9 @@ import net.minecraft.util.math.ChunkSectionPos;
  * that one block? Might have something to do with NONE mode behaving weirdly in
  * that situation. Possibly related to index buffer reuse, since it only happens
  * after the block has been replaced at least once.
+ * - Incompatible with rendering anything through Indium because it doesn't run
+ * the translucent geometry collector properly. It doesn't run Sodium's
+ * BlockRenderer which is required for lines 166-167 of BlockRenderer to work.
  * 
  * @author douira
  */
