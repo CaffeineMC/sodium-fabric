@@ -1,15 +1,13 @@
-package me.jellysquid.mods.sodium.client.util.workarounds;
+package me.jellysquid.mods.sodium.client.compatibility.workarounds;
 
-import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterProbe;
-import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterVendor;
+import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
+import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
+import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -39,8 +37,7 @@ public class Workarounds {
 
         var graphicsAdapters = GraphicsAdapterProbe.getAdapters();
 
-        if ((operatingSystem == Util.OperatingSystem.WINDOWS || operatingSystem == Util.OperatingSystem.LINUX) &&
-                graphicsAdapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterVendor.NVIDIA)) {
+        if (isUsingNvidiaGraphicsCard(operatingSystem, graphicsAdapters)) {
             workarounds.add(Reference.NVIDIA_THREADED_OPTIMIZATIONS);
         }
 
@@ -61,13 +58,14 @@ public class Workarounds {
         return Collections.unmodifiableSet(workarounds);
     }
 
+    private static boolean isUsingNvidiaGraphicsCard(Util.OperatingSystem operatingSystem, Collection<GraphicsAdapterInfo> adapters) {
+        return (operatingSystem == Util.OperatingSystem.WINDOWS || operatingSystem == Util.OperatingSystem.LINUX) &&
+                adapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterVendor.NVIDIA);
+    }
+
     public static boolean isWorkaroundEnabled(Reference id) {
         return ACTIVE_WORKAROUNDS.get()
                 .contains(id);
-    }
-
-    public static Set<Reference> getEnabledWorkarounds() {
-        return ACTIVE_WORKAROUNDS.get();
     }
 
     public enum Reference {

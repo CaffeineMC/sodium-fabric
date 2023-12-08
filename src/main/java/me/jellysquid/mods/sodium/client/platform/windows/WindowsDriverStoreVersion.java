@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.platform.windows;
+package me.jellysquid.mods.sodium.client.platform.windows;
 
 import java.util.regex.Pattern;
 
@@ -19,6 +19,10 @@ public record WindowsDriverStoreVersion(int driverModel, int featureLevel, int m
         var minor = Integer.parseInt(matcher.group("minor"));
 
         return new WindowsDriverStoreVersion(driverModel, featureLevel, major, minor);
+    }
+
+    public String getFriendlyString() {
+        return "%s.%s.%s.%s".formatted(this.driverModel, this.featureLevel, this.major, this.minor);
     }
 
     public static class ParseException extends Exception {

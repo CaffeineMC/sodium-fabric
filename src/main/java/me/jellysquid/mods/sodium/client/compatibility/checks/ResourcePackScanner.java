@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.util.workarounds;
+package me.jellysquid.mods.sodium.client.compatibility.checks;
 
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class InGameChecks {
+public class ResourcePackScanner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-InGameChecks");
     private static final List<String> VSH_FSH_BLACKLIST = Arrays.asList(

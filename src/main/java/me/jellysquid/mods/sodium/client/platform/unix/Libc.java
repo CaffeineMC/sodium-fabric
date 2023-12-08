@@ -1,9 +1,9 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.platform.linux;
+package me.jellysquid.mods.sodium.client.platform.unix;
 
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.*;
 
-public class LibC {
+public class Libc {
     private static final SharedLibrary LIBRARY = Library.loadNative("me.jellyquid.mods.sodium", "libc.so.6");
 
     private static final long PFN_setenv;

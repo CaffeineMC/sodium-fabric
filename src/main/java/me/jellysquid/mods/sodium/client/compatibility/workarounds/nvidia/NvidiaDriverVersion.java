@@ -1,17 +1,17 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia;
+package me.jellysquid.mods.sodium.client.compatibility.workarounds.nvidia;
 
-import me.jellysquid.mods.sodium.client.util.workarounds.GLContextInfo;
+import me.jellysquid.mods.sodium.client.compatibility.environment.GLContextInfo;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public record NvidiaGLContextInfo(int major, int minor) {
+public record NvidiaDriverVersion(int major, int minor) {
     private static final Pattern PATTERN = Pattern.compile("^.*NVIDIA (?<major>\\d+)\\.(?<minor>\\d+)(?<suffix>\\.\\d+)?$");
 
     @Nullable
-    public static NvidiaGLContextInfo tryParse(GLContextInfo driver) {
+    public static NvidiaDriverVersion tryParse(GLContextInfo driver) {
         if (!Objects.equals(driver.vendor(), "NVIDIA Corporation")) {
             return null;
         }
@@ -31,7 +31,7 @@ public record NvidiaGLContextInfo(int major, int minor) {
             return null;
         }
 
-        return new NvidiaGLContextInfo(major, minor);
+        return new NvidiaDriverVersion(major, minor);
     }
 
     /**
@@ -39,7 +39,7 @@ public record NvidiaGLContextInfo(int major, int minor) {
      * @param newest The newest version (exclusive) to test against
      * @return True if this version is within the specified version range
      */
-    public boolean isWithinRange(NvidiaGLContextInfo oldest, NvidiaGLContextInfo newest) {
+    public boolean isWithinRange(NvidiaDriverVersion oldest, NvidiaDriverVersion newest) {
         return this.asInteger() >= oldest.asInteger() && this.asInteger() < newest.asInteger();
     }
 

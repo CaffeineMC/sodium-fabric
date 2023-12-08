@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.probe;
+package me.jellysquid.mods.sodium.client.compatibility.environment.probe;
 
 import org.jetbrains.annotations.NotNull;
 

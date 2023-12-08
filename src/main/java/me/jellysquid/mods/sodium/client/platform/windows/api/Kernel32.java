@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.platform.windows;
+package me.jellysquid.mods.sodium.client.platform.windows.api;
 
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.*;
