@@ -1,36 +1,34 @@
-package me.jellysquid.mods.sodium.client.util.workarounds;
+package me.jellysquid.mods.sodium.client.compatibility.checks;
 
+import me.jellysquid.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaDriverVersion;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
-import me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia.NvidiaGLContextInfo;
-import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.WindowsModuleChecks;
-import net.minecraft.text.MutableText;
+import me.jellysquid.mods.sodium.client.compatibility.environment.GLContextInfo;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL11C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PostLaunchChecks {
+/**
+ * Performs OpenGL driver validation after the game creates an OpenGL context. This runs immediately after OpenGL
+ * context creation, and uses the implementation details of the OpenGL context to perform validation.
+ */
+public class LateDriverScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-PostlaunchChecks");
 
-    public static void checkContext() {
+    public static void onContextInitialized() {
         checkContextImplementation();
 
         if (isUsingPojavLauncher()) {
-            showConsoleMessage(Text.translatable("sodium.console.pojav_launcher"));
-            logMessage("It appears that PojavLauncher is being used with an OpenGL compatibility layer. This will " +
+            Console.instance().logMessage(MessageLevel.SEVERE, Text.translatable("sodium.console.pojav_launcher"), 30.0);
+            LOGGER.error("It appears that PojavLauncher is being used with an OpenGL compatibility layer. This will " +
                     "likely cause severe performance issues, graphical issues, and crashes when used with Sodium. This " +
                     "configuration is not supported -- you are on your own!");
         }
-
-        // We should also check that nothing problematic has been injected into the process.
-        WindowsModuleChecks.checkModules();
     }
 
     private static void checkContextImplementation() {
-        GLContextInfo driver = getGraphicsContextInfo();
+        GLContextInfo driver = GLContextInfo.create();
 
         if (driver == null) {
             LOGGER.warn("Could not retrieve identifying strings for OpenGL implementation");
@@ -41,56 +39,38 @@ public class PostLaunchChecks {
         LOGGER.info("OpenGL Renderer: {}", driver.renderer());
         LOGGER.info("OpenGL Version: {}", driver.version());
 
-        if (isBrokenNvidiaDriverInstalled(driver)) {
-            showConsoleMessage(Text.translatable("sodium.console.broken_nvidia_driver"));
-            logMessage("The NVIDIA graphics driver appears to be out of date. This will likely cause severe " +
+        if (!isSupportedNvidiaDriver(driver)) {
+            Console.instance()
+                    .logMessage(MessageLevel.SEVERE, Text.translatable("sodium.console.broken_nvidia_driver"), 30.0);
+
+            LOGGER.error("The NVIDIA graphics driver appears to be out of date. This will likely cause severe " +
                     "performance issues and crashes when used with Sodium. The graphics driver should be updated to " +
                     "the latest version (version 536.23 or newer).");
         }
-    }
-
-    @Nullable
-    private static GLContextInfo getGraphicsContextInfo() {
-        String vendor = GL11C.glGetString(GL11C.GL_VENDOR);
-        String renderer = GL11C.glGetString(GL11C.GL_RENDERER);
-        String version = GL11C.glGetString(GL11C.GL_VERSION);
-
-        if (vendor == null || renderer == null || version == null) {
-            return null;
-        }
-
-        return new GLContextInfo(vendor, renderer, version);
-    }
-
-    private static void showConsoleMessage(MutableText message) {
-        Console.instance().logMessage(MessageLevel.SEVERE, message, 30.0);
-    }
-
-    private static void logMessage(String message, Object... args) {
-        LOGGER.error(message, args);
     }
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/1486
     // The way which NVIDIA tries to detect the Minecraft process could not be circumvented until fairly recently
     // So we require that an up-to-date graphics driver is installed so that our workarounds can disable the Threaded
     // Optimizations driver hack.
-    private static boolean isBrokenNvidiaDriverInstalled(GLContextInfo driver) {
+    private static boolean isSupportedNvidiaDriver(GLContextInfo driver) {
         // The Linux driver has two separate branches which have overlapping version numbers, despite also having
         // different feature sets. As a result, we can't reliably determine which Linux drivers are broken...
         if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
-            return false;
+            return true;
         }
 
-        var version = NvidiaGLContextInfo.tryParse(driver);
+        var version = NvidiaDriverVersion.tryParse(driver);
 
         if (version != null) {
-            return version.isWithinRange(
-                    new NvidiaGLContextInfo(526, 47), // Broken in 526.47
-                    new NvidiaGLContextInfo(536, 23) // Fixed in 536.23
+            return !version.isWithinRange(
+                    new NvidiaDriverVersion(526, 47), // Broken in 526.47
+                    new NvidiaDriverVersion(536, 23) // Fixed in 536.23
             );
         }
 
-        return false;
+        // If we couldn't determine the version, then it's supported either way.
+        return true;
     }
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/1916

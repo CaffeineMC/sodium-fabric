@@ -1,8 +1,8 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia;
+package me.jellysquid.mods.sodium.client.compatibility.workarounds.nvidia;
 
-import me.jellysquid.mods.sodium.client.util.workarounds.platform.linux.LibC;
-import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.Kernel32;
-import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.WindowsProcessHacks;
+import me.jellysquid.mods.sodium.client.platform.unix.Libc;
+import me.jellysquid.mods.sodium.client.platform.windows.api.Kernel32;
+import me.jellysquid.mods.sodium.client.platform.windows.WindowsCommandLine;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public class NvidiaWorkarounds {
                 case WINDOWS -> {
                     // The NVIDIA drivers rely on parsing the command line arguments to detect Minecraft. If we destroy those,
                     // then it shouldn't be able to detect us anymore.
-                    WindowsProcessHacks.setCommandLine("net.caffeinemc.sodium");
+                    WindowsCommandLine.setCommandLine("net.caffeinemc.sodium");
 
                     // Ensures that Minecraft will run on the dedicated GPU, since the drivers can no longer detect it
                     Kernel32.setEnvironmentVariable("SHIM_MCCOMPAT", "0x800000001");
@@ -26,7 +26,7 @@ public class NvidiaWorkarounds {
                 case LINUX -> {
                     // Unlike Windows, we don't need to hide ourselves from the driver. We can just request that
                     // it not use threaded optimizations instead.
-                    LibC.setEnvironmentVariable("__GL_THREADED_OPTIMIZATIONS", "0");
+                    Libc.setEnvironmentVariable("__GL_THREADED_OPTIMIZATIONS", "0");
                 }
             }
         } catch (Throwable t) {
@@ -41,7 +41,7 @@ public class NvidiaWorkarounds {
     public static void uninstall() {
         switch (Util.getOperatingSystem()) {
             case WINDOWS -> {
-                WindowsProcessHacks.resetCommandLine();
+                WindowsCommandLine.resetCommandLine();
             }
             case LINUX -> { }
         }
