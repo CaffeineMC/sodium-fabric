@@ -1,12 +1,13 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.platform.windows;
+package me.jellysquid.mods.sodium.client.platform.windows;
 
+import me.jellysquid.mods.sodium.client.platform.windows.api.Kernel32;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class WindowsProcessHacks {
+public class WindowsCommandLine {
     private static CommandLineHook ACTIVE_COMMAND_LINE_HOOK;
 
     public static void setCommandLine(String modifiedCmdline) {
