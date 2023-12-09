@@ -1,13 +1,3 @@
-### :warning: Maintenance Status
-
-Sodium is no longer actively maintained by the original author (@jellysquid3). Future updates are not guaranteed, and it is unlikely that any new features or
-enhancements will be implemented going forward.
-
-<sub>The [last release](https://github.com/CaffeineMC/sodium-fabric/releases/tag/mc1.20.1-0.5.3) is signed
-(see [public keys](https://github.com/jellysquid3.gpg)) to provide attestation of this notice, and the published source code/binaries.</sub>
-
----
-
 <img src="src/main/resources/assets/sodium/icon.png" width="128">
 
 # Sodium (for Fabric)
