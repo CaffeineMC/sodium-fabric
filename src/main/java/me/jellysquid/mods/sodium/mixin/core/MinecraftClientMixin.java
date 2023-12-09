@@ -3,12 +3,10 @@ package me.jellysquid.mods.sodium.mixin.core;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
-import me.jellysquid.mods.sodium.client.util.workarounds.InGameChecks;
+import me.jellysquid.mods.sodium.client.compatibility.checks.ResourcePackScanner;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
-import net.minecraft.client.realms.RealmsClient;
 import net.minecraft.resource.ReloadableResourceManagerImpl;
-import net.minecraft.resource.ResourceReload;
 import net.minecraft.util.profiler.Profiler;
 import org.lwjgl.opengl.GL32C;
 import org.spongepowered.asm.mixin.Final;
@@ -88,7 +86,7 @@ public class MinecraftClientMixin {
      */
     @Inject(method = "onInitFinished", at = @At("TAIL"))
     private void postInit(CallbackInfoReturnable<Runnable> cir) {
-        InGameChecks.checkIfCoreShaderLoaded(this.resourceManager);
+        ResourcePackScanner.checkIfCoreShaderLoaded(this.resourceManager);
     }
 
     /**
@@ -96,7 +94,7 @@ public class MinecraftClientMixin {
      */
     @Inject(method = "reloadResources()Ljava/util/concurrent/CompletableFuture;", at = @At("TAIL"))
     private void postResourceReload(CallbackInfoReturnable<CompletableFuture<Void>> cir) {
-        InGameChecks.checkIfCoreShaderLoaded(this.resourceManager);
+        ResourcePackScanner.checkIfCoreShaderLoaded(this.resourceManager);
     }
 
 }

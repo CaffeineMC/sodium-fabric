@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.workarounds.context_creation;
 
-import me.jellysquid.mods.sodium.client.util.workarounds.PostLaunchChecks;
-import me.jellysquid.mods.sodium.client.util.workarounds.Workarounds;
-import me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia.NvidiaWorkarounds;
-import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.WindowsModuleChecks;
+import me.jellysquid.mods.sodium.client.compatibility.checks.ModuleScanner;
+import me.jellysquid.mods.sodium.client.compatibility.checks.LateDriverScanner;
+import me.jellysquid.mods.sodium.client.compatibility.workarounds.Workarounds;
+import me.jellysquid.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaWorkarounds;
 import net.minecraft.client.WindowEventHandler;
 import net.minecraft.client.WindowSettings;
 import net.minecraft.client.util.MonitorTracker;
@@ -34,20 +34,22 @@ public class WindowMixin {
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"))
     private long wrapGlfwCreateWindow(int width, int height, CharSequence title, long monitor, long share) {
-        if (Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS)) {
+        final boolean applyNvidiaWorkarounds = Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS);
+
+        if (applyNvidiaWorkarounds) {
             NvidiaWorkarounds.install();
         }
 
         try {
             return GLFW.glfwCreateWindow(width, height, title, monitor, share);
         } finally {
-            if (Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS)) {
+            if (applyNvidiaWorkarounds) {
                 NvidiaWorkarounds.uninstall();
             }
         }
     }
 
-    @Inject(method = "<init>", at = @At("RETURN"))
+    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;", shift = At.Shift.AFTER))
     private void postWindowCreated(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings, String videoMode, String title, CallbackInfo ci) {
         // Capture the current WGL context so that we can detect it being replaced later.
         if (Util.getOperatingSystem() == Util.OperatingSystem.WINDOWS) {
@@ -56,7 +58,8 @@ public class WindowMixin {
             this.wglPrevContext = MemoryUtil.NULL;
         }
 
-        PostLaunchChecks.checkContext();
+        LateDriverScanner.onContextInitialized();
+        ModuleScanner.checkModules();
     }
 
     @Inject(method = "swapBuffers", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;flipFrame(J)V", shift = At.Shift.AFTER))
@@ -78,7 +81,7 @@ public class WindowMixin {
 
         // Likely, this indicates a module was injected into the current process. We should check that
         // nothing problematic was just installed.
-        WindowsModuleChecks.checkModules();
+        ModuleScanner.checkModules();
 
         // If we didn't find anything problematic (which would have thrown an exception), then let's just record
         // the new context pointer and carry on.
