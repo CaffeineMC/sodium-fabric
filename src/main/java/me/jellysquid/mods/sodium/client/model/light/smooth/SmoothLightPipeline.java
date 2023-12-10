@@ -87,7 +87,7 @@ public class SmoothLightPipeline implements LightPipeline {
             this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out);
         }
 
-//        this.applySidedBrightness(out, lightFace, shade);
+        this.applySidedBrightness(out, lightFace, shade);
     }
 
     /**
