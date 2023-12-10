@@ -92,7 +92,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
             // TODO: this could use compression, but then attemptNodeReuse also needs to be
             // able to decompress it
-            // return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes), maxIndex);
+            // return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes),
+            // maxIndex);
             return new NodeReuseData(quadExtents, indexes.toIntArray(), maxIndex);
         }
         return null;
@@ -170,7 +171,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             oldNode.indexMap = remapper.indexMap;
         }
 
-        // import the triggering data from the old node to ensure it still triggers at the right time
+        // import the triggering data from the old node to ensure it still triggers at
+        // the right time
         oldNode.addPartitionPlanes(workspace);
 
         return oldNode;
