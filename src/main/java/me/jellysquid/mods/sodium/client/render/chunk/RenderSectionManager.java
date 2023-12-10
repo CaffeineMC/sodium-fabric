@@ -31,6 +31,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.CameraMovement;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.NoData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
@@ -422,9 +423,11 @@ public class RenderSectionManager {
             } else {
                 // if the section is empty, doesn't exist or no sort task needs to be created
                 // for non-dynamic data, submit this null-task to set the built flag on the
-                // render section
+                // render section.
+                // It's important to use a NoData instead of null translucency data here in
+                // order for it to clear the old data from the translucency sorting system
                 var result = ChunkJobResult.successfully(new ChunkBuildOutput(
-                        section, frame, null,
+                        section, frame, new NoData(section.getPosition()),
                         BuiltSectionInfo.EMPTY, Collections.emptyMap()));
                 this.buildResults.add(result);
 
