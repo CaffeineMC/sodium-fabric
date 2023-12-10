@@ -70,6 +70,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         this.reuseData = reuseData;
     }
 
+    abstract void addPartitionPlanes(BSPWorkspace workspace);
+
     static NodeReuseData prepareNodeReuse(BSPWorkspace workspace, IntArrayList indexes, int depth) {
         // if node reuse is enabled, only enable on the first level of children (not the
         // root node and not anything deeper than its children)
@@ -167,6 +169,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         } else {
             oldNode.indexMap = remapper.indexMap;
         }
+
+        // import the triggering data from the old node to ensure it still triggers at the right time
+        oldNode.addPartitionPlanes(workspace);
 
         return oldNode;
     }

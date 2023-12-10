@@ -24,6 +24,13 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
         this.onPlaneQuads = onPlaneQuads;
     }
 
+    @Override
+    void addPartitionPlanes(BSPWorkspace workspace) {
+        for (int i = 0; i < this.planeDistances.length; i++) {
+            workspace.addAlignedPartitionPlane(this.axis, this.planeDistances[i]);
+        }
+    }
+
     private void collectPlaneQuads(BSPSortState sortState, int planeIndex) {
         if (this.onPlaneQuads[planeIndex] != null) {
             sortState.writeIndexes(this.onPlaneQuads[planeIndex]);

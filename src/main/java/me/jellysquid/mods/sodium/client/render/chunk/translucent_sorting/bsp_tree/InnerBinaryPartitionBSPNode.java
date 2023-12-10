@@ -21,6 +21,11 @@ class InnerBinaryPartitionBSPNode extends InnerPartitionBSPNode {
         this.onPlaneQuads = onPlaneQuads;
     }
 
+    @Override
+    void addPartitionPlanes(BSPWorkspace workspace) {
+        workspace.addAlignedPartitionPlane(this.axis, this.planeDistance);
+    }
+
     private void collectInside(BSPSortState sortState, Vector3fc cameraPos) {
         if (this.inside != null) {
             this.inside.collectSortedQuads(sortState, cameraPos);
