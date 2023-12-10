@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadEncoder;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.BakedModel;
@@ -145,13 +146,17 @@ public class BlockRenderer {
 
         ModelQuadFacing normalFace = quad.getNormalFace();
 
+        float brightness = ctx.world()
+                .getBrightness(quad.getLightFace(), quad.hasShade());
+
         for (int vertexIndex = 0; vertexIndex < 4; vertexIndex++) {
+
             var out = vertices[vertexIndex];
             out.x = ctx.origin().x() + quad.getX(vertexIndex) + (float) offset.getX();
             out.y = ctx.origin().y() + quad.getY(vertexIndex) + (float) offset.getY();
             out.z = ctx.origin().z() + quad.getZ(vertexIndex) + (float) offset.getZ();
 
-            out.color = ColorABGR.withAlpha(colors != null ? colors[vertexIndex] : 0xFFFFFFFF, light.br[vertexIndex]);
+            out.color = ColorABGR.withAlpha(mulBrightness(colors != null ? colors[vertexIndex] : 0xFFFFFFFF, brightness), light.br[vertexIndex]);
 
             out.u = quad.getTexU(vertexIndex);
             out.v = quad.getTexV(vertexIndex);
@@ -161,6 +166,14 @@ public class BlockRenderer {
 
         var vertexBuffer = builder.getMeshBuffer(normalFace);
         vertexBuffer.push(vertices, material);
+    }
+
+    private static int mulBrightness(int color, float brightness) {
+        int r = ColorU8.normalizedFloatToByte(ColorU8.byteToNormalizedFloat(ColorABGR.unpackRed(color)) * brightness);
+        int g = ColorU8.normalizedFloatToByte(ColorU8.byteToNormalizedFloat(ColorABGR.unpackGreen(color)) * brightness);
+        int b = ColorU8.normalizedFloatToByte(ColorU8.byteToNormalizedFloat(ColorABGR.unpackBlue(color)) * brightness);
+
+        return ColorABGR.pack(r, g, b, 0x00);
     }
 
     private LightMode getLightingMode(BlockState state, BakedModel model) {

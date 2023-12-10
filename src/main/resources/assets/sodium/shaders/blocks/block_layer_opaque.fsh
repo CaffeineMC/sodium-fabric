@@ -24,6 +24,56 @@ uniform float u_FogEnd;
 
 out vec4 out_FragColor;
 
+float _get_shade() {
+    vec4 values = vec4((v_PackedColor >> uvec4(24)) & uvec4(0xFF)) / vec4(255.0);
+    values = values.zwxy;
+
+    vec2 uv = v_RelCoord;
+
+    // Generate an SDF
+    float strength = mix(
+        mix(values.w, values.z, smoothstep(0.0, 1.0, uv.x)),
+        mix(values.x, values.y, smoothstep(0.0, 1.0, uv.x)),
+        smoothstep(0.0, 1.0, uv.y)
+    );
+
+    // Flip the values and quantize them to 0 or 1
+    values = sign(1.0 - values);
+
+    // If there are 3 or more corners with AO, flip the values
+    bool triple = dot(values, vec4(1.0)) > 2.99;
+
+    if (triple) {
+        values = 1.0 - values;
+    }
+
+    vec2 p1 = vec2(0, 1);
+    vec2 p2 = vec2(1, 1);
+    vec2 p3 = vec2(1, 0);
+    vec2 p4 = vec2(0, 0);
+
+    float dist = 1.414; // Maximum distance between any points in a square
+
+    if (values.x > 0.5) dist = min(dist, distance(uv, p1));
+    if (values.y > 0.5) dist = min(dist, distance(uv, p2));
+    if (values.z > 0.5) dist = min(dist, distance(uv, p3));
+    if (values.w > 0.5) dist = min(dist, distance(uv, p4));
+
+    if (values.x > 0.5 && values.y > 0.5) dist = min(dist, 1.0 - uv.y);
+    if (values.y > 0.5 && values.z > 0.5) dist = min(dist, 1.0 - uv.x);
+    if (values.z > 0.5 && values.w > 0.5) dist = min(dist, uv.y);
+    if (values.w > 0.5 && values.x > 0.5) dist = min(dist, uv.x);
+
+    if (triple) {
+        dist = 1.0 - dist;
+    }
+
+    float res = clamp(dist, 0.0, 1.0);
+    res = max(res, strength);
+
+    return pow(res, 0.75);
+}
+
 vec4 _get_color_modulator() {
     vec2 coords = v_RelCoord;
 
@@ -64,6 +114,8 @@ void main() {
 #endif
 
     vec4 colorModulator = _get_color_modulator();
+    colorModulator.a = _get_shade();
+
     vec4 lightColor = texture(u_LightTex, _get_light_coord());
 
     vec4 finalColor = diffuseColor;

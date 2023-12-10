@@ -86,8 +86,6 @@ public class SmoothLightPipeline implements LightPipeline {
         } else {
             this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out);
         }
-
-        this.applySidedBrightness(out, lightFace, shade);
     }
 
     /**
@@ -212,15 +210,6 @@ public class SmoothLightPipeline implements LightPipeline {
 
         out.br[i] = ao;
         out.lm[i] = getLightMapCoord(sl, bl);
-    }
-
-    private void applySidedBrightness(QuadLightData out, Direction face, boolean shade) {
-        float brightness = this.lightCache.getWorld().getBrightness(face, shade);
-        float[] br = out.br;
-
-        for (int i = 0; i < br.length; i++) {
-            br[i] *= brightness;
-        }
     }
 
     /**
