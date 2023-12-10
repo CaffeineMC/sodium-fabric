@@ -1,14 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.*;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadFormat;
 import net.minecraft.util.Identifier;
 
 import java.util.Map;
@@ -16,17 +14,15 @@ import java.util.Map;
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private final Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
 
-    protected final ChunkVertexType vertexType;
-    protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
+    protected final ModelQuadFormat vertexType;
 
     protected final RenderDevice device;
 
     protected GlProgram<ChunkShaderInterface> activeProgram;
 
-    public ShaderChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
+    public ShaderChunkRenderer(RenderDevice device, ModelQuadFormat vertexType) {
         this.device = device;
         this.vertexType = vertexType;
-        this.vertexFormat = vertexType.getVertexFormat();
     }
 
     protected GlProgram<ChunkShaderInterface> compileProgram(ChunkShaderOptions options) {

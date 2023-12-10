@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.vertex.format;
 
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 
-public interface ChunkVertexEncoder {
-    long write(long ptr, Material material, Vertex vertex, int sectionIndex);
+public interface ModelQuadEncoder {
+    long write(long ptr, Material material, Vertex[] vertices, int sectionIndex);
 
     class Vertex {
         public float x;

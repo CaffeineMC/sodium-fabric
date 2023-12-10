@@ -28,14 +28,14 @@ public class SectionRenderDataStorage {
         var pMeshData = this.getDataPointer(localSectionIndex);
 
         int sliceMask = 0;
-        int vertexOffset = allocation.getOffset();
+        int vertexOffset = allocation.getOffset() * 4;
 
         for (int facingIndex = 0; facingIndex < ModelQuadFacing.COUNT; facingIndex++) {
             VertexRange vertexRange = ranges[facingIndex];
             int vertexCount;
 
             if (vertexRange != null) {
-                vertexCount = vertexRange.vertexCount();
+                vertexCount = vertexRange.count();
             } else {
                 vertexCount = 0;
             }
@@ -77,7 +77,7 @@ public class SectionRenderDataStorage {
             return;
         }
 
-        var offset = allocation.getOffset();
+        var offset = allocation.getOffset() * 4;
         var data = this.getDataPointer(sectionIndex);
 
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {

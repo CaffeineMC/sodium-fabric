@@ -25,7 +25,12 @@ public class GlShader extends GlObject {
         String log = GL20C.glGetShaderInfoLog(handle);
 
         if (!log.isEmpty()) {
-            LOGGER.warn("Shader compilation log for " + this.name + ": " + log);
+            LOGGER.warn("""
+                    Shader compilation messages for {}:
+                    === Shader Source ===
+                    {}
+                    === Compilation Messages ===
+                    {}""", this.name, src, log);
         }
 
         int result = GlStateManager.glGetShaderi(handle, GL20C.GL_COMPILE_STATUS);

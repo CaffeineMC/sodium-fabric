@@ -1,12 +1,14 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat3v;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
 import me.jellysquid.mods.sodium.client.util.TextureUtil;
 import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL45C;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -63,5 +65,10 @@ public class ChunkShaderInterface {
 
     public void setRegionOffset(float x, float y, float z) {
         this.uniformRegionOffset.set(x, y, z);
+    }
+
+    public void setVertexBuffer(GlBuffer buffer) {
+        // TODO: create a sane abstraction for this
+        GL45C.glBindBufferBase(GL45C.GL_SHADER_STORAGE_BUFFER, 15, buffer.handle());
     }
 }

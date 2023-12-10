@@ -83,10 +83,10 @@ public class RenderSectionManager {
     private @Nullable BlockPos lastCameraPosition;
 
     public RenderSectionManager(ClientWorld world, int renderDistance, CommandList commandList) {
-        this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
+        this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.DEFAULT);
 
         this.world = world;
-        this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
+        this.builder = new ChunkBuilder(world, ChunkMeshFormats.DEFAULT);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;

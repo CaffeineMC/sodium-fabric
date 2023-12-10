@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
 import me.jellysquid.mods.sodium.client.gl.device.MultiDrawBatch;
@@ -16,11 +15,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsaf
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadFormat;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import org.lwjgl.system.MemoryUtil;
@@ -32,11 +29,19 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private final SharedQuadIndexBuffer sharedIndexBuffer;
 
-    public DefaultChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
+    private final GlTessellation tessellation;
+
+    public DefaultChunkRenderer(RenderDevice device, ModelQuadFormat vertexType) {
         super(device, vertexType);
 
         this.batch = new MultiDrawBatch((ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE) + 1);
         this.sharedIndexBuffer = new SharedQuadIndexBuffer(device.createCommandList(), SharedQuadIndexBuffer.IndexType.INTEGER);
+
+        try (var commandList = device.createCommandList()) {
+            this.tessellation = commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
+                    TessellationBinding.forElementBuffer(this.sharedIndexBuffer.getBufferObject())
+            });
+        }
     }
 
     @Override
@@ -73,10 +78,10 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
             this.sharedIndexBuffer.ensureCapacity(commandList, this.batch.getIndexBufferSize());
 
-            var tessellation = this.prepareTessellation(commandList, region);
+            shader.setVertexBuffer(region.getResources().getVertexBuffer());
 
             setModelMatrixUniforms(shader, region, camera);
-            executeDrawBatch(commandList, tessellation, this.batch);
+            executeDrawBatch(commandList, this.tessellation, this.batch);
         }
 
         super.end(renderPass);
@@ -204,27 +209,6 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private static float getCameraTranslation(int chunkBlockPos, int cameraBlockPos, float cameraPos) {
         return (chunkBlockPos - cameraBlockPos) - cameraPos;
-    }
-
-    private GlTessellation prepareTessellation(CommandList commandList, RenderRegion region) {
-        var resources = region.getResources();
-        var tessellation = resources.getTessellation();
-
-        if (tessellation == null) {
-            resources.updateTessellation(commandList, tessellation = this.createRegionTessellation(commandList, resources));
-        }
-
-        return tessellation;
-    }
-
-    private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
-        return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), new GlVertexAttributeBinding[] {
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
-                }),
-                TessellationBinding.forElementBuffer(this.sharedIndexBuffer.getBufferObject())
-        });
     }
 
     private static void executeDrawBatch(CommandList commandList, GlTessellation tessellation, MultiDrawBatch batch) {

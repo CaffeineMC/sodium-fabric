@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -79,7 +80,7 @@ public class RenderRegionManager {
             return;
         }
 
-        var resources = region.createResources(commandList);
+        var resources = region.createResources(commandList, ChunkMeshFormats.DEFAULT);
         var arena = resources.getGeometryArena();
 
         boolean bufferChanged = arena.upload(commandList, uploads.stream()
@@ -88,7 +89,7 @@ public class RenderRegionManager {
         // If any of the buffers changed, the tessellation will need to be updated
         // Once invalidated the tessellation will be re-created on the next attempted use
         if (bufferChanged) {
-            region.refresh(commandList);
+            region.refresh();
         }
 
         // Collect the upload results

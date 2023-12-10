@@ -1,28 +1,38 @@
-#version 330 core
+#version 450 core
+
+#define MODEL_SCALE        32.0 / 65536.0
+#define MODEL_ORIGIN       8.0
+
+#define COLOR_SCALE        1.0 / 255.0
+
+#define TEX_COORD_SCALE    1.0 / 65536.0
 
 #import <sodium:include/fog.glsl>
-#import <sodium:include/chunk_vertex.glsl>
 #import <sodium:include/chunk_matrices.glsl>
 #import <sodium:include/chunk_material.glsl>
-
-out vec3 v_ColorModulator;
-out vec2 v_TexCoord;
-
-out float v_MaterialMipBias;
-out float v_MaterialAlphaCutoff;
-
-#ifdef USE_FOG
-out float v_FragDistance;
-#endif
 
 uniform int u_FogShape;
 uniform vec3 u_RegionOffset;
 
-uniform sampler2D u_LightTex; // The light map texture
+struct Quad {
+    uvec3 position_hi;    // offset: 0    size: 16
+    uvec3 position_lo;    // offset: 16   size: 16
 
-vec3 _sample_lightmap(uvec2 coord) {
-    return texelFetch(u_LightTex, ivec2(coord), 0).rgb;
-}
+    uvec4 color;          // offset: 32   size: 16
+
+    uvec2 tex_diffuse_hi; // offset: 48   size:  8
+    uvec2 tex_diffuse_lo; // offset: 56   size:  8
+
+    uvec2 light;          // offset: 64   size:  8
+
+    uint material;        // offset: 72   size:  4
+    uint mesh_id;         // offset: 76   size:  4
+};
+
+layout(std430, binding = 15) buffer QuadBuffer
+{
+    Quad ssbo_Quads[];
+};
 
 uvec3 _get_relative_chunk_coord(uint pos) {
     // Packing scheme is defined by LocalSectionIndex
@@ -30,26 +40,58 @@ uvec3 _get_relative_chunk_coord(uint pos) {
 }
 
 vec3 _get_draw_translation(uint pos) {
-    return vec3(_get_relative_chunk_coord(pos)) * vec3(16.0);
+    return u_RegionOffset + (vec3(_get_relative_chunk_coord(pos)) * vec3(16.0));
 }
 
-void main() {
-    _vert_init();
+const vec2 CORNERS[4] = vec2[] (
+  vec2(1.0, 1.0),
+  vec2(0.0, 1.0),
+  vec2(0.0, 0.0),
+  vec2(1.0, 0.0)
+);
 
-    // Transform the chunk-local vertex position into world model space
-    vec3 translation = u_RegionOffset + _get_draw_translation(_vert_mesh_id);
-    vec3 position = _vert_position + translation;
+out vec2 v_TexCoord;
+out vec2 v_RelCoord;
 
 #ifdef USE_FOG
-    v_FragDistance = getFragDistance(u_FogShape, position);
+out float v_FragDistance;
 #endif
+
+flat out uvec4 v_PackedColor;
+flat out uvec2 v_PackedLight;
+
+flat out uint v_Material;
+
+void main() {
+    int quad_index   = gl_VertexID >> 2;
+    int corner_index = gl_VertexID  & 3;
+
+    v_RelCoord      = CORNERS[corner_index];
+
+    uvec3 packed_position = uvec3(
+         ((ssbo_Quads[quad_index].position_lo >> uvec3(corner_index << 3)) & uvec3(0xFF)) |
+        (((ssbo_Quads[quad_index].position_hi >> uvec3(corner_index << 3)) & uvec3(0xFF)) << 8)
+    );
+
+    v_PackedColor   = ssbo_Quads[quad_index].color.wzyx;
+
+    v_TexCoord = vec2(
+         ((ssbo_Quads[quad_index].tex_diffuse_lo >> uvec2(corner_index << 3)) & uvec2(0xFF)) |
+        (((ssbo_Quads[quad_index].tex_diffuse_hi >> uvec2(corner_index << 3)) & uvec2(0xFF)) << 8)
+    ) / 65535.0;
+
+    v_PackedLight   = ssbo_Quads[quad_index].light;
+    v_Material      = ssbo_Quads[quad_index].material;
+
+    uint mesh_id    = ssbo_Quads[quad_index].mesh_id;
+
+    vec3 position = (vec3(packed_position) * MODEL_SCALE) - MODEL_ORIGIN;
+    position += _get_draw_translation(mesh_id);
 
     // Transform the vertex position into model-view-projection space
     gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(position, 1.0);
 
-    v_ColorModulator = _vert_color * _sample_lightmap(_vert_light);
-    v_TexCoord = _vert_tex_coord;
-
-    v_MaterialMipBias = _material_mip_bias(_vert_material);
-    v_MaterialAlphaCutoff = _material_alpha_cutoff(_vert_material);
+#ifdef USE_FOG
+    v_FragDistance = getFragDistance(u_FogShape, position);
+#endif
 }

@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStora
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadFormat;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
@@ -120,11 +121,7 @@ public class RenderRegion {
         return storage;
     }
 
-    public void refresh(CommandList commandList) {
-        if (this.resources != null) {
-            this.resources.deleteTessellations(commandList);
-        }
-
+    public void refresh() {
         for (var storage : this.sectionRenderData.values()) {
             storage.onBufferResized();
         }
@@ -168,9 +165,9 @@ public class RenderRegion {
         return this.resources;
     }
 
-    public DeviceResources createResources(CommandList commandList) {
+    public DeviceResources createResources(CommandList commandList, ModelQuadFormat format) {
         if (this.resources == null) {
-            this.resources = new DeviceResources(commandList, this.stagingBuffer);
+            this.resources = new DeviceResources(commandList, this.stagingBuffer, format);
         }
 
         return this.resources;
@@ -189,30 +186,9 @@ public class RenderRegion {
 
     public static class DeviceResources {
         private final GlBufferArena geometryArena;
-        private GlTessellation tessellation;
 
-        public DeviceResources(CommandList commandList, StagingBuffer stagingBuffer) {
-            int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
-            this.geometryArena = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
-        }
-
-        public void updateTessellation(CommandList commandList, GlTessellation tessellation) {
-            if (this.tessellation != null) {
-                this.tessellation.delete(commandList);
-            }
-
-            this.tessellation = tessellation;
-        }
-
-        public GlTessellation getTessellation() {
-            return this.tessellation;
-        }
-
-        public void deleteTessellations(CommandList commandList) {
-            if (this.tessellation != null) {
-                this.tessellation.delete(commandList);
-                this.tessellation = null;
-            }
+        public DeviceResources(CommandList commandList, StagingBuffer stagingBuffer, ModelQuadFormat format) {
+            this.geometryArena = new GlBufferArena(commandList, REGION_SIZE * 256, format.getStride(), stagingBuffer);
         }
 
         public GlBuffer getVertexBuffer() {
@@ -220,7 +196,6 @@ public class RenderRegion {
         }
 
         public void delete(CommandList commandList) {
-            this.deleteTessellations(commandList);
             this.geometryArena.delete(commandList);
         }
 

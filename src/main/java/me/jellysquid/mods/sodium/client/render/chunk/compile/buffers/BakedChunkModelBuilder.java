@@ -6,17 +6,17 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import net.minecraft.client.texture.Sprite;
 
 public class BakedChunkModelBuilder implements ChunkModelBuilder {
-    private final ChunkMeshBufferBuilder[] vertexBuffers;
+    private final ChunkMeshBufferBuilder[] meshBuffers;
 
     private BuiltSectionInfo.Builder renderData;
 
-    public BakedChunkModelBuilder(ChunkMeshBufferBuilder[] vertexBuffers) {
-        this.vertexBuffers = vertexBuffers;
+    public BakedChunkModelBuilder(ChunkMeshBufferBuilder[] meshBuffers) {
+        this.meshBuffers = meshBuffers;
     }
 
     @Override
-    public ChunkMeshBufferBuilder getVertexBuffer(ModelQuadFacing facing) {
-        return this.vertexBuffers[facing.ordinal()];
+    public ChunkMeshBufferBuilder getMeshBuffer(ModelQuadFacing facing) {
+        return this.meshBuffers[facing.ordinal()];
     }
 
     @Override
@@ -25,7 +25,7 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
     }
 
     public void destroy() {
-        for (ChunkMeshBufferBuilder builder : this.vertexBuffers) {
+        for (ChunkMeshBufferBuilder builder : this.meshBuffers) {
             builder.destroy();
         }
     }
@@ -33,7 +33,7 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
     public void begin(BuiltSectionInfo.Builder renderData, int sectionIndex) {
         this.renderData = renderData;
 
-        for (var vertexBuffer : this.vertexBuffers) {
+        for (var vertexBuffer : this.meshBuffers) {
             vertexBuffer.start(sectionIndex);
         }
     }

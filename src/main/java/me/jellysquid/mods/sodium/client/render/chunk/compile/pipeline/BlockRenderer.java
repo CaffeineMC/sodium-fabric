@@ -8,12 +8,11 @@ import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadEncoder;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.minecraft.block.BlockState;
@@ -39,7 +38,7 @@ public class BlockRenderer {
 
     private final LightPipelineProvider lighters;
 
-    private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
+    private final ModelQuadEncoder.Vertex[] vertices = ModelQuadEncoder.Vertex.uninitializedQuad();
 
     private final boolean useAmbientOcclusion;
 
@@ -142,28 +141,25 @@ public class BlockRenderer {
                                int[] colors,
                                QuadLightData light)
     {
-        ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br, light.lm);
         var vertices = this.vertices;
 
         ModelQuadFacing normalFace = quad.getNormalFace();
 
-        for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
-            int srcIndex = orientation.getVertexIndex(dstIndex);
+        for (int vertexIndex = 0; vertexIndex < 4; vertexIndex++) {
+            var out = vertices[vertexIndex];
+            out.x = ctx.origin().x() + quad.getX(vertexIndex) + (float) offset.getX();
+            out.y = ctx.origin().y() + quad.getY(vertexIndex) + (float) offset.getY();
+            out.z = ctx.origin().z() + quad.getZ(vertexIndex) + (float) offset.getZ();
 
-            var out = vertices[dstIndex];
-            out.x = ctx.origin().x() + quad.getX(srcIndex) + (float) offset.getX();
-            out.y = ctx.origin().y() + quad.getY(srcIndex) + (float) offset.getY();
-            out.z = ctx.origin().z() + quad.getZ(srcIndex) + (float) offset.getZ();
+            out.color = ColorABGR.withAlpha(colors != null ? colors[vertexIndex] : 0xFFFFFFFF, light.br[vertexIndex]);
 
-            out.color = ColorABGR.withAlpha(colors != null ? colors[srcIndex] : 0xFFFFFFFF, light.br[srcIndex]);
+            out.u = quad.getTexU(vertexIndex);
+            out.v = quad.getTexV(vertexIndex);
 
-            out.u = quad.getTexU(srcIndex);
-            out.v = quad.getTexV(srcIndex);
-
-            out.light = light.lm[srcIndex];
+            out.light = light.lm[vertexIndex];
         }
 
-        var vertexBuffer = builder.getVertexBuffer(normalFace);
+        var vertexBuffer = builder.getMeshBuffer(normalFace);
         vertexBuffer.push(vertices, material);
     }
 

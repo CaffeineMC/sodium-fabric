@@ -16,7 +16,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadEncoder;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -56,7 +56,7 @@ public class FluidRenderer {
     private final QuadLightData quadLightData = new QuadLightData();
     private final int[] quadColors = new int[4];
 
-    private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
+    private final ModelQuadEncoder.Vertex[] vertices = ModelQuadEncoder.Vertex.uninitializedQuad();
     private final ColorProviderRegistry colorProviderRegistry;
 
     public FluidRenderer(ColorProviderRegistry colorProviderRegistry, LightPipelineProvider lighters) {
@@ -418,7 +418,7 @@ public class FluidRenderer {
             builder.addSprite(sprite);
         }
 
-        var vertexBuffer = builder.getVertexBuffer(facing);
+        var vertexBuffer = builder.getMeshBuffer(facing);
         vertexBuffer.push(vertices, material);
     }
 

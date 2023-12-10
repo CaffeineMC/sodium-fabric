@@ -1,26 +1,27 @@
 package me.jellysquid.mods.sodium.client.render.chunk.vertex.builder;
 
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadEncoder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadFormat;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
 public class ChunkMeshBufferBuilder {
-    private final ChunkVertexEncoder encoder;
+    private final ModelQuadEncoder encoder;
     private final int stride;
 
     private final int initialCapacity;
 
     private ByteBuffer buffer;
-    private int count;
+    private int size;
     private int capacity;
     private int sectionIndex;
 
-    public ChunkMeshBufferBuilder(ChunkVertexType vertexType, int initialCapacity) {
-        this.encoder = vertexType.getEncoder();
-        this.stride = vertexType.getVertexFormat().getStride();
+    public ChunkMeshBufferBuilder(ModelQuadFormat format, int initialCapacity) {
+        this.encoder = format.getEncoder();
+        this.stride = format.getStride();
 
         this.buffer = null;
 
@@ -28,21 +29,15 @@ public class ChunkMeshBufferBuilder {
         this.initialCapacity = initialCapacity;
     }
 
-    public void push(ChunkVertexEncoder.Vertex[] vertices, Material material) {
-        var vertexStart = this.count;
-        var vertexCount = vertices.length;
+    public void push(ModelQuadEncoder.Vertex[] vertices, Material material) {
+        Validate.isTrue(vertices.length == 4);
 
-        if (this.count + vertexCount >= this.capacity) {
-            this.grow(this.stride * vertexCount);
+        if (this.size + 1 >= this.capacity) {
+            this.grow(this.stride);
         }
 
-        long ptr = MemoryUtil.memAddress(this.buffer, this.count * this.stride);
-
-        for (ChunkVertexEncoder.Vertex vertex : vertices) {
-            ptr = this.encoder.write(ptr, material, vertex, this.sectionIndex);
-        }
-
-        this.count += vertexCount;
+        this.encoder.write(MemoryUtil.memAddress(this.buffer, this.size * this.stride), material, vertices, this.sectionIndex);
+        this.size += 1;
     }
 
     private void grow(int len) {
@@ -59,7 +54,7 @@ public class ChunkMeshBufferBuilder {
     }
 
     public void start(int sectionIndex) {
-        this.count = 0;
+        this.size = 0;
         this.sectionIndex = sectionIndex;
 
         this.setBufferSize(this.initialCapacity);
@@ -74,7 +69,7 @@ public class ChunkMeshBufferBuilder {
     }
 
     public boolean isEmpty() {
-        return this.count == 0;
+        return this.size == 0;
     }
 
     public ByteBuffer slice() {
@@ -82,10 +77,10 @@ public class ChunkMeshBufferBuilder {
             throw new IllegalStateException("No vertex data in buffer");
         }
 
-        return MemoryUtil.memSlice(this.buffer, 0, this.stride * this.count);
+        return MemoryUtil.memSlice(this.buffer, 0, this.stride * this.size);
     }
 
-    public int count() {
-        return this.count;
+    public int getPrimitiveCount() {
+        return this.size;
     }
 }
