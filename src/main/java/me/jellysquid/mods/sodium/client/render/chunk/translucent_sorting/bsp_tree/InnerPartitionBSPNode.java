@@ -92,9 +92,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
             // TODO: this could use compression, but then attemptNodeReuse also needs to be
             // able to decompress it
-            // return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes),
-            // maxIndex);
-            return new NodeReuseData(quadExtents, indexes.toIntArray(), maxIndex);
+            return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes),
+            maxIndex);
         }
         return null;
     }
