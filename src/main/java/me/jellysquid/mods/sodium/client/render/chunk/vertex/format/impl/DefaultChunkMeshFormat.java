@@ -1,10 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.vertex.format.impl;
 
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadEncoder;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ModelQuadFormat;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
-import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import org.lwjgl.system.MemoryUtil;
 
 public class DefaultChunkMeshFormat implements ModelQuadFormat {
@@ -30,10 +28,10 @@ public class DefaultChunkMeshFormat implements ModelQuadFormat {
             MemoryUtil.memPutInt(ptr + 20, packU16x2_lo(encodePosition(vertices[3].y), encodePosition(vertices[2].y), encodePosition(vertices[1].y), encodePosition(vertices[0].y)));
             MemoryUtil.memPutInt(ptr + 24, packU16x2_lo(encodePosition(vertices[3].z), encodePosition(vertices[2].z), encodePosition(vertices[1].z), encodePosition(vertices[0].z)));
 
-            MemoryUtil.memPutInt(ptr + 32, encodeColor(vertices[0].color));
-            MemoryUtil.memPutInt(ptr + 36, encodeColor(vertices[1].color));
-            MemoryUtil.memPutInt(ptr + 40, encodeColor(vertices[2].color));
-            MemoryUtil.memPutInt(ptr + 44, encodeColor(vertices[3].color));
+            MemoryUtil.memPutInt(ptr + 32, packU8x4(ColorABGR.unpackRed(vertices[0].color), ColorABGR.unpackRed(vertices[1].color), ColorABGR.unpackRed(vertices[2].color), ColorABGR.unpackRed(vertices[3].color)));
+            MemoryUtil.memPutInt(ptr + 36, packU8x4(ColorABGR.unpackGreen(vertices[0].color), ColorABGR.unpackGreen(vertices[1].color), ColorABGR.unpackGreen(vertices[2].color), ColorABGR.unpackGreen(vertices[3].color)));
+            MemoryUtil.memPutInt(ptr + 40, packU8x4(ColorABGR.unpackBlue(vertices[0].color), ColorABGR.unpackBlue(vertices[1].color), ColorABGR.unpackBlue(vertices[2].color), ColorABGR.unpackBlue(vertices[3].color)));
+            MemoryUtil.memPutInt(ptr + 44, packU8x4(ColorABGR.unpackAlpha(vertices[0].color), ColorABGR.unpackAlpha(vertices[1].color), ColorABGR.unpackAlpha(vertices[2].color), ColorABGR.unpackAlpha(vertices[3].color)));
 
             MemoryUtil.memPutInt(ptr + 48, packU16x2_hi(encodeTexture(vertices[3].u), encodeTexture(vertices[2].u), encodeTexture(vertices[1].u), encodeTexture(vertices[0].u)));
             MemoryUtil.memPutInt(ptr + 52, packU16x2_hi(encodeTexture(vertices[3].v), encodeTexture(vertices[2].v), encodeTexture(vertices[1].v), encodeTexture(vertices[0].v)));
@@ -41,14 +39,23 @@ public class DefaultChunkMeshFormat implements ModelQuadFormat {
             MemoryUtil.memPutInt(ptr + 56, packU16x2_lo(encodeTexture(vertices[3].u), encodeTexture(vertices[2].u), encodeTexture(vertices[1].u), encodeTexture(vertices[0].u)));
             MemoryUtil.memPutInt(ptr + 60, packU16x2_lo(encodeTexture(vertices[3].v), encodeTexture(vertices[2].v), encodeTexture(vertices[1].v), encodeTexture(vertices[0].v)));
 
-            MemoryUtil.memPutInt(ptr + 64, packU8x4(encodeBlockLight(vertices[0].light), encodeBlockLight(vertices[1].light), encodeBlockLight(vertices[2].light), encodeBlockLight(vertices[3].light)));
-            MemoryUtil.memPutInt(ptr + 68, packU8x4(encodeSkyLight(vertices[0].light), encodeSkyLight(vertices[1].light), encodeSkyLight(vertices[2].light), encodeSkyLight(vertices[3].light)));
+            MemoryUtil.memPutInt(ptr + 64, packU16x2(encodeLight(vertices[0].light), encodeLight(vertices[1].light)));
+            MemoryUtil.memPutInt(ptr + 68, packU16x2(encodeLight(vertices[2].light), encodeLight(vertices[3].light)));
 
             MemoryUtil.memPutInt(ptr + 72, material.bits());
             MemoryUtil.memPutInt(ptr + 76, sectionIndex);
 
             return ptr + STRIDE;
         };
+    }
+
+    private static int encodeLight(int light) {
+        return ((light >> 0) & 0xFF) |
+                ((light >> 16) & 0xFF) << 8;
+    }
+
+    private static int packU16x2(int a, int b) {
+        return ((a & 0xFFFF) << 0) | ((b & 0xFFFF) << 16);
     }
 
     private static int packU16x2_hi(int x, int y, int w, int z) {
@@ -79,10 +86,6 @@ public class DefaultChunkMeshFormat implements ModelQuadFormat {
 
     private static int encodePosition(float value) {
         return (int) ((MODEL_ORIGIN + value) * (POSITION_MAX_VALUE / MODEL_SCALE));
-    }
-
-    private static int encodeColor(int color) {
-        return color;
     }
 
     private static int encodeBlockLight(int light) {
