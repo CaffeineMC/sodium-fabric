@@ -181,8 +181,8 @@ class BSPSortState {
             compressed[outputIndex++] = gatherInt;
         }
 
-        System.out.println("Compressed " + indexes.size() + " indexes to " + size + " ints, compression ratio "
-                + (indexes.size() / size));
+        // System.out.println("Compressed " + indexes.size() + " indexes to " + size + " ints, compression ratio "
+        //         + (indexes.size() / size));
         return compressed;
     }
 
