@@ -161,6 +161,7 @@ class BSPSortState {
         compressed[1] = minDelta;
 
         // write the deltas
+        final int positionLimit = Integer.SIZE - width;
         int outputIndex = HEADER_LENGTH;
         int gatherInt = 0;
         int bitPosition = 0;
@@ -168,16 +169,20 @@ class BSPSortState {
             int shiftedDelta = workingList.getInt(i) - minDelta;
             gatherInt |= shiftedDelta << bitPosition;
             bitPosition += width;
-            if (bitPosition >= Integer.SIZE) {
+            if (bitPosition > positionLimit) {
                 compressed[outputIndex++] = gatherInt;
                 gatherInt = 0;
                 bitPosition = 0;
             }
         }
 
-        // System.out.println("Compressed " + indexes.size() + " indexes to " + size + "
-        // ints, compression ratio "
-        // + (indexes.size() / size));
+        // flush the last int if it hasn't been written yet
+        if (bitPosition > 0) {
+            compressed[outputIndex++] = gatherInt;
+        }
+
+        System.out.println("Compressed " + indexes.size() + " indexes to " + size + " ints, compression ratio "
+                + (indexes.size() / size));
         return compressed;
     }
 
@@ -218,6 +223,7 @@ class BSPSortState {
         int mask = (1 << width) - 1;
 
         // write value (optionally map), read deltas, apply base delta and loop
+        final int positionLimit = Integer.SIZE - width;
         int readIndex = HEADER_LENGTH;
         int splitInt = indexes[readIndex++];
         int splitIntBitPosition = 0;
@@ -231,7 +237,7 @@ class BSPSortState {
 
             int delta = (splitInt >> splitIntBitPosition) & mask;
             splitIntBitPosition += width;
-            if (splitIntBitPosition >= Integer.SIZE && valueCount > 1) {
+            if (splitIntBitPosition > positionLimit && valueCount > 1) {
                 splitInt = indexes[readIndex++];
                 splitIntBitPosition = 0;
             }
