@@ -47,13 +47,13 @@ public class ResourcePackScanner {
             if (!resourcePack.getName().equals("vanilla") && !resourcePack.getName().equals("fabric")) {
                 var resourcePackName = resourcePack.getName();
 
-                // Offer resource packs the ability to acknowledge certain shaders it knows can cause issues
-                // but has manually checked for issues, we read this from an optional part of the pack.mcmeta file
-                var acknowledgedFiles = new ArrayList<String>();
+                // Offer resource packs the ability to acknowledge certain shaders that they do include
+                // but that they are fine with Sodium just ignoring
+                var ignoredShaders = new ArrayList<String>();
                 try {
-                    var meta = resourcePack.parseMetadata(SafeShadersMetadata.SERIALIZER);
+                    var meta = resourcePack.parseMetadata(SodiumResourcePackMetadata.SERIALIZER);
                     if (meta != null) {
-                        acknowledgedFiles.addAll(meta.names());
+                        ignoredShaders.addAll(meta.ignoredShaders());
                     }
                 } catch (IOException x) {
                     LOGGER.error("Failed to load pack.mcmeta file for resource pack '" + resourcePackName + "'", x);
@@ -65,17 +65,15 @@ public class ResourcePackScanner {
 
                     // Check if the pack has already acknowledged the warnings in this file,
                     // in this case we report a different info log about the situation
-                    if (acknowledgedFiles.contains(shaderName)) {
+                    if (ignoredShaders.contains(shaderName)) {
                         if (VSH_FSH_BLACKLIST.contains(shaderName)) {
                             LOGGER.info("Resource pack '" + resourcePackName + "' replaces core shader '" + shaderName
-                                    + "' but indicates it should not cause issues. Please notify the pack author first" +
-                                    " if you experience any issues.");
+                                    + "' but indicates it can be gracefully ignored.");
                         }
 
                         if (GLSL_BLACKLIST.contains(shaderName)) {
                             LOGGER.info("Resource pack '" + resourcePackName + "' replaces shader '" + shaderName
-                                    + "' but indicates it should not cause issues. Please notify the pack author first" +
-                                    " if you experience any issues.");
+                                    + "' but indicates it can be gracefully ignored.");
                         }
                         return;
                     }
