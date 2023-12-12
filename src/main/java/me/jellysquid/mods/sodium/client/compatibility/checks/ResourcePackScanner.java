@@ -9,6 +9,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -45,9 +47,25 @@ public class ResourcePackScanner {
             if (!resourcePack.getName().equals("vanilla") && !resourcePack.getName().equals("fabric")) {
                 var resourcePackName = resourcePack.getName();
 
+                // Offer resource packs the ability to acknowledge certain shaders it knows can cause issues
+                // but has manually checked for issues, we read this from an optional part of the pack.mcmeta file
+                var acknowledgedFiles = new ArrayList<String>();
+                try {
+                    var meta = resourcePack.parseMetadata(SafeShadersMetadata.SERIALIZER);
+                    if (meta != null) {
+                        acknowledgedFiles.addAll(meta.names());
+                    }
+                } catch (IOException x) {
+                    LOGGER.error("Failed to load pack.mcmeta file for resource pack '" + resourcePackName + "'", x);
+                }
+
                 resourcePack.findResources(ResourceType.CLIENT_RESOURCES, Identifier.DEFAULT_NAMESPACE, "shaders", (path, ignored) -> {
                     // Trim full shader file path to only contain the filename
                     var shaderName = path.getPath().substring(path.getPath().lastIndexOf('/') + 1);
+
+                    // Check if the pack has already acknowledged the warnings in this file
+                    if (acknowledgedFiles.contains(shaderName)) return;
+
                     if (VSH_FSH_BLACKLIST.contains(shaderName)) {
 
                         if (!detectedResourcePacks.containsKey(resourcePackName)) {
