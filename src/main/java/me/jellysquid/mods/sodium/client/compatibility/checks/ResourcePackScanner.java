@@ -63,8 +63,22 @@ public class ResourcePackScanner {
                     // Trim full shader file path to only contain the filename
                     var shaderName = path.getPath().substring(path.getPath().lastIndexOf('/') + 1);
 
-                    // Check if the pack has already acknowledged the warnings in this file
-                    if (acknowledgedFiles.contains(shaderName)) return;
+                    // Check if the pack has already acknowledged the warnings in this file,
+                    // in this case we report a different info log about the situation
+                    if (acknowledgedFiles.contains(shaderName)) {
+                        if (VSH_FSH_BLACKLIST.contains(shaderName)) {
+                            LOGGER.info("Resource pack '" + resourcePackName + "' replaces core shader '" + shaderName
+                                    + "' but indicates it should not cause issues. Please notify the pack author first" +
+                                    " if you experience any issues.");
+                        }
+
+                        if (GLSL_BLACKLIST.contains(shaderName)) {
+                            LOGGER.info("Resource pack '" + resourcePackName + "' replaces shader '" + shaderName
+                                    + "' but indicates it should not cause issues. Please notify the pack author first" +
+                                    " if you experience any issues.");
+                        }
+                        return;
+                    }
 
                     if (VSH_FSH_BLACKLIST.contains(shaderName)) {
 
