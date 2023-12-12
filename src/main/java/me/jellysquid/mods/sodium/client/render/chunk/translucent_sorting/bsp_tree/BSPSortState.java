@@ -28,14 +28,14 @@ class BSPSortState {
             }
 
             this.indexMap = node.indexMap;
-            this.indexModificationsRemaining = node.reuseData.indexes().length;
+            this.indexModificationsRemaining = node.reuseData.indexCount();
         } else if (node.fixedIndexOffset != NO_FIXED_OFFSET) {
             if (this.indexMap != null || this.fixedIndexOffset != NO_FIXED_OFFSET) {
                 throw new IllegalStateException("Index modification already in progress");
             }
 
             this.fixedIndexOffset = node.fixedIndexOffset;
-            this.indexModificationsRemaining = node.reuseData.indexes().length;
+            this.indexModificationsRemaining = node.reuseData.indexCount();
         }
     }
 
@@ -73,6 +73,10 @@ class BSPSortState {
         return -Math.floorDiv(-x, y);
     }
 
+    static int[] compressIndexes(IntArrayList indexes) {
+        return compressIndexes(indexes, true);
+    }
+
     /**
      * Compress a list of quad indexes by applying run length encoding or bit
      * packing to their deltas.
@@ -86,7 +90,7 @@ class BSPSortState {
      * 1x32b, 2x16b, 3x10b, 4x8b, 5x6b,
      * 6x5b, 8x4b, 10x3b, 16x2b, 32x1b
      */
-    static int[] compressIndexes(IntArrayList indexes) {
+    static int[] compressIndexes(IntArrayList indexes, boolean doSort) {
         // bail on short lists
         if (indexes.size() < INDEX_COMPRESSION_MIN_LENGTH || indexes.size() > 1 << 10) {
             return indexes.toIntArray();
@@ -96,7 +100,9 @@ class BSPSortState {
 
         // sort for better compression, this also ensures that deltas are positive but
         // as small as possible.
-        workingList.sort(null);
+        if (doSort) {
+            workingList.sort(null);
+        }
 
         // replace indexes with deltas
         int last = workingList.getInt(0);
@@ -134,8 +140,8 @@ class BSPSortState {
             compressed[1] = minDelta;
 
             // System.out.println(
-            // "Compressed " + indexes.size() + " indexes to 2 ints, compression ratio " +
-            // (indexes.size() / 2));
+            //         "Densely compressed " + indexes.size() + " indexes to 2 ints, compression ratio " +
+            //                 (indexes.size() / 2));
             return compressed;
         }
 
@@ -197,11 +203,11 @@ class BSPSortState {
         }
     }
 
-    static int decompress(int[] indexes, IntConsumer consumer) {
+    private static int decompress(int[] indexes, IntConsumer consumer) {
         return decompressWithOffset(indexes, 0, consumer);
     }
 
-    static int decompressWithOffset(int[] indexes, int fixedIndexOffset, IntConsumer consumer) {
+    private static int decompressWithOffset(int[] indexes, int fixedIndexOffset, IntConsumer consumer) {
         // read compression header
         int header1 = indexes[0];
         int widthIndex = (header1 >> 27) & 0b1111;
@@ -227,6 +233,7 @@ class BSPSortState {
         int readIndex = HEADER_LENGTH;
         int splitInt = indexes[readIndex++];
         int splitIntBitPosition = 0;
+        int totalValueCount = valueCount;
         while (valueCount-- > 0) {
             consumer.accept(currentValue);
 
@@ -246,7 +253,7 @@ class BSPSortState {
             currentValue += baseDelta + delta;
         }
 
-        return valueCount;
+        return totalValueCount;
     }
 
     static boolean isCompressed(int[] indexes) {
@@ -263,12 +270,12 @@ class BSPSortState {
         boolean useIndexMap = this.indexMap != null;
         boolean useFixedIndexOffset = this.fixedIndexOffset != NO_FIXED_OFFSET;
 
+        int valueCount;
         if (isCompressed(indexes)) {
-            var consumer = useIndexMap ? this.indexMapConsumer : this.indexConsumer;
             if (useFixedIndexOffset) {
-                decompressWithOffset(indexes, this.fixedIndexOffset, consumer);
+                valueCount = decompressWithOffset(indexes, this.fixedIndexOffset, this.indexConsumer);
             } else {
-                decompress(indexes, consumer);
+                valueCount = decompress(indexes, useIndexMap ? this.indexMapConsumer : this.indexConsumer);
             }
         } else {
             // uncompressed indexes
@@ -283,12 +290,13 @@ class BSPSortState {
             } else {
                 TranslucentData.writeQuadVertexIndexes(this.indexBuffer, indexes);
             }
+            valueCount = indexes.length;
         }
 
         // check if the index modification session is over. this is very important or
         // there's an exception
         if (useIndexMap || useFixedIndexOffset) {
-            checkModificationCounter(indexes.length);
+            checkModificationCounter(valueCount);
         }
     }
 }

@@ -60,8 +60,11 @@ abstract class InnerPartitionBSPNode extends BSPNode {
      * It only stores the set of indexes that this node was constructed from and
      * their extents since the BSP construction only cares about the "opaque" quad
      * geometry and not the normal or facing.
+     * 
+     * Since the indexes might be compressed, the count needs to be stored
+     * separately from before compression.
      */
-    record NodeReuseData(float[][] quadExtents, int[] indexes, int maxIndex) {
+    record NodeReuseData(float[][] quadExtents, int[] indexes, int indexCount, int maxIndex) {
     }
 
     InnerPartitionBSPNode(NodeReuseData reuseData, int axis) {
@@ -90,10 +93,13 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 maxIndex = Math.max(maxIndex, index);
             }
 
-            // TODO: this could use compression, but then attemptNodeReuse also needs to be
-            // able to decompress it
-            return new NodeReuseData(quadExtents, BSPSortState.compressIndexes(indexes),
-            maxIndex);
+            // compress indexes but without sorting them, as the order needs to be the same
+            // for the extents comparison loop to work
+            return new NodeReuseData(
+                    quadExtents,
+                    BSPSortState.compressIndexes(indexes, false),
+                    indexes.size(),
+                    maxIndex);
         }
         return null;
     }
@@ -102,7 +108,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         private final int[] indexMap;
         private final IntArrayList newIndexes;
         private int index = 0;
-        private int lastOffset = 0;
+        private int firstOffset = 0;
 
         private static final int OFFSET_CHANGED = Integer.MIN_VALUE;
 
@@ -113,19 +119,19 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
         @Override
         public void accept(int oldIndex) {
-            var newIndex = newIndexes.getInt(index);
+            var newIndex = newIndexes.getInt(this.index);
             indexMap[oldIndex] = newIndex;
             var newOffset = newIndex - oldIndex;
-            if (index == 0) {
-                lastOffset = newOffset;
-            } else if (lastOffset != newOffset) {
-                lastOffset = OFFSET_CHANGED;
+            if (this.index == 0) {
+                this.firstOffset = newOffset;
+            } else if (this.firstOffset != newOffset) {
+                this.firstOffset = OFFSET_CHANGED;
             }
-            index++;
+            this.index++;
         }
 
         boolean hasFixedOffset() {
-            return lastOffset != OFFSET_CHANGED;
+            return this.firstOffset != OFFSET_CHANGED;
         }
     }
 
@@ -156,16 +162,13 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
         // reuse old node and either apply a fixed offset or calculate an index map to
         // map from old to new indices
-        // TODO: placing and removing a block from the death cube of slime and honey is
-        // still broken. Did decompression broke when the compression was properly added
-        // on reuse data?
         var remapper = new IndexRemapper(reuseData.maxIndex + 1, newIndexes);
         BSPSortState.decompressOrRead(reuseData.indexes, remapper);
 
         // use a fixed offset if possible (if all old indices differ from the new ones
         // by the same amount)
         if (remapper.hasFixedOffset()) {
-            oldNode.fixedIndexOffset = remapper.lastOffset;
+            oldNode.fixedIndexOffset = remapper.firstOffset;
         } else {
             oldNode.indexMap = remapper.indexMap;
         }
