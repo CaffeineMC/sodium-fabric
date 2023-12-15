@@ -92,7 +92,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                         blockPos.set(x, y, z);
                         modelOffset.set(x & 15, y & 15, z & 15);
 
-                        if (blockState.getRenderType() == BlockRenderType.MODEL) {
+                        if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
                             BakedModel model = cache.getBlockModels()
                                 .getModel(blockState);
 
