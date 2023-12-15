@@ -29,6 +29,13 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
         for (int i = 0; i < this.planeDistances.length; i++) {
             workspace.addAlignedPartitionPlane(this.axis, this.planeDistances[i]);
         }
+
+        // recurse on children to also add their planes
+        for (var partition : this.partitions) {
+            if (partition instanceof InnerPartitionBSPNode inner) {
+                inner.addPartitionPlanes(workspace);
+            }
+        }
     }
 
     private void collectPlaneQuads(BSPSortState sortState, int planeIndex) {
