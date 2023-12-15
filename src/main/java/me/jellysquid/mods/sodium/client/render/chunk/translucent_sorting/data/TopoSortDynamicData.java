@@ -179,6 +179,13 @@ public class TopoSortDynamicData extends DynamicData {
 
     private static ThreadLocal<float[]> distanceSortKeys = new ThreadLocal<>();
 
+    // TODO: encode the quad key into the lower half of a long and the distance into
+    // the upper half. since it's all positive distances, it should be able to just
+    // sort the longs by value using Arrays.sort (or fastutil's sort) which is very
+    // fast. In order to re-use the sort order the sorted array would need to be
+    // iterated, each quad index extracted and then the distance computed and
+    // written back into the upper part of the long. This uses more memory to keep
+    // around the sort result, but requires less repeated iteration of the data.
     private static int[] distanceSortDirect(int[] indexes,
             IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
         if (indexes == null) {
