@@ -41,9 +41,9 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
      * Degrees of movement from last sort position before the section is sorted
      * again.
      */
-    private static final double TRIGGER_ANGLE = Math.toRadians(20);
+    private static final double TRIGGER_ANGLE = Math.toRadians(10);
     private static final double EARLY_TRIGGER_ANGLE_COS = Math.cos(TRIGGER_ANGLE * EARLY_TRIGGER_FACTOR);
-    private static final double SECTION_CENTER_DIST_SQUARED = 40 * 3 * Math.pow(16 / 2, 2);
+    private static final double SECTION_CENTER_DIST_SQUARED = 3 * Math.pow(16 / 2, 2) + 1;
     private static final double SECTION_CENTER_DIST = Math.sqrt(SECTION_CENTER_DIST_SQUARED);
 
     /**
@@ -104,12 +104,11 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
         }
     }
 
-    // TODO: use faster code for this
     private static double angleCos(double ax, double ay, double az, double bx, double by, double bz) {
-        double length1Squared = Math.fma(ax, ax, Math.fma(ay, ay, az * az));
-        double length2Squared = Math.fma(bx, bx, Math.fma(by, by, bz * bz));
+        double lengthA = Math.sqrt(Math.fma(ax, ax, Math.fma(ay, ay, az * az)));
+        double lengthB = Math.sqrt(Math.fma(bx, bx, Math.fma(by, by, bz * bz)));
         double dot = Math.fma(ax, bx, Math.fma(ay, by, az * bz));
-        return dot / Math.sqrt(length1Squared * length2Squared);
+        return dot / (lengthA * lengthB);
     }
 
     private void insertDirectAngleTrigger(DirectTriggerData data, Vector3dc cameraPos, double remainingAngle) {
