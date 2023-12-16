@@ -27,7 +27,7 @@ public record TQuad(ModelQuadFacing facing, Vector3fc normal, Vector3f center, f
 
     public float getAlignedSurfaceArea() {
         if (this.facing == ModelQuadFacing.UNASSIGNED) {
-            return 0;
+            return 100;
         }
 
         var dX = this.extents[3] - this.extents[0];
@@ -42,7 +42,7 @@ public record TQuad(ModelQuadFacing facing, Vector3fc normal, Vector3f center, f
             return (float) (dX * dY);
         } else {
             // non-flat aligned quad, weird edge case
-            return 0;
+            return 90;
         }
     }
 

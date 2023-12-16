@@ -367,15 +367,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         int testsRemaining = 10000;
         for (int quadAIndex = 0; quadAIndex < indexes.size(); quadAIndex++) {
             var quadA = workspace.quads[indexes.getInt(quadAIndex)];
-            if (quadA.facing() == ModelQuadFacing.UNASSIGNED) {
-                continue;
-            }
+
             for (int quadBIndex = quadAIndex + 1; quadBIndex < indexes.size(); quadBIndex++) {
                 var quadB = workspace.quads[indexes.getInt(quadBIndex)];
-
-                if (quadB.facing() == ModelQuadFacing.UNASSIGNED) {
-                    continue;
-                }
 
                 // aligned quads intersect if their bounding boxes intersect
                 boolean intersects = true;
@@ -384,8 +378,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     var extentsA = quadA.extents();
                     var extentsB = quadB.extents();
 
-                    if (extentsA[axis] < extentsB[opposite]
-                            || extentsB[axis] < extentsA[opposite]) {
+                    if (extentsA[axis] <= extentsB[opposite]
+                            || extentsB[axis] <= extentsA[opposite]) {
                         intersects = false;
                         break;
                     }
