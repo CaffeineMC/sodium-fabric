@@ -57,11 +57,11 @@ public class ResourcePackScanner {
                     // in this case we report a different info log about the situation
                     if (ignoredShaders.contains(shaderName)) {
                         if (VSH_FSH_BLACKLIST.contains(shaderName)) {
-                            LOGGER.info("Resource pack '{}' replaces core shader '{}' but indicates it can be ignored.", resourcePackName, shaderName);
+                            LOGGER.info("Resource pack '{}' replaces core shader '{}' but indicates it can be ignored", resourcePackName, shaderName);
                         }
 
                         if (GLSL_BLACKLIST.contains(shaderName)) {
-                            LOGGER.info("Resource pack '{}' replaces shader '{}' but indicates it can be ignored.", resourcePackName, shaderName);
+                            LOGGER.info("Resource pack '{}' replaces shader '{}' but indicates it can be ignored", resourcePackName, shaderName);
                         }
                         return;
                     }
