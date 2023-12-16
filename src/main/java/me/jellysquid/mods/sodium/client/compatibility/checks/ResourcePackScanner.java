@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.compatibility.checks;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -46,18 +47,7 @@ public class ResourcePackScanner {
             // Omit 'vanilla' and 'fabric' resource packs
             if (!resourcePack.getName().equals("vanilla") && !resourcePack.getName().equals("fabric")) {
                 var resourcePackName = resourcePack.getName();
-
-                // Offer resource packs the ability to acknowledge certain shaders that they do include
-                // but that they are fine with Sodium just ignoring
-                var ignoredShaders = new ArrayList<String>();
-                try {
-                    var meta = resourcePack.parseMetadata(SodiumResourcePackMetadata.SERIALIZER);
-                    if (meta != null) {
-                        ignoredShaders.addAll(meta.ignoredShaders());
-                    }
-                } catch (IOException x) {
-                    LOGGER.error("Failed to load pack.mcmeta file for resource pack '" + resourcePackName + "'", x);
-                }
+                var ignoredShaders = determineIgnoredShaders(resourcePack);
 
                 resourcePack.findResources(ResourceType.CLIENT_RESOURCES, Identifier.DEFAULT_NAMESPACE, "shaders", (path, ignored) -> {
                     // Trim full shader file path to only contain the filename
@@ -67,13 +57,11 @@ public class ResourcePackScanner {
                     // in this case we report a different info log about the situation
                     if (ignoredShaders.contains(shaderName)) {
                         if (VSH_FSH_BLACKLIST.contains(shaderName)) {
-                            LOGGER.info("Resource pack '" + resourcePackName + "' replaces core shader '" + shaderName
-                                    + "' but indicates it can be gracefully ignored.");
+                            LOGGER.info("Resource pack '{}' replaces core shader '{}' but indicates it can be ignored.", resourcePackName, shaderName);
                         }
 
                         if (GLSL_BLACKLIST.contains(shaderName)) {
-                            LOGGER.info("Resource pack '" + resourcePackName + "' replaces shader '" + shaderName
-                                    + "' but indicates it can be gracefully ignored.");
+                            LOGGER.info("Resource pack '{}' replaces shader '{}' but indicates it can be ignored.", resourcePackName, shaderName);
                         }
                         return;
                     }
@@ -86,7 +74,7 @@ public class ResourcePackScanner {
                             detectedResourcePacks.replace(resourcePackName, MessageLevel.SEVERE);
                         }
 
-                        LOGGER.error("Resource pack '" + resourcePackName + "' replaces core shader '" + shaderName + "'");
+                        LOGGER.error("Resource pack '{}' replaces core shader '{}'", resourcePackName, shaderName);
                     }
 
                     if (GLSL_BLACKLIST.contains(shaderName)) {
@@ -95,7 +83,7 @@ public class ResourcePackScanner {
                             detectedResourcePacks.put(resourcePackName, MessageLevel.WARN);
                         }
 
-                        LOGGER.warn("Resource pack '" + resourcePackName + "' replaces shader '" + shaderName + "'");
+                        LOGGER.error("Resource pack '{}' replaces shader '{}'", resourcePackName, shaderName);
 
                     }
                 });
@@ -131,6 +119,27 @@ public class ResourcePackScanner {
         if (!detectedResourcePacks.isEmpty()) {
             showConsoleMessage(Text.translatable("sodium.console.core_shaders_info"), MessageLevel.INFO);
         }
+    }
+
+    /**
+     * Looks at a resource pack's metadata to find a list of shaders that can be gracefully
+     * ignored. This offers resource packs the ability to acknowledge they are shipping shaders
+     * which will not work with Sodium, but that Sodium can ignore.
+     *
+     * @param resourcePack The resource pack to fetch the ignored shaders of
+     * @return A list of shaders to ignore, this is the filename only without the path
+     */
+    private static List<String> determineIgnoredShaders(ResourcePack resourcePack) {
+        var ignoredShaders = new ArrayList<String>();
+        try {
+            var meta = resourcePack.parseMetadata(SodiumResourcePackMetadata.SERIALIZER);
+            if (meta != null) {
+                ignoredShaders.addAll(meta.ignoredShaders());
+            }
+        } catch (IOException x) {
+            LOGGER.error("Failed to load pack.mcmeta file for resource pack '{}'", resourcePack.getName());
+        }
+        return ignoredShaders;
     }
 
     private static void showConsoleMessage(MutableText message, MessageLevel messageLevel) {
