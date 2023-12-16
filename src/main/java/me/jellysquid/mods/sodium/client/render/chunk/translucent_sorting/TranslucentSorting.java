@@ -17,28 +17,11 @@ import net.minecraft.util.math.ChunkSectionPos;
  * sections for dynamic sorting to the trigger components.
  * 
  * TODO:
- * - many sections can be marked as needing an update but they are only actually
- * scheduled for sorting when the RenderSectionManager makes them visible. This
- * may result in many sections suddenly needing sorting when the camera moves.
- * Maybe it's better to schedule them to be sorted gradually even if not
- * visible, if there are idle threads.
- * - Movement prediction and preemptive task scheduling to avoid needing to
- * perform blocking sorts of close sections. Maybe not an issue? Might reduce
- * stutter in high fps situations. However, high complexity with regards to
- * processing the results of preemptive sorts.
- * - determine the right distance for angle/distance triggering. It seems just
- * the diagonal of a section is too small, angle triggering is broken at close
- * distances.
- * - Bug: adding a slime block onto one of the corners of the monster cube makes
- * it invisible. Is this because there's nothing else in this section than just
- * that one block? Might have something to do with NONE mode behaving weirdly in
- * that situation. Possibly related to index buffer reuse, since it only happens
- * after the block has been replaced at least once.
  * - Incompatible with rendering anything through Indium because it doesn't run
  * the translucent geometry collector properly. It doesn't run Sodium's
  * BlockRenderer which is required for lines 166-167 of BlockRenderer to work.
  * 
- * @author douira
+ * @author douira (the translucent_sorting package)
  */
 public class TranslucentSorting {
     /**

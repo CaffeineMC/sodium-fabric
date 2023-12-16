@@ -73,7 +73,8 @@ class BSPSortState {
     private static final int CONSTANT_DELTA_WIDTH_INDEX = 15;
 
     /**
-     * ceilDiv was introduced to the JDK in Java 18 but is not available in Java 17.
+     * ceilDiv was introduced to the JDK in Java 18 but is not available in the here
+     * used Java 17.
      */
     private static int ceilDiv(int x, int y) {
         return -Math.floorDiv(-x, y);
