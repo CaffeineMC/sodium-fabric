@@ -18,6 +18,10 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - Doing a convex box test doesn't seem to bring a performance boost, even if
  * it does trigger sometimes with man-made structures. The multi partition node
  * probably does most of the work already.
+ * - Checking if the given quads are all coplanar doesn't recoup the cost of
+ * iterating through all the quads. It also doesn't significantly reduce the
+ * number of triggering planes (which would have a performance and memory usage
+ * benefit).
  */
 public abstract class BSPNode {
 
@@ -27,7 +31,8 @@ public abstract class BSPNode {
         this.collectSortedQuads(new BSPSortState(nativeBuffer), cameraPos);
     }
 
-    public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos, BSPNode oldRoot, boolean prepareNodeReuse) {
+    public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos, BSPNode oldRoot,
+            boolean prepareNodeReuse) {
         // throw if there's too many quads
         InnerPartitionBSPNode.validateQuadCount(quads.length);
 
