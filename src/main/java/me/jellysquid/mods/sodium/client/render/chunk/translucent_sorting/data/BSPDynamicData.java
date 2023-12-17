@@ -57,7 +57,6 @@ public class BSPDynamicData extends DynamicData {
         dynamicData.sort(cameraPos);
 
         // prepare accumulation groups for integration into GFNI triggering
-        // TODO: combine this and the similar code in TopoSortDynamicData
         var aligned = result.getAlignedDistances();
         if (aligned != null) {
             for (var accGroup : aligned) {

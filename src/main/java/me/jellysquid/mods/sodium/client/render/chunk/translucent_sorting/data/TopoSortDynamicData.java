@@ -219,8 +219,7 @@ public class TopoSortDynamicData extends DynamicData {
 
         var distancesByNormal = new Object2ReferenceOpenHashMap<Vector3fc, float[]>(size);
         if (collector.getAlignedDistances() != null) {
-            for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
-                var accGroup = collector.getAlignedDistances()[direction];
+            for (var accGroup : collector.getAlignedDistances()) {
                 if (accGroup != null) {
                     accGroup.prepareAndInsert(distancesByNormal);
                 }
@@ -228,7 +227,6 @@ public class TopoSortDynamicData extends DynamicData {
         }
         if (collector.getUnalignedDistanceCount() > 0) {
             for (var accGroup : collector.getUnalignedDistances()) {
-                // TODO: get rid of collector key and just use the normal vector's hash code
                 accGroup.prepareAndInsert(distancesByNormal);
             }
         }

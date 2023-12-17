@@ -161,10 +161,6 @@ public class TranslucentGeometryCollector extends AccGroupResult {
         // POS_X, POS_Y, POS_Z, NEG_X, NEG_Y, NEG_Z
         float[] extents = new float[] { posXExtent, posYExtent, posZExtent, negXExtent, negYExtent, negZExtent };
 
-        // TODO: does it make a difference if we compute the center as the average of
-        // the unique vertices or as the center of the extents? (the latter would be
-        // less work)
-
         // TODO: some of these things should probably only be computed on demand, and an
         // allocation of a Quad object should be avoided
         AccumulationGroup accGroup;

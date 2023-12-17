@@ -11,19 +11,6 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
 /**
- * TODO:
- * - make partition finding more sophisticated by using distancesByNormal
- * and other information.
- * - pass partition information to child nodes instead of discarding if
- * partition didn't work
- * - detect many coplanar quads and avoid partitioning sorting alltogether. Try
- * to partition so that large groups of coplanar quads are kept together and
- * then not sorted at all.
- * - sort the quads inside a node using the same heuristics as in the global
- * level: convex hulls (like cuboids where the faces point outwards) don't need
- * to be sorted. This could be used to optimize the inside of honey blocks, and
- * other blocks.
- * 
  * Implementation note:
  * - Presorting the points in block-sized buckets doesn't help. It seems the
  * sort algorithm is just fast enough to handle this.
@@ -78,9 +65,6 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     static NodeReuseData prepareNodeReuse(BSPWorkspace workspace, IntArrayList indexes, int depth) {
         // if node reuse is enabled, only enable on the first level of children (not the
         // root node and not anything deeper than its children)
-        // TODO: more sophisticated reuse scheduling (make uset configurable, and only
-        // do once the section has been modified at least once already to avoid making
-        // this data on terrain sections that are never touched)
         if (workspace.prepareNodeReuse && depth == 1 && indexes.size() > NODE_REUSE_THRESHOLD) {
             // collect the extents of the indexed quads and hash them
             var quadExtents = new float[indexes.size()][];
@@ -325,7 +309,6 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             // check a different axis if everything is in one quadsBefore,
             // which means there are no gaps
             if (quadsBefore != null && quadsBefore.size() == indexes.size()) {
-                // TODO: reuse the sorted point array for child nodes (add to workspace)
                 continue;
             }
 
@@ -356,14 +339,11 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     partitions, axis, endsWithPlane);
         }
 
-        // TODO: attempt unaligned partitioning, convex decomposition, etc.
-
         // test if the geometry intersects with itself
         // if there is self-intersection, return a multi leaf node to just give up
         // sorting this geometry. intersecting geometry is rare but when it does happen,
         // it should simply be accepted and rendered as-is. Whatever artifacts this
         // causes are considered "ok".
-        // TODO: also do this test with unaligned quads
         int testsRemaining = 10000;
         for (int quadAIndex = 0; quadAIndex < indexes.size(); quadAIndex++) {
             var quadA = workspace.quads[indexes.getInt(quadAIndex)];
