@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 import org.joml.Vector3fc;
 
@@ -11,9 +12,15 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Implementation note:
+ * - Reusing the output of previous distance sorting job doesn't make a
+ * difference or makes things slower in some cases. It's unclear why exactly
+ * this happens, I suspect weird memory behavior or the reuse is not actually
+ * that helpful to the sorting algorithm.
+ */
 public class TopoSortDynamicData extends DynamicData {
     private final TQuad[] quads;
     private boolean GFNITrigger = true;
@@ -25,7 +32,6 @@ public class TopoSortDynamicData extends DynamicData {
     private int consecutiveTopoSortFailures = 0;
     private boolean pendingTriggerIsAngle;
     private Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal;
-    private int[] distanceSortIndexes;
 
     private static final int MAX_TOPO_SORT_QUADS = 1000;
     private static final int MAX_TOPO_SORT_TIME_NS = 1_000_000;
@@ -76,7 +82,6 @@ public class TopoSortDynamicData extends DynamicData {
             this.directTrigger = false;
             this.turnDirectTriggerOff = true;
         }
-        this.distanceSortIndexes = null;
     }
 
     public boolean getAndFlushTurnGFNITriggerOff() {
@@ -170,44 +175,23 @@ public class TopoSortDynamicData extends DynamicData {
 
         if (this.directTrigger) {
             indexBuffer.rewind();
-            this.distanceSortIndexes = distanceSortDirect(
-                    this.distanceSortIndexes, indexBuffer, this.quads, cameraPos);
+            distanceSortDirect(indexBuffer, this.quads, cameraPos);
             return;
         }
     }
 
-    private static ThreadLocal<float[]> distanceSortKeys = new ThreadLocal<>();
-
-    // TODO: encode the quad key into the lower half of a long and the distance into
-    // the upper half. since it's all positive distances, it should be able to just
-    // sort the longs by value using Arrays.sort (or fastutil's sort) which is very
-    // fast. In order to re-use the sort order the sorted array would need to be
-    // iterated, each quad index extracted and then the distance computed and
-    // written back into the upper part of the long. This uses more memory to keep
-    // around the sort result, but requires less repeated iteration of the data.
-    private static int[] distanceSortDirect(int[] indexes,
-            IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
-        if (indexes == null) {
-            indexes = new int[quads.length];
-            for (int i = 0; i < quads.length; i++) {
-                indexes[i] = i;
-            }
+    private static void distanceSortDirect(IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
+        var data = new long[quads.length];
+        for (int i = 0; i < quads.length; i++) {
+            float distance = cameraPos.distanceSquared(quads[i].center());
+            data[i] = (long) Float.floatToRawIntBits(distance) << 32 | i;
         }
 
-        float[] keys = distanceSortKeys.get();
-        if (keys == null || keys.length < quads.length) {
-            keys = new float[quads.length];
-            distanceSortKeys.set(keys);
-        }
+        Arrays.sort(data);
 
         for (int i = 0; i < quads.length; i++) {
-            keys[i] = cameraPos.distanceSquared(quads[i].center());
+            TranslucentData.writeQuadVertexIndexes(indexBuffer, (int) data[i]);
         }
-
-        MergeSort.mergeSort(indexes, keys);
-        TranslucentData.writeQuadVertexIndexes(indexBuffer, indexes);
-
-        return indexes;
     }
 
     public static TopoSortDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
@@ -241,5 +225,4 @@ public class TopoSortDynamicData extends DynamicData {
 
         return dynamicData;
     }
-
 }
