@@ -33,7 +33,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.No
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.CameraMovement;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.TranslucentSorting;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.render.util.RenderAsserts;
@@ -80,7 +80,7 @@ public class RenderSectionManager {
 
     private final int renderDistance;
 
-    private final TranslucentSorting ts;
+    private final SortTriggering ts;
 
     @NotNull
     private SortedRenderLists renderLists;
@@ -99,7 +99,7 @@ public class RenderSectionManager {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.world = world;
-        this.ts = new TranslucentSorting();
+        this.ts = new SortTriggering();
 
         this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
 

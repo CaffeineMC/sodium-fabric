@@ -51,7 +51,7 @@ class Group {
         this.normal = normalPlanes.normal;
     }
 
-    void triggerRange(TranslucentSorting ts, double start, double end) {
+    void triggerRange(SortTriggering ts, double start, double end) {
         // trigger self on the section if the query range overlaps with the group
         // testing for strict inequality because if the two intervals just touch at the
         // start/end, there can be no overlap

@@ -75,7 +75,7 @@ public class NormalList {
                         (double) this.normal.z * v.z()));
     }
 
-    void processMovement(TranslucentSorting ts, CameraMovement movement) {
+    void processMovement(SortTriggering ts, CameraMovement movement) {
         // calculate the distance range of the movement with respect to the normal
         double start = this.normalDotDouble(movement.lastCamera());
         double end = this.normalDotDouble(movement.currentCamera());

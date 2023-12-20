@@ -10,53 +10,53 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class GeometryPlanes {
-    private NormalPlanes[] alignedDistances;
-    private Object2ReferenceOpenHashMap<Vector3fc, NormalPlanes> unalignedDistances;
+    private NormalPlanes[] alignedPlanes;
+    private Object2ReferenceOpenHashMap<Vector3fc, NormalPlanes> unalignedPlanes;
 
     public NormalPlanes[] getAligned() {
-        return this.alignedDistances;
+        return this.alignedPlanes;
     }
 
     public NormalPlanes[] getAlignedOrCreate() {
-        if (this.alignedDistances == null) {
-            this.alignedDistances = new NormalPlanes[ModelQuadFacing.DIRECTIONS];
+        if (this.alignedPlanes == null) {
+            this.alignedPlanes = new NormalPlanes[ModelQuadFacing.DIRECTIONS];
         }
-        return this.alignedDistances;
+        return this.alignedPlanes;
     }
 
     public Collection<NormalPlanes> getUnaligned() {
-        if (this.unalignedDistances == null) {
+        if (this.unalignedPlanes == null) {
             return null;
         }
-        return this.unalignedDistances.values();
+        return this.unalignedPlanes.values();
     }
 
     public Object2ReferenceOpenHashMap<Vector3fc, NormalPlanes> getUnalignedOrCreate() {
-        if (this.unalignedDistances == null) {
-            this.unalignedDistances = new Object2ReferenceOpenHashMap<>();
+        if (this.unalignedPlanes == null) {
+            this.unalignedPlanes = new Object2ReferenceOpenHashMap<>();
         }
-        return this.unalignedDistances;
+        return this.unalignedPlanes;
     }
 
     public Collection<Vector3fc> getUnalignedNormals() {
-        if (this.unalignedDistances == null) {
+        if (this.unalignedPlanes == null) {
             return null;
         }
-        return this.unalignedDistances.keySet();
+        return this.unalignedPlanes.keySet();
     }
 
     NormalPlanes getPlanesForNormal(NormalList normalList) {
         var normal = normalList.getNormal();
         if (normal.isAligned()) {
-            if (this.alignedDistances == null) {
+            if (this.alignedPlanes == null) {
                 return null;
             }
-            return this.alignedDistances[normal.getAlignedDirection()];
+            return this.alignedPlanes[normal.getAlignedDirection()];
         } else {
-            if (this.unalignedDistances == null) {
+            if (this.unalignedPlanes == null) {
                 return null;
             }
-            return this.unalignedDistances.get(normal);
+            return this.unalignedPlanes.get(normal);
         }
     }
 
@@ -95,15 +95,15 @@ public class GeometryPlanes {
     }
 
     private void prepareAndInsert(Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal) {
-        if (this.alignedDistances != null) {
-            for (var normalPlanes : this.alignedDistances) {
+        if (this.alignedPlanes != null) {
+            for (var normalPlanes : this.alignedPlanes) {
                 if (normalPlanes != null) {
                     normalPlanes.prepareAndInsert(distancesByNormal);
                 }
             }
         }
-        if (this.unalignedDistances != null) {
-            for (var normalPlanes : this.unalignedDistances.values()) {
+        if (this.unalignedPlanes != null) {
+            for (var normalPlanes : this.unalignedPlanes.values()) {
                 normalPlanes.prepareAndInsert(distancesByNormal);
             }
         }

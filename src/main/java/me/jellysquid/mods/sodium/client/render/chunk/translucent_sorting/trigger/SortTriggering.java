@@ -25,7 +25,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * 
  * @author douira (the translucent_sorting package)
  */
-public class TranslucentSorting {
+public class SortTriggering {
     /**
      * To avoid generating a collection of the triggered sections, this callback is
      * used to process the triggered sections directly as they are queried from the
@@ -52,7 +52,7 @@ public class TranslucentSorting {
     private final DirectTriggers direct = new DirectTriggers();
 
     interface SectionTriggers<T extends DynamicData> {
-        void processTriggers(TranslucentSorting ts, CameraMovement movement);
+        void processTriggers(SortTriggering ts, CameraMovement movement);
 
         void removeSection(long sectionPos, TranslucentData data);
 

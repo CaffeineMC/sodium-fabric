@@ -6,7 +6,7 @@ import org.joml.Vector3dc;
 import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.TranslucentSorting.SectionTriggers;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering.SectionTriggers;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -130,7 +130,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
     }
 
     @Override
-    public void processTriggers(TranslucentSorting ts, CameraMovement movement) {
+    public void processTriggers(SortTriggering ts, CameraMovement movement) {
         Vector3dc lastCamera = movement.lastCamera();
         Vector3dc camera = movement.currentCamera();
         this.accumulatedDistance += lastCamera.distance(camera);

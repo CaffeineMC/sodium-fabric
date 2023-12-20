@@ -6,7 +6,7 @@ import org.joml.Vector3fc;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.TranslucentSorting.SectionTriggers;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering.SectionTriggers;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -28,7 +28,7 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
     }
 
     @Override
-    public void processTriggers(TranslucentSorting ts, CameraMovement movement) {
+    public void processTriggers(SortTriggering ts, CameraMovement movement) {
         for (var normalList : this.normalLists.values()) {
             normalList.processMovement(ts, movement);
         }
