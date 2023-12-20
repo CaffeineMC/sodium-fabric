@@ -183,7 +183,7 @@ public class TopoSortDynamicData extends DynamicData {
         var data = new long[quads.length];
         for (int i = 0; i < quads.length; i++) {
             float distance = cameraPos.distanceSquared(quads[i].getCenter());
-            data[i] = (long) Float.floatToRawIntBits(distance) << 32 | i;
+            data[i] = (long) ~Float.floatToRawIntBits(distance) << 32 | i;
         }
 
         Arrays.sort(data);
