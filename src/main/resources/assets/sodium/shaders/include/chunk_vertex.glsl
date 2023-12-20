@@ -3,7 +3,7 @@
 
 #define COLOR_SCALE        1.0 / 255.0
 
-#define TEX_COORD_SCALE    1.0 / 65536.0
+#define TEX_COORD_SCALE    1.0 / 32768.0
 
 // The packed vertex data which is read from the vertex buffer
 in uvec4 in_VertexData;
