@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
 
+import java.util.Arrays;
+
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
-import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
@@ -20,11 +20,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.St
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.StaticTopoAcyclicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.util.math.ChunkSectionPos;
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * The translucent geometry collector collects the data from the renderers and
@@ -41,14 +41,36 @@ import java.util.Collection;
  * doing it once without invisible quad exclusion and once with if the first
  * attempt fails.
  */
-public class TranslucentGeometryCollector extends AccGroupResult {
-    private Int2ReferenceLinkedOpenHashMap<AccumulationGroup> unalignedDistances;
-
+public class TranslucentGeometryCollector {
     private final ChunkSectionPos sectionPos;
-    private int facePlaneCount = 0;
-    private int alignedNormalBitmap = 0;
-    private Vector3f minBounds = new Vector3f(16, 16, 16);
-    private Vector3f maxBounds = new Vector3f(0, 0, 0);
+
+    // true if there are any unaligned quads
+    private boolean hasUnaligned = false;
+
+    // a bitmap of the aligned facings present in the section
+    private int alignedFacingBitmap = 0;
+
+    // AABB of the geometry
+    private float[] extents = new float[ModelQuadFacing.DIRECTIONS];
+
+    // true if one of the extents has more than one plane
+    private boolean alignedExtentsMultiple = false;
+
+    // the maximum (or minimum for negative directions) of quads with a particular
+    // facing. (Dot product of the normal with a vertex for all aligned facings)
+    private float[] alignedExtremes = new float[] {
+            Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY,
+            Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY
+    };
+
+    // keep track of two normals with each up to two distances for important special
+    // case heuristics
+    private int unalignedANormal = -1;
+    private float unalignedADistance1 = Float.NaN;
+    private float unalignedADistance2 = Float.NaN;
+    private int unalignedBNormal = -1;
+    private float unalignedBDistance1 = Float.NaN;
+    private float unalignedBDistance2 = Float.NaN;
 
     @SuppressWarnings("unchecked")
     private ReferenceArrayList<TQuad>[] quadLists = new ReferenceArrayList[ModelQuadFacing.COUNT];
@@ -75,8 +97,7 @@ public class TranslucentGeometryCollector extends AccGroupResult {
         }
     }
 
-    public void appendQuad(ModelQuadView quadView, ChunkVertexEncoder.Vertex[] vertices, ModelQuadFacing facing,
-            boolean flipNormal) {
+    public void appendQuad(int packedNormal, ChunkVertexEncoder.Vertex[] vertices, ModelQuadFacing facing) {
         float xSum = 0;
         float ySum = 0;
         float zSum = 0;
@@ -120,11 +141,6 @@ public class TranslucentGeometryCollector extends AccGroupResult {
             }
         }
 
-        var centerX = xSum / uniqueQuads;
-        var centerY = ySum / uniqueQuads;
-        var centerZ = zSum / uniqueQuads;
-        var center = new Vector3f(centerX, centerY, centerZ);
-
         // shrink quad in non-normal directions to prevent intersections caused by
         // epsilon offsets applied by FluidRenderer
         if (facing != ModelQuadFacing.POS_X && facing != ModelQuadFacing.NEG_X) {
@@ -149,74 +165,72 @@ public class TranslucentGeometryCollector extends AccGroupResult {
             }
         }
 
-        if (facing != ModelQuadFacing.UNASSIGNED && this.unalignedDistances == null) {
-            maxBounds.x = Math.max(maxBounds.x, posXExtent);
-            maxBounds.y = Math.max(maxBounds.y, posYExtent);
-            maxBounds.z = Math.max(maxBounds.z, posZExtent);
-            minBounds.x = Math.min(minBounds.x, negXExtent);
-            minBounds.y = Math.min(minBounds.y, negYExtent);
-            minBounds.z = Math.min(minBounds.z, negZExtent);
-        }
-
         // POS_X, POS_Y, POS_Z, NEG_X, NEG_Y, NEG_Z
         float[] extents = new float[] { posXExtent, posYExtent, posZExtent, negXExtent, negYExtent, negZExtent };
 
-        // TODO: some of these things should probably only be computed on demand, and an
-        // allocation of a Quad object should be avoided
-        AccumulationGroup accGroup;
-        var quadList = this.quadLists[facing.ordinal()];
+        int direction = facing.ordinal();
+        var quadList = this.quadLists[direction];
         if (quadList == null) {
             quadList = new ReferenceArrayList<>();
-            this.quadLists[facing.ordinal()] = quadList;
+            this.quadLists[direction] = quadList;
+        } else if (facing.isAligned()) {
+            this.alignedExtentsMultiple = true;
         }
 
-        if (facing == ModelQuadFacing.UNASSIGNED) {
-            int flipFactor = flipNormal ? -1 : 1;
-            int normalX = flipFactor * quadView.getGFNINormX();
-            int normalY = flipFactor * quadView.getGFNINormY();
-            int normalZ = flipFactor * quadView.getGFNINormZ();
-
-            if (this.unalignedDistances == null) {
-                this.unalignedDistances = new Int2ReferenceLinkedOpenHashMap<>(4);
+        if (facing.isAligned()) {
+            // only update global extents if there are no unaligned quads since this is only
+            // used for the convex box test which doesn't work with unaligned quads anyways
+            if (!this.hasUnaligned) {
+                this.extents[0] = Math.max(this.extents[0], posXExtent);
+                this.extents[1] = Math.max(this.extents[1], posYExtent);
+                this.extents[2] = Math.max(this.extents[2], posZExtent);
+                this.extents[3] = Math.min(this.extents[3], negXExtent);
+                this.extents[4] = Math.min(this.extents[4], negYExtent);
+                this.extents[5] = Math.min(this.extents[5], negZExtent);
             }
 
-            // the key for the hash map is the normal packed into an int
-            // the lowest byte is 0xFF to prevent collisions with axis-aligned normals
-            // (assuming quantization with 32, which is 5 bits per component)
-            int normalKey = AccumulationGroup.collectorKeyFromNormal(normalX, normalY, normalZ);
-            accGroup = this.unalignedDistances.get(normalKey);
+            var quad = TQuad.fromAligned(facing, extents);
+            quadList.add(quad);
 
-            if (accGroup == null) {
-                // actually normalize the vector to ensure it's a unit vector
-                // for the rest of the process which requires that
-                Vector3f normal = new Vector3f(normalX, normalY, normalZ);
-                normal.normalize();
-                accGroup = new AccumulationGroup(sectionPos, normal, normalKey);
-                this.unalignedDistances.put(normalKey, accGroup);
+            var extreme = this.alignedExtremes[direction];
+            var distance = quad.getDotProduct();
+            if (facing.getSign() > 1) {
+                this.alignedExtremes[direction] = Math.max(extreme, distance);
+            } else {
+                this.alignedExtremes[direction] = Math.min(extreme, distance);
             }
-
-            quadList.add(new TQuad(facing, accGroup.normal, center, extents));
         } else {
-            if (this.alignedDistances == null) {
-                this.alignedDistances = new AccumulationGroup[ModelQuadFacing.DIRECTIONS];
+            this.hasUnaligned = true;
+
+            var centerX = xSum / uniqueQuads;
+            var centerY = ySum / uniqueQuads;
+            var centerZ = zSum / uniqueQuads;
+            var center = new Vector3f(centerX, centerY, centerZ);
+
+            var quad = TQuad.fromUnaligned(facing, extents, center, packedNormal);
+            quadList.add(quad);
+
+            // update the two unaligned normals that are tracked
+            var distance = quad.getDotProduct();
+            if (packedNormal == this.unalignedANormal) {
+                if (Float.isNaN(this.unalignedADistance1)) {
+                    this.unalignedADistance1 = distance;
+                } else {
+                    this.unalignedADistance2 = distance;
+                }
+            } else if (packedNormal == this.unalignedBNormal) {
+                if (Float.isNaN(this.unalignedBDistance1)) {
+                    this.unalignedBDistance1 = distance;
+                } else {
+                    this.unalignedBDistance2 = distance;
+                }
+            } else if (this.unalignedANormal == -1) {
+                this.unalignedANormal = packedNormal;
+                this.unalignedADistance1 = distance;
+            } else if (this.unalignedBNormal == -1) {
+                this.unalignedBNormal = packedNormal;
+                this.unalignedBDistance1 = distance;
             }
-
-            int quadDirection = facing.ordinal();
-            accGroup = this.alignedDistances[quadDirection];
-
-            if (accGroup == null) {
-                accGroup = new AccumulationGroup(sectionPos, ModelQuadFacing.NORMALS[quadDirection], quadDirection);
-                this.alignedDistances[quadDirection] = accGroup;
-                this.alignedNormalBitmap |= 1 << quadDirection;
-            }
-
-            quadList.add(new TQuad(facing, accGroup.normal, center, extents));
-        }
-
-        // use the center here because it's quantized while the vertices themselves
-        // aren't. If they were to be mixed this would cause issues in the sorting.
-        if (accGroup.addPlaneMember(centerX, centerY, centerZ)) {
-            this.facePlaneCount++;
         }
     }
 
@@ -289,46 +303,69 @@ public class TranslucentGeometryCollector extends AccGroupResult {
      */
     private SortType sortTypeHeuristic() {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
+        int alignedNormalCount = Integer.bitCount(this.alignedFacingBitmap);
+        int alignedPlaneCount = alignedNormalCount;
+        if (this.alignedExtentsMultiple) {
+            alignedPlaneCount = 100;
+        }
+
+        int unalignedPlaneCount = 0;
+        if (!Float.isNaN(this.unalignedADistance1)) {
+            unalignedPlaneCount++;
+        }
+        if (!Float.isNaN(this.unalignedADistance2)) {
+            unalignedPlaneCount++;
+        }
+        if (!Float.isNaN(this.unalignedBDistance1)) {
+            unalignedPlaneCount++;
+        }
+        if (!Float.isNaN(this.unalignedBDistance2)) {
+            unalignedPlaneCount++;
+        }
+
+        int planeCount = alignedPlaneCount + unalignedPlaneCount;
+
+        int unalignedNormalCount = 0;
+        if (unalignedANormal != -1) {
+            unalignedNormalCount++;
+        }
+        if (unalignedBNormal != -1) {
+            unalignedNormalCount++;
+        }
+
+        int normalCount = alignedNormalCount + unalignedNormalCount;
 
         // special case A
-        if (sortBehavior == SortBehavior.OFF || this.facePlaneCount <= 1) {
+        if (sortBehavior == SortBehavior.OFF || planeCount <= 1) {
             return SortType.NONE;
         }
 
-        if (this.unalignedDistances == null) {
-            boolean twoOpposingNormals = this.alignedNormalBitmap == ModelQuadFacing.OPPOSING_X
-                    || this.alignedNormalBitmap == ModelQuadFacing.OPPOSING_Y
-                    || this.alignedNormalBitmap == ModelQuadFacing.OPPOSING_Z;
+        if (!this.hasUnaligned) {
+            boolean twoOpposingNormals = this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_X
+                    || this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_Y
+                    || this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_Z;
 
             // special case B
             // if there are just two normals, they are exact opposites of eachother and they
             // each only have one distance, there is no way to see through one face to the
             // other.
-            if (this.facePlaneCount == 2 && twoOpposingNormals) {
+            if (planeCount == 2 && twoOpposingNormals) {
                 return SortType.NONE;
             }
 
             // special case C
             // the more complex test that checks for distances aligned with the bounding box
-            if (this.facePlaneCount <= ModelQuadFacing.DIRECTIONS) {
+            if (!this.alignedExtentsMultiple) {
                 boolean passesBoundingBoxTest = true;
-                for (AccumulationGroup accGroup : this.alignedDistances) {
-                    if (accGroup == null) {
+                for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
+                    var extreme = this.alignedExtremes[direction];
+                    if (Float.isInfinite(extreme)) {
                         continue;
                     }
 
-                    if (accGroup.relativeDistancesSet.size() > 1) {
-                        passesBoundingBoxTest = false;
-                        break;
-                    }
-
                     // check the distance against the bounding box
-                    float outwardBoundDistance = (accGroup.normal.x() < 0
-                            || accGroup.normal.y() < 0
-                            || accGroup.normal.z() < 0)
-                                    ? accGroup.normal.dot(minBounds)
-                                    : accGroup.normal.dot(maxBounds);
-                    if (accGroup.relativeDistancesSet.iterator().nextFloat() != outwardBoundDistance) {
+                    var sign = direction < 3 ? 1 : -1;
+                    if (sign * extreme != this.extents[direction]) {
                         passesBoundingBoxTest = false;
                         break;
                     }
@@ -342,32 +379,28 @@ public class TranslucentGeometryCollector extends AccGroupResult {
             // there are up to two normals that are opposing, this means no dynamic sorting
             // is necessary. Without static sorting, the geometry to trigger on could be
             // reduced but this isn't done here as we assume static sorting is possible.
-            if (twoOpposingNormals || Integer.bitCount(this.alignedNormalBitmap) == 1) {
+            if (twoOpposingNormals || alignedNormalCount == 1) {
                 return SortType.STATIC_NORMAL_RELATIVE;
             }
-        } else if (this.alignedNormalBitmap == 0) {
-            if (this.unalignedDistances.size() == 1) {
-                // special case D but for one unaligned normal
+        } else if (alignedNormalCount == 0) {
+            // special case D but for one normal or two opposing unaligned normals
+            if (unalignedNormalCount == 1
+                    || unalignedNormalCount == 2 && NormI8.isOpposite(this.unalignedANormal, this.unalignedBNormal)) {
                 return SortType.STATIC_NORMAL_RELATIVE;
-            } else if (this.unalignedDistances.size() == 2) {
-                // special case D but for two opposing unaligned normals
-                var iterator = this.unalignedDistances.values().iterator();
-                var normalA = iterator.next().normal;
-                var normalB = iterator.next().normal;
-                if (normalA.x() == -normalB.x()
-                        && normalA.y() == -normalB.y()
-                        && normalA.z() == -normalB.z()) {
-                    return SortType.STATIC_NORMAL_RELATIVE;
-                }
+            }
+        } else if (planeCount == 2) { // implies normalCount == 2
+            // special case D with mixed aligned and unaligned normals
+            int alignedDirection = Integer.numberOfTrailingZeros(this.alignedFacingBitmap);
+            if (NormI8.isOpposite(this.unalignedANormal, ModelQuadFacing.PACKED_ALIGNED_NORMALS[alignedDirection])) {
+                return SortType.STATIC_NORMAL_RELATIVE;
             }
         }
 
         // use the given set of quad count limits to determine if a static topo sort
         // should be attempted
-        var uniqueNormals = Integer.bitCount(this.alignedNormalBitmap)
-                + (this.unalignedDistances == null ? 0 : this.unalignedDistances.size());
-        uniqueNormals = Math.max(Math.min(uniqueNormals, STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1), 2);
-        if (this.quads.length <= STATIC_TOPO_SORT_ATTEMPT_LIMITS[uniqueNormals]) {
+
+        var attemptLimitIndex = Math.max(Math.min(normalCount, STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1), 2);
+        if (this.quads.length <= STATIC_TOPO_SORT_ATTEMPT_LIMITS[attemptLimitIndex]) {
             return SortType.STATIC_TOPO_ACYCLIC;
         }
 
@@ -391,7 +424,7 @@ public class TranslucentGeometryCollector extends AccGroupResult {
                 }
             }
         }
-        this.quadLists = null;
+        this.quadLists = null; // not needed anymore
 
         this.sortType = filterSortType(sortTypeHeuristic());
         return this.sortType;
@@ -400,18 +433,19 @@ public class TranslucentGeometryCollector extends AccGroupResult {
     private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos,
             TranslucentData oldData) {
         if (this.sortType == SortType.NONE) {
-            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos, null);
+            return AnyOrderData.fromMesh(translucentMesh, this.quads, this.sectionPos, null);
         }
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
-            return StaticNormalRelativeData.fromMesh(translucentMesh, this.quads, sectionPos, this);
+            var isDoubleUnaligned = this.alignedFacingBitmap == 0;
+            return StaticNormalRelativeData.fromMesh(translucentMesh, this.quads, this.sectionPos, isDoubleUnaligned);
         }
 
         // from this point on we know the estimated sort type requires direction mixing
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
         NativeBuffer buffer = PresentTranslucentData.nativeBufferForQuads(this.quads);
         if (this.sortType == SortType.STATIC_TOPO_ACYCLIC) {
-            var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, sectionPos, buffer);
+            var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
             if (result != null) {
                 return result;
             }
@@ -422,16 +456,21 @@ public class TranslucentGeometryCollector extends AccGroupResult {
         this.sortType = filterSortType(this.sortType);
 
         if (this.sortType == SortType.NONE) {
-            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos, buffer);
+            return AnyOrderData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
         }
 
         if (this.sortType == SortType.DYNAMIC_ALL) {
             try {
-                return BSPDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, buffer, oldData);
+                return BSPDynamicData.fromMesh(
+                        translucentMesh, cameraPos, this.quads, this.sectionPos,
+                        buffer, oldData);
             } catch (BSPBuildFailureException e) {
                 // TODO: investigate existing BSP build failures, then remove this logging
                 System.out.println("BSP build failure: " + sectionPos);
-                return TopoSortDynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, this, buffer);
+                var geometryPlanes = GeometryPlanes.fromQuadLists(sectionPos, this.quads);
+                return TopoSortDynamicData.fromMesh(
+                        translucentMesh, cameraPos, this.quads, this.sectionPos,
+                        geometryPlanes, buffer);
             }
         }
 
@@ -488,33 +527,5 @@ public class TranslucentGeometryCollector extends AccGroupResult {
             presentData.setQuadHash(getQuadHash(this.quads));
         }
         return newData;
-    }
-
-    @Override
-    public AccumulationGroup getGroupForUnalignedNormal(NormalList normalList) {
-        if (this.unalignedDistances == null) {
-            return null;
-        }
-        return this.unalignedDistances.get(normalList.getCollectorKey());
-    }
-
-    @Override
-    public Collection<AccumulationGroup> getUnalignedDistances() {
-        if (this.unalignedDistances == null) {
-            return null;
-        }
-        return this.unalignedDistances.values();
-    }
-
-    @Override
-    public int getUnalignedDistanceCount() {
-        if (this.unalignedDistances == null) {
-            return 0;
-        }
-        return this.unalignedDistances.size();
-    }
-
-    public int getAlignedNormalBitmap() {
-        return this.alignedNormalBitmap;
     }
 }

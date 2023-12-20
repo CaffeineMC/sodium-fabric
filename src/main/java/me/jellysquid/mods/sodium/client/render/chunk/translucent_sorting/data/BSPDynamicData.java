@@ -56,23 +56,8 @@ public class BSPDynamicData extends DynamicData {
         var dynamicData = new BSPDynamicData(sectionPos, buffer, range, result, generation);
         dynamicData.sort(cameraPos);
 
-        // prepare accumulation groups for integration into GFNI triggering
-        var aligned = result.getAlignedDistances();
-        if (aligned != null) {
-            for (var accGroup : aligned) {
-                if (accGroup != null) {
-                    accGroup.prepareIntegration();
-                }
-            }
-        }
-        var unaligned = result.getUnalignedDistances();
-        if (unaligned != null) {
-            for (var accGroup : unaligned) {
-                if (accGroup != null) {
-                    accGroup.prepareIntegration();
-                }
-            }
-        }
+        // prepare geometry planes for integration into GFNI triggering
+        result.prepareIntegration();
 
         return dynamicData;
     }

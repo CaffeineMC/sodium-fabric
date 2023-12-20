@@ -50,6 +50,10 @@ public abstract class TranslucentData {
         return vertexCount / VERTICES_PER_QUAD * BYTES_PER_QUAD;
     }
 
+    public static int vertexCountToQuadCount(int vertexCount) {
+        return vertexCount / VERTICES_PER_QUAD;
+    }
+
     public static int quadCountToIndexBytes(int quadCount) {
         return quadCount * BYTES_PER_QUAD;
     }

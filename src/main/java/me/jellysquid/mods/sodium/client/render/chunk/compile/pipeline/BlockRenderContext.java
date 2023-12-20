@@ -38,6 +38,13 @@ public class BlockRenderContext {
     }
 
     /**
+     * @return The collector for translucent geometry sorting
+     */
+    public TranslucentGeometryCollector collector() {
+        return this.collector;
+    }
+
+    /**
      * @return The position (in world space) of the block being rendered
      */
     public BlockPos pos() {

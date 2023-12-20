@@ -21,6 +21,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEn
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.block.BlockState;
@@ -428,11 +429,16 @@ public class FluidRenderer {
         }
 
         if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
-            if (facing == ModelQuadFacing.UNASSIGNED) {
-                // calculate the current GFNI normal but not the unit normal
-                quad.calculateNormals(false);
+            int normal;
+            if (facing.isAligned()) {
+                normal = facing.getPackedAlignedNormal();
+            } else {
+                normal = quad.calculateNormal();
             }
-            collector.appendQuad(quad, vertices, facing, flip);
+            if (flip) {
+                normal = NormI8.flipPacked(normal);
+            }
+            collector.appendQuad(normal, vertices, facing);
         }
 
         var vertexBuffer = builder.getVertexBuffer(facing);

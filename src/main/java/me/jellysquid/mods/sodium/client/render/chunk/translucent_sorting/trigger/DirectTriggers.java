@@ -1,12 +1,12 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting.SectionTriggers;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.TranslucentSorting.SectionTriggers;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**

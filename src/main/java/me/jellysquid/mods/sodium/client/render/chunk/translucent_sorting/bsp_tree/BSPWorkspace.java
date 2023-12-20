@@ -1,8 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AccumulationGroup;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -32,18 +31,10 @@ class BSPWorkspace {
     // top-level topo sorting isn't used anymore (and only use half as much memory
     // by not storing it double)
     void addAlignedPartitionPlane(int axis, float distance) {
-        var accGroups = result.getAlignedDistancesOrCreate();
-        this.addOneSidedPlane(accGroups, axis, distance);
-        this.addOneSidedPlane(accGroups, axis + 3, -distance);
+        result.addDoubleSidedPlane(this.sectionPos, axis, distance);
     }
 
-    void addOneSidedPlane(AccumulationGroup[] accGroups, int direction, float distance) {
-        var accGroup = accGroups[direction];
-        if (accGroup == null) {
-            accGroup = new AccumulationGroup(
-                    this.sectionPos, ModelQuadFacing.NORMALS[direction], direction);
-            accGroups[direction] = accGroup;
-        }
-        accGroup.addPlaneMember(distance);
+    GeometryPlanes getGeometryPlanes() {
+        return result;
     }
 }

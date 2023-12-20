@@ -1,11 +1,13 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 
 import org.joml.Vector3dc;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
@@ -25,16 +27,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  */
 public class TranslucentSorting {
     /**
-     * The quantization factor with which the normals are quantized such that there
-     * are fewer possible unique normals. The factor describes the number of steps
-     * in each direction per dimension that the components of the normals can have.
-     * It determines the density of the grid on the surface of a unit cube centered
-     * at the origin onto which the normals are projected. The normals are snapped
-     * to the nearest grid point.
-     */
-    public static final int QUANTIZATION_FACTOR = 4;
-
-    /**
      * To avoid generating a collection of the triggered sections, this callback is
      * used to process the triggered sections directly as they are queried from the
      * normal lists' interval trees. The callback is given the section coordinates,
@@ -48,7 +40,7 @@ public class TranslucentSorting {
      */
     private int gfniTriggerCount = 0;
     private int directTriggerCount = 0;
-    private final IntOpenHashSet triggeredNormals = new IntOpenHashSet();
+    private final ObjectOpenHashSet<AlignableNormal> triggeredNormals = new ObjectOpenHashSet<>();
     private int triggeredNormalCount = 0;
 
     /**
@@ -99,8 +91,8 @@ public class TranslucentSorting {
         triggerSectionCallback = null;
     }
 
-    void triggerSectionGFNI(long sectionPos, int collectorKey) {
-        this.triggeredNormals.add(collectorKey);
+    void triggerSectionGFNI(long sectionPos, AlignableNormal normal) {
+        this.triggeredNormals.add(normal);
         this.triggerSectionCallback.accept(sectionPos, false);
         this.gfniTriggerCount++;
     }
@@ -176,7 +168,7 @@ public class TranslucentSorting {
                 } else {
                     // remove the trigger data since this section is never going to get gfni
                     // triggering (there's no option to add sections to GFNI later currently)
-                    topoSortData.clearAccGroupData();
+                    topoSortData.clearGeometryPlanes();
                 }
                 if (topoSortData.directTriggerEnabled()) {
                     this.direct.addSection(pos, topoSortData, cameraPos);

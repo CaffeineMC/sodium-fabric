@@ -43,20 +43,14 @@ public class BakedQuadMixin implements BakedQuadView {
 
     @Unique
     private int normal;
+
     @Unique
-    private int GFNINormX;
-    @Unique
-    private int GFNINormY;
-    @Unique
-    private int GFNINormZ;
     private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
-        // calculates the GFNI normal (side effect) and returns the packed unit normal
-        this.normal = calculateNormals(true);
-
-        this.normalFace = findNormalFace(this.normal);
+        this.normal = this.calculateNormal();
+        this.normalFace = ModelQuadFacing.fromPackedNormal(this.normal);
 
         this.flags = ModelQuadFlags.getQuadFlags(this, face);
     }
@@ -87,28 +81,6 @@ public class BakedQuadMixin implements BakedQuadView {
     }
 
     @Override
-    public int getGFNINormX() {
-        return this.GFNINormX;
-    }
-
-    @Override
-    public int getGFNINormY() {
-        return this.GFNINormY;
-    }
-
-    @Override
-    public int getGFNINormZ() {
-        return this.GFNINormZ;
-    }
-
-    @Override
-    public void setGFNINormal(int x, int y, int z) {
-        this.GFNINormX = x;
-        this.GFNINormY = y;
-        this.GFNINormZ = z;
-    }
-
-    @Override
     public float getTexU(int idx) {
         return Float.intBitsToFloat(this.vertexData[vertexOffset(idx) + TEXTURE_INDEX]);
     }
@@ -131,6 +103,11 @@ public class BakedQuadMixin implements BakedQuadView {
     @Override
     public ModelQuadFacing getNormalFace() {
         return this.normalFace;
+    }
+
+    @Override
+    public int getNormal() {
+        return this.normal;
     }
 
     @Override

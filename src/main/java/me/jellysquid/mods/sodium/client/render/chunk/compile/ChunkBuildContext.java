@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexTy
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.world.World;
 
 public class ChunkBuildContext {
     public final ChunkBuildBuffers buffers;

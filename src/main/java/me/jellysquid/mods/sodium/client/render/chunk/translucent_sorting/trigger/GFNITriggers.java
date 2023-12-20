@@ -1,12 +1,12 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
 import org.joml.Vector3dc;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentSorting.SectionTriggers;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.TranslucentSorting.SectionTriggers;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -34,13 +34,13 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
         }
     }
 
-    private void addSectionInNewNormalLists(DynamicData dynamicData, AccumulationGroup accGroup) {
-        var normal = accGroup.normal;
+    private void addSectionInNewNormalLists(DynamicData dynamicData, NormalPlanes normalPlanes) {
+        var normal = normalPlanes.normal;
         var normalList = this.normalLists.get(normal);
         if (normalList == null) {
-            normalList = new NormalList(normal, accGroup.collectorKey);
+            normalList = new NormalList(normal);
             this.normalLists.put(normal, normalList);
-            normalList.addSection(accGroup, accGroup.sectionPos.asLong());
+            normalList.addSection(normalPlanes, normalPlanes.sectionPos.asLong());
         }
     }
 
@@ -69,7 +69,7 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
     @Override
     public void addSection(ChunkSectionPos pos, DynamicData data, Vector3dc cameraPos) {
         long sectionPos = pos.asLong();
-        var accGroupResult = data.getAccGroupResult();
+        var geometryPlanes = data.getGeometryPlanes();
 
         // go through all normal lists and check against the normals that the group
         // builder has. if the normal list has data for the section, but the group
@@ -79,17 +79,17 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
             var normalList = iterator.next();
 
             // check if the geometry collector includes data for this normal.
-            var accGroup = accGroupResult.getGroupForNormal(normalList);
+            var normalPlanes = geometryPlanes.getPlanesForNormal(normalList);
             if (normalList.hasSection(sectionPos)) {
-                if (accGroup == null) {
+                if (normalPlanes == null) {
                     if (this.removeSectionFromList(normalList, sectionPos)) {
                         iterator.remove();
                     }
                 } else {
-                    normalList.updateSection(accGroup, sectionPos);
+                    normalList.updateSection(normalPlanes, sectionPos);
                 }
-            } else if (accGroup != null) {
-                normalList.addSection(accGroup, sectionPos);
+            } else if (normalPlanes != null) {
+                normalList.addSection(normalPlanes, sectionPos);
             }
         }
 
@@ -97,21 +97,21 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
         // normals
         // for which there are no normal lists yet. This only checks for new normal
         // lists since new data for existing normal lists is handled above.
-        var aligned = accGroupResult.getAlignedDistances();
+        var aligned = geometryPlanes.getAligned();
         if (aligned != null) {
-            for (var accGroup : aligned) {
-                if (accGroup != null) {
-                    this.addSectionInNewNormalLists(data, accGroup);
+            for (var normalPlane : aligned) {
+                if (normalPlane != null) {
+                    this.addSectionInNewNormalLists(data, normalPlane);
                 }
             }
         }
-        var unaligned = accGroupResult.getUnalignedDistances();
+        var unaligned = geometryPlanes.getUnaligned();
         if (unaligned != null) {
-            for (var accGroup : unaligned) {
-                this.addSectionInNewNormalLists(data, accGroup);
+            for (var normalPlane : unaligned) {
+                this.addSectionInNewNormalLists(data, normalPlane);
             }
         }
 
-        data.clearAccGroupData();
+        data.clearGeometryPlanes();
     }
 }

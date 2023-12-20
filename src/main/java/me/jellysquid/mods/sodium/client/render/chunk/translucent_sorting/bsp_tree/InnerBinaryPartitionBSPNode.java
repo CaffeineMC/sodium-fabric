@@ -66,7 +66,7 @@ class InnerBinaryPartitionBSPNode extends InnerPartitionBSPNode {
         }
     }
 
-    static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode,
+    static BSPNode buildFromPartitions(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode,
             Partition inside, Partition outside, int axis) {
         var partitionDistance = inside.distance();
         workspace.addAlignedPartitionPlane(axis, partitionDistance);

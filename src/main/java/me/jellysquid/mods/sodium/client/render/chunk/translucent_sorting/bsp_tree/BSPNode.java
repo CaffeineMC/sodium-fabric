@@ -3,10 +3,10 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tr
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoGraphSorting;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -49,8 +49,44 @@ public abstract class BSPNode {
 
         var rootNode = BSPNode.build(workspace, allIndexes, -1, oldRoot);
         var result = workspace.result;
-        result.rootNode = rootNode;
+        result.setRootNode(rootNode);
         return result;
+    }
+
+    private static boolean doubleLeafPossible(TQuad quadA, TQuad quadB) {
+        // check for coplanar or mutually invisible quads
+        var facingA = quadA.getFacing();
+        var facingB = quadB.getFacing();
+
+        // coplanar not aligned
+        if (!facingA.isAligned() || !facingB.isAligned()) {
+            var packedNormalA = quadA.getPackedNormal();
+            var packedNormalB = quadB.getPackedNormal();
+            // opposite normal (distance irrelevant)
+            if (NormI8.isOpposite(packedNormalA, packedNormalB)
+                    // same normal and same distance
+                    || packedNormalA == packedNormalB && quadA.getDotProduct() == quadB.getDotProduct()) {
+                return true;
+            }
+        }
+
+        // coplanar aligned
+        else if (quadA.getExtents()[facingA.ordinal()] == quadB.getExtents()[facingB.ordinal()]) {
+            return true;
+        }
+
+        // aligned facing away from eachother
+        else if (facingA == facingB.getOpposite()) {
+            return true;
+        }
+
+        // aligned otherwise mutually invisible
+        else if (!TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
+                && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA)) {
+            return true;
+        }
+
+        return false;
     }
 
     static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
@@ -67,30 +103,7 @@ public abstract class BSPNode {
             var quadA = workspace.quads[quadIndexA];
             var quadB = workspace.quads[quadIndexB];
 
-            // check for coplanar or mutually invisible quads
-            var facingA = quadA.facing();
-            var facingB = quadB.facing();
-            var normalA = quadA.normal();
-            var normalB = quadB.normal();
-            if (
-            // coplanar quads
-            ((facingA == ModelQuadFacing.UNASSIGNED || facingB == ModelQuadFacing.UNASSIGNED)
-                    ? // opposite normal (distance irrelevant)
-                    normalA.x() == -normalB.x()
-                            && normalA.y() == -normalB.y()
-                            && normalA.z() == -normalB.z()
-                            // same normal and same distance
-                            || normalA.equals(quadB.normal())
-                                    && normalA.dot(quadA.center()) == quadB.normal().dot(quadB.center())
-                    // aligned same distance
-                    : quadA.extents()[facingA.ordinal()] == quadB.extents()[facingB.ordinal()])
-                    // facing away from eachother
-                    || facingA == facingB.getOpposite()
-                    // otherwise mutually invisible
-                    || facingA != ModelQuadFacing.UNASSIGNED
-                            && facingB != ModelQuadFacing.UNASSIGNED
-                            && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
-                            && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA)) {
+            if (doubleLeafPossible(quadA, quadB)) {
                 return new LeafDoubleBSPNode(quadIndexA, quadIndexB);
             }
         }

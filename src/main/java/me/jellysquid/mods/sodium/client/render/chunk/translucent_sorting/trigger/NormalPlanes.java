@@ -1,19 +1,19 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
 import org.joml.Vector3fc;
+import java.util.Arrays;
 
 import com.lodborg.intervaltree.DoubleInterval;
 import com.lodborg.intervaltree.Interval.Bounded;
 
-import it.unimi.dsi.fastutil.floats.FloatArrays;
 import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
 import net.minecraft.util.math.ChunkSectionPos;
 
-public class AccumulationGroup {
+public class NormalPlanes {
     final FloatOpenHashSet relativeDistancesSet = new FloatOpenHashSet(16);
-    final Vector3fc normal;
-    final int collectorKey;
+    final AlignableNormal normal;
     final ChunkSectionPos sectionPos;
 
     float[] relativeDistances; // relative to the base distance
@@ -21,14 +21,17 @@ public class AccumulationGroup {
     long relDistanceHash;
     double baseDistance;
 
-    static int collectorKeyFromNormal(int normalX, int normalY, int normalZ) {
-        return 0xFF | (normalX & 0xFF << 8) | (normalY & 0xFF << 15) | (normalZ & 0xFF << 22);
-    }
-
-    public AccumulationGroup(ChunkSectionPos sectionPos, Vector3fc normal, int collectorKey) {
+    private NormalPlanes(ChunkSectionPos sectionPos, AlignableNormal normal) {
         this.sectionPos = sectionPos;
         this.normal = normal;
-        this.collectorKey = collectorKey;
+    }
+
+    public NormalPlanes(ChunkSectionPos sectionPos, Vector3fc normal) {
+        this(sectionPos, AlignableNormal.fromUnaligned(normal));
+    }
+
+    public NormalPlanes(ChunkSectionPos sectionPos, int alignedDirection) {
+        this(sectionPos, AlignableNormal.fromAligned(alignedDirection));
     }
 
     boolean addPlaneMember(float vertexX, float vertexY, float vertexZ) {
@@ -57,7 +60,7 @@ public class AccumulationGroup {
         }
 
         // sort the array ascending
-        FloatArrays.quickSort(relativeDistances);
+        Arrays.sort(relativeDistances);
 
         this.baseDistance = this.normal.dot(
                 sectionPos.getMinX(), sectionPos.getMinY(), sectionPos.getMinZ());
@@ -65,11 +68,12 @@ public class AccumulationGroup {
                 this.relativeDistances[0] + this.baseDistance,
                 this.relativeDistances[size - 1] + this.baseDistance,
                 Bounded.CLOSED);
-
     }
 
     public void prepareAndInsert(Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal) {
         this.prepareIntegration();
-        distancesByNormal.put(this.normal, this.relativeDistances);
+        if (distancesByNormal != null) {
+            distancesByNormal.put(this.normal, this.relativeDistances);
+        }
     }
 }

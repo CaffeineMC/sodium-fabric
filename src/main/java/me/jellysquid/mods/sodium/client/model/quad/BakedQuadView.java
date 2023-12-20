@@ -5,6 +5,8 @@ import net.minecraft.util.math.Direction;
 
 public interface BakedQuadView extends ModelQuadView {
     ModelQuadFacing getNormalFace();
-    
+
+    int getNormal();
+
     boolean hasShade();
 }

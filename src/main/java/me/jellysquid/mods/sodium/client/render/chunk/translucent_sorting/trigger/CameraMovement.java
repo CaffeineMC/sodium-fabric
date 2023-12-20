@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
 import org.joml.Vector3dc;
 

@@ -55,7 +55,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     }
 
     InnerPartitionBSPNode(NodeReuseData reuseData, int axis) {
-        this.planeNormal = ModelQuadFacing.NORMALS[axis];
+        this.planeNormal = ModelQuadFacing.ALIGNED_NORMALS[axis];
         this.axis = axis;
         this.reuseData = reuseData;
     }
@@ -72,7 +72,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             for (int i = 0; i < indexes.size(); i++) {
                 var index = indexes.getInt(i);
                 var quad = workspace.quads[index];
-                var extents = quad.extents();
+                var extents = quad.getExtents();
                 quadExtents[i] = extents;
                 maxIndex = Math.max(maxIndex, index);
             }
@@ -221,7 +221,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             points.clear();
             for (int quadIndex : indexes) {
                 var quad = workspace.quads[quadIndex];
-                var extents = quad.extents();
+                var extents = quad.getExtents();
                 var posExtent = extents[axis];
                 var negExtent = extents[oppositeDirection];
                 if (posExtent == negExtent) {
@@ -329,7 +329,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 var inside = partitions.get(0);
                 var outside = partitions.size() == 2 ? partitions.get(1) : null;
                 if (outside == null || !endsWithPlane) {
-                    return InnerBinaryPartitionBSPNode.build(workspace, indexes, depth, oldNode,
+                    return InnerBinaryPartitionBSPNode.buildFromPartitions(workspace, indexes, depth, oldNode,
                             inside, outside, axis);
                 }
             }
@@ -355,8 +355,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 boolean intersects = true;
                 for (int axis = 0; axis < 3; axis++) {
                     var opposite = axis + 3;
-                    var extentsA = quadA.extents();
-                    var extentsB = quadB.extents();
+                    var extentsA = quadA.getExtents();
+                    var extentsB = quadB.getExtents();
 
                     if (extentsA[axis] <= extentsB[opposite]
                             || extentsB[axis] <= extentsA[opposite]) {

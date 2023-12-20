@@ -32,9 +32,9 @@ public class AnyOrderData extends SplitDirectionData {
         buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
         var counter = 0;
-        var lastFacing = quads[0].facing();
+        var lastFacing = quads[0].getFacing();
         for (int i = 0; i < quads.length; i++) {
-            var currentFacing = quads[i].facing();
+            var currentFacing = quads[i].getFacing();
             if (i > 0 && currentFacing != lastFacing) {
                 counter = 0;
             }

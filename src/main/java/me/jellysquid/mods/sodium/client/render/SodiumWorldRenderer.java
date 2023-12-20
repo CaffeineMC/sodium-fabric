@@ -12,7 +12,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.CameraMovement;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.CameraMovement;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;

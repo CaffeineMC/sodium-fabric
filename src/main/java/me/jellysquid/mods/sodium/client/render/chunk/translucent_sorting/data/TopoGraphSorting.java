@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import java.nio.IntBuffer;
 
@@ -6,7 +6,8 @@ import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 
 /**
@@ -22,12 +23,6 @@ public class TopoGraphSorting {
     private TopoGraphSorting() {
     }
 
-    private static float halfspace(Vector3fc planeAnchor, Vector3fc planeNormal, Vector3fc point) {
-        return (point.x() - planeAnchor.x()) * planeNormal.x() +
-                (point.y() - planeAnchor.y()) * planeNormal.y() +
-                (point.z() - planeAnchor.z()) * planeNormal.z();
-    }
-
     /**
      * Test if the given point is within the half space defined by the plane anchor
      * and the plane normal. The normal points away from the space considered to be
@@ -37,25 +32,25 @@ public class TopoGraphSorting {
      * @param planeNormal the normal of the plane
      * @param point       the point to test
      */
-    private static boolean pointOutsideHalfspace(Vector3fc planeAnchor, Vector3fc planeNormal, Vector3fc point) {
-        return halfspace(planeAnchor, planeNormal, point) > 0;
+    private static boolean pointOutsideHalfspace(float planeDistance, Vector3fc planeNormal, Vector3fc point) {
+        return planeNormal.dot(point) > planeDistance;
     }
 
-    private static boolean pointInsideHalfSpace(Vector3fc planeAnchor, Vector3fc planeNormal, Vector3fc point) {
-        return halfspace(planeAnchor, planeNormal, point) < 0;
+    private static boolean pointInsideHalfSpace(float planeDistance, Vector3fc planeNormal, Vector3fc point) {
+        return planeNormal.dot(point) < planeDistance;
     }
 
     public static boolean orthogonalQuadVisibleThrough(TQuad halfspace, TQuad otherQuad) {
-        var hd = halfspace.facing().ordinal();
-        var hdOpposite = halfspace.facing().getOpposite().ordinal();
-        var od = otherQuad.facing().ordinal();
-        var hSign = halfspace.facing().getSign();
-        var otherSign = otherQuad.facing().getSign();
+        var hd = halfspace.getFacing().ordinal();
+        var hdOpposite = halfspace.getFacing().getOpposite().ordinal();
+        var od = otherQuad.getFacing().ordinal();
+        var hSign = halfspace.getFacing().getSign();
+        var otherSign = otherQuad.getFacing().getSign();
 
         // A: test that the other quad has an extent within this quad's halfspace
-        return hSign * halfspace.extents()[hd] > hSign * otherQuad.extents()[hdOpposite]
+        return hSign * halfspace.getExtents()[hd] > hSign * otherQuad.getExtents()[hdOpposite]
                 // B: test that this quad is not fully within the other quad's halfspace
-                && !(otherSign * otherQuad.extents()[od] >= otherSign * halfspace.extents()[od]);
+                && !(otherSign * otherQuad.getExtents()[od] >= otherSign * halfspace.getExtents()[od]);
     }
 
     private static boolean testSeparatorRange(Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
@@ -64,7 +59,7 @@ public class TopoGraphSorting {
         if (distances == null) {
             return false;
         }
-        return Group.queryRange(distances, start, end);
+        return AlignableNormal.queryRange(distances, start, end);
     }
 
     private static boolean visibilityWithSeparator(TQuad quadA, TQuad quadB,
@@ -81,14 +76,14 @@ public class TopoGraphSorting {
             // facing turns the whole space around. The start and end are ordered along the
             // < relation as is the normal. The normal always points in the direction of
             // greater values, even if all of the geometry has negative values.
-            var separatorRangeStart = sign * quadB.extents()[direction];
-            var separatorRangeEnd = sign * quadA.extents()[oppositeDirection];
+            var separatorRangeStart = sign * quadB.getExtents()[direction];
+            var separatorRangeEnd = sign * quadA.getExtents()[oppositeDirection];
             if (separatorRangeStart > separatorRangeEnd) {
                 continue;
             }
 
             // test that the camera doesn't exclude all separators
-            var facingNormal = ModelQuadFacing.NORMALS[direction];
+            var facingNormal = ModelQuadFacing.ALIGNED_NORMALS[direction];
             var cameraDistance = facingNormal.dot(cameraPos);
             if (cameraDistance > separatorRangeEnd) {
                 continue;
@@ -137,8 +132,8 @@ public class TopoGraphSorting {
         }
 
         // aligned quads
-        var quadFacing = quad.facing();
-        var otherFacing = other.facing();
+        var quadFacing = quad.getFacing();
+        var otherFacing = other.getFacing();
         boolean result;
         if (quadFacing != ModelQuadFacing.UNASSIGNED && otherFacing != ModelQuadFacing.UNASSIGNED) {
             // opposites never see eachother
@@ -150,7 +145,7 @@ public class TopoGraphSorting {
             if (quadFacing == otherFacing) {
                 var sign = quadFacing.getSign();
                 var direction = quadFacing.ordinal();
-                result = sign * quad.extents()[direction] > sign * other.extents()[direction];
+                result = sign * quad.getExtents()[direction] > sign * other.getExtents()[direction];
             } else {
                 // orthogonal quads
                 result = orthogonalQuadVisibleThrough(quad, other);
@@ -160,8 +155,8 @@ public class TopoGraphSorting {
             // this is an approximation since our quads don't store all their vertices.
             // check that other center is within the halfspace of quad and that quad isn't
             // in the halfspace of other
-            result = pointInsideHalfSpace(quad.center(), quad.normal(), other.center())
-                    && !pointInsideHalfSpace(other.center(), other.normal(), quad.center());
+            result = pointInsideHalfSpace(quad.getDotProduct(), quad.getQuantizedNormal(), other.getCenter())
+                    && !pointInsideHalfSpace(other.getDotProduct(), other.getQuantizedNormal(), quad.getCenter());
         }
 
         // if enabled and necessary, try to disprove this see-through relationship with
@@ -205,7 +200,7 @@ public class TopoGraphSorting {
                 // TODO: this could introduce wrong sorting if the real normal and the quantized
                 // normal don't line up, ignoring the quad if it's not visible through the
                 // quantized one but visible in-camera
-                if (pointOutsideHalfspace(quad.center(), quad.normal(), cameraPos)) {
+                if (pointOutsideHalfspace(quad.getDotProduct(), quad.getQuantizedNormal(), cameraPos)) {
                     activeToRealIndex[activeQuads] = i;
                     quads[activeQuads] = quad;
                     activeQuads++;

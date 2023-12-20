@@ -9,8 +9,7 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -42,9 +41,9 @@ public class TopoSortDynamicData extends DynamicData {
 
     private TopoSortDynamicData(ChunkSectionPos sectionPos,
             NativeBuffer buffer, VertexRange range, TQuad[] quads,
-            TranslucentGeometryCollector collector,
+            GeometryPlanes geometryPlanes,
             Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal) {
-        super(sectionPos, buffer, range, collector);
+        super(sectionPos, buffer, range, geometryPlanes);
         this.quads = quads;
         this.distancesByNormal = distancesByNormal;
     }
@@ -183,7 +182,7 @@ public class TopoSortDynamicData extends DynamicData {
     private static void distanceSortDirect(IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
         var data = new long[quads.length];
         for (int i = 0; i < quads.length; i++) {
-            float distance = cameraPos.distanceSquared(quads[i].center());
+            float distance = cameraPos.distanceSquared(quads[i].getCenter());
             data[i] = (long) Float.floatToRawIntBits(distance) << 32 | i;
         }
 
@@ -195,31 +194,16 @@ public class TopoSortDynamicData extends DynamicData {
     }
 
     public static TopoSortDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector,
+            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, GeometryPlanes geometryPlanes,
             NativeBuffer buffer) {
-        // prepare accumulation groups for GFNI integration and copy
-        var size = Integer.bitCount(collector.getAlignedNormalBitmap()) + collector.getUnalignedDistanceCount();
-
-        var distancesByNormal = new Object2ReferenceOpenHashMap<Vector3fc, float[]>(size);
-        if (collector.getAlignedDistances() != null) {
-            for (var accGroup : collector.getAlignedDistances()) {
-                if (accGroup != null) {
-                    accGroup.prepareAndInsert(distancesByNormal);
-                }
-            }
-        }
-        if (collector.getUnalignedDistanceCount() > 0) {
-            for (var accGroup : collector.getUnalignedDistances()) {
-                accGroup.prepareAndInsert(distancesByNormal);
-            }
-        }
+        var distancesByNormal = geometryPlanes.prepareAndGetDistances();
 
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
         if (buffer == null) {
             buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         }
 
-        var dynamicData = new TopoSortDynamicData(sectionPos, buffer, range, quads, collector, distancesByNormal);
+        var dynamicData = new TopoSortDynamicData(sectionPos, buffer, range, quads, geometryPlanes, distancesByNormal);
 
         dynamicData.sort(cameraPos, false, true);
 

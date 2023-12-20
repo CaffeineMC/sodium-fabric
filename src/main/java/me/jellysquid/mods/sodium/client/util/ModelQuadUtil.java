@@ -1,10 +1,5 @@
 package me.jellysquid.mods.sodium.client.util;
 
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import org.joml.Vector3f;
 
 /**
  * Provides some utilities and constants for interacting with vanilla's model quad vertex format.
@@ -37,35 +32,5 @@ public class ModelQuadUtil {
      */
     public static int vertexOffset(int vertexIndex) {
         return vertexIndex * VERTEX_SIZE;
-    }
-
-    public static ModelQuadFacing findNormalFace(float x, float y, float z) {
-        Vector3f normal = new Vector3f(x, y, z);
-
-        if (!normal.isFinite()) {
-            return ModelQuadFacing.UNASSIGNED;
-        }
-
-        float maxDot = 0;
-        Direction closestFace = null;
-
-        for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
-            float dot = normal.dot(face.getUnitVector());
-
-            if (dot > maxDot) {
-                maxDot = dot;
-                closestFace = face;
-            }
-        }
-
-        if (closestFace != null && MathHelper.approximatelyEquals(maxDot, 1.0f)) {
-            return ModelQuadFacing.fromDirection(closestFace);
-        }
-
-        return ModelQuadFacing.UNASSIGNED;
-    }
-
-    public static ModelQuadFacing findNormalFace(int normal) {
-        return findNormalFace(NormI8.unpackX(normal), NormI8.unpackY(normal), NormI8.unpackZ(normal));
     }
 }

@@ -1,7 +1,7 @@
 package net.caffeinemc.mods.sodium.api.util;
 
 import net.minecraft.util.math.MathHelper;
-import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 /**
  * Provides some utilities for working with packed normal vectors. Each normal component provides 8 bits of
@@ -27,7 +27,7 @@ public class NormI8 {
      */
     private static final float NORM = 1.0f / COMPONENT_RANGE;
 
-    public static int pack(Vector3f normal) {
+    public static int pack(Vector3fc normal) {
         return pack(normal.x(), normal.y(), normal.z());
     }
 
@@ -77,5 +77,40 @@ public class NormI8 {
      */
     public static float unpackZ(int norm) {
         return ((byte) ((norm >> Z_COMPONENT_OFFSET) & 0xFF)) * NORM;
+    }
+
+    /**
+     * Flips the direction of a packed normal by negating each component. (multiplication by -1)
+     * @param norm The packed normal
+     */
+    public static int flipPacked(int norm) {
+        int normX = (((norm >> X_COMPONENT_OFFSET) & 0xFF) * -1) & 0xFF;
+        int normY = (((norm >> Y_COMPONENT_OFFSET) & 0xFF) * -1) & 0xFF;
+        int normZ = (((norm >> Z_COMPONENT_OFFSET) & 0xFF) * -1) & 0xFF;
+
+        return (normZ << Z_COMPONENT_OFFSET) | (normY << Y_COMPONENT_OFFSET) | (normX << X_COMPONENT_OFFSET);
+    }
+
+    /**
+     * Returns true if the two packed normals are opposite directions.
+     * 
+     * TODO: this could possibly be faster by using normA == (~normB + 0x010101) but
+     * that has to special case when a component is zero since that wouldn't
+     * overflow correctly back to zero. (~0+1 == 0 but not if it's somewhere inside
+     * th int)
+     * 
+     * @param normA The first packed normal
+     * @param normB The second packed normal
+     */
+    public static boolean isOpposite(int normA, int normB) {
+        int normAX = (normA >> X_COMPONENT_OFFSET) & 0xFF;
+        int normAY = (normA >> Y_COMPONENT_OFFSET) & 0xFF;
+        int normAZ = (normA >> Z_COMPONENT_OFFSET) & 0xFF;
+
+        int normBX = (normB >> X_COMPONENT_OFFSET) & 0xFF;
+        int normBY = (normB >> Y_COMPONENT_OFFSET) & 0xFF;
+        int normBZ = (normB >> Z_COMPONENT_OFFSET) & 0xFF;
+
+        return normAX == -normBX && normAY == -normBY && normAZ == -normBZ;
     }
 }

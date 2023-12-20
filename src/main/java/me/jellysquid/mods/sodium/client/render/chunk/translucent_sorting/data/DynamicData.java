@@ -1,17 +1,17 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AccGroupResult;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public abstract class DynamicData extends MixedDirectionData {
-    private AccGroupResult accGroupResult;
+    private GeometryPlanes geometryPlanes;
 
-    DynamicData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range, AccGroupResult accGroupResult) {
+    DynamicData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range, GeometryPlanes geometryPlanes) {
         super(sectionPos, buffer, range);
-        this.accGroupResult = accGroupResult;
+        this.geometryPlanes = geometryPlanes;
     }
 
     @Override
@@ -19,11 +19,11 @@ public abstract class DynamicData extends MixedDirectionData {
         return SortType.DYNAMIC_ALL;
     }
 
-    public AccGroupResult getAccGroupResult() {
-        return this.accGroupResult;
+    public GeometryPlanes getGeometryPlanes() {
+        return this.geometryPlanes;
     }
 
-    public void clearAccGroupData() {
-        this.accGroupResult = null;
+    public void clearGeometryPlanes() {
+        this.geometryPlanes = null;
     }
 }

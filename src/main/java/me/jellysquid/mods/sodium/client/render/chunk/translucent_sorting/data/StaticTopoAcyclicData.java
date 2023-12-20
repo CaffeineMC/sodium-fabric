@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TopoGraphSorting;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 

@@ -1,8 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import java.nio.IntBuffer;
-
-import org.joml.Vector3f;
+import java.util.Arrays;
 
 import com.mojang.blaze3d.systems.VertexSorter;
 
@@ -11,9 +10,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -36,77 +33,61 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     }
 
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector) {
-        VertexRange[] ranges = translucentMesh.getVertexRanges();
-        float[] keys = new float[quads.length];
+            TQuad[] quads, ChunkSectionPos sectionPos) {
+        long[] sortData = new long[quads.length];
 
         for (int i = 0; i < quads.length; i++) {
-            TQuad quad = quads[i];
-            keys[i] = quad.center().dot(quad.normal());
+            sortData[i] = (long) quads[i].getDotProduct() << 32 | i;
         }
 
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
-        TranslucentData.writeQuadVertexIndexes(bufferBuilder, MergeSort.mergeSort(keys));
+        Arrays.sort(sortData);
 
-        return new StaticNormalRelativeData(sectionPos, buffer, ranges);
+        for (int i = 0; i < quads.length; i++) {
+            TranslucentData.writeQuadVertexIndexes(bufferBuilder, (int) sortData[i]);
+        }
+
+        return new StaticNormalRelativeData(sectionPos, buffer, translucentMesh.getVertexRanges());
     }
 
-    private static StaticNormalRelativeData fromAligned(BuiltSectionMeshParts translucentMesh,
+    private static StaticNormalRelativeData fromMixed(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, ChunkSectionPos sectionPos) {
-        VertexRange[] ranges = translucentMesh.getVertexRanges();
-        Vector3f[][] centers = new Vector3f[ModelQuadFacing.COUNT][];
+        var ranges = translucentMesh.getVertexRanges();
+        long[] sortData = new long[quads.length];
 
-        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            VertexRange range = ranges[i];
-            if (range != null) {
-                centers[i] = new Vector3f[range.vertexCount() / TranslucentData.VERTICES_PER_QUAD];
-            }
-        }
-
-        int centerCounter = 0;
-        for (TQuad quad : quads) {
-            var directionCenters = centers[quad.facing().ordinal()];
-            directionCenters[centerCounter++] = quad.center();
-
-            if (centerCounter == directionCenters.length) {
-                centerCounter = 0;
-            }
+        for (int quadIndex = 0; quadIndex < quads.length; quadIndex++) {
+            var quad = quads[quadIndex];
+            sortData[quadIndex] = (long) quad.getDotProduct() << 32 | quadIndex;
         }
 
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
-        // in this case there can only be up to one unaligned normal.
-        // since the quads are sorted by facing, it will be at the end if it exists
-        Vector3f unalignedNormal = new Vector3f(quads[quads.length - 1].normal());
-
-        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            var range = ranges[i];
+        for (var range : ranges) {
             if (range != null) {
-                VertexSorter sorter;
-                if (i == ModelQuadFacing.UNASSIGNED.ordinal()) {
-                    sorter = VertexSorters.sortByNormalRelative(unalignedNormal);
-                } else {
-                    sorter = SORTERS[i];
+                int start = TranslucentData.vertexCountToQuadCount(range.vertexStart());
+                int count = TranslucentData.vertexCountToQuadCount(range.vertexCount());
+                if (count > 1) {
+                    Arrays.sort(sortData, start, start + count);
                 }
-
-                // add the vertex start converted to quads to the offset to get the real quad
-                // index and not just the index local to the direction's set of quads
-                TranslucentData.writeQuadVertexIndexes(bufferBuilder, sorter.sort(centers[i]));
             }
+        }
+
+        for (int i = 0; i < quads.length; i++) {
+            TranslucentData.writeQuadVertexIndexes(bufferBuilder, (int) sortData[i]);
         }
 
         return new StaticNormalRelativeData(sectionPos, buffer, ranges);
     }
 
     public static StaticNormalRelativeData fromMesh(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector) {
-        if (collector.getAlignedNormalBitmap() == 0) {
-            return fromDoubleUnaligned(translucentMesh, quads, sectionPos, collector);
+            TQuad[] quads, ChunkSectionPos sectionPos, boolean isDoubleUnaligned) {
+        if (isDoubleUnaligned) {
+            return fromDoubleUnaligned(translucentMesh, quads, sectionPos);
         } else {
-            return fromAligned(translucentMesh, quads, sectionPos);
+            return fromMixed(translucentMesh, quads, sectionPos);
         }
     }
 }

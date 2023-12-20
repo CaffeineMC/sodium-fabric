@@ -1,9 +1,14 @@
 package me.jellysquid.mods.sodium.client.model.quad.properties;
 
+import java.util.Arrays;
+
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 
 public enum ModelQuadFacing {
     POS_X,
@@ -22,13 +27,18 @@ public enum ModelQuadFacing {
     public static final int NONE = 0;
     public static final int ALL = (1 << COUNT) - 1;
 
-    public static final Vector3fc[] NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
+    public static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[] {
+            new Vector3f(1, 0, 0),
+            new Vector3f(0, 1, 0),
+            new Vector3f(0, 0, 1),
+            new Vector3f(-1, 0, 0),
+            new Vector3f(0, -1, 0),
+            new Vector3f(0, 0, -1),
+    };
 
-    static {
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
-            NORMALS[i] = new Vector3f(ModelQuadFacing.VALUES[i].toDirection().getUnitVector());
-        }
-    }
+    public static final int[] PACKED_ALIGNED_NORMALS = Arrays.stream(ALIGNED_NORMALS)
+            .mapToInt(NormI8::pack)
+            .toArray();
 
     public static final int OPPOSING_X = 1 << ModelQuadFacing.POS_X.ordinal() | 1 << ModelQuadFacing.NEG_X.ordinal();
     public static final int OPPOSING_Y = 1 << ModelQuadFacing.POS_Y.ordinal() | 1 << ModelQuadFacing.NEG_Y.ordinal();
@@ -36,12 +46,12 @@ public enum ModelQuadFacing {
 
     public static ModelQuadFacing fromDirection(Direction dir) {
         return switch (dir) {
-            case DOWN   -> NEG_Y;
-            case UP     -> POS_Y;
-            case NORTH  -> NEG_Z;
-            case SOUTH  -> POS_Z;
-            case WEST   -> NEG_X;
-            case EAST   -> POS_X;
+            case DOWN -> NEG_Y;
+            case UP -> POS_Y;
+            case NORTH -> NEG_Z;
+            case SOUTH -> POS_Z;
+            case WEST -> NEG_X;
+            case EAST -> POS_X;
         };
     }
 
@@ -65,15 +75,60 @@ public enum ModelQuadFacing {
         };
     }
 
-    public Direction toDirection() {
+    public int getAxis() {
         return switch (this) {
-            case POS_Y -> Direction.UP;
-            case NEG_Y -> Direction.DOWN;
-            case POS_X -> Direction.EAST;
-            case NEG_X -> Direction.WEST;
-            case POS_Z -> Direction.SOUTH;
-            case NEG_Z -> Direction.NORTH;
-            default -> Direction.UP;
+            case POS_X, NEG_X -> 0;
+            case POS_Y, NEG_Y -> 1;
+            case POS_Z, NEG_Z -> 2;
+            default -> -1;
         };
+    }
+
+    public boolean isAligned() {
+        return this != UNASSIGNED;
+    }
+
+    public Vector3fc getAlignedNormal() {
+        if (!this.isAligned()) {
+            throw new IllegalStateException("Cannot get aligned normal for unassigned facing");
+        }
+        return ALIGNED_NORMALS[this.ordinal()];
+    }
+
+    public int getPackedAlignedNormal() {
+        if (!this.isAligned()) {
+            throw new IllegalStateException("Cannot get packed aligned normal for unassigned facing");
+        }
+        return PACKED_ALIGNED_NORMALS[this.ordinal()];
+    }
+
+    public static ModelQuadFacing fromPackedNormal(float x, float y, float z) {
+        Vector3f normal = new Vector3f(x, y, z);
+
+        if (!normal.isFinite()) {
+            return ModelQuadFacing.UNASSIGNED;
+        }
+
+        float maxDot = 0;
+        Direction closestFace = null;
+
+        for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
+            float dot = normal.dot(face.getUnitVector());
+
+            if (dot > maxDot) {
+                maxDot = dot;
+                closestFace = face;
+            }
+        }
+
+        if (closestFace != null && MathHelper.approximatelyEquals(maxDot, 1.0f)) {
+            return ModelQuadFacing.fromDirection(closestFace);
+        }
+
+        return ModelQuadFacing.UNASSIGNED;
+    }
+
+    public static ModelQuadFacing fromPackedNormal(int normal) {
+        return fromPackedNormal(NormI8.unpackX(normal), NormI8.unpackY(normal), NormI8.unpackZ(normal));
     }
 }

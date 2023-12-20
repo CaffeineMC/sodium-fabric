@@ -1,10 +1,8 @@
-package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
+package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
 import java.util.Collection;
 
-import org.joml.Vector3d;
 import org.joml.Vector3dc;
-import org.joml.Vector3fc;
 
 import com.lodborg.intervaltree.DoubleInterval;
 import com.lodborg.intervaltree.Interval;
@@ -15,6 +13,7 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
 
 /**
  * A normal list contains all the face planes that have the same normal.
@@ -35,18 +34,7 @@ public class NormalList {
     /**
      * The normal of this normal list.
      */
-    private final Vector3dc normal;
-    private final Vector3fc normalf;
-
-    /**
-     * If this normal list is for an axis-aligned normal, this is the index of it
-     * for querying in
-     * {@link TranslucentGeometryCollector#getGroupForNormal(Vector3fc)}.
-     * 
-     * If this normal list is for an unaligned normal, this is the key for the
-     * hash map of quantized normals.
-     */
-    private final int collectorKey;
+    private final AlignableNormal normal;
 
     /**
      * An interval tree of group intervals. Since this only stores intervals, the
@@ -73,24 +61,24 @@ public class NormalList {
      * @param normal       The unit normal vector
      * @param collectorKey The geometry collector index
      */
-    NormalList(Vector3fc normal, int collectorKey) {
-        this.normalf = normal;
-        this.normal = new Vector3d(normal);
-        this.collectorKey = collectorKey;
+    NormalList(AlignableNormal normal) {
+        this.normal = normal;
     }
 
-    public Vector3fc getNormal() {
-        return normalf;
+    public AlignableNormal getNormal() {
+        return this.normal;
     }
 
-    int getCollectorKey() {
-        return collectorKey;
+    private double normalDotDouble(Vector3dc v) {
+        return Math.fma((double) this.normal.x, v.x(),
+                Math.fma((double) this.normal.y, v.y(),
+                        (double) this.normal.z * v.z()));
     }
 
     void processMovement(TranslucentSorting ts, CameraMovement movement) {
         // calculate the distance range of the movement with respect to the normal
-        double start = this.normal.dot(movement.lastCamera());
-        double end = this.normal.dot(movement.currentCamera());
+        double start = this.normalDotDouble(movement.lastCamera());
+        double end = this.normalDotDouble(movement.currentCamera());
 
         // stop if the movement is reverse with regards to the normal
         // since this means it's moving against the normal
@@ -103,7 +91,7 @@ public class NormalList {
         var interval = new DoubleInterval(start, end, Bounded.CLOSED);
         for (Interval<Double> groupInterval : intervalTree.query(interval)) {
             for (Group group : groupsByInterval.get(groupInterval)) {
-                group.triggerRange(ts, start, end, this.collectorKey);
+                group.triggerRange(ts, start, end);
             }
         }
     }
@@ -147,8 +135,8 @@ public class NormalList {
         return this.groupsBySection.isEmpty();
     }
 
-    void addSection(AccumulationGroup accGroup, long sectionPos) {
-        var group = new Group(accGroup);
+    void addSection(NormalPlanes normalPlanes, long sectionPos) {
+        var group = new Group(normalPlanes);
 
         this.groupsBySection.put(sectionPos, group);
         this.addGroupInterval(group);
@@ -161,17 +149,17 @@ public class NormalList {
         }
     }
 
-    void updateSection(AccumulationGroup accGroup, long sectionPos) {
+    void updateSection(NormalPlanes normalPlanes, long sectionPos) {
         Group group = this.groupsBySection.get(sectionPos);
 
         // only update on changes to translucent geometry
-        if (group.equalsAccGroup(accGroup)) {
+        if (group.equalsNOrmalPlanes(normalPlanes)) {
             // don't update if they are the same
             return;
         }
 
         this.removeGroupInterval(group);
-        group.replaceWith(accGroup);
+        group.replaceWith(normalPlanes);
         this.addGroupInterval(group);
     }
 }
