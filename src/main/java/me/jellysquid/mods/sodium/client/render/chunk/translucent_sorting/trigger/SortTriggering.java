@@ -6,6 +6,8 @@ import java.util.function.BiConsumer;
 import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
@@ -18,7 +20,8 @@ import net.minecraft.util.math.ChunkSectionPos;
  * of translucent data objects for each sort type and delegates triggering of
  * sections for dynamic sorting to the trigger components.
  * 
- * TODO: Incompatible with rendering anything through Indium because it doesn't run
+ * TODO: Incompatible with rendering anything through Indium because it doesn't
+ * run
  * the translucent geometry collector properly. It doesn't run Sodium's
  * BlockRenderer which is required for lines 166-167 of BlockRenderer to work.
  * 
@@ -186,16 +189,22 @@ public class SortTriggering {
     }
 
     public void addDebugStrings(List<String> list) {
-        list.add(String.format("TS NL=%02d TrN=%02d TrS=G%03d/D%03d",
-                this.gfni.getUniqueNormalCount(),
-                this.triggeredNormalCount,
-                this.gfniTriggerCount,
-                this.directTriggerCount));
-        list.add(String.format("N=%05d SNR=%05d STA=%04d DYN=%04d (DIR=%04d)",
-                this.sortTypeCounters[SortType.NONE.ordinal()],
-                this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()],
-                this.sortTypeCounters[SortType.STATIC_TOPO.ordinal()],
-                this.sortTypeCounters[SortType.DYNAMIC.ordinal()],
-                this.direct.getDirectTriggerCount()));
+        var sortBehavior = SodiumClientMod.options().performance.sortBehavior;
+        if (sortBehavior == SortBehavior.OFF) {
+            list.add("TS OFF");
+        } else {
+            list.add("TS (%s) NL=%02d TrN=%02d TrS=G%03d/D%03d".formatted(
+                    sortBehavior.getShortName(),
+                    this.gfni.getUniqueNormalCount(),
+                    this.triggeredNormalCount,
+                    this.gfniTriggerCount,
+                    this.directTriggerCount));
+            list.add("N=%05d SNR=%05d STA=%04d DYN=%04d (DIR=%04d)".formatted(
+                    this.sortTypeCounters[SortType.NONE.ordinal()],
+                    this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()],
+                    this.sortTypeCounters[SortType.STATIC_TOPO.ordinal()],
+                    this.sortTypeCounters[SortType.DYNAMIC.ordinal()],
+                    this.direct.getDirectTriggerCount()));
+        }
     }
 }

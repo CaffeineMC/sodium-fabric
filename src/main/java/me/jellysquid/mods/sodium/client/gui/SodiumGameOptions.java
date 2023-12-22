@@ -50,19 +50,25 @@ public class SodiumGameOptions {
     }
 
     public enum SortBehavior implements TextProvider {
-        OFF("options.off"),
-        STATIC("sodium.options.sort_behavior.reduced"),
-        DYNAMIC("sodium.options.sort_behavior.accurate");
+        OFF("options.off", "OFF"),
+        STATIC("sodium.options.sort_behavior.reduced", "S"),
+        DYNAMIC("sodium.options.sort_behavior.accurate", "D");
 
         private final Text name;
+        private final String shortName;
 
-        SortBehavior(String name) {
+        SortBehavior(String name, String shortName) {
             this.name = Text.translatable(name);
+            this.shortName = shortName;
         }
 
         @Override
         public Text getLocalizedName() {
             return this.name;
+        }
+
+        public String getShortName() {
+            return this.shortName;
         }
     }
 
