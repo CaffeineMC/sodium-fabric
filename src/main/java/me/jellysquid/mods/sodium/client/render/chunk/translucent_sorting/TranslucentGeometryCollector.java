@@ -413,10 +413,14 @@ public class TranslucentGeometryCollector {
         }
         this.quads = new TQuad[totalQuadCount];
         int quadIndex = 0;
-        for (var quadList : this.quadLists) {
+        for (int direction = 0; direction < ModelQuadFacing.COUNT; direction++) {
+            var quadList = this.quadLists[direction];
             if (quadList != null) {
                 for (var quad : quadList) {
                     this.quads[quadIndex++] = quad;
+                }
+                if (direction < ModelQuadFacing.DIRECTIONS) {
+                    this.alignedFacingBitmap |= 1 << direction;
                 }
             }
         }
@@ -462,7 +466,9 @@ public class TranslucentGeometryCollector {
                         buffer, oldData);
             } catch (BSPBuildFailureException e) {
                 // TODO: investigate existing BSP build failures, then remove this logging
-                LOGGER.warn("BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates and world file or seed)", sectionPos);
+                LOGGER.warn(
+                        "BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates and world file or seed)",
+                        sectionPos);
                 var geometryPlanes = GeometryPlanes.fromQuadLists(sectionPos, this.quads);
                 return TopoSortDynamicData.fromMesh(
                         translucentMesh, cameraPos, this.quads, this.sectionPos,
