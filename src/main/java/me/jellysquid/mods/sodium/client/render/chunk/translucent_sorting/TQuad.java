@@ -113,10 +113,12 @@ public class TQuad {
         // quantize the coordinates on the surface of the cube.
         // in each axis the number of values is 2 * QUANTIZATION_FACTOR + 1.
         // the total number of normals is the number of points on that cube's surface.
-        this.quantizedNormal = new Vector3f(
+        var normal = new Vector3f(
                 (int) (normX * QUANTIZATION_FACTOR),
                 (int) (normY * QUANTIZATION_FACTOR),
                 (int) (normZ * QUANTIZATION_FACTOR));
+        normal.normalize();
+        this.quantizedNormal = normal;
     }
 
     int getQuadHash() {
