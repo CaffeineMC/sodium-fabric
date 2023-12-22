@@ -20,11 +20,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * of translucent data objects for each sort type and delegates triggering of
  * sections for dynamic sorting to the trigger components.
  * 
- * TODO: Incompatible with rendering anything through Indium because it doesn't
- * run
- * the translucent geometry collector properly. It doesn't run Sodium's
- * BlockRenderer which is required for lines 166-167 of BlockRenderer to work.
- * 
  * @author douira (the translucent_sorting package)
  */
 public class SortTriggering {
