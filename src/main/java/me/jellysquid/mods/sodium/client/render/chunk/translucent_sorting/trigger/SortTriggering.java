@@ -194,8 +194,8 @@ public class SortTriggering {
         list.add(String.format("N=%05d SNR=%05d STA=%04d DYN=%04d (DIR=%04d)",
                 this.sortTypeCounters[SortType.NONE.ordinal()],
                 this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()],
-                this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()],
-                this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()],
+                this.sortTypeCounters[SortType.STATIC_TOPO.ordinal()],
+                this.sortTypeCounters[SortType.DYNAMIC.ordinal()],
                 this.direct.getDirectTriggerCount()));
     }
 }

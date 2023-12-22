@@ -21,7 +21,7 @@ public class StaticTopoAcyclicData extends MixedDirectionData {
 
     @Override
     public SortType getSortType() {
-        return SortType.STATIC_TOPO_ACYCLIC;
+        return SortType.STATIC_TOPO;
     }
 
     public static StaticTopoAcyclicData fromMesh(BuiltSectionMeshParts translucentMesh,

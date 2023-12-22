@@ -16,7 +16,7 @@ public abstract class DynamicData extends MixedDirectionData {
 
     @Override
     public SortType getSortType() {
-        return SortType.DYNAMIC_ALL;
+        return SortType.DYNAMIC;
     }
 
     public GeometryPlanes getGeometryPlanes() {

@@ -242,10 +242,10 @@ public class TranslucentGeometryCollector {
             case OFF:
                 return SortType.NONE;
             case STATIC:
-                if (sortType == SortType.NONE) {
+                if (sortType == SortType.STATIC_NORMAL_RELATIVE || sortType == SortType.STATIC_TOPO) {
                     return sortType;
                 } else {
-                    return SortType.STATIC_NORMAL_RELATIVE;
+                    return SortType.NONE;
                 }
             case DYNAMIC:
                 return sortType;
@@ -397,10 +397,10 @@ public class TranslucentGeometryCollector {
 
         var attemptLimitIndex = Math.max(Math.min(normalCount, STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1), 2);
         if (this.quads.length <= STATIC_TOPO_SORT_ATTEMPT_LIMITS[attemptLimitIndex]) {
-            return SortType.STATIC_TOPO_ACYCLIC;
+            return SortType.STATIC_TOPO;
         }
 
-        return SortType.DYNAMIC_ALL;
+        return SortType.DYNAMIC;
     }
 
     public SortType finishRendering() {
@@ -444,12 +444,12 @@ public class TranslucentGeometryCollector {
         // from this point on we know the estimated sort type requires direction mixing
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
         NativeBuffer buffer = PresentTranslucentData.nativeBufferForQuads(this.quads);
-        if (this.sortType == SortType.STATIC_TOPO_ACYCLIC) {
+        if (this.sortType == SortType.STATIC_TOPO) {
             var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
             if (result != null) {
                 return result;
             }
-            this.sortType = SortType.DYNAMIC_ALL;
+            this.sortType = SortType.DYNAMIC;
         }
 
         // filter the sort type with the user setting and re-evaluate
@@ -459,7 +459,7 @@ public class TranslucentGeometryCollector {
             return AnyOrderData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
         }
 
-        if (this.sortType == SortType.DYNAMIC_ALL) {
+        if (this.sortType == SortType.DYNAMIC) {
             try {
                 return BSPDynamicData.fromMesh(
                         translucentMesh, cameraPos, this.quads, this.sectionPos,

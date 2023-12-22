@@ -26,21 +26,13 @@ public enum SortType {
      * determining the static sort order involves doing a toplogical sort of the
      * quads.
      */
-    STATIC_TOPO_ACYCLIC(true, true, false),
-
-    /**
-     * There is more than one sort order but instead of sorting one each plane
-     * trigger, a small number of sort orders is precomputed by breaking any cycles
-     * in the graph. They are swapped out when the cycle-breaking planes are
-     * triggered in GFNI.
-     */
-    // DYNAMIC_TOPO_CYCLIC(true, true, true, false),
+    STATIC_TOPO(true, true, false),
 
     /**
      * There are multiple sort orders. Sorting is required every time GFNI triggers
      * this section.
      */
-    DYNAMIC_ALL(true, true, true);
+    DYNAMIC(true, true, true);
 
     public final boolean needsIndexBuffer;
     public final boolean needsDirectionMixing;
