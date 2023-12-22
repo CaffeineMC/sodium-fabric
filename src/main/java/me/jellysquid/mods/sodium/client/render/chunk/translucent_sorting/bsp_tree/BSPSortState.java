@@ -151,10 +151,6 @@ class BSPSortState {
             compressed[0] = 1 << 31 | CONSTANT_DELTA_WIDTH_INDEX << 27 | deltaCount << 17 | firstIndex;
             compressed[1] = minDelta;
 
-            // System.out.println(
-            // "Densely compressed " + indexes.size() + " indexes to 2 ints, compression
-            // ratio " +
-            // (indexes.size() / 2));
             return compressed;
         }
 
@@ -200,9 +196,6 @@ class BSPSortState {
             compressed[outputIndex++] = gatherInt;
         }
 
-        // System.out.println("Compressed " + indexes.size() + " indexes to " + size + "
-        // ints, compression ratio "
-        // + (indexes.size() / size));
         return compressed;
     }
 

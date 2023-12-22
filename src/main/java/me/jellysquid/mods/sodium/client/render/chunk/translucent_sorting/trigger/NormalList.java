@@ -153,7 +153,7 @@ public class NormalList {
         Group group = this.groupsBySection.get(sectionPos);
 
         // only update on changes to translucent geometry
-        if (group.equalsNOrmalPlanes(normalPlanes)) {
+        if (group.normalPlanesEquals(normalPlanes)) {
             // don't update if they are the same
             return;
         }

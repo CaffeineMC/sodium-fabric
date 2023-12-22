@@ -72,7 +72,7 @@ class Group {
      * TODO: how common are collisions and are they bad?
      * If they are common, use second or different hash
      */
-    boolean equalsNOrmalPlanes(NormalPlanes normalPlanes) {
+    boolean normalPlanesEquals(NormalPlanes normalPlanes) {
         return this.facePlaneDistances.length == normalPlanes.relativeDistancesSet.size()
                 && this.distances.equals(normalPlanes.distanceRange)
                 && this.relDistanceHash == normalPlanes.relDistanceHash;
