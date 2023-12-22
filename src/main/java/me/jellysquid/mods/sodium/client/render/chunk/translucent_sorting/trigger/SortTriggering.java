@@ -16,7 +16,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.Tr
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
- * This class is the central point in translucency sorting. It counts the number
+ * This class is a central point in translucency sorting. It counts the number
  * of translucent data objects for each sort type and delegates triggering of
  * sections for dynamic sorting to the trigger components.
  * 

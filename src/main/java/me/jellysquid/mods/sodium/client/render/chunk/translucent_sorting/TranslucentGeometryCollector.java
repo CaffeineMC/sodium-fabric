@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPBuildFailureException;
@@ -34,6 +35,26 @@ import net.minecraft.util.math.ChunkSectionPos;
  * determines the best sort type for the section and constructs various types of
  * translucent data objects that then perform sorting and get registered with
  * GFNI for triggering.
+ * 
+ * An instance of this class is created for each meshing task. It goes through
+ * three stages:
+ * 1. During meshing it collects the geometry and calculates some metrics on the
+ * fly. These are later used for the sort type heuristic.
+ * 2. With {@link #finishRendering()} it finishes the geometry collection,
+ * generates the quad list, and calculates additional metrics. Then the sort
+ * type is determined with a heuristic based on the collected metrics. This
+ * determines if block face culling can be enabled.
+ * - Now the {@link BuiltSectionMeshParts} is generates which yields the vertex
+ * ranges.
+ * 3. The vertex ranges and the mesh parts object are used by the collector in
+ * the construction of the {@link TranslucentData} object. The data object
+ * allocates memory for the index data and performs the first (and for static
+ * sort types, only) sort.
+ * - The data object is put into the {@link ChunkBuildOutput}.
+ * 
+ * When dynamic sorting is enabled, trigger information from {@link DynamicData}
+ * object is integrated into {@link SortTriggering} when the task result is
+ * received by the main thread.
  */
 public class TranslucentGeometryCollector {
     private static final Logger LOGGER = LogManager.getLogger(TranslucentGeometryCollector.class);
