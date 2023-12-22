@@ -13,9 +13,13 @@ import net.minecraft.util.math.ChunkSectionPos;
  * vertices are assembled into quads. Since the sort order doesn't matter, all
  * sections with this sort type can share the same data in the index buffer.
  * 
- * TODO: share the buffer on the CPU and on the GPU. This is essentially the
- * same as SharedQuadIndexBuffer but it has to be compatible with sections in
- * the same region using custom index buffers.
+ * NOTE: A possible optimization would be to share the buffer for unordered
+ * translucent sections on the CPU and on the GPU. It would essentially be the
+ * same as SharedQuadIndexBuffer, but it has to be compatible with sections in
+ * the same region using custom index buffers which makes the management
+ * complicated. The shared buffer would be a member amongst the other non-shared
+ * buffer segments and would need to be resized when a larger section wants to
+ * use it.
  */
 public class AnyOrderData extends SplitDirectionData {
     AnyOrderData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {

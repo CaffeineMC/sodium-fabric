@@ -6,6 +6,11 @@ import org.joml.Vector3fc;
 import it.unimi.dsi.fastutil.floats.FloatArrays;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
+/**
+ * A normal vector that has additional information about its alignment. This is
+ * useful for better hashing and telling other code that the normal is aligned,
+ * which in turn enables many optimizations and fast paths to be taken.
+ */
 public class AlignableNormal extends Vector3f {
     private static final AlignableNormal[] NORMALS = new AlignableNormal[ModelQuadFacing.DIRECTIONS];
 

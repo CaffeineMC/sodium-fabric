@@ -10,6 +10,12 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tre
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Constructs a BSP tree of the quads and sorts them dynamically.
+ * 
+ * Triggering is performed when the BSP tree's partition planes are crossed in
+ * any direction (bidirectional).
+ */
 public class BSPDynamicData extends DynamicData {
     private static final int NODE_REUSE_MIN_GENERATION = 1;
 

@@ -13,9 +13,10 @@ import net.minecraft.util.math.ChunkSectionPos;
  * Performs Global Face Normal Indexing-based triggering as described in
  * https://hackmd.io/@douira100/sodium-sl-gfni
  * 
- * Global distances are stored as doubles while section-relative distances are
- * stored as floats. Normals are stored as float vectors unless they're needed
- * to produce global double distances.
+ * Note on precision: Global distances are stored as doubles while
+ * section-relative distances are stored as floats. The distances of the camera
+ * are calculated as doubles, but using float normal vectors (furthermore normal
+ * vectors are heavily quantized, so angular precision is not a concern).
  */
 class GFNITriggers implements SectionTriggers<DynamicData> {
     /**

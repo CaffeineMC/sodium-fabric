@@ -4,6 +4,10 @@ import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
+/**
+ * Partitions quads into two sides, each its own BSP node, of a partition plane
+ * and a set of quads that lie on the plane.
+ */
 class InnerBinaryPartitionBSPNode extends InnerPartitionBSPNode {
     private final float planeDistance;
 

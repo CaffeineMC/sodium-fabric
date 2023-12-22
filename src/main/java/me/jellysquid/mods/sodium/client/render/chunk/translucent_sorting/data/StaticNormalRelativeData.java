@@ -14,6 +14,10 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Static normal relative sorting orders quads by the dot product of their
+ * normal and position. (referred to as "distance" throughout the code)
+ */
 public class StaticNormalRelativeData extends SplitDirectionData {
     public StaticNormalRelativeData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
         super(sectionPos, buffer, ranges);

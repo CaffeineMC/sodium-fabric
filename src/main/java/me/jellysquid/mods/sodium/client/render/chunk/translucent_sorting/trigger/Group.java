@@ -70,7 +70,7 @@ class Group {
      * position since the group was retrieved from the map for the right position.
      * 
      * TODO: how common are collisions and are they bad?
-     * If they are common, use second hash
+     * If they are common, use second or different hash
      */
     boolean equalsNOrmalPlanes(NormalPlanes normalPlanes) {
         return this.facePlaneDistances.length == normalPlanes.relativeDistancesSet.size()

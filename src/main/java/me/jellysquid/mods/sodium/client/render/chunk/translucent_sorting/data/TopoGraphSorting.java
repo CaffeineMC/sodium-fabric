@@ -106,7 +106,10 @@ public class TopoGraphSorting {
             }
         }
 
-        // TODO: check all other normals too
+        // NOTE: unaligned normals for separators are not checked because doing so is a
+        // hard
+        // problem and this is an approximation. The fully correct topo sort would need
+        // to be much more complicated.
 
         // visibility not disproven
         return true;
@@ -184,7 +187,6 @@ public class TopoGraphSorting {
             IntBuffer indexBuffer, TQuad[] allQuads,
             Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
             Vector3fc cameraPos) {
-        // TODO: quads visibility filter copy-pasted from topoSortAlignedAcyclic
         // if enabled, check for visibility and produce a mapping of indices
         TQuad[] quads = null;
         int[] activeToRealIndex = null;
@@ -197,9 +199,9 @@ public class TopoGraphSorting {
 
             for (int i = 0; i < allQuads.length; i++) {
                 TQuad quad = allQuads[i];
-                // TODO: this could introduce wrong sorting if the real normal and the quantized
-                // normal don't line up, ignoring the quad if it's not visible through the
-                // quantized one but visible in-camera
+                // NOTE: This approximation may introduce wrong sorting if the real and the
+                // quantized normal aren't the same. A quad may be ignored with the quantized
+                // normal, but it's actually visible in camera.
                 if (pointOutsideHalfspace(quad.getDotProduct(), quad.getQuantizedNormal(), cameraPos)) {
                     activeToRealIndex[activeQuads] = i;
                     quads[activeQuads] = quad;

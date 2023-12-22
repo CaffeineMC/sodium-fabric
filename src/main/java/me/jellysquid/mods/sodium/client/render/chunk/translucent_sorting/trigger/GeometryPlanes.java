@@ -9,6 +9,10 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * GeometryPlanes stores the NormalPlanes for different normals, both aligned
+ * and unaligned.
+ */
 public class GeometryPlanes {
     private NormalPlanes[] alignedPlanes;
     private Object2ReferenceOpenHashMap<Vector3fc, NormalPlanes> unalignedPlanes;

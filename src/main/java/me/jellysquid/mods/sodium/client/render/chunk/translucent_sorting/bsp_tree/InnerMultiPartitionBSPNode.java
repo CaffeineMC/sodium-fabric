@@ -6,6 +6,10 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 
 /**
+ * Partitions quads into multiple child BSP nodes with multiple parallel
+ * partition planes. This is uses less memory and time than constructing a
+ * binary BSP tree through more partitioning passes.
+ * 
  * Implementation note: Detecting and avoiding the double array when possible
  * brings no performance benefit in sorting speed, only a building speed
  * detriment.
@@ -89,7 +93,7 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
         this.collectPartitionQuads(sortState, this.planeDistances.length, cameraPos);
     }
 
-    static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode,
+    static BSPNode buildFromPartitions(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode,
             ReferenceArrayList<Partition> partitions, int axis, boolean endsWithPlane) {
         int planeCount = endsWithPlane ? partitions.size() : partitions.size() - 1;
         float[] planeDistances = new float[planeCount];
@@ -117,7 +121,7 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
                 partitionDistance = partition.distance();
                 workspace.addAlignedPartitionPlane(axis, partitionDistance);
 
-                // TODO: remove
+                // NOTE: sanity check
                 if (partitionDistance == -1) {
                     throw new IllegalStateException("partition distance not set");
                 }

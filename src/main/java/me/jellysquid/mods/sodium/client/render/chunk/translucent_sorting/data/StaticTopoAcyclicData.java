@@ -7,6 +7,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * Static topo acyclic sorting uses the topo sorting algorithm but only if it's
+ * possible to sort without dynamic triggering, meaning the sort order never
+ * needs to change.
+ */
 public class StaticTopoAcyclicData extends MixedDirectionData {
     private static final int MAX_STATIC_TOPO_SORT_QUADS = 1000;
 

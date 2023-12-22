@@ -11,11 +11,14 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
 /**
- * Implementation note:
+ * Performs aligned BSP partitioning of many nodes and constructs appropriate
+ * BSP nodes based on the result.
+ * 
+ * Implementation notes:
  * - Presorting the points in block-sized buckets doesn't help. It seems the
  * sort algorithm is just fast enough to handle this.
  * - Eliminating the use of partition objects doesn't help. Since there's
- * usually just very few partitions, it's not worth it it seems.
+ * usually just very few partitions, it's not worth it, it seems.
  * - Using fastutil's LongArrays sorting options (radix and quicksort) is slower
  * than using Arrays.sort (which uses DualPivotQuicksort internally), even on
  * worlds with player-built structures.
@@ -29,6 +32,14 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * 0x8000... and negative numbers with 0xffff... This should flip the sign bit
  * on both (so negative numbers go first), and then reverse the ordering on
  * negative numbers." from https://stackoverflow.com/q/43299299
+ * 
+ * When aligned partitioning fails the geometry is checked for intersection. If
+ * there is intersection it means the section is unsortable and an approximation
+ * is used instead. When it doesn't intersect but is not aligned partitionable,
+ * it either requires unaligned partitioning (a hard problem not solved here)
+ * or it's unpartitionable. It would be possible to insert a topo sorting node
+ * here, but it's not worth the implementation effort unless it's found to be a
+ * reasonable and common use case (I haven't been able to determine that it is).
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
     private static int NODE_REUSE_THRESHOLD = 30;
@@ -335,13 +346,13 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             }
 
             // create a multi-partition node
-            return InnerMultiPartitionBSPNode.build(workspace, indexes, depth, oldNode,
+            return InnerMultiPartitionBSPNode.buildFromPartitions(workspace, indexes, depth, oldNode,
                     partitions, axis, endsWithPlane);
         }
 
-        // test if the geometry intersects with itself
+        // test if the geometry intersects with itself.
         // if there is self-intersection, return a multi leaf node to just give up
-        // sorting this geometry. intersecting geometry is rare but when it does happen,
+        // sorting this geometry. Intersecting geometry is rare but when it does happen,
         // it should simply be accepted and rendered as-is. Whatever artifacts this
         // causes are considered "ok".
         int testsRemaining = 10000;
@@ -385,6 +396,16 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             }
         }
 
+        // At this point we know the geometry is (probably) not intersecting, and it
+        // can't be partitioned along an aligned axis. This means that either the
+        // geometry is unpartitionable with free cuts (partitions that don't fragment
+        // geometry) or it required unaligned partitioning. Unaligned partitioning is a
+        // hard problem and solving it here isn't really necessary. Fully aligned
+        // unpartitonable constructions exist but not in normal Minecraft and also not
+        // likely in any other normal scenario.
+
+        // Throwing this exception will cause the entire section to be either topo
+        // sorted or the distance sorting fallback to be used.
         throw new BSPBuildFailureException("no partition found");
     }
 }

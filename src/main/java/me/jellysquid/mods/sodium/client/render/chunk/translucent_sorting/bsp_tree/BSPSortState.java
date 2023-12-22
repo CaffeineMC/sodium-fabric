@@ -8,6 +8,11 @@ import it.unimi.dsi.fastutil.ints.IntConsumer;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
+/**
+ * The sort state is passed around the tree (similar to visitor pattern) and
+ * contains the index buffer being written to alongside additional state for
+ * remapping indexes when traversing the subtree of a reused node.
+ */
 class BSPSortState {
     static final int NO_FIXED_OFFSET = Integer.MIN_VALUE;
 

@@ -10,8 +10,17 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
- * Performs direct triggering for sections that can't (or shouldn't) be
- * topologically sorted and thus aren't eligible for GFNI triggering.
+ * Performs direct triggering for sections that are sorted by distance. Direct
+ * triggering means the section is not triggered based on its geometry but
+ * rather the movement of the camera relative to the last position the camera
+ * was in when the section was sorted last.
+ * 
+ * There are two types of direct triggering: Distance triggering is used when
+ * the camera is close to or inside the section. Angle triggering is used
+ * otherwise. Distance triggering sorts the section when the camera has moved at
+ * least a certain distance from the last sort position while angle triggering
+ * sorts it when a certain angle between the current and last sort position is
+ * exceeded (relative to the section center).
  */
 class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
     /**

@@ -6,8 +6,8 @@ import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * Super class for translucent data that is rendered separately for each facing.
- * It's important that the indices are inserted starting at zero for each
- * direction.
+ * (block face culling is possible) It's important that the indices are inserted
+ * starting at zero for each facing.
  */
 public abstract class SplitDirectionData extends PresentTranslucentData {
     public final VertexRange[] ranges;

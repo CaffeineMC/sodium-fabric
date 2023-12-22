@@ -2,6 +2,9 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tr
 
 import org.joml.Vector3fc;
 
+/**
+ * A leaf node of a BSP tree that contains a set of quads.
+ */
 class LeafMultiBSPNode extends BSPNode {
     private final int[] quads;
 

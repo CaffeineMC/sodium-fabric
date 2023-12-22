@@ -11,6 +11,10 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * NormalPlanes represents planes by a normal and a list of distances. Initially they're
+ * stored in a hash set and later sorted for range queries.
+ */
 public class NormalPlanes {
     final FloatOpenHashSet relativeDistancesSet = new FloatOpenHashSet(16);
     final AlignableNormal normal;

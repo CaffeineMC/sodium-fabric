@@ -14,6 +14,14 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
+ * Performs dynamic topo sorting and falls back to distance sorting as
+ * necessary. This class implements a number of heuristics to attempt to upgrade
+ * distance-based sorting back to topo sorting when possible as topo sorting
+ * generally needs to happen far less often.
+ * 
+ * Triggering is performed when the quads' planes crossed along their normal
+ * direction (unidirectional).
+ * 
  * Implementation note:
  * - Reusing the output of previous distance sorting job doesn't make a
  * difference or makes things slower in some cases. It's unclear why exactly

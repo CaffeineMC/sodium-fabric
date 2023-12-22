@@ -32,14 +32,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * determines the best sort type for the section and constructs various types of
  * translucent data objects that then perform sorting and get registered with
  * GFNI for triggering.
- *
- * TODO:
- * - use continuous arrays for the quad centers and quad storage if necessary
- * - use more accurate normals for unaligned topo sort?
- * - optionally add a way to attempt full acyclic topo sort even if the
- * heuristic doesn't expect it to be possible. The caveat is that this costs
- * doing it once without invisible quad exclusion and once with if the first
- * attempt fails.
  */
 public class TranslucentGeometryCollector {
     private final ChunkSectionPos sectionPos;
