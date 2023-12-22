@@ -18,7 +18,7 @@ public class CompactChunkVertex implements ChunkVertexType {
     public static final int STRIDE = 16;
 
     private static final int POSITION_MAX_VALUE = 65536;
-    private static final int TEXTURE_MAX_VALUE = 65536;
+    private static final int TEXTURE_MAX_VALUE = 32768;
 
     private static final float MODEL_ORIGIN = 8.0f;
     private static final float MODEL_SCALE = 32.0f;
@@ -34,7 +34,7 @@ public class CompactChunkVertex implements ChunkVertexType {
             MemoryUtil.memPutInt(ptr + 0, (encodePosition(vertex.x) << 0) | (encodePosition(vertex.y) << 16));
             MemoryUtil.memPutInt(ptr + 4, (encodePosition(vertex.z) << 0) | (encodeDrawParameters(material, sectionIndex) << 16));
             MemoryUtil.memPutInt(ptr + 8, (encodeColor(vertex.color) << 0) | (encodeLight(vertex.light) << 24));
-            MemoryUtil.memPutInt(ptr + 12, (encodeTexture(vertex.u) << 0) | (encodeTexture(vertex.v) << 16));
+            MemoryUtil.memPutInt(ptr + 12, encodeTexture(vertex.u, vertex.v));
 
             return ptr + STRIDE;
         };
@@ -65,7 +65,8 @@ public class CompactChunkVertex implements ChunkVertexType {
         return ((block << 0) | (sky << 4));
     }
 
-    private static int encodeTexture(float value) {
-        return (int) (Math.min(0.99999997F, value) * TEXTURE_MAX_VALUE);
+    private static int encodeTexture(float u, float v) {
+        return ((Math.round(u * TEXTURE_MAX_VALUE) & 0xFFFF) << 0) |
+                ((Math.round(v * TEXTURE_MAX_VALUE) & 0xFFFF) << 16);
     }
 }
