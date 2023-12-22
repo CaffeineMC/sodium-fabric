@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
 
 import java.util.Arrays;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -34,6 +36,8 @@ import net.minecraft.util.math.ChunkSectionPos;
  * GFNI for triggering.
  */
 public class TranslucentGeometryCollector {
+    private static final Logger LOGGER = LogManager.getLogger(TranslucentGeometryCollector.class);
+
     private final ChunkSectionPos sectionPos;
 
     // true if there are any unaligned quads
@@ -458,7 +462,7 @@ public class TranslucentGeometryCollector {
                         buffer, oldData);
             } catch (BSPBuildFailureException e) {
                 // TODO: investigate existing BSP build failures, then remove this logging
-                System.out.println("BSP build failure: " + sectionPos);
+                LOGGER.warn("BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates and world file or seed)", sectionPos);
                 var geometryPlanes = GeometryPlanes.fromQuadLists(sectionPos, this.quads);
                 return TopoSortDynamicData.fromMesh(
                         translucentMesh, cameraPos, this.quads, this.sectionPos,
