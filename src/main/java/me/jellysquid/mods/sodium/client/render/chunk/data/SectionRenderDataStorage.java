@@ -163,12 +163,10 @@ public class SectionRenderDataStorage {
     }
 
     private void updateIndexes(int sectionIndex) {
-        if (this.storesIndices) {
-            var data = this.getDataPointer(sectionIndex);
-            var indexAllocation = this.allocations[sectionIndex + RenderRegion.REGION_SIZE];
-            if (indexAllocation != null) {
-                SectionRenderDataUnsafe.setIndexOffset(data, indexAllocation.getOffset());
-            }
+        var data = this.getDataPointer(sectionIndex);
+        var indexAllocation = this.allocations[sectionIndex + RenderRegion.REGION_SIZE];
+        if (indexAllocation != null) {
+            SectionRenderDataUnsafe.setIndexOffset(data, indexAllocation.getOffset());
         }
     }
 

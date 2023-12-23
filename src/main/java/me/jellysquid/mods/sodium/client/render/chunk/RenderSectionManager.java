@@ -99,12 +99,13 @@ public class RenderSectionManager {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.world = world;
-        this.ts = new SortTriggering();
 
         this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
 
         this.needsGraphUpdate = true;
         this.renderDistance = renderDistance;
+
+        this.ts = new SortTriggering();
 
         this.regions = new RenderRegionManager(commandList);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
@@ -343,6 +344,8 @@ public class RenderSectionManager {
 
             var job = result.render.getTaskCancellationToken();
 
+            // clear the cancellation token (thereby marking the section as not having an
+            // active task) if this job is the most recent submitted job for this section
             if (job != null && result.submitTime >= result.render.getLastSubmittedFrame()) {
                 result.render.setTaskCancellationToken(null);
             }

@@ -54,7 +54,6 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                        CameraTransform camera) {
         super.begin(renderPass);
 
-        // TODO: also disable this if there is only NONE-type sorting or no translucent geometry in the region
         boolean isTranslucent = renderPass == DefaultTerrainRenderPasses.TRANSLUCENT 
                 && SodiumClientMod.options().performance.sortBehavior != SortBehavior.OFF;
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;

@@ -124,7 +124,7 @@ public class RenderRegion {
 
     public void refreshTesselation(CommandList commandList) {
         if (this.resources != null) {
-            this.resources.deleteTessellations(commandList);
+            this.resources.deleteTessellation(commandList);
             this.resources.deleteIndexedTessellation(commandList);
         }
 
@@ -246,7 +246,7 @@ public class RenderRegion {
             return this.indexedTessellation;
         }
 
-        public void deleteTessellations(CommandList commandList) {
+        public void deleteTessellation(CommandList commandList) {
             if (this.tessellation != null) {
                 this.tessellation.delete(commandList);
                 this.tessellation = null;
@@ -269,7 +269,7 @@ public class RenderRegion {
         }
 
         public void delete(CommandList commandList) {
-            this.deleteTessellations(commandList);
+            this.deleteTessellation(commandList);
             this.deleteIndexedTessellation(commandList);
             this.geometryArena.delete(commandList);
             this.indexArena.delete(commandList);
