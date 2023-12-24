@@ -410,6 +410,12 @@ public class RenderSectionManager {
                 continue;
             }
 
+            // stop if the section is in this list but doesn't have this update type
+            var pendingUpdate = section.getPendingUpdate();
+            if (pendingUpdate != null && pendingUpdate != type) {
+                continue;
+            }
+
             int frame = this.lastUpdatedFrame;
             ChunkBuilderTask<? extends BuilderTaskOutput> task;
             if (type == ChunkUpdateType.SORT || type == ChunkUpdateType.IMPORTANT_SORT) {
@@ -509,8 +515,6 @@ public class RenderSectionManager {
     }
 
     public void scheduleSort(long sectionPos, boolean isDirectTrigger) {
-        // TODO: Does this need to invalidate the section cache?
-
         RenderSection section = this.sectionByPosition.get(sectionPos);
 
         if (section != null) {
