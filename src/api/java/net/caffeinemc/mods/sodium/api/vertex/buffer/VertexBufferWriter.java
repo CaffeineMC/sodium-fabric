@@ -15,7 +15,7 @@ public interface VertexBufferWriter {
      * @throws IllegalArgumentException If the vertex consumer does not implement the necessary interface
      */
     static VertexBufferWriter of(VertexConsumer consumer) {
-        if (consumer instanceof VertexBufferWriter writer) {
+        if (consumer instanceof VertexBufferWriter writer && writer.canUseIntrinsics()) {
             return writer;
         }
 
@@ -31,7 +31,7 @@ public interface VertexBufferWriter {
      */
     @Nullable
     static VertexBufferWriter tryOf(VertexConsumer consumer) {
-        if (consumer instanceof VertexBufferWriter writer) {
+        if (consumer instanceof VertexBufferWriter writer && writer.canUseIntrinsics()) {
             return writer;
         }
 
@@ -62,6 +62,16 @@ public interface VertexBufferWriter {
      * @param format The format of the vertices
      */
     void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format);
+
+    /**
+     * If this {@link VertexBufferWriter} passes through data to nested {@link VertexConsumer} implementations,
+     * this method should be implemented to check that the nested implementations also support use of VertexBufferWriter
+     * methods.
+     * @return true if the inner consumer is also a valid {@link VertexBufferWriter} that can use intrinsics
+     */
+    default boolean canUseIntrinsics() {
+        return true;
+    }
 
     /**
      * Creates a copy of the source data and pushes it into the specified {@param writer}. This is useful for when

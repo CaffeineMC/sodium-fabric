@@ -35,17 +35,31 @@ public class SortedRenderLists implements ChunkRenderListIterable {
             RenderRegion region = section.getRegion();
             ChunkRenderList list = region.getRenderList();
 
+            // Even if a section does not have render objects, we must ensure the render list is initialized and put
+            // into the sorted queue of lists, so that we maintain the correct order of draw calls.
             if (list.getLastVisibleFrame() != this.frame) {
                 list.reset(this.frame);
 
                 this.lists.add(list);
             }
 
-            list.add(section);
+            // Only add the section to the render list if it actually contains render objects
+            if (section.getFlags() != 0) {
+                list.add(section);
+            }
         }
 
         public SortedRenderLists build() {
-            return new SortedRenderLists(this.lists);
+            var filtered = new ObjectArrayList<ChunkRenderList>(this.lists.size());
+
+            // Filter any empty render lists
+            for (var list : this.lists) {
+                if (list.size() > 0) {
+                    filtered.add(list);
+                }
+            }
+
+            return new SortedRenderLists(filtered);
         }
     }
 }

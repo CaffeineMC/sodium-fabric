@@ -9,5 +9,6 @@ tasks.withType(JavaCompile) {
 }
 
 jar {
-    from "${rootProject.projectDir}/LICENSE.txt"
+    from "${rootProject.projectDir}/COPYING"
+    from "${rootProject.projectDir}/COPYING.LESSER"
 }

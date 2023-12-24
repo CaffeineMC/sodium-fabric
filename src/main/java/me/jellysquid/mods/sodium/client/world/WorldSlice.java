@@ -15,10 +15,12 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.*;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.ColorResolver;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
@@ -39,7 +41,7 @@ import java.util.Objects;
  *
  * <p>Object pooling should be used to avoid huge allocations as this class contains many large arrays.</p>
  */
-public final class WorldSlice implements BlockRenderView, RenderAttachedBlockView, BiomeColorView {
+public final class WorldSlice implements BlockRenderView, BiomeColorView, RenderAttachedBlockView {
     private static final LightType[] LIGHT_TYPES = LightType.values();
 
     // The number of blocks in a section.
@@ -60,6 +62,9 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     // The number of bits needed for each local X/Y/Z coordinate.
     private static final int LOCAL_XYZ_BITS = 4;
 
+    // The default block state used for out-of-bounds access
+    private static final BlockState EMPTY_BLOCK_STATE = Blocks.AIR.getDefaultState();
+
     // The world this slice has copied data from
     private final ClientWorld world;
 
@@ -78,11 +83,14 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     // (Local Section -> Block Entity) table.
     private final @Nullable Int2ReferenceMap<BlockEntity>[] blockEntityArrays;
 
-    // (Local Section -> Block Entity Attachment) table.
-    private final @Nullable Int2ReferenceMap<Object>[] blockEntityAttachmentArrays;
+    // (Local Section -> Block Entity Render Data) table.
+    private final @Nullable Int2ReferenceMap<Object>[] blockEntityRenderDataArrays;
 
     // The starting point from which this slice captures blocks
     private int originX, originY, originZ;
+    
+    // The volume that this WorldSlice contains
+    private BlockBox volume;
 
     public static ChunkRenderContext prepare(World world, ChunkSectionPos origin, ClonedChunkSectionCache sectionCache) {
         WorldChunk chunk = world.getChunk(origin.getX(), origin.getZ());
@@ -133,16 +141,21 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
         this.lightArrays = new ChunkNibbleArray[SECTION_ARRAY_SIZE][LIGHT_TYPES.length];
 
         this.blockEntityArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
-        this.blockEntityAttachmentArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
+        this.blockEntityRenderDataArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
 
         this.biomeSlice = new BiomeSlice();
         this.biomeColors = new BiomeColorCache(this.biomeSlice, MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue());
+
+        for (BlockState[] blockArray : this.blockArrays) {
+            Arrays.fill(blockArray, EMPTY_BLOCK_STATE);
+        }
     }
 
     public void copyData(ChunkRenderContext context) {
         this.originX = (context.getOrigin().getX() - NEIGHBOR_CHUNK_RADIUS) << 4;
         this.originY = (context.getOrigin().getY() - NEIGHBOR_CHUNK_RADIUS) << 4;
         this.originZ = (context.getOrigin().getZ() - NEIGHBOR_CHUNK_RADIUS) << 4;
+        this.volume = context.getVolume();
 
         for (int x = 0; x < SECTION_ARRAY_LENGTH; x++) {
             for (int y = 0; y < SECTION_ARRAY_LENGTH; y++) {
@@ -167,12 +180,12 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
         this.lightArrays[sectionIndex][LightType.SKY.ordinal()] = section.getLightArray(LightType.SKY);
 
         this.blockEntityArrays[sectionIndex] = section.getBlockEntityMap();
-        this.blockEntityAttachmentArrays[sectionIndex] = section.getBlockEntityAttachmentMap();
+        this.blockEntityRenderDataArrays[sectionIndex] = section.getBlockEntityRenderDataMap();
     }
 
     private void unpackBlockData(BlockState[] blockArray, ChunkRenderContext context, ClonedChunkSection section) {
         if (section.getBlockData() == null) {
-            Arrays.fill(blockArray, Blocks.AIR.getDefaultState());
+            Arrays.fill(blockArray, EMPTY_BLOCK_STATE);
             return;
         }
 
@@ -208,7 +221,7 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
             Arrays.fill(this.lightArrays[sectionIndex], null);
 
             this.blockEntityArrays[sectionIndex] = null;
-            this.blockEntityAttachmentArrays[sectionIndex] = null;
+            this.blockEntityRenderDataArrays[sectionIndex] = null;
         }
     }
 
@@ -218,6 +231,10 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     }
 
     public BlockState getBlockState(int x, int y, int z) {
+        if (!this.volume.contains(x, y, z)) {
+            return EMPTY_BLOCK_STATE;
+        }
+
         int relX = x - this.originX;
         int relY = y - this.originY;
         int relZ = z - this.originZ;
@@ -245,6 +262,10 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
 
     @Override
     public int getLightLevel(LightType type, BlockPos pos) {
+        if (!this.volume.contains(pos.getX(), pos.getY(), pos.getZ())) {
+            return 0;
+        }
+
         int relX = pos.getX() - this.originX;
         int relY = pos.getY() - this.originY;
         int relZ = pos.getZ() - this.originZ;
@@ -261,6 +282,10 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
 
     @Override
     public int getBaseLightLevel(BlockPos pos, int ambientDarkness) {
+        if (!this.volume.contains(pos.getX(), pos.getY(), pos.getZ())) {
+            return 0;
+        }
+
         int relX = pos.getX() - this.originX;
         int relY = pos.getY() - this.originY;
         int relZ = pos.getZ() - this.originZ;
@@ -286,6 +311,10 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     }
 
     public BlockEntity getBlockEntity(int x, int y, int z) {
+        if (!this.volume.contains(x, y, z)) {
+            return null;
+        }
+
         int relX = x - this.originX;
         int relY = y - this.originY;
         int relZ = z - this.originZ;
@@ -315,23 +344,37 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     }
 
     @Override
-    public @Nullable Object getBlockEntityRenderAttachment(BlockPos pos) {
+    public int getColor(BiomeColorSource source, int x, int y, int z) {
+        return this.biomeColors.getColor(source, x, y, z);
+    }
+
+    @Override
+    public @Nullable Object getBlockEntityRenderData(BlockPos pos) {
+        if (!this.volume.contains(pos.getX(), pos.getY(), pos.getZ())) {
+            return null;
+        }
+
         int relX = pos.getX() - this.originX;
         int relY = pos.getY() - this.originY;
         int relZ = pos.getZ() - this.originZ;
 
-        var blockEntityAttachments = this.blockEntityAttachmentArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
+        var blockEntityRenderDataMap = this.blockEntityRenderDataArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
 
-        if (blockEntityAttachments == null) {
+        if (blockEntityRenderDataMap == null) {
             return null;
         }
 
-        return blockEntityAttachments.get(getLocalBlockIndex(relX & 15, relY & 15, relZ & 15));
+        return blockEntityRenderDataMap.get(getLocalBlockIndex(relX & 15, relY & 15, relZ & 15));
     }
 
     @Override
-    public int getColor(BiomeColorSource source, int x, int y, int z) {
-        return this.biomeColors.getColor(source, x, y, z);
+    public boolean hasBiomes() {
+        return true;
+    }
+
+    @Override
+    public RegistryEntry<Biome> getBiomeFabric(BlockPos pos) {
+        return this.biomeSlice.getBiome(pos.getX(), pos.getY(), pos.getZ());
     }
 
     public static int getLocalBlockIndex(int x, int y, int z) {

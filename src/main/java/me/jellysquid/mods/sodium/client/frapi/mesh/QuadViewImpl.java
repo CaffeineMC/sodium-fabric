@@ -264,7 +264,7 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
         }
     }
 
-    /* BakedQuadView implementations below */
+    // ModelQuadView method implementations below
 
     @Override
     public float getX(int idx) {
@@ -312,7 +312,7 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
     }
 
     @Override
-    public int getNormal() {
+    public Direction getLightFace() {
         throw new UnsupportedOperationException("Not available for QuadViewImpl.");
     }
 }

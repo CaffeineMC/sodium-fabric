@@ -5,17 +5,11 @@ plugins {
     // This prevents a lot of issues where the build script can fail randomly because the Fabric Maven server
     // is not reachable for some reason, and it makes builds much more reproducible. Observation also shows that it
     // really helps to improve startup times on slow connections.
-    id 'fabric-loom' version '1.3.8'
-
-    // Vineflower is a fork of the FernFlower decompiler which contains many enhancements and bug fixes, and generally
-    // produces much better source code. The Minecraft sources can be decompiled using it with the
-    // "genSourcesWithVineflower" task.
-    // (Note: Quiltflower was renamed to Vineflower in early July 2023.)
-    id 'io.github.juuxel.loom-vineflower' version '1.11.0'
+    id 'fabric-loom' version '1.4.1'
 
     // This dependency is only used to determine the state of the Git working tree so that build artifacts can be
     // more easily identified. TODO: Lazily load GrGit via a service only when builds are performed.
-    id 'org.ajoberstar.grgit' version '5.0.0'
+    id 'org.ajoberstar.grgit' version '5.2.0'
 }
 
 apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
@@ -83,7 +77,10 @@ dependencies {
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-renderer-api-v1", project.fabric_version))
+    modIncludeImplementation(fabricApi.module("fabric-block-view-api-v2", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
+    // `fabricApi.module` does not work with deprecated modules, so add the module dependency manually.
+    // This is planned to be fixed in Loom 1.4.
     modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
 }

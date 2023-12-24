@@ -4,9 +4,9 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.minecraft.util.math.Direction;
 
 public interface BakedQuadView extends ModelQuadView {
+    int getNormal();
+
     ModelQuadFacing getNormalFace();
-
-    Direction getLightFace();
-
+    
     boolean hasShade();
 }
