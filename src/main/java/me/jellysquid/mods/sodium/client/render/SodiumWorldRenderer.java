@@ -176,16 +176,18 @@ public class SodiumWorldRenderer {
             this.lastCameraPos = new Vector3d(pos);
         }
         boolean cameraLocationChanged = !pos.equals(this.lastCameraPos);
-        boolean dirty = cameraLocationChanged ||
-                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
-
-        if (dirty) {
-            this.renderSectionManager.markGraphDirty();
-        }
+        boolean cameraAngleChanged = pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
 
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
+
+        if (cameraLocationChanged || cameraAngleChanged) {
+            this.renderSectionManager.markGraphDirty();
+        }
+
         this.lastFogDistance = fogDistance;
+
+        this.renderSectionManager.updateCameraState(pos, camera);
 
         if (cameraLocationChanged) {
             profiler.swap("translucent_triggering");
@@ -194,26 +196,20 @@ public class SodiumWorldRenderer {
             this.lastCameraPos = new Vector3d(pos);
         }
 
-        profiler.swap("chunk_update");
-
-        this.renderSectionManager.updateCameraState(pos, camera);
-        this.renderSectionManager.updateChunks(updateChunksImmediately);
-
-        profiler.swap("chunk_upload");
-
-        this.renderSectionManager.uploadChunks();
-
         if (this.renderSectionManager.needsUpdate()) {
             profiler.swap("chunk_render_lists");
 
             this.renderSectionManager.update(camera, viewport, frame, spectator);
         }
 
-        if (updateChunksImmediately) {
-            profiler.swap("chunk_upload_immediately");
+        profiler.swap("chunk_update");
 
-            this.renderSectionManager.uploadChunks();
-        }
+        this.renderSectionManager.cleanupAndFlip();
+        this.renderSectionManager.updateChunks(updateChunksImmediately);
+
+        profiler.swap("chunk_upload");
+
+        this.renderSectionManager.uploadChunks();
 
         profiler.swap("chunk_render_tick");
 
