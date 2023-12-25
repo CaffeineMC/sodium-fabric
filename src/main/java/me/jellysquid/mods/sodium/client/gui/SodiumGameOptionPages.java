@@ -263,7 +263,7 @@ public class SodiumGameOptionPages {
                         .setName(Text.translatable("sodium.options.defer_sorting.name"))
                         .setTooltip(Text.translatable("sodium.options.defer_sorting.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.DeferSortMode.class))
-                        .setImpact(OptionImpact.HIGH)
+                        .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.deferSortMode = value, opts -> opts.performance.deferSortMode)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build())
