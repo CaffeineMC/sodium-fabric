@@ -288,51 +288,6 @@ public class RenderSectionManager {
         return render.getLastVisibleFrame() == this.lastUpdatedFrame;
     }
 
-    public void cleanupAndFlip() {
-        this.sectionCache.cleanup();
-        this.regions.update();
-    }
-
-    public void updateChunks(boolean updateImmediately) {
-        var thisFrameBlockingCollector = this.lastBlockingCollector;
-        if (thisFrameBlockingCollector == null) {
-            thisFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
-        }
-
-        if (updateImmediately) {
-            // for a perfect frame where everything is finished use the last frame's blocking collector
-            // and add all tasks to it so that they're waited on
-            this.submitSectionTasks(thisFrameBlockingCollector, thisFrameBlockingCollector, thisFrameBlockingCollector);
-
-            thisFrameBlockingCollector.awaitCompletion(this.builder);
-            this.lastBlockingCollector = null;
-        } else {
-            var nextFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
-            var deferredCollector = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
-
-            // TODO: with a user-facing option disable using a same-frame blocking collector and just use previous-frame if the user wants to avoid blocking at all costs
-            this.submitSectionTasks(thisFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
-
-            // wait on this frame's blocking collector which contains the important tasks from this frame
-            // and semi-important tasks from the last frame
-            thisFrameBlockingCollector.awaitCompletion(this.builder);
-
-            // store the semi-important collector to wait on it in the next frame
-            this.lastBlockingCollector = nextFrameBlockingCollector;
-        }
-    }
-
-    private void submitSectionTasks(
-        ChunkJobCollector importantCollector,
-        ChunkJobCollector semiImportantCollector,
-        ChunkJobCollector deferredCollector) {
-            this.submitSectionTasks(importantCollector, ChunkUpdateType.IMPORTANT_SORT);
-            this.submitSectionTasks(semiImportantCollector, ChunkUpdateType.IMPORTANT_REBUILD);
-            this.submitSectionTasks(deferredCollector, ChunkUpdateType.REBUILD);
-            this.submitSectionTasks(deferredCollector, ChunkUpdateType.INITIAL_BUILD);
-            this.submitSectionTasks(deferredCollector, ChunkUpdateType.SORT);
-    }
-
     public void uploadChunks() {
         var results = this.collectChunkBuildResults();
 
@@ -428,6 +383,50 @@ public class RenderSectionManager {
         }
 
         return results;
+    }
+
+    public void cleanupAndFlip() {
+        this.sectionCache.cleanup();
+        this.regions.update();
+    }
+
+    public void updateChunks(boolean updateImmediately) {
+        var thisFrameBlockingCollector = this.lastBlockingCollector;
+        if (thisFrameBlockingCollector == null) {
+            thisFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
+        }
+
+        if (updateImmediately) {
+            // for a perfect frame where everything is finished use the last frame's blocking collector
+            // and add all tasks to it so that they're waited on
+            this.submitSectionTasks(thisFrameBlockingCollector, thisFrameBlockingCollector, thisFrameBlockingCollector);
+
+            thisFrameBlockingCollector.awaitCompletion(this.builder);
+            this.lastBlockingCollector = null;
+        } else {
+            var nextFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
+            var deferredCollector = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
+
+            this.submitSectionTasks(thisFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
+
+            // wait on this frame's blocking collector which contains the important tasks from this frame
+            // and semi-important tasks from the last frame
+            thisFrameBlockingCollector.awaitCompletion(this.builder);
+
+            // store the semi-important collector to wait on it in the next frame
+            this.lastBlockingCollector = nextFrameBlockingCollector;
+        }
+    }
+
+    private void submitSectionTasks(
+        ChunkJobCollector importantCollector,
+        ChunkJobCollector semiImportantCollector,
+        ChunkJobCollector deferredCollector) {
+            this.submitSectionTasks(importantCollector, ChunkUpdateType.IMPORTANT_SORT);
+            this.submitSectionTasks(semiImportantCollector, ChunkUpdateType.IMPORTANT_REBUILD);
+            this.submitSectionTasks(deferredCollector, ChunkUpdateType.REBUILD);
+            this.submitSectionTasks(deferredCollector, ChunkUpdateType.INITIAL_BUILD);
+            this.submitSectionTasks(deferredCollector, ChunkUpdateType.SORT);
     }
 
     private void submitSectionTasks(ChunkJobCollector collector, ChunkUpdateType type) {
