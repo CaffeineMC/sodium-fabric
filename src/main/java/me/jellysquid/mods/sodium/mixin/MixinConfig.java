@@ -32,9 +32,6 @@ public class MixinConfig {
 
         this.addMixinRule("features", true);
 
-        this.addMixinRule("features.frapi.block_non_terrain", true);
-        this.addMixinRule("features.frapi.item", true);
-
         this.addMixinRule("features.gui", true);
 
         this.addMixinRule("features.gui.hooks", true);
@@ -56,6 +53,8 @@ public class MixinConfig {
         this.addMixinRule("features.render.entity", true);
         this.addMixinRule("features.render.entity.cull", true);
         this.addMixinRule("features.render.entity.shadow", true);
+
+        this.addMixinRule("features.render.frapi", true);
 
         this.addMixinRule("features.render.gui", true);
         this.addMixinRule("features.render.gui.font", true);
