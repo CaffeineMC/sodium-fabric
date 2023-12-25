@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceSets;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.DeferSortMode;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
@@ -407,7 +408,13 @@ public class RenderSectionManager {
             var nextFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
             var deferredCollector = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
 
-            this.submitSectionTasks(thisFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
+            // if zero frame delay is allowed, submit important sorts with the current frame blocking collector.
+            // otherwise submit with the collector that the next frame is blocking on.
+            if (allowZeroFrameSortWait()) {
+                this.submitSectionTasks(thisFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
+            } else {
+                this.submitSectionTasks(nextFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
+            }
 
             // wait on this frame's blocking collector which contains the important tasks from this frame
             // and semi-important tasks from the last frame
@@ -548,7 +555,7 @@ public class RenderSectionManager {
 
         if (section != null) {
             var pendingUpdate = ChunkUpdateType.SORT;
-            if (this.shouldPrioritizeTask(section)) {
+            if (allowImportantSorts() && this.shouldPrioritizeTask(section)) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_SORT;
             }
             pendingUpdate = ChunkUpdateType.getPromotionUpdateType(section.getPendingUpdate(), pendingUpdate);
@@ -592,6 +599,14 @@ public class RenderSectionManager {
 
     private static boolean allowImportantRebuilds() {
         return !SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
+    }
+
+    private static boolean allowImportantSorts() {
+        return SodiumClientMod.options().performance.deferSortMode != DeferSortMode.ALWAYS;
+    }
+
+    private static boolean allowZeroFrameSortWait() {
+        return SodiumClientMod.options().performance.deferSortMode == DeferSortMode.DEFER_ZERO_FRAMES;
     }
 
     private float getEffectiveRenderDistance() {
