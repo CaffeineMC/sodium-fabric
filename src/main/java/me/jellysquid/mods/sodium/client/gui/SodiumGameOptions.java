@@ -51,19 +51,25 @@ public class SodiumGameOptions {
     }
 
     public enum DeferSortMode implements TextProvider {
-        ALWAYS("sodium.options.defer_sorting.always"),
-        DEFER_ONE_FRAME("sodium.options.defer_sorting.defer_one_frame"),
-        DEFER_ZERO_FRAMES("sodium.options.defer_sorting.defer_zero_frames");
+        ALWAYS("sodium.options.defer_sorting.always", "A"),
+        DEFER_ONE_FRAME("sodium.options.defer_sorting.defer_one_frame", "1"),
+        DEFER_ZERO_FRAMES("sodium.options.defer_sorting.defer_zero_frames", "0");
 
         private final Text name;
+                private final String shortName;
 
-        DeferSortMode(String name) {
+        DeferSortMode(String name, String shortName) {
             this.name = Text.translatable(name);
+            this.shortName = shortName;
         }
 
         @Override
         public Text getLocalizedName() {
             return this.name;
+        }
+
+        public String getShortName() {
+            return this.shortName;
         }
     }
 

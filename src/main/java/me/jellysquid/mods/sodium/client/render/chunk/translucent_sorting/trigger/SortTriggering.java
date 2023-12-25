@@ -188,13 +188,14 @@ public class SortTriggering {
         if (sortBehavior == SortBehavior.OFF) {
             list.add("TS OFF");
         } else {
-            list.add("TS (%s) NL=%02d TrN=%02d TrS=G%03d/D%03d".formatted(
+            list.add("TS (%s,%s) NL=%02d TrN=%02d TrS=G%03d/D%03d".formatted(
                     sortBehavior.getShortName(),
+                    SodiumClientMod.options().performance.deferSortMode.getShortName(),
                     this.gfni.getUniqueNormalCount(),
                     this.triggeredNormalCount,
                     this.gfniTriggerCount,
                     this.directTriggerCount));
-            list.add("N=%05d SNR=%05d STA=%04d DYN=%04d (DIR=%04d)".formatted(
+            list.add("N=%05d SNR=%05d STA=%05d DYN=%05d (DIR=%02d)".formatted(
                     this.sortTypeCounters[SortType.NONE.ordinal()],
                     this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()],
                     this.sortTypeCounters[SortType.STATIC_TOPO.ordinal()],
