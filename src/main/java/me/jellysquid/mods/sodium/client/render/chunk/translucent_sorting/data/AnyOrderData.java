@@ -31,20 +31,25 @@ public class AnyOrderData extends SplitDirectionData {
         return SortType.NONE;
     }
 
+    /**
+     * Important: The vertex indexes must start at zero for each facing.
+     */
     public static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, ChunkSectionPos sectionPos, NativeBuffer buffer) {
         buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
-        var counter = 0;
-        var lastFacing = quads[0].getFacing();
-        for (int i = 0; i < quads.length; i++) {
-            var currentFacing = quads[i].getFacing();
-            if (i > 0 && currentFacing != lastFacing) {
-                counter = 0;
+
+        var ranges = translucentMesh.getVertexRanges();
+        for (var range : ranges) {
+            if (range == null) {
+                continue;
             }
-            lastFacing = currentFacing;
-            TranslucentData.writeQuadVertexIndexes(indexBuffer, counter++);
+
+            int count = TranslucentData.vertexCountToQuadCount(range.vertexCount());
+            for (int i = 0; i < count; i++) {
+                TranslucentData.writeQuadVertexIndexes(indexBuffer, i);
+            }
         }
-        return new AnyOrderData(sectionPos, buffer, translucentMesh.getVertexRanges());
+        return new AnyOrderData(sectionPos, buffer, ranges);
     }
 }

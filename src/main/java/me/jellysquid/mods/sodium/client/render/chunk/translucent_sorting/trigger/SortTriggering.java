@@ -20,10 +20,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * of translucent data objects for each sort type and delegates triggering of
  * sections for dynamic sorting to the trigger components.
  * 
- * TODO: see if the duplicated geometry bug happens when:
- * - hashing for triggering is removed
- * - hashing for translucent data reuse is removed
- * 
  * @author douira (the translucent_sorting package)
  */
 public class SortTriggering {
