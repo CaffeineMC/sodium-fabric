@@ -11,29 +11,6 @@ public class VertexSorters {
         return new SortByDistance(origin);
     }
 
-    public static VertexSorter sortByAxis(ModelQuadFacing facing) {
-        switch (facing) {
-            case POS_X:
-                return new SortByAxis(0, 1.0F);
-            case NEG_X:
-                return new SortByAxis(0, -1.0F);
-            case POS_Y:
-                return new SortByAxis(1, 1.0F);
-            case NEG_Y:
-                return new SortByAxis(1, -1.0F);
-            case POS_Z:
-                return new SortByAxis(2, 1.0F);
-            case NEG_Z:
-                return new SortByAxis(2, -1.0F);
-            default:
-                throw new IllegalArgumentException("Unknown facing: " + facing);
-        }
-    }
-
-    public static VertexSorter sortByNormalRelative(Vector3f normal) {
-        return new SortNormalRelative(normal);
-    }
-
     private static class SortByDistance extends AbstractVertexSorter {
         private final Vector3f origin;
 
@@ -45,34 +22,6 @@ public class VertexSorters {
         protected float getKey(Vector3f position) {
             // requires euclidean distance, manhattan distance doesn't work
             return this.origin.distanceSquared(position);
-        }
-    }
-
-    private static class SortByAxis extends AbstractVertexSorter {
-        private final int axis;
-        private final float sign;
-
-        private SortByAxis(int axis, float sign) {
-            this.axis = axis;
-            this.sign = sign;
-        }
-
-        @Override
-        protected float getKey(Vector3f position) {
-            return -sign * position.get(this.axis);
-        }
-    }
-
-    private static class SortNormalRelative extends AbstractVertexSorter {
-        private final Vector3f normal;
-
-        private SortNormalRelative(Vector3f normal) {
-            this.normal = normal;
-        }
-
-        @Override
-        protected float getKey(Vector3f position) {
-            return this.normal.dot(position);
         }
     }
 

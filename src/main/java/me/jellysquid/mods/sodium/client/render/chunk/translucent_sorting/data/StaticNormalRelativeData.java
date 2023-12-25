@@ -3,16 +3,12 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 
-import com.mojang.blaze3d.systems.VertexSorter;
-
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -27,14 +23,6 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     @Override
     public SortType getSortType() {
         return SortType.STATIC_NORMAL_RELATIVE;
-    }
-
-    private static final VertexSorter[] SORTERS = new VertexSorter[ModelQuadFacing.DIRECTIONS];
-
-    static {
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
-            SORTERS[i] = VertexSorters.sortByAxis(ModelQuadFacing.VALUES[i]);
-        }
     }
 
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh,
