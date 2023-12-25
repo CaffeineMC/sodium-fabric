@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.mixin.features.frapi.item;
+package me.jellysquid.mods.sodium.mixin.features.render.frapi;
 
-import me.jellysquid.mods.sodium.client.frapi.render.ItemRenderContext;
-import me.jellysquid.mods.sodium.client.frapi.render.VanillaQuadHandlerImpl;
+import me.jellysquid.mods.sodium.client.render.frapi.render.ItemRenderContext;
 import net.minecraft.client.color.item.ItemColors;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.resource.ResourceManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -44,25 +43,20 @@ public abstract class ItemRendererMixin {
     private ItemColors colors;
 
     @Unique
-    private ThreadLocal<ItemRenderContext> sodium_contexts = ThreadLocal.withInitial(() -> new ItemRenderContext(colors));
+    private final ItemRenderContext.VanillaModelBufferer vanillaBufferer = this::renderBakedItemModel;
 
     @Unique
-    private final ItemRenderContext.VanillaQuadHandler sodium_vanillaHandler = new VanillaQuadHandlerImpl((ItemRenderer) (Object) this);
+    private final ThreadLocal<ItemRenderContext> contexts = ThreadLocal.withInitial(() -> new ItemRenderContext(colors, vanillaBufferer));
 
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/BakedModel;isBuiltin()Z"), method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/render/model/json/ModelTransformationMode;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V", cancellable = true)
-    public void hook_renderItem(ItemStack stack, ModelTransformationMode transformMode, boolean invert, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light, int overlay, BakedModel model, CallbackInfo ci) {
+    @Shadow
+    abstract void renderBakedItemModel(BakedModel model, ItemStack stack, int light, int overlay, MatrixStack matrices, VertexConsumer vertices);
+
+    @Inject(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/render/model/json/ModelTransformationMode;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/BakedModel;isBuiltin()Z"), cancellable = true)
+    private void beforeRenderItem(ItemStack stack, ModelTransformationMode transformMode, boolean invert, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light, int overlay, BakedModel model, CallbackInfo ci) {
         if (!model.isVanillaAdapter()) {
-            sodium_contexts.get().renderModel(stack, transformMode, invert, matrixStack, vertexConsumerProvider, light, overlay, model, sodium_vanillaHandler);
+            contexts.get().renderModel(stack, transformMode, invert, matrixStack, vertexConsumerProvider, light, overlay, model);
             matrixStack.pop();
             ci.cancel();
         }
-    }
-
-    /**
-     * Recreate contexts on reload to reset the sprite finder.
-     */
-    @Inject(at = @At("HEAD"), method = "reload")
-    public void hook_reload(ResourceManager manager, CallbackInfo ci) {
-        sodium_contexts = ThreadLocal.withInitial(() -> new ItemRenderContext(colors));
     }
 }

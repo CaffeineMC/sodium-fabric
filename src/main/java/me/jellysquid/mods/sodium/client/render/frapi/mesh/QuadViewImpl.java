@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.mesh;
+package me.jellysquid.mods.sodium.client.render.frapi.mesh;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.render.frapi.helper.ColorHelper;
+import me.jellysquid.mods.sodium.client.render.frapi.helper.GeometryHelper;
+import me.jellysquid.mods.sodium.client.render.frapi.helper.NormalHelper;
+import me.jellysquid.mods.sodium.client.render.frapi.material.RenderMaterialImpl;
+import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
-import me.jellysquid.mods.sodium.client.frapi.helper.ColorHelper;
-import me.jellysquid.mods.sodium.client.frapi.helper.GeometryHelper;
-import me.jellysquid.mods.sodium.client.frapi.helper.NormalHelper;
-import me.jellysquid.mods.sodium.client.frapi.material.RenderMaterialImpl;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
-import static me.jellysquid.mods.sodium.client.frapi.mesh.EncodingFormat.*;
+import static me.jellysquid.mods.sodium.client.render.frapi.mesh.EncodingFormat.*;
 
 /**
  * Base class for all quads / quad makers. Handles the ugly bits
@@ -39,12 +42,9 @@ import static me.jellysquid.mods.sodium.client.frapi.mesh.EncodingFormat.*;
 public class QuadViewImpl implements QuadView, ModelQuadView {
     @Nullable
     protected Direction nominalFace;
-    /** True when face normal, light face, or geometry flags may not match geometry. */
+    /** True when face normal, light face, normal face, or geometry flags may not match geometry. */
     protected boolean isGeometryInvalid = true;
     protected final Vector3f faceNormal = new Vector3f();
-    /** Cached sprite, used to register animated sprites. */
-    @Nullable
-    protected Sprite cachedSprite;
 
     /** Size and where it comes from will vary in subtypes. But in all cases quad is fully encoded to array. */
     protected int[] data;
@@ -59,8 +59,7 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
     public void load() {
         isGeometryInvalid = false;
         nominalFace = lightFace();
-        NormalHelper.unpackNormal(packedFaceNormal(), faceNormal);
-        cachedSprite = null;
+        NormI8.unpack(packedFaceNormal(), faceNormal);
     }
 
     protected void computeGeometry() {
@@ -68,17 +67,22 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
             isGeometryInvalid = false;
 
             NormalHelper.computeFaceNormal(faceNormal, this);
-            data[baseIndex + HEADER_FACE_NORMAL] = NormalHelper.packNormal(faceNormal);
+            int packedFaceNormal = NormI8.pack(faceNormal);
+            data[baseIndex + HEADER_FACE_NORMAL] = packedFaceNormal;
 
             // depends on face normal
-            data[baseIndex + HEADER_BITS] = EncodingFormat.lightFace(data[baseIndex + HEADER_BITS], GeometryHelper.lightFace(this));
+            Direction lightFace = GeometryHelper.lightFace(this);
+            data[baseIndex + HEADER_BITS] = EncodingFormat.lightFace(data[baseIndex + HEADER_BITS], lightFace);
+
+            // depends on face normal
+            data[baseIndex + HEADER_BITS] = EncodingFormat.normalFace(data[baseIndex + HEADER_BITS], ModelQuadUtil.findNormalFace(packedFaceNormal));
 
             // depends on light face
-            data[baseIndex + HEADER_BITS] = EncodingFormat.geometryFlags(data[baseIndex + HEADER_BITS], ModelQuadFlags.getQuadFlags(this, lightFace()));
+            data[baseIndex + HEADER_BITS] = EncodingFormat.geometryFlags(data[baseIndex + HEADER_BITS], ModelQuadFlags.computeFlags(this, lightFace));
         }
     }
 
-    /** gets flags used for lighting - lazily computed via {@link ModelQuadFlags#getQuadFlags(ModelQuadView, Direction)}. */
+    /** gets flags used for lighting - lazily computed via {@link ModelQuadFlags#computeFlags}. */
     public int geometryFlags() {
         computeGeometry();
         return EncodingFormat.geometryFlags(data[baseIndex + HEADER_BITS]);
@@ -173,19 +177,26 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
         return baseIndex + vertexIndex * VERTEX_STRIDE + VERTEX_NORMAL;
     }
 
+    /**
+     * This method will only return a meaningful value if {@link #hasNormal} returns {@code true} for the same vertex index.
+     */
+    public int packedNormal(int vertexIndex) {
+        return data[normalIndex(vertexIndex)];
+    }
+
     @Override
     public float normalX(int vertexIndex) {
-        return hasNormal(vertexIndex) ? NormalHelper.unpackNormalX(data[normalIndex(vertexIndex)]) : Float.NaN;
+        return hasNormal(vertexIndex) ? NormI8.unpackX(data[normalIndex(vertexIndex)]) : Float.NaN;
     }
 
     @Override
     public float normalY(int vertexIndex) {
-        return hasNormal(vertexIndex) ? NormalHelper.unpackNormalY(data[normalIndex(vertexIndex)]) : Float.NaN;
+        return hasNormal(vertexIndex) ? NormI8.unpackY(data[normalIndex(vertexIndex)]) : Float.NaN;
     }
 
     @Override
     public float normalZ(int vertexIndex) {
-        return hasNormal(vertexIndex) ? NormalHelper.unpackNormalZ(data[normalIndex(vertexIndex)]) : Float.NaN;
+        return hasNormal(vertexIndex) ? NormI8.unpackZ(data[normalIndex(vertexIndex)]) : Float.NaN;
     }
 
     @Override
@@ -197,7 +208,7 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
             }
 
             final int normal = data[normalIndex(vertexIndex)];
-            NormalHelper.unpackNormal(normal, target);
+            NormI8.unpack(normal, target);
             return target;
         } else {
             return null;
@@ -215,6 +226,11 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
     public final Direction lightFace() {
         computeGeometry();
         return EncodingFormat.lightFace(data[baseIndex + HEADER_BITS]);
+    }
+
+    public final ModelQuadFacing normalFace() {
+        computeGeometry();
+        return EncodingFormat.normalFace(data[baseIndex + HEADER_BITS]);
     }
 
     @Override
@@ -288,22 +304,17 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
 
     @Override
     public float getTexU(int idx) {
-        throw new UnsupportedOperationException("Not available for QuadViewImpl.");
+        return u(idx);
     }
 
     @Override
     public float getTexV(int idx) {
-        throw new UnsupportedOperationException("Not available for QuadViewImpl.");
-    }
-
-    @Override
-    public int getFlags() {
-        return geometryFlags();
+        return v(idx);
     }
 
     @Override
     public int getColorIndex() {
-        return colorIndex();
+        return material().disableColorIndex() ? -1 : colorIndex();
     }
 
     @Override
@@ -313,6 +324,11 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
 
     @Override
     public Direction getLightFace() {
-        throw new UnsupportedOperationException("Not available for QuadViewImpl.");
+        return lightFace();
+    }
+
+    @Override
+    public int getFlags() {
+        return geometryFlags();
     }
 }

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.helper;
+package me.jellysquid.mods.sodium.client.render.frapi.helper;
 
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3i;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
@@ -30,68 +29,6 @@ import org.joml.Vector3f;
  */
 public abstract class NormalHelper {
     private NormalHelper() { }
-
-    private static final float PACK = 127.0f;
-    private static final float UNPACK = 1.0f / PACK;
-
-    /**
-     * Stores a normal plus an extra value as a quartet of signed bytes.
-     * This is the same normal format that vanilla rendering expects.
-     * The extra value is for use by shaders.
-     */
-    public static int packNormal(float x, float y, float z, float w) {
-        x = MathHelper.clamp(x, -1, 1);
-        y = MathHelper.clamp(y, -1, 1);
-        z = MathHelper.clamp(z, -1, 1);
-        w = MathHelper.clamp(w, -1, 1);
-
-        return ((int) (x * PACK) & 0xFF) | (((int) (y * PACK) & 0xFF) << 8) | (((int) (z * PACK) & 0xFF) << 16) | (((int) (w * PACK) & 0xFF) << 24);
-    }
-
-    /**
-     * Version of {@link #packNormal(float, float, float, float)} that accepts a vector type.
-     */
-    public static int packNormal(Vector3f normal, float w) {
-        return packNormal(normal.x(), normal.y(), normal.z(), w);
-    }
-
-    /**
-     * Like {@link #packNormal(float, float, float, float)}, but without a {@code w} value.
-     */
-    public static int packNormal(float x, float y, float z) {
-        x = MathHelper.clamp(x, -1, 1);
-        y = MathHelper.clamp(y, -1, 1);
-        z = MathHelper.clamp(z, -1, 1);
-
-        return ((int) (x * PACK) & 0xFF) | (((int) (y * PACK) & 0xFF) << 8) | (((int) (z * PACK) & 0xFF) << 16);
-    }
-
-    /**
-     * Like {@link #packNormal(Vector3f, float)}, but without a {@code w} value.
-     */
-    public static int packNormal(Vector3f normal) {
-        return packNormal(normal.x(), normal.y(), normal.z());
-    }
-
-    public static float unpackNormalX(int packedNormal) {
-        return ((byte) (packedNormal & 0xFF)) * UNPACK;
-    }
-
-    public static float unpackNormalY(int packedNormal) {
-        return ((byte) ((packedNormal >>> 8) & 0xFF)) * UNPACK;
-    }
-
-    public static float unpackNormalZ(int packedNormal) {
-        return ((byte) ((packedNormal >>> 16) & 0xFF)) * UNPACK;
-    }
-
-    public static float unpackNormalW(int packedNormal) {
-        return ((byte) ((packedNormal >>> 24) & 0xFF)) * UNPACK;
-    }
-
-    public static void unpackNormal(int packedNormal, Vector3f target) {
-        target.set(unpackNormalX(packedNormal), unpackNormalY(packedNormal), unpackNormalZ(packedNormal));
-    }
 
     /**
      * Computes the face normal of the given quad and saves it in the provided non-null vector.

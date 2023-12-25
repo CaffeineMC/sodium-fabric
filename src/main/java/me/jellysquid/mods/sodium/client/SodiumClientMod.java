@@ -1,12 +1,15 @@
 package me.jellysquid.mods.sodium.client;
 
-import me.jellysquid.mods.sodium.client.frapi.SodiumRenderer;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.render.frapi.SodiumRenderer;
+import me.jellysquid.mods.sodium.client.render.frapi.SpriteFinderCache;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.minecraft.resource.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +36,7 @@ public class SodiumClientMod implements ClientModInitializer {
 
         FlawlessFrames.onClientInitialization();
 
+        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(SpriteFinderCache.ReloadListener.INSTANCE);
         RendererAccess.INSTANCE.registerRenderer(SodiumRenderer.INSTANCE);
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.mesh;
+package me.jellysquid.mods.sodium.client.render.frapi.mesh;
 
 import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;

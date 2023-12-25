@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi;
+package me.jellysquid.mods.sodium.client.render.frapi;
 
-import me.jellysquid.mods.sodium.client.frapi.material.RenderMaterialImpl;
+import me.jellysquid.mods.sodium.client.render.frapi.material.MaterialFinderImpl;
+import me.jellysquid.mods.sodium.client.render.frapi.material.RenderMaterialImpl;
+import me.jellysquid.mods.sodium.client.render.frapi.mesh.MeshBuilderImpl;
 import net.fabricmc.fabric.api.renderer.v1.Renderer;
 import net.fabricmc.fabric.api.renderer.v1.material.MaterialFinder;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MeshBuilder;
-import me.jellysquid.mods.sodium.client.frapi.material.MaterialFinderImpl;
-import me.jellysquid.mods.sodium.client.frapi.mesh.MeshBuilderImpl;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -33,10 +33,10 @@ import java.util.HashMap;
 public class SodiumRenderer implements Renderer {
     public static final SodiumRenderer INSTANCE = new SodiumRenderer();
 
-    public static final RenderMaterial MATERIAL_STANDARD = INSTANCE.materialFinder().find();
+    public static final RenderMaterial STANDARD_MATERIAL = INSTANCE.materialFinder().find();
 
     static {
-        INSTANCE.registerMaterial(RenderMaterial.MATERIAL_STANDARD, MATERIAL_STANDARD);
+        INSTANCE.registerMaterial(RenderMaterial.MATERIAL_STANDARD, STANDARD_MATERIAL);
     }
 
     private final HashMap<Identifier, RenderMaterial> materialMap = new HashMap<>();

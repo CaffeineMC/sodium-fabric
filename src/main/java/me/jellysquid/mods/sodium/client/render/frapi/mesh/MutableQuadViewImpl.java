@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.mesh;
+package me.jellysquid.mods.sodium.client.render.frapi.mesh;
 
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
+import me.jellysquid.mods.sodium.client.render.frapi.SodiumRenderer;
+import me.jellysquid.mods.sodium.client.render.frapi.helper.ColorHelper;
+import me.jellysquid.mods.sodium.client.render.frapi.helper.TextureHelper;
+import me.jellysquid.mods.sodium.client.render.frapi.material.RenderMaterialImpl;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
-import me.jellysquid.mods.sodium.client.frapi.SodiumRenderer;
-import me.jellysquid.mods.sodium.client.frapi.helper.ColorHelper;
-import me.jellysquid.mods.sodium.client.frapi.helper.NormalHelper;
-import me.jellysquid.mods.sodium.client.frapi.helper.TextureHelper;
-import me.jellysquid.mods.sodium.client.frapi.material.RenderMaterialImpl;
 import net.fabricmc.fabric.api.renderer.v1.model.SpriteFinder;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 
-import static me.jellysquid.mods.sodium.client.frapi.mesh.EncodingFormat.*;
+import static me.jellysquid.mods.sodium.client.render.frapi.mesh.EncodingFormat.*;
 
 /**
  * Almost-concrete implementation of a mutable quad. The only missing part is {@link #emitDirectly()},
@@ -44,16 +44,44 @@ import static me.jellysquid.mods.sodium.client.frapi.mesh.EncodingFormat.*;
  * numbers. It also allows for a consistent interface for those transformations.
  */
 public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEmitter {
+    @Nullable
+    private Sprite cachedSprite;
+
+    @Nullable
+    public Sprite cachedSprite() {
+        return cachedSprite;
+    }
+
+    public void cachedSprite(@Nullable Sprite sprite) {
+        cachedSprite = sprite;
+    }
+
+    public Sprite sprite(SpriteFinder finder) {
+        Sprite sprite = cachedSprite;
+
+        if (sprite == null) {
+            cachedSprite = sprite = finder.find(this);
+        }
+
+        return sprite;
+    }
+
     public void clear() {
         System.arraycopy(EMPTY, 0, data, baseIndex, EncodingFormat.TOTAL_STRIDE);
         isGeometryInvalid = true;
         nominalFace = null;
-        cachedSprite = null;
         normalFlags(0);
         tag(0);
         colorIndex(-1);
         cullFace(null);
-        material(SodiumRenderer.MATERIAL_STANDARD);
+        material(SodiumRenderer.STANDARD_MATERIAL);
+        cachedSprite(null);
+    }
+
+    @Override
+    public void load() {
+        super.load();
+        cachedSprite(null);
     }
 
     @Override
@@ -77,14 +105,14 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
         final int i = baseIndex + vertexIndex * VERTEX_STRIDE + VERTEX_U;
         data[i] = Float.floatToRawIntBits(u);
         data[i + 1] = Float.floatToRawIntBits(v);
-        cachedSprite = null;
+        cachedSprite(null);
         return this;
     }
 
     @Override
     public MutableQuadViewImpl spriteBake(Sprite sprite, int bakeFlags) {
         TextureHelper.bakeSprite(this, sprite, bakeFlags);
-        cachedSprite = sprite;
+        cachedSprite(sprite);
         return this;
     }
 
@@ -101,7 +129,7 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
     @Override
     public MutableQuadViewImpl normal(int vertexIndex, float x, float y, float z) {
         normalFlags(normalFlags() | (1 << vertexIndex));
-        data[baseIndex + vertexIndex * VERTEX_STRIDE + VERTEX_NORMAL] = NormalHelper.packNormal(x, y, z);
+        data[baseIndex + vertexIndex * VERTEX_STRIDE + VERTEX_NORMAL] = NormI8.pack(x, y, z);
         return this;
     }
 
@@ -140,7 +168,7 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
     @Override
     public final MutableQuadViewImpl material(RenderMaterial material) {
         if (material == null) {
-            material = SodiumRenderer.MATERIAL_STANDARD;
+            material = SodiumRenderer.STANDARD_MATERIAL;
         }
 
         data[baseIndex + HEADER_BITS] = EncodingFormat.material(data[baseIndex + HEADER_BITS], (RenderMaterialImpl) material);
@@ -168,22 +196,20 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
         faceNormal.set(q.faceNormal);
         nominalFace = q.nominalFace;
         isGeometryInvalid = false;
-        cachedSprite = q.cachedSprite;
-        return this;
-    }
 
-    @Override
-    public final MutableQuadViewImpl fromVanilla(int[] quadData, int startIndex) {
-        isGeometryInvalid = true;
-        cachedSprite = null;
-        fromVanillaInternal(quadData, startIndex);
+        if (quad instanceof MutableQuadViewImpl mutableQuad) {
+            cachedSprite(mutableQuad.cachedSprite());
+        } else {
+            cachedSprite(null);
+        }
 
         return this;
     }
 
     /**
-     * Does the same work as {@link #fromVanilla(int[], int)}, but does not mark the geometry as invalid.
-     * Only use this if you are also setting the geometry.
+     * Does the same work as {@link #fromVanilla(int[], int)}, but does not mark the geometry as invalid
+     * and does not clear the cached sprite.
+     * Only use this if you are also setting the geometry and sprite.
      */
     private void fromVanillaInternal(int[] quadData, int startIndex) {
         System.arraycopy(quadData, startIndex, data, baseIndex + HEADER_STRIDE, VANILLA_QUAD_STRIDE);
@@ -197,8 +223,16 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
     }
 
     @Override
+    public final MutableQuadViewImpl fromVanilla(int[] quadData, int startIndex) {
+        fromVanillaInternal(quadData, startIndex);
+        isGeometryInvalid = true;
+        cachedSprite(null);
+        return this;
+    }
+
+    @Override
     public final MutableQuadViewImpl fromVanilla(BakedQuad quad, RenderMaterial material, @Nullable Direction cullFace) {
-        fromVanilla(quad.getVertexData(), 0);
+        fromVanillaInternal(quad.getVertexData(), 0);
         data[baseIndex + HEADER_BITS] = EncodingFormat.cullFace(0, cullFace);
         nominalFace(quad.getFace());
         colorIndex(quad.getColorIndex());
@@ -211,16 +245,15 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
         tag(0);
 
         // Copy geometry cached inside the quad
-        BakedQuadView view = (BakedQuadView) quad;
-
-        NormalHelper.unpackNormal(view.getNormal(), faceNormal);
-        data[baseIndex + HEADER_FACE_NORMAL] = view.getNormal();
-        data[baseIndex + HEADER_BITS] = EncodingFormat.lightFace(data[baseIndex + HEADER_BITS], view.getLightFace());
-        data[baseIndex + HEADER_BITS] = EncodingFormat.geometryFlags(data[baseIndex + HEADER_BITS], view.getFlags());
+        BakedQuadView bakedView = (BakedQuadView) quad;
+        NormI8.unpack(bakedView.getNormal(), faceNormal);
+        data[baseIndex + HEADER_FACE_NORMAL] = bakedView.getNormal();
+        int headerBits = EncodingFormat.lightFace(data[baseIndex + HEADER_BITS], bakedView.getLightFace());
+        headerBits = EncodingFormat.normalFace(headerBits, bakedView.getNormalFace());
+        data[baseIndex + HEADER_BITS] = EncodingFormat.geometryFlags(headerBits, bakedView.getFlags());
         isGeometryInvalid = false;
 
-        cachedSprite = quad.getSprite();
-
+        cachedSprite(quad.getSprite());
         return this;
     }
 
@@ -235,16 +268,5 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
         emitDirectly();
         clear();
         return this;
-    }
-
-    public final Sprite getSprite(SpriteFinder finder) {
-        @Nullable
-        Sprite ret = cachedSprite;
-
-        if (ret == null) {
-            cachedSprite = ret = finder.find(this);
-        }
-
-        return ret;
     }
 }

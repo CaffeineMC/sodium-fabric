@@ -52,7 +52,11 @@ public class NormI8 {
      */
     private static int encode(float comp) {
         // TODO: is the clamp necessary here? our inputs should always be normalized vector components
-        return ((int) (MathHelper.clamp(comp, -1.0F, 1.0F) * COMPONENT_RANGE) & 255);
+        return ((int) (MathHelper.clamp(comp, -1.0F, 1.0F) * COMPONENT_RANGE) & 0xFF);
+    }
+
+    public static void unpack(int norm, Vector3f target) {
+        target.set(unpackX(norm), unpackY(norm), unpackZ(norm));
     }
 
     /**

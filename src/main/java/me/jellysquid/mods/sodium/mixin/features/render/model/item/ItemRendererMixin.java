@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.features.render.model.item;
 
+import me.jellysquid.mods.sodium.client.model.color.interop.ItemColorsExtended;
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.render.immediate.model.BakedModelEncoder;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
-import me.jellysquid.mods.sodium.client.model.color.interop.ItemColorsExtended;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
@@ -19,7 +19,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -90,7 +93,7 @@ public class ItemRendererMixin {
             int color = 0xFFFFFFFF;
 
             if (colorProvider != null && quad.hasColor()) {
-                color = ColorARGB.toABGR((colorProvider.getColor(itemStack, quad.getColorIndex())), 255);
+                color = ColorARGB.toABGR((colorProvider.getColor(itemStack, quad.getColorIndex())), 0xFF);
             }
 
             BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);

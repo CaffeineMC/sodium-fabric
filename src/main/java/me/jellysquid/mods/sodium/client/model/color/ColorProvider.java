@@ -13,7 +13,7 @@ public interface ColorProvider<T> {
      * @param pos    The position of the object being colorized
      * @param state  The state of the object being colorized
      * @param quad   The quad geometry which should be colorized
-     * @param output The output array of vertex colors (in ABGR format)
+     * @param output The output array of vertex colors (in ARGB format)
      */
     void getColors(WorldSlice view, BlockPos pos, T state, ModelQuadView quad, int[] output);
 }

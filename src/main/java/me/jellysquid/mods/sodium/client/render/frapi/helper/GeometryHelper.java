@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.helper;
+package me.jellysquid.mods.sodium.client.render.frapi.helper;
 
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
 import net.minecraft.client.render.model.BakedQuad;
@@ -66,24 +66,6 @@ public abstract class GeometryHelper {
             // handle WTF case
             return Direction.UP;
         }
-    }
-
-    /**
-     * Simple 4-way compare, doesn't handle NaN values.
-     */
-    public static float min(float a, float b, float c, float d) {
-        final float x = a < b ? a : b;
-        final float y = c < d ? c : d;
-        return x < y ? x : y;
-    }
-
-    /**
-     * Simple 4-way compare, doesn't handle NaN values.
-     */
-    public static float max(float a, float b, float c, float d) {
-        final float x = a > b ? a : b;
-        final float y = c > d ? c : d;
-        return x > y ? x : y;
     }
 
     /**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.material;
+package me.jellysquid.mods.sodium.client.render.frapi.material;
 
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.MaterialFinder;

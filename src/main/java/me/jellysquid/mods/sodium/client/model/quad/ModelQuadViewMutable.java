@@ -39,14 +39,9 @@ public interface ModelQuadViewMutable extends ModelQuadView {
     void setTexV(int idx, float v);
 
     /**
-     * Sets the light map texture coordinate of the vertex at index {@param idx} to the value {@param light}
+     * Sets the color index used by this quad
      */
-    void setLight(int idx, int light);
-
-    /**
-     * Sets the bit-flag field which contains the {@link ModelQuadFlags} for this quad
-     */
-    void setFlags(int flags);
+    void setColorIndex(int index);
 
     /**
      * Sets the sprite used by this quad
@@ -59,7 +54,7 @@ public interface ModelQuadViewMutable extends ModelQuadView {
     void setLightFace(Direction direction);
 
     /**
-     * Sets the color index used by this quad
+     * Sets the bit-flag field which contains the {@link ModelQuadFlags} for this quad
      */
-    void setColorIndex(int index);
+    void setFlags(int flags);
 }

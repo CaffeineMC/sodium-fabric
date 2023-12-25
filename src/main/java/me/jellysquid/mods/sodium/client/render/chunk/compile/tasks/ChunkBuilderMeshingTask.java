@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
@@ -73,7 +73,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockPos.Mutable blockPos = new BlockPos.Mutable(minX, minY, minZ);
         BlockPos.Mutable modelOffset = new BlockPos.Mutable();
 
-        BlockRenderContext context = new BlockRenderContext(slice);
+        BlockRenderer blockRenderer = cache.getBlockRenderer();
+        blockRenderer.prepare(buffers, slice);
 
         try {
             for (int y = minY; y < maxY; y++) {
@@ -94,13 +95,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
                         if (blockState.getRenderType() == BlockRenderType.MODEL) {
                             BakedModel model = cache.getBlockModels()
-                                .getModel(blockState);
-
-                            long seed = blockState.getRenderingSeed(blockPos);
-
-                            context.update(blockPos, modelOffset, blockState, model, seed);
-                            cache.getBlockRenderer()
-                                .renderModel(context, buffers);
+                                    .getModel(blockState);
+                            blockRenderer.renderModel(model, blockState, blockPos, modelOffset);
                         }
 
                         FluidState fluidState = blockState.getFluidState();
@@ -134,6 +130,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             // Create a new crash report for other exceptions (e.g. thrown in getQuads)
             throw fillCrashInfo(CrashReport.create(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
+
+        blockRenderer.release();
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
 

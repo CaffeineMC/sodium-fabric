@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.helper;
+package me.jellysquid.mods.sodium.client.render.frapi.helper;
 
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.minecraft.client.texture.Sprite;

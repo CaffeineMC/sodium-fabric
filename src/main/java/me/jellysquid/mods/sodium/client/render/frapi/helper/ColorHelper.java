@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.helper;
+package me.jellysquid.mods.sodium.client.render.frapi.helper;
 
 import java.nio.ByteOrder;
 

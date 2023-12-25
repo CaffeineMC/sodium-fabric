@@ -49,13 +49,8 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public void setLight(int idx, int light) {
-        this.data[vertexOffset(idx) + LIGHT_INDEX] = light;
-    }
-
-    @Override
-    public void setFlags(int flags) {
-        this.flags = flags;
+    public void setColorIndex(int index) {
+        this.colorIdx = index;
     }
 
     @Override
@@ -64,18 +59,13 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public void setColorIndex(int index) {
-        this.colorIdx = index;
-    }
-
-    @Override
     public void setLightFace(Direction direction) {
         this.direction = direction;
     }
 
     @Override
-    public int getColorIndex() {
-        return this.colorIdx;
+    public void setFlags(int flags) {
+        this.flags = flags;
     }
 
     @Override
@@ -109,8 +99,8 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public int getFlags() {
-        return this.flags;
+    public int getColorIndex() {
+        return this.colorIdx;
     }
 
     @Override
@@ -121,5 +111,10 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public Direction getLightFace() {
         return this.direction;
+    }
+
+    @Override
+    public int getFlags() {
+        return this.flags;
     }
 }

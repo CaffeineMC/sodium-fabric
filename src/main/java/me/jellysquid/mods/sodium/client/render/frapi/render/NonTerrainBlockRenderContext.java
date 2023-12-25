@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-package me.jellysquid.mods.sodium.client.frapi.render;
+package me.jellysquid.mods.sodium.client.render.frapi.render;
 
-import me.jellysquid.mods.sodium.client.frapi.helper.ColorHelper;
-import me.jellysquid.mods.sodium.client.frapi.mesh.EncodingFormat;
-import me.jellysquid.mods.sodium.client.frapi.mesh.MutableQuadViewImpl;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.data.SingleBlockLightDataCache;
-import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
-import me.jellysquid.mods.sodium.client.render.immediate.model.BakedModelEncoder;
+import me.jellysquid.mods.sodium.client.render.frapi.SpriteFinderCache;
+import me.jellysquid.mods.sodium.client.render.frapi.helper.ColorHelper;
+import me.jellysquid.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
-import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.model.BakedModel;
@@ -39,56 +33,46 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 
 public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
-    private final BlockColors blockColorMap = MinecraftClient.getInstance().getBlockColors();
+    private final BlockColors colorMap;
     private final SingleBlockLightDataCache lightDataCache = new SingleBlockLightDataCache();
 
-    // Holders for state used in FRAPI as we can't pass them via parameters
-    private VertexBufferWriter vertexWriter;
-    private MatrixStack.Entry matrixEntry;
+    private VertexConsumer vertexConsumer;
+    private Matrix4f matPosition;
+    private Matrix3f matNormal;
     private int overlay;
-    // Default AO mode for model (can be overridden by material property)
-    private LightMode defaultLightMode;
 
-	private final MutableQuadViewImpl editorQuad = new MutableQuadViewImpl() {
-		{
-			data = new int[EncodingFormat.TOTAL_STRIDE];
-			clear();
-		}
-
-		@Override
-		public void emitDirectly() {
-			renderQuad(this);
-		}
-	};
-
-    public NonTerrainBlockRenderContext() {
+    public NonTerrainBlockRenderContext(BlockColors colorMap) {
+        this.colorMap = colorMap;
         this.lighters = new LightPipelineProvider(this.lightDataCache);
-        this.ctx = new BlockRenderContext(null);
     }
 
     public void renderModel(BlockRenderView blockView, BakedModel model, BlockState state, BlockPos pos, MatrixStack matrixStack, VertexConsumer buffer, boolean cull, Random random, long seed, int overlay) {
-        // Store parameters
-        this.vertexWriter = VertexBufferWriter.of(buffer);
-        this.matrixEntry = matrixStack.peek();
+        this.world = blockView;
+        this.state = state;
+        this.pos = pos;
+
+        this.random = random;
+        this.randomSeed = seed;
+
+        this.vertexConsumer = buffer;
+        this.matPosition = matrixStack.peek().getPositionMatrix();
+        this.matNormal = matrixStack.peek().getNormalMatrix();
         this.overlay = overlay;
 
-        // Clear old state
-        this.resetCullState(cull);
         this.lightDataCache.reset(pos, blockView);
+        this.prepareCulling(cull);
+        this.prepareAoInfo(model.useAmbientOcclusion());
 
-        // Prepare
-        this.ctx.updateWorld(blockView);
-        this.ctx.update(pos, BlockPos.ORIGIN, state, model, seed);
-        this.defaultLightMode = this.getLightingMode(ctx.state(), ctx.model());
-
-        // Actually render
         model.emitBlockQuads(blockView, state, pos, this.randomSupplier, this);
 
-        // Avoid dangling references
-        this.vertexWriter = null;
-        this.ctx.updateWorld(null);
+        this.world = null;
+        this.lightDataCache.release();
+        this.random = null;
+        this.vertexConsumer = null;
     }
 
     @Override
@@ -104,18 +88,14 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
         }
         final boolean emissive = mat.emissive();
 
-        BlockRenderContext ctx = this.ctx;
-
-        colorizeQuad(ctx, quad, colorIndex);
-        QuadLightData lightData = this.quadLightData;
-        shadeQuad(ctx, quad, lightMode, emissive, lightData);
-        applyBrightness(quad, lightData.br);
+        colorizeQuad(quad, colorIndex);
+        shadeQuad(quad, lightMode, emissive);
         bufferQuad(quad);
     }
 
-    private void colorizeQuad(BlockRenderContext ctx, MutableQuadViewImpl quad, int colorIndex) {
+    private void colorizeQuad(MutableQuadViewImpl quad, int colorIndex) {
         if (colorIndex != -1) {
-            final int blockColor = 0xFF000000 | this.blockColorMap.getColor(ctx.state(), ctx.world(), ctx.pos(), colorIndex);
+            final int blockColor = 0xFF000000 | this.colorMap.getColor(this.state, this.world, this.pos, colorIndex);
 
             for (int i = 0; i < 4; i++) {
                 quad.color(i, ColorHelper.multiplyColor(blockColor, quad.color(i)));
@@ -123,21 +103,19 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
         }
     }
 
-    private void applyBrightness(MutableQuadViewImpl quad, float[] brightness) {
+    @Override
+    protected void shadeQuad(MutableQuadViewImpl quad, LightMode lightMode, boolean emissive) {
+        super.shadeQuad(quad, lightMode, emissive);
+
+        float[] brightnesses = this.quadLightData.br;
+
         for (int i = 0; i < 4; i++) {
-            quad.color(i, ColorHelper.multiplyRGB(quad.color(i), brightness[i]));
+            quad.color(i, ColorHelper.multiplyRGB(quad.color(i), brightnesses[i]));
         }
     }
 
     private void bufferQuad(MutableQuadViewImpl quad) {
-        BakedModelEncoder.writeQuadVertices(this.vertexWriter, this.matrixEntry, quad, this.overlay);
-
-        SpriteUtil.markSpriteActive(quad.getSprite(this.spriteFinder));
+        QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, matNormal);
+        SpriteUtil.markSpriteActive(quad.sprite(SpriteFinderCache.forBlockAtlas()));
     }
-
-    @Override
-	public QuadEmitter getEmitter() {
-		editorQuad.clear();
-		return editorQuad;
-	}
 }

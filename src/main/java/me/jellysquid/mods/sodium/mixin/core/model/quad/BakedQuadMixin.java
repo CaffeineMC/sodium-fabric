@@ -40,20 +40,19 @@ public class BakedQuadMixin implements BakedQuadView {
     private boolean shade;
 
     @Unique
-    private int flags;
-
-    @Unique
     private int normal;
 
     @Unique
     private ModelQuadFacing normalFace;
 
+    @Unique
+    private int flags;
+
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
         this.normal = ModelQuadUtil.calculateNormal(this);
         this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
-
-        this.flags = ModelQuadFlags.getQuadFlags(this, face);
+        this.flags = ModelQuadFlags.computeFlags(this, face);
     }
 
     @Override
@@ -77,11 +76,6 @@ public class BakedQuadMixin implements BakedQuadView {
     }
 
     @Override
-    public Sprite getSprite() {
-        return this.sprite;
-    }
-
-    @Override
     public float getTexU(int idx) {
         return Float.intBitsToFloat(this.vertexData[vertexOffset(idx) + TEXTURE_INDEX]);
     }
@@ -102,6 +96,11 @@ public class BakedQuadMixin implements BakedQuadView {
     }
 
     @Override
+    public Sprite getSprite() {
+        return this.sprite;
+    }
+
+    @Override
     public int getNormal() {
         return normal;
     }
@@ -114,11 +113,5 @@ public class BakedQuadMixin implements BakedQuadView {
     @Override
     public Direction getLightFace() {
         return this.face;
-    }
-
-    @Override
-    @Unique(silent = true) // The target class has a function with the same name in a remapped environment
-    public boolean hasShade() {
-        return this.shade;
     }
 }
