@@ -358,7 +358,7 @@ public class TranslucentGeometryCollector {
         }
 
         if (!this.hasUnaligned) {
-            boolean twoOpposingNormals = this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_X
+            boolean opposingAlignedNormals = this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_X
                     || this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_Y
                     || this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_Z;
 
@@ -366,7 +366,7 @@ public class TranslucentGeometryCollector {
             // if there are just two normals, they are exact opposites of eachother and they
             // each only have one distance, there is no way to see through one face to the
             // other.
-            if (planeCount == 2 && twoOpposingNormals) {
+            if (planeCount == 2 && opposingAlignedNormals) {
                 return SortType.NONE;
             }
 
@@ -396,7 +396,7 @@ public class TranslucentGeometryCollector {
             // there are up to two normals that are opposing, this means no dynamic sorting
             // is necessary. Without static sorting, the geometry to trigger on could be
             // reduced but this isn't done here as we assume static sorting is possible.
-            if (twoOpposingNormals || alignedNormalCount == 1) {
+            if (opposingAlignedNormals || alignedNormalCount == 1) {
                 return SortType.STATIC_NORMAL_RELATIVE;
             }
         } else if (alignedNormalCount == 0) {

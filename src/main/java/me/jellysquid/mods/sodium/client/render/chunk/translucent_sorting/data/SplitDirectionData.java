@@ -10,7 +10,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * starting at zero for each facing.
  */
 public abstract class SplitDirectionData extends PresentTranslucentData {
-    public final VertexRange[] ranges;
+    private final VertexRange[] ranges;
 
     public SplitDirectionData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
         super(sectionPos, buffer);
