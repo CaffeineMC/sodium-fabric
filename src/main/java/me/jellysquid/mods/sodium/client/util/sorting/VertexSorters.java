@@ -2,8 +2,6 @@ package me.jellysquid.mods.sodium.client.util.sorting;
 
 import com.mojang.blaze3d.systems.VertexSorter;
 
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-
 import org.joml.Vector3f;
 
 public class VertexSorters {
