@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -40,8 +41,9 @@ public class StaticNormalRelativeData extends SplitDirectionData {
             TQuad[] quads, ChunkSectionPos sectionPos) {
         long[] sortData = new long[quads.length];
 
-        for (int i = 0; i < quads.length; i++) {
-            sortData[i] = (long) quads[i].getDotProduct() << 32 | i;
+        for (int quadIndex = 0; quadIndex < quads.length; quadIndex++) {
+            int dotProductComponent = MathUtil.floatToComparableInt(quads[quadIndex].getDotProduct());
+            sortData[quadIndex] = (long) dotProductComponent << 32 | quadIndex;
         }
 
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
@@ -63,7 +65,8 @@ public class StaticNormalRelativeData extends SplitDirectionData {
 
         for (int quadIndex = 0; quadIndex < quads.length; quadIndex++) {
             var quad = quads[quadIndex];
-            sortData[quadIndex] = (long) quad.getDotProduct() << 32 | quadIndex;
+            int dotProductComponent = MathUtil.floatToComparableInt(quad.getDotProduct());
+            sortData[quadIndex] = (long) dotProductComponent << 32 | quadIndex;
         }
 
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);

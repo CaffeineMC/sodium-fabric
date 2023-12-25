@@ -11,4 +11,12 @@ public class MathUtil {
     public static long toMib(long bytes) {
         return bytes / (1024L * 1024L); // 1 MiB = 1048576 (2^20) bytes
     }
+
+    /**
+     * Converts a float to a comparable integer value. This is used to compare
+     * floating point values by their int bits (for example packed in a long).
+     */
+    public static int floatToComparableInt(float f) {
+        return Float.floatToRawIntBits(f) ^ (f >= 0 ? 0x80000000 : 0xffffffff);
+    }
 }
