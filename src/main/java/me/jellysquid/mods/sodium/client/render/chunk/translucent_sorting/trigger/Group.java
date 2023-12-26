@@ -6,9 +6,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.Alignab
 
 /**
  * A group represents a set of face planes of the same normal within a section.
- *
- * group keeps a tree of its face plane distances to determine if it needs to be
- * triggered.
  */
 class Group {
     /**
