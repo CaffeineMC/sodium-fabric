@@ -12,7 +12,7 @@ public class ModelCuboid {
     public final float u0, u1, u2, u3, u4, u5;
     public final float v0, v1, v2;
 
-    private final int faces;
+    public final int faces;
 
     public final boolean mirror;
 
@@ -72,9 +72,5 @@ public class ModelCuboid {
         }
 
         this.faces = faces;
-    }
-
-    public boolean shouldDrawFace(int quadIndex) {
-        return (this.faces & (1 << quadIndex)) != 0;
     }
 }

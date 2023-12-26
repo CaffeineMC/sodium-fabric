@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.immediate.model;
 
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
 import net.minecraft.client.model.ModelPart;
@@ -56,8 +57,8 @@ public class EntityRenderer {
     private static final Vector2f[][] VERTEX_TEXTURES = new Vector2f[NUM_CUBE_FACES][NUM_FACE_VERTICES];
     private static final Vector2f[][] VERTEX_TEXTURES_MIRRORED = new Vector2f[NUM_CUBE_FACES][NUM_FACE_VERTICES];
 
-    private static final int[] CUBE_NORMALS = new int[NUM_CUBE_FACES];
-    private static final int[] CUBE_NORMALS_MIRRORED = new int[NUM_CUBE_FACES];
+    private static final Vector3f[] CUBE_NORMALS = new Vector3f[NUM_CUBE_FACES];
+    private static final Vector3f[] CUBE_NORMALS_MIRRORED = new Vector3f[NUM_CUBE_FACES];
 
     static {
         for (int cornerIndex = 0; cornerIndex < NUM_CUBE_VERTICES; cornerIndex++) {
@@ -65,6 +66,8 @@ public class EntityRenderer {
         }
 
         for (int quadIndex = 0; quadIndex < NUM_CUBE_FACES; quadIndex++) {
+            CUBE_NORMALS[quadIndex] = new Vector3f();
+
             for (int vertexIndex = 0; vertexIndex < NUM_FACE_VERTICES; vertexIndex++) {
                 VERTEX_TEXTURES[quadIndex][vertexIndex] = new Vector2f();
                 VERTEX_POSITIONS[quadIndex][vertexIndex] = CUBE_CORNERS[CUBE_VERTICES[quadIndex][vertexIndex]];
@@ -77,6 +80,14 @@ public class EntityRenderer {
                 VERTEX_POSITIONS_MIRRORED[quadIndex][vertexIndex] = VERTEX_POSITIONS[quadIndex][3 - vertexIndex];
             }
         }
+
+        // When mirroring is used, the normals for EAST and WEST are swapped.
+        CUBE_NORMALS_MIRRORED[FACE_NEG_Y] = CUBE_NORMALS[FACE_NEG_Y];
+        CUBE_NORMALS_MIRRORED[FACE_POS_Y] = CUBE_NORMALS[FACE_POS_Y];
+        CUBE_NORMALS_MIRRORED[FACE_NEG_Z] = CUBE_NORMALS[FACE_NEG_Z];
+        CUBE_NORMALS_MIRRORED[FACE_POS_Z] = CUBE_NORMALS[FACE_POS_Z];
+        CUBE_NORMALS_MIRRORED[FACE_POS_X] = CUBE_NORMALS[FACE_NEG_X]; // mirrored
+        CUBE_NORMALS_MIRRORED[FACE_NEG_X] = CUBE_NORMALS[FACE_POS_X]; // mirrored
     }
 
     public static void render(MatrixStack matrixStack, VertexBufferWriter writer, ModelPart part, int light, int overlay, int color) {
@@ -118,7 +129,7 @@ public class EntityRenderer {
         for (ModelCuboid cuboid : cuboids) {
             prepareVertices(matrices, cuboid);
 
-            var vertexCount = emitQuads(cuboid, color, overlay, light);
+            var vertexCount = renderCuboid(cuboid, color, overlay, light);
 
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 writer.push(stack, SCRATCH_BUFFER, vertexCount, ModelVertex.FORMAT);
@@ -126,7 +137,14 @@ public class EntityRenderer {
         }
     }
 
-    private static int emitQuads(ModelCuboid cuboid, int color, int overlay, int light) {
+    private static int renderCuboid(ModelCuboid cuboid, int color, int overlay, int light) {
+        final int faces = cuboid.faces & getVisibleFaces();
+
+        if (faces == 0) {
+            // No faces are visible, so zero vertices will be produced.
+            return 0;
+        }
+
         final var positions = cuboid.mirror ? VERTEX_POSITIONS_MIRRORED : VERTEX_POSITIONS;
         final var textures = cuboid.mirror ? VERTEX_TEXTURES_MIRRORED : VERTEX_TEXTURES;
         final var normals = cuboid.mirror ? CUBE_NORMALS_MIRRORED :  CUBE_NORMALS;
@@ -136,20 +154,22 @@ public class EntityRenderer {
         long ptr = SCRATCH_BUFFER;
 
         for (int quadIndex = 0; quadIndex < NUM_CUBE_FACES; quadIndex++) {
-            if (!cuboid.shouldDrawFace(quadIndex)) {
+            if ((faces & (1 << quadIndex)) != 0) {
                 continue;
             }
 
-            emitVertex(ptr, positions[quadIndex][0], color, textures[quadIndex][0], overlay, light, normals[quadIndex]);
+            var normal = NormI8.pack(normals[quadIndex]);
+
+            emitVertex(ptr, positions[quadIndex][0], color, textures[quadIndex][0], overlay, light, normal);
             ptr += ModelVertex.STRIDE;
 
-            emitVertex(ptr, positions[quadIndex][1], color, textures[quadIndex][1], overlay, light, normals[quadIndex]);
+            emitVertex(ptr, positions[quadIndex][1], color, textures[quadIndex][1], overlay, light, normal);
             ptr += ModelVertex.STRIDE;
 
-            emitVertex(ptr, positions[quadIndex][2], color, textures[quadIndex][2], overlay, light, normals[quadIndex]);
+            emitVertex(ptr, positions[quadIndex][2], color, textures[quadIndex][2], overlay, light, normal);
             ptr += ModelVertex.STRIDE;
 
-            emitVertex(ptr, positions[quadIndex][3], color, textures[quadIndex][3], overlay, light, normals[quadIndex]);
+            emitVertex(ptr, positions[quadIndex][3], color, textures[quadIndex][3], overlay, light, normal);
             ptr += ModelVertex.STRIDE;
 
             vertexCount += 4;
@@ -160,6 +180,57 @@ public class EntityRenderer {
 
     private static void emitVertex(long ptr, Vector3f pos, int color, Vector2f tex, int overlay, int light, int normal) {
         ModelVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, overlay, light, normal);
+    }
+
+
+    private static int getVisibleFaces() {
+        final var min = CUBE_CORNERS[VERTEX_X1_Y1_Z1];
+        final var max = CUBE_CORNERS[VERTEX_X2_Y2_Z2];
+
+        int faces = 0;
+
+        // If the dot product between any vertex of a primitive and the normal is positive, then the primitive
+        // is front facing, and considered "visible".
+        //
+        // Since we only need to perform a dot product against *one* vertex of the primitive, we simply use the
+        // minimum or maximum vertex of the cube, depending on which face is being tested.
+        //
+        // For cubes, faces with a positive direction will use vertex (max.x, max.y, max.z), and faces with a negative
+        // direction will use vertex (min.x, min.y, min.z). Furthermore, a single face will *never* use both the
+        // minimum and maximum vertex.
+        //
+        // However, Minecraft is not a reasonable game, and cube normals are defined arbitrarily. Worse yet, the faces
+        // -X and +X also have their normals flipped when the cuboid is using "mirrored" texturing. So we have to
+        // completely ignore the normals Minecraft *normally* uses for rendering (which affects lighting) and use the
+        // "true" normals here. This is why you don't see (cuboid.mirror ? CUBE_NORMALS_MIRRORED : CUBE_NORMALS) used.
+        //
+        // The vertex used for each face in the comparisons below will depend on whether the indices for CUBE_NORMAL[face]
+        // contain either the minimum or maximum vertex.
+        if (min.dot(CUBE_NORMALS[FACE_NEG_Y]) > 0.0f) {
+            faces |= 1 << FACE_NEG_Y;
+        }
+
+        if (max.dot(CUBE_NORMALS[FACE_POS_Y]) > 0.0f) {
+            faces |= 1 << FACE_POS_Y;
+        }
+
+        if (min.dot(CUBE_NORMALS[FACE_NEG_Z]) > 0.0f) {
+            faces |= 1 << FACE_NEG_Z;
+        }
+
+        if (min.dot(CUBE_NORMALS[FACE_POS_X]) > 0.0f) {
+            faces |= 1 << FACE_POS_X;
+        }
+
+        if (max.dot(CUBE_NORMALS[FACE_NEG_X]) > 0.0f) {
+            faces |= 1 << FACE_NEG_X;
+        }
+
+        if (max.dot(CUBE_NORMALS[FACE_POS_Z]) > 0.0f) {
+            faces |= 1 << FACE_POS_Z;
+        }
+
+        return faces;
     }
 
     private static void prepareVertices(MatrixStack.Entry matrices, ModelCuboid cuboid) {
@@ -181,20 +252,12 @@ public class EntityRenderer {
     }
 
     private static void prepareNormals(MatrixStack.Entry matrices) {
-        CUBE_NORMALS[FACE_NEG_Y] = MatrixHelper.transformNormal(matrices.getNormalMatrix(), Direction.DOWN);
-        CUBE_NORMALS[FACE_POS_Y] = MatrixHelper.transformNormal(matrices.getNormalMatrix(), Direction.UP);
-        CUBE_NORMALS[FACE_NEG_Z] = MatrixHelper.transformNormal(matrices.getNormalMatrix(), Direction.NORTH);
-        CUBE_NORMALS[FACE_POS_Z] = MatrixHelper.transformNormal(matrices.getNormalMatrix(), Direction.SOUTH);
-        CUBE_NORMALS[FACE_POS_X] = MatrixHelper.transformNormal(matrices.getNormalMatrix(), Direction.WEST);
-        CUBE_NORMALS[FACE_NEG_X] = MatrixHelper.transformNormal(matrices.getNormalMatrix(), Direction.EAST);
-
-        // When mirroring is used, the normals for EAST and WEST are swapped.
-        CUBE_NORMALS_MIRRORED[FACE_NEG_Y] = CUBE_NORMALS[FACE_NEG_Y];
-        CUBE_NORMALS_MIRRORED[FACE_POS_Y] = CUBE_NORMALS[FACE_POS_Y];
-        CUBE_NORMALS_MIRRORED[FACE_NEG_Z] = CUBE_NORMALS[FACE_NEG_Z];
-        CUBE_NORMALS_MIRRORED[FACE_POS_Z] = CUBE_NORMALS[FACE_POS_Z];
-        CUBE_NORMALS_MIRRORED[FACE_POS_X] = CUBE_NORMALS[FACE_NEG_X]; // mirrored
-        CUBE_NORMALS_MIRRORED[FACE_NEG_X] = CUBE_NORMALS[FACE_POS_X]; // mirrored
+        MatrixHelper.transformNormal(CUBE_NORMALS[FACE_NEG_Y], matrices.getNormalMatrix(), Direction.DOWN);
+        MatrixHelper.transformNormal(CUBE_NORMALS[FACE_POS_Y], matrices.getNormalMatrix(), Direction.UP);
+        MatrixHelper.transformNormal(CUBE_NORMALS[FACE_NEG_Z], matrices.getNormalMatrix(), Direction.NORTH);
+        MatrixHelper.transformNormal(CUBE_NORMALS[FACE_POS_Z], matrices.getNormalMatrix(), Direction.SOUTH);
+        MatrixHelper.transformNormal(CUBE_NORMALS[FACE_POS_X], matrices.getNormalMatrix(), Direction.WEST);
+        MatrixHelper.transformNormal(CUBE_NORMALS[FACE_NEG_X], matrices.getNormalMatrix(), Direction.EAST);
     }
 
     private static void buildVertexPosition(Vector3f vector, float x, float y, float z, Matrix4f matrix) {
