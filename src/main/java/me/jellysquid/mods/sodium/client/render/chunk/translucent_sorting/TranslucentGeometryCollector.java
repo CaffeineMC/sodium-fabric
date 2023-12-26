@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Vector3dc;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -17,6 +18,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPBuildFailureException;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.AnyOrderData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.BSPDynamicData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.CombinedCameraPos;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.NoData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.StaticNormalRelativeData;
@@ -451,7 +453,7 @@ public class TranslucentGeometryCollector {
         return this.sortType;
     }
 
-    private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos,
+    private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, CombinedCameraPos cameraPos,
             TranslucentData oldData) {
         if (this.sortType == SortType.NONE) {
             return AnyOrderData.fromMesh(translucentMesh, this.quads, this.sectionPos, null);
@@ -513,7 +515,7 @@ public class TranslucentGeometryCollector {
     }
 
     public TranslucentData getTranslucentData(
-            TranslucentData oldData, BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
+            TranslucentData oldData, BuiltSectionMeshParts translucentMesh, CombinedCameraPos cameraPos) {
         // means there is no translucent geometry
         if (translucentMesh == null) {
             return new NoData(sectionPos);

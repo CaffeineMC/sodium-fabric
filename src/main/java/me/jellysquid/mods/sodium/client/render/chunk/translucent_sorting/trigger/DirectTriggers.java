@@ -95,6 +95,17 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
             return this.sectionCenter;
         }
 
+        double centerRelativeAngleCos(Vector3dc a, Vector3dc b) {
+            Vector3dc sectionCenter = this.getSectionCenter();
+            return angleCos(
+                    sectionCenter.x() - a.x(),
+                    sectionCenter.y() - a.y(),
+                    sectionCenter.z() - a.z(),
+                    sectionCenter.x() - b.x(),
+                    sectionCenter.y() - b.y(),
+                    sectionCenter.z() - b.z());
+        }
+
         /**
          * Returns the distance between the sort camera pos and the center of the
          * section.
@@ -140,8 +151,8 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
 
     @Override
     public void processTriggers(SortTriggering ts, CameraMovement movement) {
-        Vector3dc lastCamera = movement.lastCamera();
-        Vector3dc camera = movement.currentCamera();
+        Vector3dc lastCamera = movement.start();
+        Vector3dc camera = movement.end();
         this.accumulatedDistance += lastCamera.distance(camera);
 
         // iterate all elements with a key of at most accumulatedDistance
@@ -153,45 +164,40 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
                 // get the next element before it's modified by the data being re-inserted into
                 // the tree
                 var next = data.next;
-
-                if (data.isAngleTriggering(camera)) {
-                    double remainingAngle = TRIGGER_ANGLE;
-
-                    // check if the angle since the last sort exceeds the threshold
-                    Vector3dc sectionCenter = data.getSectionCenter();
-                    double angleCos = angleCos(
-                            sectionCenter.x() - data.triggerCameraPos.x(),
-                            sectionCenter.y() - data.triggerCameraPos.y(),
-                            sectionCenter.z() - data.triggerCameraPos.z(),
-                            sectionCenter.x() - camera.x(),
-                            sectionCenter.y() - camera.y(),
-                            sectionCenter.z() - camera.z());
-
-                    // compare angles inverted because cosine flips it
-                    if (angleCos <= EARLY_TRIGGER_ANGLE_COS) {
-                        ts.triggerSectionDirect(data.sectionPos);
-                        data.triggerCameraPos = camera;
-                    } else {
-                        remainingAngle -= Math.acos(angleCos);
-                    }
-
-                    this.insertDirectAngleTrigger(data, camera, remainingAngle);
-                } else {
-                    double remainingDistance = DIRECT_TRIGGER_DISTANCE;
-                    double lastTriggerCurrentCameraDistSquared = data.triggerCameraPos.distanceSquared(camera);
-
-                    if (lastTriggerCurrentCameraDistSquared >= EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED) {
-                        ts.triggerSectionDirect(data.sectionPos);
-                        data.triggerCameraPos = camera;
-                    } else {
-                        remainingDistance -= Math.sqrt(lastTriggerCurrentCameraDistSquared);
-                    }
-
-                    this.insertDirectDistanceTrigger(data, camera, remainingDistance);
-                }
-
+                this.processSingleTrigger(data, ts, camera);
                 data = next;
             }
+        }
+    }
+
+    private void processSingleTrigger(DirectTriggerData data, SortTriggering ts, Vector3dc camera) {
+        if (data.isAngleTriggering(camera)) {
+            double remainingAngle = TRIGGER_ANGLE;
+
+            // check if the angle since the last sort exceeds the threshold
+            double angleCos = data.centerRelativeAngleCos(data.triggerCameraPos, camera);
+
+            // compare angles inverted because cosine flips it
+            if (angleCos <= EARLY_TRIGGER_ANGLE_COS) {
+                ts.triggerSectionDirect(data.sectionPos);
+                data.triggerCameraPos = camera;
+            } else {
+                remainingAngle -= Math.acos(angleCos);
+            }
+
+            this.insertDirectAngleTrigger(data, camera, remainingAngle);
+        } else {
+            double remainingDistance = DIRECT_TRIGGER_DISTANCE;
+            double lastTriggerCurrentCameraDistSquared = data.triggerCameraPos.distanceSquared(camera);
+
+            if (lastTriggerCurrentCameraDistSquared >= EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED) {
+                ts.triggerSectionDirect(data.sectionPos);
+                data.triggerCameraPos = camera;
+            } else {
+                remainingDistance -= Math.sqrt(lastTriggerCurrentCameraDistSquared);
+            }
+
+            this.insertDirectDistanceTrigger(data, camera, remainingDistance);
         }
     }
 
@@ -207,12 +213,21 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
     }
 
     @Override
-    public void addSection(ChunkSectionPos sectionPos, TopoSortDynamicData data, Vector3dc cameraPos) {
+    public void integrateSection(SortTriggering ts, ChunkSectionPos sectionPos, TopoSortDynamicData data,
+            CameraMovement movement) {
+        // create data with last camera position
+        var cameraPos = movement.start();
         var newData = new DirectTriggerData(data, sectionPos, cameraPos);
-        if (newData.isAngleTriggering(cameraPos)) {
-            this.insertDirectAngleTrigger(newData, cameraPos, TRIGGER_ANGLE);
+
+        if (movement.hasChanged()) {
+            // process it with the current camera position, this also initially inserts it
+            this.processSingleTrigger(newData, ts, movement.end());
         } else {
-            this.insertDirectDistanceTrigger(newData, cameraPos, DIRECT_TRIGGER_DISTANCE);
+            if (newData.isAngleTriggering(cameraPos)) {
+                this.insertDirectAngleTrigger(newData, cameraPos, TRIGGER_ANGLE);
+            } else {
+                this.insertDirectDistanceTrigger(newData, cameraPos, DIRECT_TRIGGER_DISTANCE);
+            }
         }
     }
 }

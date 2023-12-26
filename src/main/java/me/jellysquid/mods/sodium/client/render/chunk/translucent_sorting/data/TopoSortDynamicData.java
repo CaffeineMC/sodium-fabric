@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 
+import org.joml.Vector3dc;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
@@ -37,7 +38,7 @@ public class TopoSortDynamicData extends DynamicData {
     private boolean turnDirectTriggerOff = false;
     private double directTriggerKey = -1;
     private int consecutiveTopoSortFailures = 0;
-    private boolean pendingTriggerIsAngle;
+    private boolean pendingTriggerIsDirect;
     private Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal;
 
     private static final int MAX_TOPO_SORT_QUADS = 1000;
@@ -49,9 +50,9 @@ public class TopoSortDynamicData extends DynamicData {
 
     private TopoSortDynamicData(ChunkSectionPos sectionPos,
             NativeBuffer buffer, VertexRange range, TQuad[] quads,
-            GeometryPlanes geometryPlanes,
+            GeometryPlanes geometryPlanes, Vector3dc cameraPos,
             Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal) {
-        super(sectionPos, buffer, range, geometryPlanes);
+        super(sectionPos, buffer, range, geometryPlanes, cameraPos);
         this.quads = quads;
         this.distancesByNormal = distancesByNormal;
     }
@@ -118,20 +119,20 @@ public class TopoSortDynamicData extends DynamicData {
     }
 
     @Override
-    public void prepareTrigger(boolean isAngleTrigger) {
-        this.pendingTriggerIsAngle = isAngleTrigger;
+    public void prepareTrigger(boolean isDirectTrigger) {
+        this.pendingTriggerIsDirect = isDirectTrigger;
     }
 
     @Override
     public void sortOnTrigger(Vector3fc cameraPos) {
-        this.sort(cameraPos, this.pendingTriggerIsAngle, false);
+        this.sort(cameraPos, this.pendingTriggerIsDirect, false);
     }
 
     private static int getAttemptsForTime(long ns) {
         return ns <= MAX_TOPO_SORT_PATIENT_TIME_NS ? PATIENT_TOPO_ATTEMPTS : REGULAR_TOPO_ATTEMPTS;
     }
 
-    private void sort(Vector3fc cameraPos, boolean isAngleTrigger, boolean initial) {
+    private void sort(Vector3fc cameraPos, boolean isDirectTrigger, boolean initial) {
         // mark as not being reused to ensure the updated buffer is actually uploaded
         this.unsetReuseUploadedData();
 
@@ -143,7 +144,7 @@ public class TopoSortDynamicData extends DynamicData {
             this.turnDirectTriggerOn();
         }
 
-        if (this.GFNITrigger && !isAngleTrigger) {
+        if (this.GFNITrigger && !isDirectTrigger) {
             var sortStart = initial ? 0 : System.nanoTime();
 
             var result = TopoGraphSorting.topoSortDepthFirstCyclic(
@@ -160,7 +161,6 @@ public class TopoSortDynamicData extends DynamicData {
                     : MAX_TOPO_SORT_TIME_NS)) {
                 this.turnGFNITriggerOff();
                 this.turnDirectTriggerOn();
-                System.out.println("topo sort took too long");
             } else if (result) {
                 // disable distance sorting because topo sort seems to be possible.
                 this.turnDirectTriggerOff();
@@ -202,7 +202,8 @@ public class TopoSortDynamicData extends DynamicData {
     }
 
     public static TopoSortDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, GeometryPlanes geometryPlanes,
+            CombinedCameraPos cameraPos, TQuad[] quads, ChunkSectionPos sectionPos,
+            GeometryPlanes geometryPlanes,
             NativeBuffer buffer) {
         var distancesByNormal = geometryPlanes.prepareAndGetDistances();
 
@@ -211,9 +212,10 @@ public class TopoSortDynamicData extends DynamicData {
             buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         }
 
-        var dynamicData = new TopoSortDynamicData(sectionPos, buffer, range, quads, geometryPlanes, distancesByNormal);
+        var dynamicData = new TopoSortDynamicData(sectionPos, buffer, range, quads, geometryPlanes,
+                cameraPos.getAbsoluteCameraPos(), distancesByNormal);
 
-        dynamicData.sort(cameraPos, false, true);
+        dynamicData.sort(cameraPos.getRelativeCameraPos(), false, true);
 
         return dynamicData;
     }

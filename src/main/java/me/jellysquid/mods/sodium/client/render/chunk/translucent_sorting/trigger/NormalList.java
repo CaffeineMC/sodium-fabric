@@ -77,8 +77,8 @@ public class NormalList {
 
     void processMovement(SortTriggering ts, CameraMovement movement) {
         // calculate the distance range of the movement with respect to the normal
-        double start = this.normalDotDouble(movement.lastCamera());
-        double end = this.normalDotDouble(movement.currentCamera());
+        double start = this.normalDotDouble(movement.start());
+        double end = this.normalDotDouble(movement.end());
 
         // stop if the movement is reverse with regards to the normal
         // since this means it's moving against the normal
@@ -94,6 +94,15 @@ public class NormalList {
                 group.triggerRange(ts, start, end);
             }
         }
+    }
+
+    void processCatchup(SortTriggering ts, CameraMovement movement, long sectionPos) {
+        double start = this.normalDotDouble(movement.start());
+        double end = this.normalDotDouble(movement.end());
+        if (start >= end) {
+            return;
+        }
+        groupsBySection.get(sectionPos).triggerRange(ts, start, end);
     }
 
     private void removeGroupInterval(Group group) {

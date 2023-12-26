@@ -7,6 +7,7 @@ import org.joml.Vector3fc;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.CombinedCameraPos;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 
 /**
@@ -19,9 +20,10 @@ import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
  * After the task completes, it returns a "build result" which contains any computed data that needs to be handled
  * on the main thread.
  */
-public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> {
+public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> implements CombinedCameraPos {
     protected final RenderSection render;
     protected final int submitTime;
+    protected final Vector3dc absoluteCameraPos;
     protected final Vector3fc cameraPos;
 
     /**
@@ -34,6 +36,7 @@ public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> {
     public ChunkBuilderTask(RenderSection render, int time, Vector3dc absoluteCameraPos) {
         this.render = render;
         this.submitTime = time;
+        this.absoluteCameraPos = absoluteCameraPos;
         this.cameraPos = new Vector3f(
                 (float) (absoluteCameraPos.x() - (double) render.getOriginX()),
                 (float) (absoluteCameraPos.y() - (double) render.getOriginY()),
@@ -50,4 +53,14 @@ public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> {
      *         if the task was cancelled.
      */
     public abstract OUTPUT execute(ChunkBuildContext context, CancellationToken cancellationToken);
+
+    @Override
+    public Vector3fc getRelativeCameraPos() {
+        return this.cameraPos;
+    }
+
+    @Override
+    public Vector3dc getAbsoluteCameraPos() {
+        return this.absoluteCameraPos;
+    }
 }

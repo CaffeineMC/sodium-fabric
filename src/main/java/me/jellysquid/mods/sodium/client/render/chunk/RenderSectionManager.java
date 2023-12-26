@@ -318,7 +318,7 @@ public class RenderSectionManager {
             if (result instanceof ChunkBuildOutput chunkBuildOutput) {
                 this.updateSectionInfo(result.render, chunkBuildOutput.info);
                 if (chunkBuildOutput.translucentData != null) {
-                    this.ts.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition);
+                    this.ts.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition, this::scheduleSort);
 
                     // a rebuild always generates new translucent data which means applyTriggerChanges isn't necessary
                     result.render.setTranslucentData(chunkBuildOutput.translucentData);

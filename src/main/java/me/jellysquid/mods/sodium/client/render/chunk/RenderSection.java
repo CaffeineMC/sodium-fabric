@@ -347,7 +347,9 @@ public class RenderSection {
     }
 
     public void prepareTrigger(boolean isDirectTrigger) {
-        this.translucentData.prepareTrigger(isDirectTrigger);
+        if (this.translucentData != null) {
+            this.translucentData.prepareTrigger(isDirectTrigger);
+        }
     }
 
     public int getLastUploadFrame() {

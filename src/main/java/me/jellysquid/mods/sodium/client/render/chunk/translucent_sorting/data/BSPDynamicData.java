@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
+import org.joml.Vector3dc;
 import org.joml.Vector3fc;
 
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
@@ -23,8 +24,8 @@ public class BSPDynamicData extends DynamicData {
     private final int generation;
 
     private BSPDynamicData(ChunkSectionPos sectionPos,
-            NativeBuffer buffer, VertexRange range, BSPResult result, int generation) {
-        super(sectionPos, buffer, range, result);
+            NativeBuffer buffer, VertexRange range, BSPResult result, Vector3dc cameraPos, int generation) {
+        super(sectionPos, buffer, range, result, cameraPos);
         this.rootNode = result.getRootNode();
         this.generation = generation;
     }
@@ -41,7 +42,7 @@ public class BSPDynamicData extends DynamicData {
     }
 
     public static BSPDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos,
+            CombinedCameraPos cameraPos, TQuad[] quads, ChunkSectionPos sectionPos,
             NativeBuffer buffer, TranslucentData oldData) {
         BSPNode oldRoot = null;
         int generation = 0;
@@ -59,8 +60,9 @@ public class BSPDynamicData extends DynamicData {
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
         buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
 
-        var dynamicData = new BSPDynamicData(sectionPos, buffer, range, result, generation);
-        dynamicData.sort(cameraPos);
+        var dynamicData = new BSPDynamicData(sectionPos, buffer, range, result,
+                cameraPos.getAbsoluteCameraPos(), generation);
+        dynamicData.sort(cameraPos.getRelativeCameraPos());
 
         // prepare geometry planes for integration into GFNI triggering
         result.prepareIntegration();

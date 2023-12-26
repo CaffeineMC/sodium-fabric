@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
-import org.joml.Vector3dc;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
@@ -68,7 +67,7 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
     }
 
     @Override
-    public void addSection(ChunkSectionPos pos, DynamicData data, Vector3dc cameraPos) {
+    public void integrateSection(SortTriggering ts, ChunkSectionPos pos, DynamicData data, CameraMovement movement) {
         long sectionPos = pos.asLong();
         var geometryPlanes = data.getGeometryPlanes();
 
@@ -114,5 +113,12 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
         }
 
         data.clearGeometryPlanes();
+
+        // check if catchup trigger is necessary
+        if (movement.hasChanged()) {
+            for (var normalList : this.normalLists.values()) {
+                normalList.processCatchup(ts, movement, sectionPos);
+            }
+        }
     }
 }

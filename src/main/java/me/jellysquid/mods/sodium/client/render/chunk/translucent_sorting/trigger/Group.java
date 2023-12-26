@@ -51,13 +51,17 @@ class Group {
         this.normal = normalPlanes.normal;
     }
 
+    private boolean planeTriggered(double start, double end) {
+        return start < this.distances.getEnd() && end > this.distances.getStart()
+                && AlignableNormal.queryRange(this.facePlaneDistances,
+                        (float) (start - this.baseDistance), (float) (end - this.baseDistance));
+    }
+
     void triggerRange(SortTriggering ts, double start, double end) {
         // trigger self on the section if the query range overlaps with the group
         // testing for strict inequality because if the two intervals just touch at the
         // start/end, there can be no overlap
-        if (start < this.distances.getEnd() && end > this.distances.getStart()
-                && AlignableNormal.queryRange(this.facePlaneDistances,
-                        (float) (start - this.baseDistance), (float) (end - this.baseDistance))) {
+        if (this.planeTriggered(start, end)) {
             ts.triggerSectionGFNI(this.sectionPos, this.normal);
         }
     }
