@@ -102,7 +102,10 @@ public class NormalList {
         if (start >= end) {
             return;
         }
-        groupsBySection.get(sectionPos).triggerRange(ts, start, end);
+        var group = this.groupsBySection.get(sectionPos);
+        if (group != null) {
+            group.triggerRange(ts, start, end);
+        }
     }
 
     private void removeGroupInterval(Group group) {
