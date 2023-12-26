@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.immediate.model;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptionPages;
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
@@ -26,6 +28,8 @@ public class EntityRenderer {
             FACE_POS_Z = 3, // SOUTH
             FACE_NEG_X = 4, // WEST
             FACE_POS_X = 5; // EAST
+
+    private static final int ALL_FACES = 0b111111;
 
     private static final int
             VERTEX_X1_Y1_Z1 = 0,
@@ -184,14 +188,17 @@ public class EntityRenderer {
         ModelVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, overlay, light, normal);
     }
 
-
     private static int getVisibleFaces(MatrixStack.Entry matrices) {
+        // The user can disable face culling if for some reason they think they know better.
+        if (!SodiumClientMod.options().performance.useAggressiveGeometryCulling) {
+            return ALL_FACES;
+        }
+
         // For orthogonal matrices (used in inventory rendering), this trick does not seem to work. Trying to debug
         // how the orthogonal matrix is created made me immediately want to light my computer on fire, so we're instead
         // just going to ignore the problem.
         if ((matrices.getPositionMatrix().properties() & Matrix4f.PROPERTY_ORTHONORMAL) == 0) {
-            // All faces are visible.
-            return 0b111111;
+            return ALL_FACES;
         }
 
         // If the dot product between any vertex of a primitive and the normal is negative, then the primitive
