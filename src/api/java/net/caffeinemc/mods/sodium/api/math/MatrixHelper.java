@@ -159,12 +159,32 @@ public class MatrixHelper {
      */
     public static void transformNormal(Vector3f result, Matrix3f matrix, Direction direction) {
         switch (direction) {
-            case DOWN  -> result.set(-matrix.m10, -matrix.m11, -matrix.m12);
-            case UP    -> result.set( matrix.m10,  matrix.m11,  matrix.m12);
-            case NORTH -> result.set(-matrix.m20, -matrix.m21, -matrix.m22);
-            case SOUTH -> result.set( matrix.m20,  matrix.m21,  matrix.m22);
-            case WEST  -> result.set(-matrix.m00, -matrix.m01, -matrix.m02);
-            case EAST  -> result.set( matrix.m00,  matrix.m01,  matrix.m02);
+            case DOWN  -> result.set(-matrix.m10(), -matrix.m11(), -matrix.m12());
+            case UP    -> result.set( matrix.m10(),  matrix.m11(),  matrix.m12());
+            case NORTH -> result.set(-matrix.m20(), -matrix.m21(), -matrix.m22());
+            case SOUTH -> result.set( matrix.m20(),  matrix.m21(),  matrix.m22());
+            case WEST  -> result.set(-matrix.m00(), -matrix.m01(), -matrix.m02());
+            case EAST  -> result.set( matrix.m00(),  matrix.m01(),  matrix.m02());
+        };
+    }
+
+    /**
+     * Writes the transformed normal vector for a given unit vector (direction) into {@param result}. This is
+     * significantly faster than transforming the vector directly (i.e. with {@link Matrix3f#transform(Vector3f)}),
+     * as it can simply extract the values from the provided matrix (rather than transforming the vertices.)
+     *
+     * @param matrix The transformation matrix
+     * @param direction The unit vector (direction) to use
+     * @return A transformed normal in packed format
+     */
+    public static void transformNormal(Vector3f result, Matrix4f matrix, Direction direction) {
+        switch (direction) {
+            case DOWN  -> result.set(-matrix.m10(), -matrix.m11(), -matrix.m12());
+            case UP    -> result.set( matrix.m10(),  matrix.m11(),  matrix.m12());
+            case NORTH -> result.set(-matrix.m20(), -matrix.m21(), -matrix.m22());
+            case SOUTH -> result.set( matrix.m20(),  matrix.m21(),  matrix.m22());
+            case WEST  -> result.set(-matrix.m00(), -matrix.m01(), -matrix.m02());
+            case EAST  -> result.set( matrix.m00(),  matrix.m01(),  matrix.m02());
         };
     }
 }
