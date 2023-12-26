@@ -39,8 +39,6 @@
   "sodium.options.use_entity_culling.tooltip": "If enabled, entities determined not to be in any visible chunks will be skipped during rendering. This can help improve performance by avoiding the rendering of entities located underground or behind walls.",
   "sodium.options.animate_only_visible_textures.name": "Animate Only Visible Textures",
   "sodium.options.animate_only_visible_textures.tooltip": "If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame rates on some hardware, especially with heavier resource packs. If you experience issues with some textures not being animated, try disabling this option.",
-  "sodium.options.entity_geometry_culling.name" : "Use Entity Geometry Culling",
-  "sodium.options.entity_geometry_culling.tooltip" : "If enabled, the rendering of entities will be more aggressively optimized to eliminate hidden surfaces, which can often significantly improving performance. If you are experiencing issues with resource packs that use custom entity models or textures, then you should try disabling this option.",
   "sodium.options.cpu_render_ahead_limit.name": "CPU Render-Ahead Limit",
   "sodium.options.cpu_render_ahead_limit.tooltip": "Specifies the maximum number of frames the CPU can be waiting on the GPU to finish rendering. Very low or high values may create frame rate instability.",
   "sodium.options.cpu_render_ahead_limit.value": "%s frame(s)",
