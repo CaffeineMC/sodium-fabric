@@ -456,28 +456,39 @@ public class RenderSectionManager {
             ChunkBuilderTask<? extends BuilderTaskOutput> task;
             if (type == ChunkUpdateType.SORT || type == ChunkUpdateType.IMPORTANT_SORT) {
                 task = this.createSortTask(section, frame);
+
+                if (task == null) {
+                    // when a sort task is null it means the render section has no dynamic data and
+                    // doesn't need to be sorted. Nothing needs to be done.
+                    continue;
+                }
             } else {
                 task = this.createRebuildTask(section, frame);
+
+                if (task == null) {
+                    // if the section is empty or doesn't exist submit this null-task to set the
+                    // built flag on the render section.
+                    // It's important to use a NoData instead of null translucency data here in
+                    // order for it to clear the old data from the translucency sorting system.
+                    // This doesn't apply to sorting tasks as that would result in the section being
+                    // marked as empty just because it was scheduled to be sorted and its dynamic
+                    // data has since been removed. In that case simply nothing is done as the
+                    // rebuild that must have happened in the mean time includes new non-dynamic
+                    // index data.
+                    var result = ChunkJobResult.successfully(new ChunkBuildOutput(
+                            section, frame, new NoData(section.getPosition()),
+                            BuiltSectionInfo.EMPTY, Collections.emptyMap()));
+                    this.buildResults.add(result);
+
+                    section.setTaskCancellationToken(null);
+                }
             }
 
-            if (task != null) {
-                var job = this.builder.scheduleTask(task, type.isImportant(), collector::onJobFinished);
-                collector.addSubmittedJob(job);
+            // the task is ensured to be non-null here
+            var job = this.builder.scheduleTask(task, type.isImportant(), collector::onJobFinished);
+            collector.addSubmittedJob(job);
 
-                section.setTaskCancellationToken(job);
-            } else {
-                // if the section is empty, doesn't exist or no sort task needs to be created
-                // for non-dynamic data, submit this null-task to set the built flag on the
-                // render section.
-                // It's important to use a NoData instead of null translucency data here in
-                // order for it to clear the old data from the translucency sorting system
-                var result = ChunkJobResult.successfully(new ChunkBuildOutput(
-                        section, frame, new NoData(section.getPosition()),
-                        BuiltSectionInfo.EMPTY, Collections.emptyMap()));
-                this.buildResults.add(result);
-
-                section.setTaskCancellationToken(null);
-            }
+            section.setTaskCancellationToken(job);
 
             section.setLastSubmittedFrame(frame);
             section.setPendingUpdate(null);
