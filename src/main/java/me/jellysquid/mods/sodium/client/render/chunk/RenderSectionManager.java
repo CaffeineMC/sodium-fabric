@@ -484,11 +484,12 @@ public class RenderSectionManager {
                 }
             }
 
-            // the task is ensured to be non-null here
-            var job = this.builder.scheduleTask(task, type.isImportant(), collector::onJobFinished);
-            collector.addSubmittedJob(job);
+            if (task != null) {
+                var job = this.builder.scheduleTask(task, type.isImportant(), collector::onJobFinished);
+                collector.addSubmittedJob(job);
 
-            section.setTaskCancellationToken(job);
+                section.setTaskCancellationToken(job);
+            }
 
             section.setLastSubmittedFrame(frame);
             section.setPendingUpdate(null);
