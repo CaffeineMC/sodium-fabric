@@ -17,6 +17,7 @@ public class MathUtil {
      * floating point values by their int bits (for example packed in a long).
      */
     public static int floatToComparableInt(float f) {
+        // uses Float.compare to avoid issues comparing -0.0f and 0.0f
         return Float.floatToRawIntBits(f) ^ (Float.compare(f, 0f) > 0 ? 0x80000000 : 0xffffffff);
     }
 }
