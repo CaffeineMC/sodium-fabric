@@ -21,7 +21,7 @@ public class SodiumClientMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ModContainer mod = FabricLoader.getInstance()
-                .getModContainer(ID)
+                .getModContainer("sodium")
                 .orElseThrow(NullPointerException::new);
 
         ID = mod.getMetadata()
