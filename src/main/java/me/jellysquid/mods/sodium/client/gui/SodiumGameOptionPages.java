@@ -148,7 +148,7 @@ public class SodiumGameOptionPages {
         groups.add(OptionGroup.createBuilder()
                 .setId(new Identifier("minecraft", "graphics"))
                 .add(OptionImpl.createBuilder(GraphicsMode.class, vanillaOpts)
-                        .setId(new Identifier("minecraft", "graphics"))
+                        .setId(new Identifier("minecraft", "graphics_mode"))
                         .setName(Text.translatable("options.graphics"))
                         .setTooltip(Text.translatable("sodium.options.graphics_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new Text[] { Text.translatable("options.graphics.fast"), Text.translatable("options.graphics.fancy"), Text.translatable("options.graphics.fabulous") }))
