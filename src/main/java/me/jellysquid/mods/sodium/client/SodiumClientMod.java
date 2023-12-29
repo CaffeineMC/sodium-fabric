@@ -14,19 +14,27 @@ public class SodiumClientMod implements ClientModInitializer {
     private static SodiumGameOptions CONFIG;
     private static Logger LOGGER;
 
-    private static String MOD_VERSION;
+    public static String ID;
+    public static String NAME;
+    public static String MOD_VERSION;
 
     @Override
     public void onInitializeClient() {
         ModContainer mod = FabricLoader.getInstance()
-                .getModContainer("sodium")
+                .getModContainer(ID)
                 .orElseThrow(NullPointerException::new);
+
+        ID = mod.getMetadata()
+                .getId();
+
+        NAME = mod.getMetadata()
+                .getName();
 
         MOD_VERSION = mod.getMetadata()
                 .getVersion()
                 .getFriendlyString();
 
-        LOGGER = LoggerFactory.getLogger("Sodium");
+        LOGGER = LoggerFactory.getLogger(NAME);
         CONFIG = loadConfig();
 
         FlawlessFrames.onClientInitialization();

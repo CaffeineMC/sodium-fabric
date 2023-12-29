@@ -9,13 +9,11 @@ import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.text.OrderedText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
@@ -27,9 +25,12 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class SodiumOptionsGUI extends Screen {
+    static final List<Supplier<OptionPage>> extraSodiumPages = new ArrayList<>();
+
     private final List<OptionPage> pages = new ArrayList<>();
 
     private final List<ControlElement<?>> controls = new ArrayList<>();
@@ -44,6 +45,14 @@ public class SodiumOptionsGUI extends Screen {
     private boolean hasPendingChanges;
     private ControlElement<?> hoveredElement;
 
+    public static void addOptionsPage(Supplier<OptionPage> pageSupplier) {
+        extraSodiumPages.add(pageSupplier);
+    }
+
+    public static void addOptionsPage(OptionPage page) {
+        extraSodiumPages.add(() -> page);
+    }
+
     public SodiumOptionsGUI(Screen prevScreen) {
         super(Text.translatable("Sodium Options"));
 
@@ -53,6 +62,14 @@ public class SodiumOptionsGUI extends Screen {
         this.pages.add(SodiumGameOptionPages.quality());
         this.pages.add(SodiumGameOptionPages.performance());
         this.pages.add(SodiumGameOptionPages.advanced());
+
+        this.addExtraPages();
+    }
+
+    private void addExtraPages() {
+        for (Supplier<OptionPage> optionPage : extraSodiumPages) {
+            this.pages.add(optionPage.get());
+        }
     }
 
     public void setPage(OptionPage page) {

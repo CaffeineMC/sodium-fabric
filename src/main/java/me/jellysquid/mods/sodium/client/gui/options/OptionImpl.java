@@ -1,10 +1,12 @@
 package me.jellysquid.mods.sodium.client.gui.options;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.binding.GenericBinding;
 import me.jellysquid.mods.sodium.client.gui.options.binding.OptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Collection;
@@ -21,6 +23,7 @@ public class OptionImpl<S, T> implements Option<T> {
 
     private final EnumSet<OptionFlag> flags;
 
+    private final Identifier id;
     private final Text name;
     private final Text tooltip;
 
@@ -32,6 +35,7 @@ public class OptionImpl<S, T> implements Option<T> {
     private final boolean enabled;
 
     private OptionImpl(OptionStorage<S> storage,
+                       Identifier id,
                        Text name,
                        Text tooltip,
                        OptionBinding<S, T> binding,
@@ -40,15 +44,21 @@ public class OptionImpl<S, T> implements Option<T> {
                        OptionImpact impact,
                        boolean enabled) {
         this.storage = storage;
+        this.id = id;
         this.name = name;
         this.tooltip = tooltip;
         this.binding = binding;
-        this.impact = impact;
-        this.flags = flags;
         this.control = control.apply(this);
+        this.flags = flags;
+        this.impact = impact;
         this.enabled = enabled;
 
         this.reset();
+    }
+
+    @Override
+    public Identifier getId() {
+        return id;
     }
 
     @Override
@@ -119,6 +129,7 @@ public class OptionImpl<S, T> implements Option<T> {
 
     public static class Builder<S, T> {
         private final OptionStorage<S> storage;
+        private Identifier id;
         private Text name;
         private Text tooltip;
         private OptionBinding<S, T> binding;
@@ -131,8 +142,16 @@ public class OptionImpl<S, T> implements Option<T> {
             this.storage = storage;
         }
 
+        public Builder<S, T> setId(Identifier id) {
+            Validate.notNull(id, "Id must not be null");
+
+            this.id = id;
+
+            return this;
+        }
+
         public Builder<S, T> setName(Text name) {
-            Validate.notNull(name, "Argument must not be null");
+            Validate.notNull(name, "Name must not be null");
 
             this.name = name;
 
@@ -140,7 +159,7 @@ public class OptionImpl<S, T> implements Option<T> {
         }
 
         public Builder<S, T> setTooltip(Text tooltip) {
-            Validate.notNull(tooltip, "Argument must not be null");
+            Validate.notNull(tooltip, "Tooltip must not be null");
 
             this.tooltip = tooltip;
 
@@ -158,7 +177,7 @@ public class OptionImpl<S, T> implements Option<T> {
 
 
         public Builder<S, T> setBinding(OptionBinding<S, T> binding) {
-            Validate.notNull(binding, "Argument must not be null");
+            Validate.notNull(binding, "Option Binding must not be null");
 
             this.binding = binding;
 
@@ -166,7 +185,7 @@ public class OptionImpl<S, T> implements Option<T> {
         }
 
         public Builder<S, T> setControl(Function<OptionImpl<S, T>, Control<T>> control) {
-            Validate.notNull(control, "Argument must not be null");
+            Validate.notNull(control, "Control must not be null");
 
             this.control = control;
 
@@ -191,13 +210,20 @@ public class OptionImpl<S, T> implements Option<T> {
             return this;
         }
 
+        // TODO: uncomment validate line after any breaking update
         public OptionImpl<S, T> build() {
+            // Validate.notNull(this.id, "Id must be specified");
             Validate.notNull(this.name, "Name must be specified");
             Validate.notNull(this.tooltip, "Tooltip must be specified");
             Validate.notNull(this.binding, "Option binding must be specified");
             Validate.notNull(this.control, "Control must be specified");
 
-            return new OptionImpl<>(this.storage, this.name, this.tooltip, this.binding, this.control, this.flags, this.impact, this.enabled);
+            if (this.id == null) {
+                this.id = Option.DEFAULT_ID;
+                SodiumClientMod.logger().warn("Id must be specified in option '{}', this might throw a exception on a future release", this.name.getString());
+            }
+
+            return new OptionImpl<>(this.storage, this.id, this.name, this.tooltip, this.binding, this.control, this.flags, this.impact, this.enabled);
         }
     }
 }
