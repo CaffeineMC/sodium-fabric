@@ -244,12 +244,12 @@ public class CloudRenderer {
 
                     // -Y
                     if ((connectedEdges & DIR_NEG_Y) != 0) {
-                        int mixedColor2 = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
 
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor2);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor2);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor2);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor2);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
 
                         count += 4;
                     }
