@@ -41,6 +41,21 @@ public final class Viewport {
         );
     }
 
+    public boolean isBoxVisible(int intX, int intY, int intZ, float size_x, float size_y, float size_z) {
+        float floatX = (float)(intX - this.transform.intX) - this.transform.fracX;
+        float floatY = (float)(intY - this.transform.intY) - this.transform.fracY;
+        float floatZ = (float)(intZ - this.transform.intZ) - this.transform.fracZ;
+
+        return this.frustum.testAab(
+                floatX,
+                floatY,
+                floatZ,
+
+                floatX + size_x,
+                floatY + size_y,
+                floatZ + size_z);
+    }
+
     public CameraTransform getTransform() {
         return this.transform;
     }
