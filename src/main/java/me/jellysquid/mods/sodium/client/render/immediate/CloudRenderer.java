@@ -13,6 +13,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.math.MatrixStack;
@@ -58,8 +59,11 @@ public class CloudRenderer {
 
     private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
 
+    private CloudRenderMode renderMode;
+
     public CloudRenderer(ResourceFactory factory) {
         this.reloadTextures(factory);
+        this.renderMode = MinecraftClient.getInstance().options.getCloudRenderMode().getValue();
     }
 
     public void render(@Nullable ClientWorld world, ClientPlayerEntity player, MatrixStack matrices, Matrix4f projectionMatrix, float ticks, float tickDelta, double cameraX, double cameraY, double cameraZ) {
@@ -86,7 +90,11 @@ public class CloudRenderer {
         int centerCellX = (int) (Math.floor(cloudCenterX / 12));
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12));
 
-        if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ || this.cachedRenderDistance != renderDistance) {
+        CloudRenderMode newRenderMode = MinecraftClient.getInstance().options.getCloudRenderModeValue();
+
+        if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ || this.cachedRenderDistance != renderDistance || this.renderMode != newRenderMode) {
+            this.renderMode = newRenderMode;
+
             BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
             bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
@@ -124,9 +132,10 @@ public class CloudRenderer {
 
         this.vertexBuffer.bind();
 
-        boolean insideClouds = cameraY < cloudHeight + 4.5f && cameraY > cloudHeight - 0.5f;
+        // We can disable culling when using the flat renderer or when standing inside clouds
+        boolean disableCulling = this.renderMode == CloudRenderMode.FAST || cameraY < cloudHeight + 4.5f && cameraY > cloudHeight - 0.5f;
 
-        if (insideClouds) {
+        if (disableCulling) {
             RenderSystem.disableCull();
         } else {
             RenderSystem.enableCull();
@@ -252,64 +261,67 @@ public class CloudRenderer {
                         count += 4;
                     }
 
-                    // +Y
-                    if ((connectedEdges & DIR_POS_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Y);
+                    // Only write other vertices when using fancy clouds
+                    if (this.renderMode == CloudRenderMode.FANCY) {
+                        // +Y
+                        if ((connectedEdges & DIR_POS_Y) != 0) {
+                            int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Y);
 
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
 
-                        count += 4;
-                    }
+                            count += 4;
+                        }
 
-                    // -X
-                    if ((connectedEdges & DIR_NEG_X) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_X);
+                        // -X
+                        if ((connectedEdges & DIR_NEG_X) != 0) {
+                            int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_X);
 
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
 
-                        count += 4;
-                    }
+                            count += 4;
+                        }
 
-                    // +X
-                    if ((connectedEdges & DIR_POS_X) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_X);
+                        // +X
+                        if ((connectedEdges & DIR_POS_X) != 0) {
+                            int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_X);
 
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
 
-                        count += 4;
-                    }
+                            count += 4;
+                        }
 
-                    // -Z
-                    if ((connectedEdges & DIR_NEG_Z) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Z);
+                        // -Z
+                        if ((connectedEdges & DIR_NEG_Z) != 0) {
+                            int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Z);
 
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
 
-                        count += 4;
-                    }
+                            count += 4;
+                        }
 
-                    // +Z
-                    if ((connectedEdges & DIR_POS_Z) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Z);
+                        // +Z
+                        if ((connectedEdges & DIR_POS_Z) != 0) {
+                            int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Z);
 
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
 
-                        count += 4;
+                            count += 4;
+                        }
                     }
 
                     if (count > 0) {
