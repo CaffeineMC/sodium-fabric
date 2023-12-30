@@ -15,10 +15,8 @@ public class BiomeColorCache {
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
     private final BiomeSlice biomeData;
 
-    private final Slice[] slices;
-    private final HashMap<ColorResolver, CustomSlice[]> customSlices;
-    private final boolean[] populatedSlices;
-    private final HashMap<ColorResolver, boolean[]> populatedCustomSlices;
+    private final HashMap<ColorResolver, Slice[]> slices;
+    private final HashMap<ColorResolver, boolean[]> populatedSlices;
 
     private final int blendRadius;
 
@@ -36,14 +34,8 @@ public class BiomeColorCache {
         this.sizeXZ = 16 + ((NEIGHBOR_BLOCK_RADIUS + this.blendRadius) * 2);
         this.sizeY = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
 
-        this.slices = new Slice[this.sizeY];
-        this.customSlices = new HashMap<>();
-        this.populatedSlices = new boolean[this.sizeY];
-        this.populatedCustomSlices = new HashMap<>();
-
-        for (int y = 0; y < this.sizeY; y++) {
-            this.slices[y] = new Slice(this.sizeXZ);
-        }
+        this.slices = new HashMap<>();
+        this.populatedSlices = new HashMap<>();
 
         this.tempColorBuffer = new ColorBuffer(this.sizeXZ, this.sizeXZ);
     }
@@ -57,61 +49,47 @@ public class BiomeColorCache {
         this.maxY = (context.getOrigin().getMaxY() + NEIGHBOR_BLOCK_RADIUS);
         this.maxZ = (context.getOrigin().getMaxZ() + NEIGHBOR_BLOCK_RADIUS) + this.blendRadius;
 
-        Arrays.fill(this.populatedSlices, false);
-        for (boolean[] p : this.populatedCustomSlices.values()) {
+        for (boolean[] p : this.populatedSlices.values()) {
             Arrays.fill(p, false);
         }
     }
 
     public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
-        var relX = MathHelper.clamp(blockX, this.minX, this.maxX) - this.minX;
-        var relY = MathHelper.clamp(blockY, this.minY, this.maxY) - this.minY;
-        var relZ = MathHelper.clamp(blockZ, this.minZ, this.maxZ) - this.minZ;
-
-        if (!this.populatedSlices[relY]) {
-            this.updateColorBuffers(relY);
-        }
-
-        var slice = this.slices[relY];
-        var buffer = slice.getBuffer(source);
-
-        return buffer.get(relX, relZ);
+        return switch (source) {
+            case GRASS -> getColor(BiomeColors.GRASS_COLOR, blockX, blockY, blockZ);
+            case FOLIAGE -> getColor(BiomeColors.FOLIAGE_COLOR, blockX, blockY, blockZ);
+            case WATER -> getColor(BiomeColors.WATER_COLOR, blockX, blockY, blockZ);
+        };
     }
 
     public int getColor(ColorResolver resolver, int blockX, int blockY, int blockZ) {
-        if (resolver == BiomeColors.GRASS_COLOR ||
-                resolver == BiomeColors.FOLIAGE_COLOR ||
-                resolver == BiomeColors.WATER_COLOR) {
-            return getColor(BiomeColorSource.from(resolver), blockX, blockY, blockZ);
-        }
-
         var relX = MathHelper.clamp(blockX, this.minX, this.maxX) - this.minX;
         var relY = MathHelper.clamp(blockY, this.minY, this.maxY) - this.minY;
         var relZ = MathHelper.clamp(blockZ, this.minZ, this.maxZ) - this.minZ;
 
-        if (!this.customSlices.containsKey(resolver)) {
-            this.customSlices.put(resolver, new CustomSlice[this.sizeY]);
-            var slice = this.customSlices.get(resolver);
+        if (!this.slices.containsKey(resolver)) {
+            this.slices.put(resolver, new Slice[this.sizeY]);
+            var slice = this.slices.get(resolver);
 
             for (int y = 0; y < this.sizeY; y++) {
-                slice[y] = new CustomSlice(this.sizeXZ);
+                slice[y] = new Slice(this.sizeXZ);
             }
 
-            this.populatedCustomSlices.put(resolver, new boolean[this.sizeY]);
-            Arrays.fill(populatedCustomSlices.get(resolver), false);
+            this.populatedSlices.put(resolver, new boolean[this.sizeY]);
+            Arrays.fill(populatedSlices.get(resolver), false);
         }
-        if (!this.populatedCustomSlices.get(resolver)[relY]) {
-            this.updateCustomColorBuffer(relY, resolver);
+        if (!this.populatedSlices.get(resolver)[relY]) {
+            this.updateColorBuffers(relY, resolver);
         }
 
-        var slice = this.customSlices.get(resolver)[relY];
+        var slice = this.slices.get(resolver)[relY];
         var buffer = slice.getBuffer();
 
         return buffer.get(relX, relZ);
     }
 
-    private void updateColorBuffers(int relY) {
-        var slice = this.slices[relY];
+    private void updateColorBuffers(int relY, ColorResolver resolver) {
+        var slice = this.slices.get(resolver)[relY];
 
         int worldY = this.minY + relY;
 
@@ -122,34 +100,7 @@ public class BiomeColorCache {
                 int relativeX = worldX - this.minX;
                 int relativeZ = worldZ - this.minZ;
 
-                slice.grass.set(relativeX, relativeZ, BiomeColors.GRASS_COLOR.getColor(biome, worldX, worldZ));
-                slice.foliage.set(relativeX, relativeZ, BiomeColors.FOLIAGE_COLOR.getColor(biome, worldX, worldZ));
-                slice.water.set(relativeX, relativeZ, BiomeColors.WATER_COLOR.getColor(biome, worldX, worldZ));
-            }
-        }
-
-        if (this.blendRadius > 0) {
-            BoxBlur.blur(slice.grass, this.tempColorBuffer, this.blendRadius);
-            BoxBlur.blur(slice.foliage, this.tempColorBuffer, this.blendRadius);
-            BoxBlur.blur(slice.water, this.tempColorBuffer, this.blendRadius);
-        }
-
-        this.populatedSlices[relY] = true;
-    }
-
-    private void updateCustomColorBuffer(int relY, ColorResolver resolver) {
-        var slice = this.customSlices.get(resolver)[relY];
-
-        int worldY = this.minY + relY;
-
-        for (int worldZ = this.minZ; worldZ <= this.maxZ; worldZ++) {
-            for (int worldX = this.minX; worldX <= this.maxX; worldX++) {
-                Biome biome = this.biomeData.getBiome(worldX, worldY, worldZ).value();
-
-                int relativeX = worldX - this.minX;
-                int relativeZ = worldZ - this.minZ;
-
-                slice.buffer.set(relativeX, relativeZ, BiomeColors.GRASS_COLOR.getColor(biome, worldX, worldZ));
+                slice.buffer.set(relativeX, relativeZ, resolver.getColor(biome, worldX, worldZ));
             }
         }
 
@@ -157,33 +108,13 @@ public class BiomeColorCache {
             BoxBlur.blur(slice.buffer, this.tempColorBuffer, this.blendRadius);
         }
 
-        this.populatedCustomSlices.get(resolver)[relY] = true;
+        this.populatedSlices.get(resolver)[relY] = true;
     }
 
     private static class Slice {
-        private final ColorBuffer grass;
-        private final ColorBuffer foliage;
-        private final ColorBuffer water;
-
-        private Slice(int size) {
-            this.grass = new ColorBuffer(size, size);
-            this.foliage = new ColorBuffer(size, size);
-            this.water = new ColorBuffer(size, size);
-        }
-
-        public ColorBuffer getBuffer(BiomeColorSource source) {
-            return switch (source) {
-                case GRASS -> this.grass;
-                case FOLIAGE -> this.foliage;
-                case WATER -> this.water;
-            };
-        }
-    }
-
-    private static class CustomSlice {
         private final ColorBuffer buffer;
 
-        private CustomSlice(int size) {
+        private Slice(int size) {
             this.buffer = new ColorBuffer(size, size);
         }
 
