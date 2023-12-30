@@ -249,28 +249,28 @@ public class CloudRenderer {
                     long ptr = buffer;
                     int count = 0;
 
-                    // -Y
-                    if ((connectedEdges & DIR_NEG_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
+                    // +Y
+                    if ((connectedEdges & DIR_POS_Y) != 0) {
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Y);
 
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
 
                         count += 4;
                     }
 
                     // Only write other vertices when using fancy clouds
                     if (this.renderMode == CloudRenderMode.FANCY) {
-                        // +Y
-                        if ((connectedEdges & DIR_POS_Y) != 0) {
-                            int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Y);
+                        // -Y
+                        if ((connectedEdges & DIR_NEG_Y) != 0) {
+                            int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
 
-                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
-                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
-                            ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
-                            ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+                            ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                            ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
 
                             count += 4;
                         }
