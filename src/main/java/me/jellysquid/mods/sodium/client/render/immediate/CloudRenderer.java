@@ -13,6 +13,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.math.MatrixStack;
@@ -220,6 +221,7 @@ public class CloudRenderer {
 
     private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
         var writer = VertexBufferWriter.of(bufferBuilder);
+        boolean fastClouds = MinecraftClient.getInstance().options.getCloudRenderMode().getValue() == CloudRenderMode.FAST;
 
         for (int offsetX = -cloudDistance; offsetX < cloudDistance; offsetX++) {
             for (int offsetZ = -cloudDistance; offsetZ < cloudDistance; offsetZ++) {
@@ -242,14 +244,20 @@ public class CloudRenderer {
 
                     // -Y
                     if ((connectedEdges & DIR_NEG_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
+                        int mixedColor2 = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
 
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor2);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor2);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor2);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor2);
 
                         count += 4;
+                    }
+
+                    // Only emit -Y geometry to emulate vanilla fast clouds
+                    if (fastClouds) {
+                        writer.push(stack, buffer, count, ColorVertex.FORMAT);
+                        continue;
                     }
 
                     // +Y

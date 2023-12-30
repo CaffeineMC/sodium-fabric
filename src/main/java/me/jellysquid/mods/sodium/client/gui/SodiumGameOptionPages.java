@@ -13,7 +13,6 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStor
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
 import me.jellysquid.mods.sodium.client.compatibility.workarounds.Workarounds;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.*;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
@@ -144,20 +143,11 @@ public class SodiumGameOptionPages {
                 .build());
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
+                .add(OptionImpl.createBuilder(CloudRenderMode.class, vanillaOpts)
                         .setName(Text.translatable("options.renderClouds"))
                         .setTooltip(Text.translatable("sodium.options.clouds_quality.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> {
-                            opts.getCloudRenderMode().setValue(value ? CloudRenderMode.FANCY : CloudRenderMode.OFF);
-
-                            if (MinecraftClient.isFabulousGraphicsOrBetter()) {
-                                Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
-                                if (framebuffer != null) {
-                                    framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
-                                }
-                            }
-                        }, opts -> opts.getCloudRenderMode().getValue() == CloudRenderMode.FANCY)
+                        .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { Text.translatable("options.off"), Text.translatable("options.clouds.fast"), Text.translatable("options.clouds.fancy") }))
+                        .setBinding((opts, value) -> opts.getCloudRenderMode().setValue(value), opts -> opts.getCloudRenderMode().getValue())
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
