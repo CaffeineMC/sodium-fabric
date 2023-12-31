@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.Map;
 import java.util.Set;
@@ -29,10 +31,9 @@ public class VertexConsumerProviderImmediateMixin {
         }
     }
 
-    @Redirect(method = "draw(Lnet/minecraft/client/render/RenderLayer;)V", at = @At(value = "INVOKE", target = "Ljava/util/Set;remove(Ljava/lang/Object;)Z"))
-    private boolean stopReplacement(Set<BufferBuilder> instance, Object bufferbuilder) {
-        bufferBuilderReplacements.remove(bufferbuilder);
-        return instance.remove(bufferbuilder);
+    @Inject(method = "draw(Lnet/minecraft/client/render/RenderLayer;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/RenderLayer;draw(Lnet/minecraft/client/render/BufferBuilder;Lcom/mojang/blaze3d/systems/VertexSorter;)V"), locals = LocalCapture.CAPTURE_FAILHARD)
+    private void stopReplacement(RenderLayer layer, CallbackInfo ci, BufferBuilder buffer) {
+        bufferBuilderReplacements.remove(buffer);
     }
 
     @Inject(method = "getBuffer", at = @At("RETURN"), cancellable = true)
