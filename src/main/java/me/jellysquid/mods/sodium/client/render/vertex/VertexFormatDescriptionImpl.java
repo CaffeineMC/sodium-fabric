@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.mixin.core.render.VertexFormatAccessor;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
 
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -31,7 +32,8 @@ public class VertexFormatDescriptionImpl implements VertexFormatDescription {
 
         for (int elementIndex = 0; elementIndex < elementList.size(); elementIndex++) {
             var element = elementList.get(elementIndex);
-            if (!attributeSet.add(CommonVertexAttribute.getCommonType(element))) {
+            var commonType = CommonVertexAttribute.getCommonType(element);
+            if (element != VertexFormats.PADDING_ELEMENT && (commonType == null || !attributeSet.add(commonType))) {
                 return false;
             }
         }
