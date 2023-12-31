@@ -452,12 +452,6 @@ public class RenderSectionManager {
                 section.setPendingUpdate(pendingUpdate);
 
                 this.needsUpdate = true;
-
-                CancellationToken token = section.getBuildCancellationToken();
-                if (token != null) {
-                    token.setCancelled();
-                    section.setBuildCancellationToken(null); // to allow queuing it again
-                }
             }
         }
     }
