@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.render.immediate.consumer;
 
 import me.jellysquid.mods.sodium.client.render.vertex.buffer.ExtendedBufferBuilder;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.SodiumBufferBuilder;
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
@@ -48,6 +49,8 @@ public abstract class BufferBuilderMixin extends FixedColorVertexConsumer implem
     @Unique
     private int vertexStride;
 
+    private SodiumBufferBuilder fastDelegate;
+
     @Inject(
             method = "setFormat",
             at = @At(
@@ -60,6 +63,14 @@ public abstract class BufferBuilderMixin extends FixedColorVertexConsumer implem
         this.formatDescription = VertexFormatRegistry.instance()
                 .get(format);
         this.vertexStride = this.formatDescription.stride();
+        this.fastDelegate = this.formatDescription.isSimpleFormat() ? new SodiumBufferBuilder(this) : null;
+    }
+
+    @Inject(method = { "reset", "resetBuilding", "begin" }, at = @At("RETURN"))
+    private void resetDelegate(CallbackInfo ci) {
+        if (this.fastDelegate != null) {
+            this.fastDelegate.reset();
+        }
     }
 
     @Override
@@ -75,6 +86,11 @@ public abstract class BufferBuilderMixin extends FixedColorVertexConsumer implem
     @Override
     public VertexFormatDescription sodium$getFormatDescription() {
         return this.formatDescription;
+    }
+
+    @Override
+    public SodiumBufferBuilder sodium$getDelegate() {
+        return this.fastDelegate;
     }
 
     @Override

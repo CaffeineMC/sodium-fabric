@@ -11,4 +11,5 @@ public interface ExtendedBufferBuilder extends VertexBufferWriter {
     void sodium$moveToNextVertex();
     VertexFormatDescription sodium$getFormatDescription();
     boolean sodium$usingFixedColor();
+    SodiumBufferBuilder sodium$getDelegate();
 }
