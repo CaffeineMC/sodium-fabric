@@ -183,7 +183,8 @@ public class OcclusionCuller {
     private static final float CHUNK_SECTION_SIZE = 8.0f /* chunk bounds */ + 1.0f /* maximum model extent */ + 0.125f /* epsilon */;
 
     public static boolean isOutsideFrustum(Viewport viewport, RenderSection section) {
-        return !viewport.isBoxVisible(section.getCenterX(), section.getCenterY(), section.getCenterZ(), CHUNK_SECTION_SIZE);
+        return !viewport.isBoxVisible(section.getCenterX(), section.getCenterY(), section.getCenterZ(),
+                CHUNK_SECTION_SIZE, CHUNK_SECTION_SIZE, CHUNK_SECTION_SIZE);
     }
 
     private void init(Consumer<RenderSection> visitor,

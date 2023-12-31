@@ -25,22 +25,6 @@ public final class Viewport {
         this.blockCoords = BlockPos.ofFloored(position.x, position.y, position.z);
     }
 
-    public boolean isBoxVisible(int intX, int intY, int intZ, float radius) {
-        float floatX = (intX - this.transform.intX) - this.transform.fracX;
-        float floatY = (intY - this.transform.intY) - this.transform.fracY;
-        float floatZ = (intZ - this.transform.intZ) - this.transform.fracZ;
-
-        return this.frustum.testAab(
-                floatX - radius,
-                floatY - radius,
-                floatZ - radius,
-
-                floatX + radius,
-                floatY + radius,
-                floatZ + radius
-        );
-    }
-
     public boolean isBoxVisible(int intX, int intY, int intZ, float size_x, float size_y, float size_z) {
         float floatX = (float)(intX - this.transform.intX) - this.transform.fracX;
         float floatY = (float)(intY - this.transform.intY) - this.transform.fracY;
