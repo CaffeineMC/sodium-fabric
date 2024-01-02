@@ -303,6 +303,10 @@ public class SodiumBufferBuilder implements VertexConsumer, VertexBufferWriter {
         this.writtenAttributes = 0;
     }
 
+    public BufferBuilder getOriginalBufferBuilder() {
+        return (BufferBuilder)this.builder;
+    }
+
     private boolean isVertexFinished() {
         return (this.writtenAttributes & this.requiredAttributes) == this.requiredAttributes;
     }
