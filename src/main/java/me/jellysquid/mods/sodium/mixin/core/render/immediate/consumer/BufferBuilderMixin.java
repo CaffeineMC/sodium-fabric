@@ -130,7 +130,7 @@ public abstract class BufferBuilderMixin extends FixedColorVertexConsumer implem
 
     @Override
     public boolean canUseIntrinsics() {
-        return true;
+        return this.formatDescription != null && this.formatDescription.isSimpleFormat();
     }
 
     @Override

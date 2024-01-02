@@ -94,6 +94,11 @@ public class SodiumBufferBuilder implements VertexConsumer, VertexBufferWriter {
         this.builder.push(stack, ptr, count, format);
     }
 
+    @Override
+    public boolean canUseIntrinsics() {
+        return this.builder.canUseIntrinsics();
+    }
+
     @Unique
     private void putPositionAttribute(float x, float y, float z) {
         if (this.attributeOffsetPosition == ATTRIBUTE_NOT_PRESENT) {
