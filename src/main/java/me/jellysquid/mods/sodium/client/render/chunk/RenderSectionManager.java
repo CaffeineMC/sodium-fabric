@@ -393,6 +393,7 @@ public class RenderSectionManager {
 
     public void updateChunks(boolean updateImmediately) {
         var thisFrameBlockingCollector = this.lastBlockingCollector;
+        this.lastBlockingCollector = null;
         if (thisFrameBlockingCollector == null) {
             thisFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
         }
@@ -403,7 +404,6 @@ public class RenderSectionManager {
             this.submitSectionTasks(thisFrameBlockingCollector, thisFrameBlockingCollector, thisFrameBlockingCollector);
 
             thisFrameBlockingCollector.awaitCompletion(this.builder);
-            this.lastBlockingCollector = null;
         } else {
             var nextFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
             var deferredCollector = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
@@ -699,8 +699,8 @@ public class RenderSectionManager {
 
         list.add(String.format("Chunk Queues: U=%02d (P0=%03d | P1=%03d | P2=%03d)",
                 this.buildResults.size(),
-                this.taskLists.get(ChunkUpdateType.IMPORTANT_REBUILD).size(),
-                this.taskLists.get(ChunkUpdateType.REBUILD).size(),
+                this.taskLists.get(ChunkUpdateType.IMPORTANT_REBUILD).size() + this.taskLists.get(ChunkUpdateType.IMPORTANT_SORT).size(),
+                this.taskLists.get(ChunkUpdateType.REBUILD).size() + this.taskLists.get(ChunkUpdateType.SORT).size(),
                 this.taskLists.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
 
