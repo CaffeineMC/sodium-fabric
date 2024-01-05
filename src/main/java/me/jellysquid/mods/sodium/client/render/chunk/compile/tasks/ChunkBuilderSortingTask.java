@@ -9,6 +9,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.Dy
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 
 public class ChunkBuilderSortingTask extends ChunkBuilderTask<ChunkSortOutput> {
+    public static final int SORT_TASK_EFFORT = 1;
+
     private final DynamicData dynamicData;
 
     public ChunkBuilderSortingTask(RenderSection render, int frame, Vector3dc absoluteCameraPos,
@@ -31,5 +33,10 @@ public class ChunkBuilderSortingTask extends ChunkBuilderTask<ChunkSortOutput> {
             return new ChunkBuilderSortingTask(render, frame, absoluteCameraPos, dynamicData);
         }
         return null;
+    }
+
+    @Override
+    public int getEffort() {
+        return SORT_TASK_EFFORT;
     }
 }

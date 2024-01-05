@@ -11,6 +11,7 @@ public class ChunkJobCollector {
     private final Semaphore semaphore = new Semaphore(0);
     private final Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector;
     private final List<ChunkJob> submitted = new ArrayList<>();
+    private int submittedEffort = 0;
 
     private final int budget;
 
@@ -42,9 +43,10 @@ public class ChunkJobCollector {
 
     public void addSubmittedJob(ChunkJob job) {
         this.submitted.add(job);
+        this.submittedEffort += job.getEffort();
     }
 
-    public boolean canOffer() {
-        return (this.budget - this.submitted.size()) > 0;
+    public boolean hasBudgetFor(int effort) {
+        return (this.budget - this.submittedEffort) >= effort;
     }
 }

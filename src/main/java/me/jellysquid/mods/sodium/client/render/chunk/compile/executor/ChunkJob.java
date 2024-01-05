@@ -7,4 +7,6 @@ public interface ChunkJob extends CancellationToken {
     void execute(ChunkBuildContext context);
 
     boolean isStarted();
+
+    int getEffort();
 }

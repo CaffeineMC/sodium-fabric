@@ -8,9 +8,12 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class ChunkJobQueue {
     private final ConcurrentLinkedDeque<ChunkJob> jobs = new ConcurrentLinkedDeque<>();
+
+    private final AtomicInteger jobEffortSum = new AtomicInteger();
 
     private final Semaphore semaphore = new Semaphore(0);
 
@@ -28,6 +31,7 @@ class ChunkJobQueue {
         } else {
             this.jobs.addLast(job);
         }
+        this.jobEffortSum.addAndGet(job.getEffort());
 
         this.semaphore.release(1);
     }
@@ -40,7 +44,11 @@ class ChunkJobQueue {
 
         this.semaphore.acquire();
 
-        return this.getNextTask();
+        var job = this.getNextTask();
+        if (job != null) {
+            this.jobEffortSum.addAndGet(-job.getEffort());
+        }
+        return job;
     }
 
     public boolean stealJob(ChunkJob job) {
@@ -50,7 +58,9 @@ class ChunkJobQueue {
 
         var success = this.jobs.remove(job);
 
-        if (!success) {
+        if (success) {
+            this.jobEffortSum.addAndGet(-job.getEffort());
+        } else {
             // If we didn't manage to actually steal the task, then we need to release the permit which we did steal
             this.semaphore.release(1);
         }
@@ -80,11 +90,17 @@ class ChunkJobQueue {
         // force the worker threads to wake up and exit
         this.semaphore.release(Runtime.getRuntime().availableProcessors());
 
+        this.jobEffortSum.set(0);
+
         return list;
     }
 
     public int size() {
         return this.semaphore.availablePermits();
+    }
+
+    public int getEffortSum() {
+        return this.jobEffortSum.get();
     }
 
     public boolean isEmpty() {

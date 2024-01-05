@@ -439,7 +439,7 @@ public class RenderSectionManager {
     private void submitSectionTasks(ChunkJobCollector collector, ChunkUpdateType type) {
         var queue = this.taskLists.get(type);
 
-        while (!queue.isEmpty() && collector.canOffer()) {
+        while (!queue.isEmpty() && collector.hasBudgetFor(type.getTaskEffort())) {
             RenderSection section = queue.remove();
 
             if (section.isDisposed()) {
@@ -693,8 +693,8 @@ public class RenderSectionManager {
         list.add(String.format("Geometry Pool: %d/%d MiB (%d buffers)", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated), count));
         list.add(String.format("Transfer Queue: %s", this.regions.getStagingBuffer().toString()));
 
-        list.add(String.format("Chunk Builder: Permits=%02d | Busy=%02d | Total=%02d",
-                this.builder.getScheduledJobCount(), this.builder.getBusyThreadCount(), this.builder.getTotalThreadCount())
+        list.add(String.format("Chunk Builder: Permits=%02d (E %02d) | Busy=%02d | Total=%02d",
+                this.builder.getScheduledJobCount(), this.builder.getScheduledEffort(), this.builder.getBusyThreadCount(), this.builder.getTotalThreadCount())
         );
 
         list.add(String.format("Chunk Queues: U=%02d (P0=%03d | P1=%03d | P2=%03d)",

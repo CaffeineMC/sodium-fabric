@@ -54,6 +54,8 @@ public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> impleme
      */
     public abstract OUTPUT execute(ChunkBuildContext context, CancellationToken cancellationToken);
 
+    public abstract int getEffort();
+
     @Override
     public Vector3fc getRelativeCameraPos() {
         return this.cameraPos;

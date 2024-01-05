@@ -20,6 +20,9 @@ import net.minecraft.util.math.ChunkSectionPos;
  * of translucent data objects for each sort type and delegates triggering of
  * sections for dynamic sorting to the trigger components.
  * 
+ * TODO:
+ * - investigate why there's a similar number of STA and DYN sections. This might be normal, the counters might be broken or the heuristic is actually wrong.
+ * 
  * @author douira (the translucent_sorting package)
  */
 public class SortTriggering {
@@ -220,7 +223,6 @@ public class SortTriggering {
             this.catchupData = null;
         } else {
             this.removeSection(oldData, pos.asLong());
-            return;
         }
     }
 

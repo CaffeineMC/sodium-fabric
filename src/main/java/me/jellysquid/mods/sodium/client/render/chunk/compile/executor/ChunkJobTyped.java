@@ -66,4 +66,9 @@ public class ChunkJobTyped<TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT extends
     public boolean isStarted() {
         return this.started;
     }
+
+    @Override
+    public int getEffort() {
+        return this.task.getEffort();
+    }
 }

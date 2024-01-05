@@ -5,7 +5,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
@@ -14,11 +13,23 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ChunkBuilder {
+    /**
+     * The effort of a mesh task compared to a sorting task, which always has effort
+     * 1. This is used to schedule more sorting tasks compared to mesh tasks because
+     * they're faster. This also needs to capture that there's a limit to how much
+     * data can be uploaded per frame. Since sort tasks generate index data, which
+     * is smaller per quad and (on average) per section, more of their results can
+     * be uploaded in one frame. This number should essentially be a conservative
+     * estimate of min((mesh task upload size) / (sort task upload size), (mesh task
+     * time) / (sort task time)).
+     */
+    public static final int MESH_TASK_EFFORT_FACTOR = 10;
+    public static final int EFFORT_PER_THREAD_PER_FRAME = MESH_TASK_EFFORT_FACTOR;
+
     static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private final ChunkJobQueue queue = new ChunkJobQueue();
@@ -53,7 +64,7 @@ public class ChunkBuilder {
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
     public int getSchedulingBudget() {
-        return Math.max(0, this.threads.size() - this.queue.size());
+        return Math.max(0, this.threads.size() * EFFORT_PER_THREAD_PER_FRAME - this.queue.getEffortSum());
     }
 
     /**
@@ -145,6 +156,10 @@ public class ChunkBuilder {
 
     public int getScheduledJobCount() {
         return this.queue.size();
+    }
+
+    public int getScheduledEffort() {
+        return this.queue.getEffortSum();
     }
 
     public int getBusyThreadCount() {

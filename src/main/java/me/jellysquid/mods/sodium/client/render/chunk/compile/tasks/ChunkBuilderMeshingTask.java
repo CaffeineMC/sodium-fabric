@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
@@ -44,6 +45,8 @@ import org.joml.Vector3dc;
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
 public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> {
+    public static final int MESH_TASK_EFFORT = ChunkBuilderSortingTask.SORT_TASK_EFFORT * ChunkBuilder.MESH_TASK_EFFORT_FACTOR;
+
     private final ChunkRenderContext renderContext;
 
     public ChunkBuilderMeshingTask(RenderSection render, int buildTime, Vector3dc absoluteCameraPos, ChunkRenderContext renderContext) {
@@ -192,5 +195,10 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         }
 
         return new CrashException(report);
+    }
+
+    @Override
+    public int getEffort() {
+        return MESH_TASK_EFFORT;
     }
 }
