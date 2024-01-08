@@ -296,27 +296,29 @@ public class RenderSectionManager {
             return;
         }
 
-        this.processChunkBuildResults(results);
+        // only mark as needing a graph update if the uploads could have changed the graph
+        // (sort results never change the graph)
+        // generally there's no sort results without a camera movement, which would also trigger
+        // a graph update, but it can sometimes happen because of async task execution
+        this.needsGraphUpdate = this.needsGraphUpdate || this.processChunkBuildResults(results);
 
         for (var result : results) {
             result.deleteAfterUploadSafe();
         }
-
-        // TODO: only needed if the tasks actually changed the visibility (sort tasks
-        // don't count, though there would never be a sort task without camera movement
-        // so it likely doesn't matter)
-        this.needsGraphUpdate = true;
     }
 
-    private void processChunkBuildResults(ArrayList<BuilderTaskOutput> results) {
+    private boolean processChunkBuildResults(ArrayList<BuilderTaskOutput> results) {
         var filtered = filterChunkBuildResults(results);
 
         this.regions.uploadResults(RenderDevice.INSTANCE.createCommandList(), filtered);
 
+        boolean touchedSectionInfo = false;
         for (var result : filtered) {
             TranslucentData oldData = result.render.getTranslucentData();
             if (result instanceof ChunkBuildOutput chunkBuildOutput) {
                 this.updateSectionInfo(result.render, chunkBuildOutput.info);
+                touchedSectionInfo = true;
+
                 if (chunkBuildOutput.translucentData != null) {
                     this.ts.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition, this::scheduleSort);
 
@@ -338,6 +340,8 @@ public class RenderSectionManager {
 
             result.render.setLastUploadFrame(result.submitTime);
         }
+
+        return touchedSectionInfo;
     }
 
     private void updateSectionInfo(RenderSection render, BuiltSectionInfo info) {
