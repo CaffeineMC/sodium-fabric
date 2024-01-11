@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.launch_warn;
+package net.caffeinemc.mods.sodium.desktop;
 
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;

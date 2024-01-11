@@ -45,11 +45,11 @@ sourceSets {
         }
     }
 
-    // only includes /src/launch_warn/java/net/caffeinemc/mods/sodium/launch_warn/LaunchWarn.java
+    // only includes /src/desktop/java/net/caffeinemc/mods/sodium/desktop/LaunchWarn.java
     // this source set is should be compiled with Java 8
     launchWarn {
         java {
-            srcDir "src/launch_warn/java"
+            srcDir "src/desktop/java"
             include "**/LaunchWarn.java"
         }
     }
