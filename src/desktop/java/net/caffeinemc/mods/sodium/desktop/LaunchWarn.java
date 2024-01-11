@@ -15,8 +15,8 @@ import java.net.URI;
  */
 public class LaunchWarn {
     public static void main(String[] args) {
-        String message = "This file is Sodium, meant to be installed as a mod. Do you want to download the Modrinth App to use Sodium?";
-        String fallback = "This file is Sodium, meant to be installed as a mod. You can also get the Modrinth App from https://modrinth.com/app to use Sodium.";
+        String message = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead.\nIf this is your first time installing mods for Fabric Loader, click \"Yes\" for a guide on how to do this.";
+        String fallback = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead.\nIf this is your first time installing mods for Fabric Loader, open \"https://github.com/CaffeineMC/sodium-fabric/wiki/Installation\" for a guide on how to do this.";
         if (GraphicsEnvironment.isHeadless()) {
             System.err.println(fallback);
         } else {
@@ -32,7 +32,7 @@ public class LaunchWarn {
 
                 if (option == JOptionPane.YES_OPTION) {
                     try {
-                        Desktop.getDesktop().browse(URI.create("https://modrinth.com/app"));
+                        Desktop.getDesktop().browse(URI.create("https://github.com/CaffeineMC/sodium-fabric/wiki/Installation"));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
