@@ -15,7 +15,7 @@ import java.net.URI;
  */
 public class LaunchWarn {
     public static void main(String[] args) {
-        String message = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead.\nIf this is your first time installing mods for Fabric Loader, click \"Yes\" for a guide on how to do this.";
+        String message = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead.\nIf this is your first time installing mods for Fabric Loader, click \"Help\" for a guide on how to do this.";
         String fallback = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead.\nIf this is your first time installing mods for Fabric Loader, open \"https://github.com/CaffeineMC/sodium-fabric/wiki/Installation\" for a guide on how to do this.";
         if (GraphicsEnvironment.isHeadless()) {
             System.err.println(fallback);
@@ -28,7 +28,7 @@ public class LaunchWarn {
 
             if (Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 int option = JOptionPane.showOptionDialog(null, message, "Sodium", JOptionPane.YES_NO_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE, null, null, null);
+                        JOptionPane.INFORMATION_MESSAGE, null, new Object[] { "Help", "Cancel" }, JOptionPane.YES_OPTION);
 
                 if (option == JOptionPane.YES_OPTION) {
                     try {
