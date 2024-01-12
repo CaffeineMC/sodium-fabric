@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur;
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur.ColorBuffer;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -8,15 +9,12 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.ColorResolver;
 
-import java.util.Arrays;
-import java.util.HashMap;
-
 public class BiomeColorCache {
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
     private final BiomeSlice biomeData;
 
-    private final HashMap<ColorResolver, Slice[]> slices;
-    private final HashMap<ColorResolver, boolean[]> populatedSlices;
+    private final Reference2ReferenceOpenHashMap<ColorResolver, Slice[]> slices;
+    private long populateStamp;
 
     private final int blendRadius;
 
@@ -34,8 +32,8 @@ public class BiomeColorCache {
         this.sizeXZ = 16 + ((NEIGHBOR_BLOCK_RADIUS + this.blendRadius) * 2);
         this.sizeY = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
 
-        this.slices = new HashMap<>();
-        this.populatedSlices = new HashMap<>();
+        this.slices = new Reference2ReferenceOpenHashMap<>();
+        this.populateStamp = 1;
 
         this.tempColorBuffer = new ColorBuffer(this.sizeXZ, this.sizeXZ);
     }
@@ -49,9 +47,7 @@ public class BiomeColorCache {
         this.maxY = (context.getOrigin().getMaxY() + NEIGHBOR_BLOCK_RADIUS);
         this.maxZ = (context.getOrigin().getMaxZ() + NEIGHBOR_BLOCK_RADIUS) + this.blendRadius;
 
-        for (boolean[] p : this.populatedSlices.values()) {
-            Arrays.fill(p, false);
-        }
+        this.populateStamp++;
     }
 
     public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
@@ -68,29 +64,30 @@ public class BiomeColorCache {
         var relZ = MathHelper.clamp(blockZ, this.minZ, this.maxZ) - this.minZ;
 
         if (!this.slices.containsKey(resolver)) {
-            this.slices.put(resolver, new Slice[this.sizeY]);
-            var slice = this.slices.get(resolver);
-
-            for (int y = 0; y < this.sizeY; y++) {
-                slice[y] = new Slice(this.sizeXZ);
-            }
-
-            this.populatedSlices.put(resolver, new boolean[this.sizeY]);
-            Arrays.fill(populatedSlices.get(resolver), false);
-        }
-        if (!this.populatedSlices.get(resolver)[relY]) {
-            this.updateColorBuffers(relY, resolver);
+            this.initializeSlices(resolver);
         }
 
         var slice = this.slices.get(resolver)[relY];
+
+        if (slice.lastPopulateStamp < this.populateStamp) {
+            this.updateColorBuffers(relY, resolver, slice);
+        }
+
         var buffer = slice.getBuffer();
 
         return buffer.get(relX, relZ);
     }
 
-    private void updateColorBuffers(int relY, ColorResolver resolver) {
-        var slice = this.slices.get(resolver)[relY];
+    private void initializeSlices(ColorResolver resolver) {
+        var slice = new Slice[this.sizeY];
+        this.slices.put(resolver, slice);
 
+        for (int y = 0; y < this.sizeY; y++) {
+            slice[y] = new Slice(this.sizeXZ);
+        }
+    }
+
+    private void updateColorBuffers(int relY, ColorResolver resolver, Slice slice) {
         int worldY = this.minY + relY;
 
         for (int worldZ = this.minZ; worldZ <= this.maxZ; worldZ++) {
@@ -108,14 +105,16 @@ public class BiomeColorCache {
             BoxBlur.blur(slice.buffer, this.tempColorBuffer, this.blendRadius);
         }
 
-        this.populatedSlices.get(resolver)[relY] = true;
+        slice.lastPopulateStamp = this.populateStamp;
     }
 
     private static class Slice {
         private final ColorBuffer buffer;
+        private long lastPopulateStamp;
 
         private Slice(int size) {
             this.buffer = new ColorBuffer(size, size);
+            this.lastPopulateStamp = 0;
         }
 
         public ColorBuffer getBuffer() {
