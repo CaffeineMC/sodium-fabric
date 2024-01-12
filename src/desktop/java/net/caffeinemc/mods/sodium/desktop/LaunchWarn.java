@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.desktop;
 
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -26,9 +27,11 @@ public class LaunchWarn {
                 // Ignored
             }
 
+			ImageIcon icon = new ImageIcon(LaunchWarn.class.getResource("/assets/sodium/icon.png"), "Sodium");
+
             if (Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 int option = JOptionPane.showOptionDialog(null, message, "Sodium", JOptionPane.YES_NO_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE, null, new Object[] { "Help", "Cancel" }, JOptionPane.YES_OPTION);
+                        JOptionPane.INFORMATION_MESSAGE, icon, new Object[] { "Help", "Cancel" }, JOptionPane.YES_OPTION);
 
                 if (option == JOptionPane.YES_OPTION) {
                     try {
@@ -39,7 +42,7 @@ public class LaunchWarn {
                 }
             } else {
                 // Fallback for Linux, etc users with no "default" browser
-                JOptionPane.showMessageDialog(null, fallback);
+                JOptionPane.showMessageDialog(null, fallback, "Sodium", JOptionPane.INFORMATION_MESSAGE, icon);
             }
         }
 
