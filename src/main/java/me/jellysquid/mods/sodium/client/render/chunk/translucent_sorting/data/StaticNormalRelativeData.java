@@ -9,11 +9,15 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortTyp
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import me.jellysquid.mods.sodium.client.util.sorting.RadixSort;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * Static normal relative sorting orders quads by the dot product of their
  * normal and position. (referred to as "distance" throughout the code)
+ * 
+ * Unlike sorting by distance, which is descending for translucent rendering to
+ * be correct, sorting by dot product is ascending instead.
  */
 public class StaticNormalRelativeData extends SplitDirectionData {
     public StaticNormalRelativeData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
@@ -28,19 +32,35 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, ChunkSectionPos sectionPos) {
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
-        IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
+        IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
-        long[] sortData = new long[quads.length];
+        if (quads.length <= 1) {
+            TranslucentData.writeQuadVertexIndexes(indexBuffer, 0);
+        } else if (RadixSort.useRadixSort(quads.length)) {
+            final var keys = new int[quads.length];
 
-        for (int quadIndex = 0; quadIndex < quads.length; quadIndex++) {
-            int dotProductComponent = MathUtil.floatToComparableInt(quads[quadIndex].getDotProduct());
-            sortData[quadIndex] = (long) dotProductComponent << 32 | quadIndex;
-        }
+            for (int q = 0; q < quads.length; q++) {
+                keys[q] = MathUtil.floatToComparableInt(quads[q].getDotProduct());
+            }
 
-        Arrays.sort(sortData);
+            var indices = RadixSort.sort(keys);
 
-        for (int i = 0; i < quads.length; i++) {
-            TranslucentData.writeQuadVertexIndexes(bufferBuilder, (int) sortData[i]);
+            for (int i = 0; i < quads.length; i++) {
+                TranslucentData.writeQuadVertexIndexes(indexBuffer, indices[i]);
+            }
+        } else {
+            final var sortData = new long[quads.length];
+
+            for (int q = 0; q < quads.length; q++) {
+                int dotProductComponent = MathUtil.floatToComparableInt(quads[q].getDotProduct());
+                sortData[q] = (long) dotProductComponent << 32 | q;
+            }
+
+            Arrays.sort(sortData);
+
+            for (int i = 0; i < quads.length; i++) {
+                TranslucentData.writeQuadVertexIndexes(indexBuffer, (int) sortData[i]);
+            }
         }
 
         return new StaticNormalRelativeData(sectionPos, buffer, translucentMesh.getVertexRanges());
@@ -52,17 +72,23 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     private static StaticNormalRelativeData fromMixed(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, ChunkSectionPos sectionPos) {
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
-        IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
+        IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
         var ranges = translucentMesh.getVertexRanges();
         var maxRangeSize = 0;
+        boolean anyNeedsSortData = false;
         for (var range : ranges) {
             if (range != null) {
-                maxRangeSize = Math.max(maxRangeSize, range.vertexCount());
+                var count = range.vertexCount();
+                maxRangeSize = Math.max(maxRangeSize, count);
+                anyNeedsSortData |= !RadixSort.useRadixSort(count) && count > 1;
             }
         }
 
-        long[] sortData = new long[TranslucentData.vertexCountToQuadCount(maxRangeSize)];
+        long[] sortData = null;
+        if (anyNeedsSortData) {
+            sortData = new long[TranslucentData.vertexCountToQuadCount(maxRangeSize)];
+        }
 
         int quadIndex = 0;
         for (var range : ranges) {
@@ -70,20 +96,42 @@ public class StaticNormalRelativeData extends SplitDirectionData {
                 continue;
             }
 
-            int count = TranslucentData.vertexCountToQuadCount(range.vertexCount());
-
-            for (int i = 0; i < count; i++) {
-                var quad = quads[quadIndex++];
-                int dotProductComponent = MathUtil.floatToComparableInt(quad.getDotProduct());
-                sortData[i] = (long) dotProductComponent << 32 | i;
+            int vertexCount = range.vertexCount();
+            if (vertexCount == 0) {
+                continue;
             }
 
-            if (count > 1) {
-                Arrays.sort(sortData, 0, count);
-            }
+            int count = TranslucentData.vertexCountToQuadCount(vertexCount);
 
-            for (int i = 0; i < count; i++) {
-                TranslucentData.writeQuadVertexIndexes(bufferBuilder, (int) sortData[i]);
+            if (count == 1) {
+                TranslucentData.writeQuadVertexIndexes(indexBuffer, 0);
+                quadIndex++;
+            } else if (RadixSort.useRadixSort(count)) {
+                final var keys = new int[count];
+
+                for (int q = 0; q < count; q++) {
+                    keys[q] = MathUtil.floatToComparableInt(quads[quadIndex++].getDotProduct());
+                }
+
+                var indices = RadixSort.sort(keys);
+
+                for (int i = 0; i < count; i++) {
+                    TranslucentData.writeQuadVertexIndexes(indexBuffer, indices[i]);
+                }
+            } else {
+                for (int i = 0; i < count; i++) {
+                    var quad = quads[quadIndex++];
+                    int dotProductComponent = MathUtil.floatToComparableInt(quad.getDotProduct());
+                    sortData[i] = (long) dotProductComponent << 32 | i;
+                }
+
+                if (count > 1) {
+                    Arrays.sort(sortData, 0, count);
+                }
+
+                for (int i = 0; i < count; i++) {
+                    TranslucentData.writeQuadVertexIndexes(indexBuffer, (int) sortData[i]);
+                }
             }
         }
 

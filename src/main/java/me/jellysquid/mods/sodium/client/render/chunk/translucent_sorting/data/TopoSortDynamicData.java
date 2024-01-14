@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import me.jellysquid.mods.sodium.client.util.sorting.RadixSort;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -187,17 +188,37 @@ public class TopoSortDynamicData extends DynamicData {
         }
     }
 
+    /**
+     * Sorts the given quads by descending center distance to the camera and writes
+     * the resulting order to the given index buffer.
+     */
     private static void distanceSortDirect(IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
-        var data = new long[quads.length];
-        for (int i = 0; i < quads.length; i++) {
-            float distance = cameraPos.distanceSquared(quads[i].getCenter());
-            data[i] = (long) ~Float.floatToRawIntBits(distance) << 32 | i;
-        }
+        if (quads.length <= 1) {
+            TranslucentData.writeQuadVertexIndexes(indexBuffer, 0);
+        } else if (RadixSort.useRadixSort(quads.length)) {
+            final var keys = new int[quads.length];
 
-        Arrays.sort(data);
+            for (int q = 0; q < quads.length; q++) {
+                keys[q] = ~Float.floatToRawIntBits(quads[q].getCenter().distanceSquared(cameraPos));
+            }
 
-        for (int i = 0; i < quads.length; i++) {
-            TranslucentData.writeQuadVertexIndexes(indexBuffer, (int) data[i]);
+            var indices = RadixSort.sort(keys);
+
+            for (int i = 0; i < quads.length; i++) {
+                TranslucentData.writeQuadVertexIndexes(indexBuffer, indices[i]);
+            }
+        } else {
+            final var data = new long[quads.length];
+            for (int q = 0; q < quads.length; q++) {
+                float distance = quads[q].getCenter().distanceSquared(cameraPos);
+                data[q] = (long) ~Float.floatToRawIntBits(distance) << 32 | q;
+            }
+
+            Arrays.sort(data);
+
+            for (int i = 0; i < quads.length; i++) {
+                TranslucentData.writeQuadVertexIndexes(indexBuffer, (int) data[i]);
+            }
         }
     }
 
