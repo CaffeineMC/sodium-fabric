@@ -88,7 +88,7 @@ public final class WorldSlice implements BlockRenderView, BiomeColorView, Render
 
     // The starting point from which this slice captures blocks
     private int originX, originY, originZ;
-    
+
     // The volume that this WorldSlice contains
     private BlockBox volume;
 
@@ -194,7 +194,7 @@ public final class WorldSlice implements BlockRenderView, BiomeColorView, Render
         ChunkSectionPos origin = context.getOrigin();
         ChunkSectionPos pos = section.getPosition();
 
-        if (origin.equals(pos))  {
+        if (origin.equals(pos)) {
             container.sodium$unpack(blockArray);
         } else {
             var bounds = context.getVolume();
@@ -330,7 +330,7 @@ public final class WorldSlice implements BlockRenderView, BiomeColorView, Render
 
     @Override
     public int getColor(BlockPos pos, ColorResolver resolver) {
-        return this.biomeColors.getColor(BiomeColorSource.from(resolver), pos.getX(), pos.getY(), pos.getZ());
+        return this.biomeColors.getColor(resolver, pos.getX(), pos.getY(), pos.getZ());
     }
 
     @Override
