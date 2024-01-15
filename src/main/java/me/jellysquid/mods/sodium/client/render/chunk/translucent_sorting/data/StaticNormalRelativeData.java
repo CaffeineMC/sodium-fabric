@@ -75,19 +75,19 @@ public class StaticNormalRelativeData extends SplitDirectionData {
         IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
         var ranges = translucentMesh.getVertexRanges();
-        var maxRangeSize = 0;
+        var maxQuadCount = 0;
         boolean anyNeedsSortData = false;
         for (var range : ranges) {
             if (range != null) {
-                var count = range.vertexCount();
-                maxRangeSize = Math.max(maxRangeSize, count);
-                anyNeedsSortData |= !RadixSort.useRadixSort(count) && count > 1;
+                var quadCount = TranslucentData.vertexCountToQuadCount(range.vertexCount());
+                maxQuadCount = Math.max(maxQuadCount, quadCount);
+                anyNeedsSortData |= !RadixSort.useRadixSort(quadCount) && quadCount > 1;
             }
         }
 
         long[] sortData = null;
         if (anyNeedsSortData) {
-            sortData = new long[TranslucentData.vertexCountToQuadCount(maxRangeSize)];
+            sortData = new long[maxQuadCount];
         }
 
         int quadIndex = 0;
