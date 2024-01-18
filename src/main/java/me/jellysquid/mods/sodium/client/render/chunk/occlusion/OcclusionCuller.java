@@ -3,16 +3,14 @@ package me.jellysquid.mods.sodium.client.render.chunk.occlusion;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
+import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.collections.DoubleBufferedQueue;
 import me.jellysquid.mods.sodium.client.util.collections.ReadQueue;
 import me.jellysquid.mods.sodium.client.util.collections.WriteQueue;
-import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.Consumer;
 
 public class OcclusionCuller {
     private final Long2ReferenceMap<RenderSection> sections;
@@ -25,7 +23,7 @@ public class OcclusionCuller {
         this.world = world;
     }
 
-    public void findVisible(Consumer<RenderSection> visitor,
+    public void findVisible(Visitor visitor,
                             Viewport viewport,
                             float searchDistance,
                             boolean useOcclusionCulling,
@@ -41,7 +39,7 @@ public class OcclusionCuller {
         }
     }
 
-    private static void processQueue(Consumer<RenderSection> visitor,
+    private static void processQueue(Visitor visitor,
                                      Viewport viewport,
                                      float searchDistance,
                                      boolean useOcclusionCulling,
@@ -52,15 +50,12 @@ public class OcclusionCuller {
         RenderSection section;
 
         while ((section = readQueue.dequeue()) != null) {
-            if (isOutsideRenderDistance(viewport.getTransform(), section, searchDistance)) {
+            boolean visible = isSectionVisible(section, viewport, searchDistance);
+            visitor.visit(section, visible);
+
+            if (!visible) {
                 continue;
             }
-
-            if (isOutsideFrustum(viewport, section)) {
-                continue;
-            }
-
-            visitor.accept(section);
 
             int connections;
 
@@ -82,6 +77,10 @@ public class OcclusionCuller {
 
             visitNeighbors(writeQueue, section, connections, frame);
         }
+    }
+
+    private static boolean isSectionVisible(RenderSection section, Viewport viewport, float maxDistance) {
+        return isWithinRenderDistance(viewport.getTransform(), section, maxDistance) && isWithinFrustum(viewport, section);
     }
 
     private static void visitNeighbors(final WriteQueue<RenderSection> queue, RenderSection section, int outgoing, int frame) {
@@ -151,7 +150,7 @@ public class OcclusionCuller {
         return planes;
     }
 
-    private static boolean isOutsideRenderDistance(CameraTransform camera, RenderSection section, float maxDistance) {
+    private static boolean isWithinRenderDistance(CameraTransform camera, RenderSection section, float maxDistance) {
         // origin point of the chunk's bounding box (in view space)
         int ox = section.getOriginX() - camera.intX;
         int oy = section.getOriginY() - camera.intY;
@@ -165,7 +164,7 @@ public class OcclusionCuller {
 
         // vanilla's "cylindrical fog" algorithm
         // max(length(distance.xz), abs(distance.y))
-        return (((dx * dx) + (dz * dz)) > (maxDistance * maxDistance)) || (Math.abs(dy) > maxDistance);
+        return (((dx * dx) + (dz * dz)) < (maxDistance * maxDistance)) || (Math.abs(dy) < maxDistance);
     }
 
     @SuppressWarnings("ManualMinMaxCalculation") // we know what we are doing.
@@ -182,11 +181,11 @@ public class OcclusionCuller {
     // to deal with floating point imprecision during a frustum check (see GH#2132).
     private static final float CHUNK_SECTION_SIZE = 8.0f /* chunk bounds */ + 1.0f /* maximum model extent */ + 0.125f /* epsilon */;
 
-    public static boolean isOutsideFrustum(Viewport viewport, RenderSection section) {
-        return !viewport.isBoxVisible(section.getCenterX(), section.getCenterY(), section.getCenterZ(), CHUNK_SECTION_SIZE);
+    public static boolean isWithinFrustum(Viewport viewport, RenderSection section) {
+        return viewport.isBoxVisible(section.getCenterX(), section.getCenterY(), section.getCenterZ(), CHUNK_SECTION_SIZE);
     }
 
-    private void init(Consumer<RenderSection> visitor,
+    private void init(Visitor visitor,
                       WriteQueue<RenderSection> queue,
                       Viewport viewport,
                       float searchDistance,
@@ -208,7 +207,7 @@ public class OcclusionCuller {
         }
     }
 
-    private void initWithinWorld(Consumer<RenderSection> visitor, WriteQueue<RenderSection> queue, Viewport viewport, boolean useOcclusionCulling, int frame) {
+    private void initWithinWorld(Visitor visitor, WriteQueue<RenderSection> queue, Viewport viewport, boolean useOcclusionCulling, int frame) {
         var origin = viewport.getChunkCoord();
         var section = this.getRenderSection(origin.getX(), origin.getY(), origin.getZ());
 
@@ -219,7 +218,7 @@ public class OcclusionCuller {
         section.setLastVisibleFrame(frame);
         section.setIncomingDirections(GraphDirectionSet.NONE);
 
-        visitor.accept(section);
+        visitor.visit(section, true);
 
         int outgoing;
 
@@ -293,7 +292,7 @@ public class OcclusionCuller {
     private void tryVisitNode(WriteQueue<RenderSection> queue, int x, int y, int z, int direction, int frame, Viewport viewport) {
         RenderSection section = this.getRenderSection(x, y, z);
 
-        if (section == null || isOutsideFrustum(viewport, section)) {
+        if (section == null || isWithinFrustum(viewport, section)) {
             return;
         }
 
@@ -302,5 +301,9 @@ public class OcclusionCuller {
 
     private RenderSection getRenderSection(int x, int y, int z) {
         return this.sections.get(ChunkSectionPos.asLong(x, y, z));
+    }
+
+    public interface Visitor {
+        void visit(RenderSection section, boolean visible);
     }
 }
