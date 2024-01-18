@@ -16,8 +16,10 @@ import java.net.URI;
  */
 public class LaunchWarn {
     public static void main(String[] args) {
-        String message = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead.\nIf this is your first time installing mods for Fabric Loader, click \"Help\" for a guide on how to do this.";
-        String fallback = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead.\nIf this is your first time installing mods for Fabric Loader, open \"https://github.com/CaffeineMC/sodium-fabric/wiki/Installation\" for a guide on how to do this.";
+        String message = "<html><body><p style='width:600px;'>You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead." +
+        "\nIf this is your first time installing mods for Fabric Loader, click \"Help\" for a guide on how to do this.</p></body></html>";
+        String fallback = "<html><body><p style='width:600px;'>You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead." +
+        "\nIf this is your first time installing mods for Fabric Loader, open \"https://github.com/CaffeineMC/sodium-fabric/wiki/Installation\" for a guide on how to do this.</p></body></html>";
         if (GraphicsEnvironment.isHeadless()) {
             System.err.println(fallback);
         } else {
@@ -27,7 +29,7 @@ public class LaunchWarn {
                 // Ignored
             }
 
-			ImageIcon icon = new ImageIcon(LaunchWarn.class.getResource("/assets/sodium/icon.png"), "Sodium");
+            ImageIcon icon = new ImageIcon(LaunchWarn.class.getResource("/assets/sodium/icon.png"), "Sodium");
 
             if (Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 int option = JOptionPane.showOptionDialog(null, message, "Sodium", JOptionPane.YES_NO_OPTION,
