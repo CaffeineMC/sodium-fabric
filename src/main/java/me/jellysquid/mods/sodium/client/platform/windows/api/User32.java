@@ -7,7 +7,7 @@ import org.lwjgl.system.Library;
 import org.lwjgl.system.SharedLibrary;
 
 public class User32 {
-    private static final SharedLibrary LIBRARY = Library.loadNative("me.jellyquid.mods.sodium", "user32");
+    private static final SharedLibrary LIBRARY = APIUtil.apiCreateLibrary("user32");
 
     private static final long PFN_MessageBoxIndirectW;
 
