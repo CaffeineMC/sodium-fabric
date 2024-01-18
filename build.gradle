@@ -44,6 +44,20 @@ sourceSets {
             runtimeClasspath += api.output
         }
     }
+
+    // only includes /src/desktop/java/net/caffeinemc/mods/sodium/desktop/LaunchWarn.java
+    // this source set is should be compiled with Java 8
+    launchWarn {
+        java {
+            srcDir "src/desktop/java"
+            include "**/LaunchWarn.java"
+        }
+    }
+}
+
+tasks.named('compileLaunchWarnJava') {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 tasks.register('apiJar', Jar) {
@@ -66,6 +80,8 @@ build.dependsOn remapApiJar
 jar {
     from sourceSets.api.output.classesDirs
     from sourceSets.api.output.resourcesDir
+    from sourceSets.launchWarn.output.classesDirs // add launch warn to the main jar
+    manifest.attributes["Main-Class"] = "${project.main_class}"
 }
 
 dependencies {
