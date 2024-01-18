@@ -1,7 +1,10 @@
 package me.jellysquid.mods.sodium.client.compatibility.checks;
 
+import me.jellysquid.mods.sodium.client.platform.MessageBox;
 import me.jellysquid.mods.sodium.client.platform.windows.api.Kernel32;
 import me.jellysquid.mods.sodium.client.platform.windows.api.version.Version;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.Window;
 import net.minecraft.util.WinNativeModuleUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +63,13 @@ public class ModuleScanner {
         }
 
         if (version == null || !isRTSSCompatible(version)) {
+            Window window = MinecraftClient.getInstance().getWindow();
+            MessageBox.showMessageBox(window, MessageBox.IconType.ERROR, "Sodium Renderer",
+                    "You appear to be using an older version of RivaTuner Statistics Server (RTSS) which is not compatible with Sodium. " +
+                            "You must either update to a newer version (7.3.4 and later) or close the RivaTuner Statistics Server application.\n\n" +
+                            "For more information on how to solve this problem, click the 'Help' button.",
+                    "https://github.com/CaffeineMC/sodium-fabric/wiki/Known-Issues#rtss-incompatible");
+            
             throw new RuntimeException("RivaTuner Statistics Server (RTSS) is not compatible with Sodium, " +
                     "see here for more details: https://github.com/CaffeineMC/sodium-fabric/wiki/Known-Issues#rtss-incompatible");
         }
