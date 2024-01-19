@@ -24,7 +24,7 @@ public interface ControlValueFormatter {
     }
 
     static ControlValueFormatter biomeBlend() {
-        return (v) -> (v == 0) ? Text.translatable("gui.none") : Text.translatable("sodium.options.biome_blend.value", v);
+        return (v) -> Text.translatable("sodium.options.biome_blend.value", v, v);
     }
 
     Text format(int value);
