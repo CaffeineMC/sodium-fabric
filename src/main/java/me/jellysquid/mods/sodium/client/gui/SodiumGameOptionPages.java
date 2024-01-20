@@ -144,12 +144,12 @@ public class SodiumGameOptionPages {
                 .build());
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
+                .add(OptionImpl.createBuilder(CloudRenderMode.class, vanillaOpts)
                         .setName(Text.translatable("options.renderClouds"))
                         .setTooltip(Text.translatable("sodium.options.clouds_quality.tooltip"))
-                        .setControl(TickBoxControl::new)
+                        .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { Text.translatable("options.off"), Text.translatable("options.graphics.fast"), Text.translatable("options.graphics.fancy") }))
                         .setBinding((opts, value) -> {
-                            opts.getCloudRenderMode().setValue(value ? CloudRenderMode.FANCY : CloudRenderMode.OFF);
+                            opts.getCloudRenderMode().setValue(value);
 
                             if (MinecraftClient.isFabulousGraphicsOrBetter()) {
                                 Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
@@ -157,7 +157,7 @@ public class SodiumGameOptionPages {
                                     framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
                                 }
                             }
-                        }, opts -> opts.getCloudRenderMode().getValue() == CloudRenderMode.FANCY)
+                        }, opts -> opts.getCloudRenderMode().getValue())
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
@@ -203,7 +203,7 @@ public class SodiumGameOptionPages {
                         .setTooltip(Text.translatable("sodium.options.entity_distance.tooltip"))
                         .setControl(option -> new SliderControl(option, 50, 500, 25, ControlValueFormatter.percentage()))
                         .setBinding((opts, value) -> opts.getEntityDistanceScaling().setValue(value / 100.0), opts -> Math.round(opts.getEntityDistanceScaling().getValue().floatValue() * 100.0F))
-                        .setImpact(OptionImpact.MEDIUM)
+                        .setImpact(OptionImpact.HIGH)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
@@ -211,14 +211,13 @@ public class SodiumGameOptionPages {
                         .setTooltip(Text.translatable("sodium.options.entity_shadows.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.getEntityShadows().setValue(value), opts -> opts.getEntityShadows().getValue())
-                        .setImpact(OptionImpact.LOW)
+                        .setImpact(OptionImpact.MEDIUM)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.vignette.name"))
                         .setTooltip(Text.translatable("sodium.options.vignette.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.quality.enableVignette = value, opts -> opts.quality.enableVignette)
-                        .setImpact(OptionImpact.LOW)
                         .build())
                 .build());
 
