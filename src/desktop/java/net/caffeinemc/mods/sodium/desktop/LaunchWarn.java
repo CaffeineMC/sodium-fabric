@@ -9,6 +9,7 @@ import java.awt.Desktop;
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.net.URI;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Taken from
@@ -34,7 +35,8 @@ public class LaunchWarn {
                 // Ignored
             }
 
-            ImageIcon icon = new ImageIcon(LaunchWarn.class.getResource("/assets/sodium/icon.png"), "Sodium");
+            byte[] iconBytes = IOUtils.toByteArray(LaunchWarn.class.getResourceAsStream("/assets/sodium/icon.png"));
+            ImageIcon icon = new ImageIcon(iconBytes, "Sodium");
 
             if (Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 int option = LaunchWarn.createOptionPane(LaunchWarn.HTML_MESSAGE, "Sodium", JOptionPane.YES_NO_OPTION,
