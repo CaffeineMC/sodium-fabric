@@ -7,9 +7,10 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import java.awt.Desktop;
 import java.awt.GraphicsEnvironment;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.net.URI;
-import org.apache.commons.io.IOUtils;
 
 /**
  * Taken from
