@@ -24,7 +24,7 @@ public class LaunchWarn {
     private static final String FALLBACK = "You have tried to launch Sodium (a Minecraft mod) directly, but it is not an executable program or mod installer. You must install Fabric Loader for Minecraft, and place this file in your mods directory instead." +
     "\nIf this is your first time installing mods for Fabric Loader, open \"https://github.com/CaffeineMC/sodium-fabric/wiki/Installation\" for a guide on how to do this.";
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         if (GraphicsEnvironment.isHeadless()) {
             System.err.println(LaunchWarn.FALLBACK);
@@ -35,7 +35,13 @@ public class LaunchWarn {
                 // Ignored
             }
 
-            byte[] iconBytes = IOUtils.toByteArray(LaunchWarn.class.getResourceAsStream("/assets/sodium/icon.png"));
+            byte[] iconBytes = null;
+
+            try {
+                iconBytes = LaunchWarn.readAllBytes(LaunchWarn.class.getResourceAsStream("/assets/sodium/icon.png"));
+            } catch (IOException e) {
+                throw e;
+            }
             ImageIcon icon = new ImageIcon(iconBytes, "Sodium");
 
             if (Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
@@ -85,5 +91,21 @@ public class LaunchWarn {
             return counter;
         }
         return JOptionPane.CLOSED_OPTION;
+    }
+
+    public static byte[] readAllBytes(InputStream inputStream) throws IOException {
+        final int bufLen = 4 * 0x400; // 4KB
+        byte[] buf = new byte[bufLen];
+        int readLen;
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            while ((readLen = inputStream.read(buf, 0, bufLen)) != -1) {
+                outputStream.write(buf, 0, readLen);
+            }
+
+        return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw e;
+        }
     }
 }
