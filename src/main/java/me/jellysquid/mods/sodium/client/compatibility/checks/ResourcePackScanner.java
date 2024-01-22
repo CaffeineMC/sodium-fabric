@@ -21,14 +21,19 @@ public class ResourcePackScanner {
     private static final Set<String> SHADER_PROGRAM_BLACKLIST = Set.of(
             "rendertype_solid.vsh",
             "rendertype_solid.fsh",
+            "rendertype_solid.json",
             "rendertype_cutout_mipped.vsh",
             "rendertype_cutout_mipped.fsh",
+            "rendertype_cutout_mipped.json",
             "rendertype_cutout.vsh",
             "rendertype_cutout.fsh",
+            "rendertype_cutout.json",
             "rendertype_translucent.vsh",
             "rendertype_translucent.fsh",
+            "rendertype_translucent.json",
             "rendertype_tripwire.vsh",
-            "rendertype_tripwire.fsh"
+            "rendertype_tripwire.fsh",
+            "rendertype_tripwire.json"
     );
 
     private static final Set<String> SHADER_INCLUDE_BLACKLIST = Set.of(
