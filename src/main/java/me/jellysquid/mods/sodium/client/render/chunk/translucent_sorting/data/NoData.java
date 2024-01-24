@@ -11,12 +11,23 @@ import net.minecraft.util.math.ChunkSectionPos;
  * passed instead.
  */
 public class NoData extends TranslucentData {
-    public NoData(ChunkSectionPos sectionPos) {
+    private final SortType reason;
+
+    private NoData(ChunkSectionPos sectionPos, SortType reason) {
         super(sectionPos);
+        this.reason = reason;
     }
 
     @Override
     public SortType getSortType() {
-        return SortType.NONE;
+        return reason;
+    }
+
+    public static NoData forEmptySection(ChunkSectionPos sectionPos) {
+        return new NoData(sectionPos, SortType.EMPTY_SECTION);
+    }
+
+    public static NoData forNoTranslucent(ChunkSectionPos sectionPos) {
+        return new NoData(sectionPos, SortType.NO_TRANSLUCENT);
     }
 }

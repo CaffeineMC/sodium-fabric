@@ -28,6 +28,10 @@ public abstract class TranslucentData {
 
     public abstract SortType getSortType();
 
+    public boolean retainAfterUpload() {
+        return false;
+    }
+
     public void delete() {
     }
 

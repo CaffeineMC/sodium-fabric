@@ -23,6 +23,11 @@ public abstract class DynamicData extends MixedDirectionData {
         return SortType.DYNAMIC;
     }
 
+    @Override
+    public boolean retainAfterUpload() {
+        return true;
+    }
+
     public GeometryPlanes getGeometryPlanes() {
         return this.geometryPlanes;
     }
