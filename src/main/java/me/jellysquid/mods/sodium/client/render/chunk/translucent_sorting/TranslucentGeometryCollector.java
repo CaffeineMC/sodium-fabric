@@ -527,7 +527,7 @@ public class TranslucentGeometryCollector {
             TranslucentData oldData, BuiltSectionMeshParts translucentMesh, CombinedCameraPos cameraPos) {
         // means there is no translucent geometry
         if (translucentMesh == null) {
-            return new NoData(sectionPos);
+            return NoData.forNoTranslucent(sectionPos);
         }
 
         // re-use the original translucent data if it's the same. This reduces the

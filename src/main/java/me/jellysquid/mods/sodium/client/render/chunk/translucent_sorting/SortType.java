@@ -6,9 +6,19 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
  */
 public enum SortType {
     /**
+     * The section is fully empty, no index buffer is needed.
+     */
+    EMPTY_SECTION(false, false),
+
+    /**
+     * The section has no translucent geometry, no index buffer is needed.
+     */
+    NO_TRANSLUCENT(false, false),
+
+    /**
      * No sorting is required and the sort order doesn't matter.
      */
-    NONE(false, false, false),
+    NONE(false, false),
 
     /**
      * There is only one sort order. No active sorting is required, but an initial
@@ -19,31 +29,28 @@ public enum SortType {
      * changes, remove this note and adjust StaticTranslucentData and anything that
      * reads from it to handle UNASSIGNED quads.
      */
-    STATIC_NORMAL_RELATIVE(true, false, false),
+    STATIC_NORMAL_RELATIVE(true, false),
 
     /**
      * There is only one sort order and not active sorting is required, but
      * determining the static sort order involves doing a toplogical sort of the
      * quads.
      */
-    STATIC_TOPO(true, true, false),
+    STATIC_TOPO(true, true),
 
     /**
      * There are multiple sort orders. Sorting is required every time GFNI triggers
      * this section.
      */
-    DYNAMIC(true, true, true);
+    DYNAMIC(true, true);
 
     public final boolean needsIndexBuffer;
     public final boolean needsDirectionMixing;
-    public final boolean needsTrigger;
 
     private SortType(
             boolean needsIndexBuffer,
-            boolean needsDirectionMixing,
-            boolean needsTrigger) {
+            boolean needsDirectionMixing) {
         this.needsIndexBuffer = needsIndexBuffer;
         this.needsDirectionMixing = needsDirectionMixing;
-        this.needsTrigger = needsTrigger;
     }
 }

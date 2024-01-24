@@ -480,7 +480,7 @@ public class RenderSectionManager {
                     // rebuild that must have happened in the mean time includes new non-dynamic
                     // index data.
                     var result = ChunkJobResult.successfully(new ChunkBuildOutput(
-                            section, frame, new NoData(section.getPosition()),
+                            section, frame, NoData.forEmptySection(section.getPosition()),
                             BuiltSectionInfo.EMPTY, Collections.emptyMap()));
                     this.buildResults.add(result);
 

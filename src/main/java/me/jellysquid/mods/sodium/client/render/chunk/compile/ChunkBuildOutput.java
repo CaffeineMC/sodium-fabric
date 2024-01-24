@@ -46,7 +46,7 @@ public class ChunkBuildOutput extends BuilderTaskOutput implements OutputWithInd
         super.deleteAfterUpload();
 
         // delete translucent data if it's not persisted for dynamic sorting
-        if (this.translucentData != null && !this.translucentData.getSortType().needsTrigger) {
+        if (this.translucentData != null && !this.translucentData.retainAfterUpload()) {
             this.translucentData.delete();
         }
 
