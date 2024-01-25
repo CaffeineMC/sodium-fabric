@@ -11,7 +11,8 @@ import it.unimi.dsi.fastutil.objects.ReferenceSets;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.DeferSortMode;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.DeferSortMode.DeferMode;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.DeferSortMode.PriorityMode;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
@@ -414,7 +415,7 @@ public class RenderSectionManager {
 
             // if zero frame delay is allowed, submit important sorts with the current frame blocking collector.
             // otherwise submit with the collector that the next frame is blocking on.
-            if (allowZeroFrameSortWait()) {
+            if (SodiumClientMod.options().performance.deferSortMode.getDeferMode() == DeferMode.ZERO_FRAMES) {
                 this.submitSectionTasks(thisFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
             } else {
                 this.submitSectionTasks(nextFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
@@ -571,7 +572,9 @@ public class RenderSectionManager {
 
         if (section != null) {
             var pendingUpdate = ChunkUpdateType.SORT;
-            if (allowImportantSorts() && this.shouldPrioritizeTask(section)) {
+            var priorityMode = SodiumClientMod.options().performance.deferSortMode.getPriorityMode();
+            if (priorityMode == PriorityMode.ALL
+                    || priorityMode == PriorityMode.NEARBY && this.shouldPrioritizeTask(section)) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_SORT;
             }
             pendingUpdate = ChunkUpdateType.getPromotionUpdateType(section.getPendingUpdate(), pendingUpdate);
@@ -615,14 +618,6 @@ public class RenderSectionManager {
 
     private static boolean allowImportantRebuilds() {
         return !SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
-    }
-
-    private static boolean allowImportantSorts() {
-        return SodiumClientMod.options().performance.deferSortMode != DeferSortMode.ALWAYS;
-    }
-
-    private static boolean allowZeroFrameSortWait() {
-        return SodiumClientMod.options().performance.deferSortMode == DeferSortMode.DEFER_ZERO_FRAMES;
     }
 
     private float getEffectiveRenderDistance() {
@@ -697,7 +692,7 @@ public class RenderSectionManager {
         list.add(String.format("Geometry Pool: %d/%d MiB (%d buffers)", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated), count));
         list.add(String.format("Transfer Queue: %s", this.regions.getStagingBuffer().toString()));
 
-        list.add(String.format("Chunk Builder: Permits=%02d (E %02d) | Busy=%02d | Total=%02d",
+        list.add(String.format("Chunk Builder: Permits=%02d (E %03d) | Busy=%02d | Total=%02d",
                 this.builder.getScheduledJobCount(), this.builder.getScheduledEffort(), this.builder.getBusyThreadCount(), this.builder.getTotalThreadCount())
         );
 

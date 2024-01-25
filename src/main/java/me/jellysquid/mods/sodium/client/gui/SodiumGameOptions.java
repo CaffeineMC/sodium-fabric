@@ -39,7 +39,7 @@ public class SodiumGameOptions {
         public int chunkBuilderThreads = 0;
         @SerializedName("always_defer_chunk_updates_v2") // this will reset the option in older configs
         public boolean alwaysDeferChunkUpdates = true;
-        public DeferSortMode deferSortMode = DeferSortMode.DEFER_ONE_FRAME;
+        public DeferSortMode deferSortMode = DeferSortMode.DEFER_NEARBY_ONE_FRAME;
 
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
@@ -51,16 +51,22 @@ public class SodiumGameOptions {
     }
 
     public enum DeferSortMode implements TextProvider {
-        ALWAYS("sodium.options.defer_sorting.always", "A"),
-        DEFER_ONE_FRAME("sodium.options.defer_sorting.defer_one_frame", "1"),
-        DEFER_ZERO_FRAMES("sodium.options.defer_sorting.defer_zero_frames", "0");
+        ALWAYS("sodium.options.defer_sorting.always", "DF", PriorityMode.NONE, DeferMode.ALWAYS),
+        DEFER_NEARBY_ONE_FRAME("sodium.options.defer_sorting.defer_one_frame", "N1", PriorityMode.NEARBY, DeferMode.ONE_FRAME),
+        DEFER_NEARBY_ZERO_FRAMES("sodium.options.defer_sorting.defer_zero_frames", "N0", PriorityMode.NEARBY, DeferMode.ZERO_FRAMES),
+        DEFER_ALL_ONE_FRAME("sodium.options.defer_sorting.defer_all_one_frame", "A1", PriorityMode.ALL, DeferMode.ONE_FRAME),
+        DEFER_ALL_ZERO_FRAMES("sodium.options.defer_sorting.defer_all_zero_frames", "A0", PriorityMode.ALL, DeferMode.ZERO_FRAMES);
 
         private final Text name;
-                private final String shortName;
+        private final String shortName;
+        private final PriorityMode priorityMode;
+        private final DeferMode deferMode;
 
-        DeferSortMode(String name, String shortName) {
+        DeferSortMode(String name, String shortName, PriorityMode priorityMode, DeferMode deferMode) {
             this.name = Text.translatable(name);
             this.shortName = shortName;
+            this.priorityMode = priorityMode;
+            this.deferMode = deferMode;
         }
 
         @Override
@@ -70,6 +76,22 @@ public class SodiumGameOptions {
 
         public String getShortName() {
             return this.shortName;
+        }
+
+        public PriorityMode getPriorityMode() {
+            return this.priorityMode;
+        }
+
+        public DeferMode getDeferMode() {
+            return this.deferMode;
+        }
+
+        public static enum PriorityMode {
+            NONE, NEARBY, ALL
+        }
+
+        public static enum DeferMode {
+            ALWAYS, ONE_FRAME, ZERO_FRAMES
         }
     }
 
