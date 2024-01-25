@@ -37,7 +37,7 @@ public class BlockOcclusionCache {
         BlockState adjState = view.getBlockState(adjPos);
 
         if (selfState.getBlock() instanceof ISelfHandleOcclusion selfOcclusion) {
-            if (selfOcclusion.selfManageOcclusion(selfState, adjState, facing)) {
+            if (selfOcclusion.sodium$selfManageOcclusion(selfState, adjState, facing)) {
                 return false;
             }
         }
@@ -134,8 +134,15 @@ public class BlockOcclusionCache {
     /**
      * Allows for manually handling occlusion of blocks, useful for forge/porting-lib's obj loader
      * where you cannot specify how you want culling to work
+     * <p>
+     * Can be used by adding the following method to your block class without any @override annotation that
+     * overwrites the default impl and calls your method instead
+     * <p>
+     * {@code
+     * sodium$selfManageOcclusion(@NotNull BlockState state, BlockState adjacentBlockState, @NotNull Direction direction)
+     * }
      */
-    interface ISelfHandleOcclusion {
-        boolean selfManageOcclusion(@NotNull BlockState state, BlockState adjacentBlockState, @NotNull Direction direction);
+    public interface ISelfHandleOcclusion {
+        boolean sodium$selfManageOcclusion(@NotNull BlockState state, BlockState adjacentBlockState, @NotNull Direction direction);
     }
 }

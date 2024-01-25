@@ -10,6 +10,7 @@
     "conformVisibility": true
   },
   "client": [
+    "core.BlockMixin",
     "core.MinecraftClientMixin",
     "core.WindowMixin",
     "core.gui.WorldLoadingStateMixin",
