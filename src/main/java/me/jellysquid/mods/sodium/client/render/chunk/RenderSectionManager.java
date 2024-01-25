@@ -400,7 +400,7 @@ public class RenderSectionManager {
         var thisFrameBlockingCollector = this.lastBlockingCollector;
         this.lastBlockingCollector = null;
         if (thisFrameBlockingCollector == null) {
-            thisFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
+            thisFrameBlockingCollector = new ChunkJobCollector(this.buildResults::add);
         }
 
         if (updateImmediately) {
@@ -410,8 +410,11 @@ public class RenderSectionManager {
 
             thisFrameBlockingCollector.awaitCompletion(this.builder);
         } else {
-            var nextFrameBlockingCollector = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
-            var deferredCollector = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
+            var nextFrameBlockingCollector = new ChunkJobCollector(this.buildResults::add);
+            var deferredCollector = new ChunkJobCollector(
+                this.builder.getHighEffortSchedulingBudget(),
+                this.builder.getLowEffortSchedulingBudget(),
+                this.buildResults::add);
 
             // if zero frame delay is allowed, submit important sorts with the current frame blocking collector.
             // otherwise submit with the collector that the next frame is blocking on.
@@ -434,17 +437,22 @@ public class RenderSectionManager {
         ChunkJobCollector importantCollector,
         ChunkJobCollector semiImportantCollector,
         ChunkJobCollector deferredCollector) {
-            this.submitSectionTasks(importantCollector, ChunkUpdateType.IMPORTANT_SORT);
-            this.submitSectionTasks(semiImportantCollector, ChunkUpdateType.IMPORTANT_REBUILD);
-            this.submitSectionTasks(deferredCollector, ChunkUpdateType.REBUILD);
-            this.submitSectionTasks(deferredCollector, ChunkUpdateType.INITIAL_BUILD);
-            this.submitSectionTasks(deferredCollector, ChunkUpdateType.SORT);
+            this.submitSectionTasks(importantCollector, ChunkUpdateType.IMPORTANT_SORT, true);
+            this.submitSectionTasks(semiImportantCollector, ChunkUpdateType.IMPORTANT_REBUILD, true);
+
+            // since the sort tasks are run last, the effort category can be ignored and
+            // simply fills up the remaining budget. Splitting effort categories is still
+            // important to prevent high effort tasks from using up the entire budget if it
+            // happens to divide evenly.
+            this.submitSectionTasks(deferredCollector, ChunkUpdateType.REBUILD, false);
+            this.submitSectionTasks(deferredCollector, ChunkUpdateType.INITIAL_BUILD, false);
+            this.submitSectionTasks(deferredCollector, ChunkUpdateType.SORT, true);
     }
 
-    private void submitSectionTasks(ChunkJobCollector collector, ChunkUpdateType type) {
+    private void submitSectionTasks(ChunkJobCollector collector, ChunkUpdateType type, boolean ignoreEffortCategory) {
         var queue = this.taskLists.get(type);
 
-        while (!queue.isEmpty() && collector.hasBudgetFor(type.getTaskEffort())) {
+        while (!queue.isEmpty() && collector.hasBudgetFor(type.getTaskEffort(), ignoreEffortCategory)) {
             RenderSection section = queue.remove();
 
             if (section.isDisposed()) {
@@ -498,6 +506,7 @@ public class RenderSectionManager {
 
             section.setLastSubmittedFrame(frame);
             section.setPendingUpdate(null);
+            System.out.println(frame + " " + section.getPosition() + " " + type);
         }
     }
 

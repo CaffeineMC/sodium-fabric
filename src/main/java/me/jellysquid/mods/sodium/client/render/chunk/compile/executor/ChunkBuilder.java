@@ -18,17 +18,20 @@ import java.util.function.Consumer;
 
 public class ChunkBuilder {
     /**
-     * The effort of a mesh task compared to a sorting task, which always has effort
-     * 1. This is used to schedule more sorting tasks compared to mesh tasks because
-     * they're faster. This also needs to capture that there's a limit to how much
-     * data can be uploaded per frame. Since sort tasks generate index data, which
-     * is smaller per quad and (on average) per section, more of their results can
-     * be uploaded in one frame. This number should essentially be a conservative
-     * estimate of min((mesh task upload size) / (sort task upload size), (mesh task
-     * time) / (sort task time)).
+     * The low and high efforts given to the sorting and meshing tasks,
+     * respectively. This split into two separate effort categories means more
+     * sorting tasks, which are faster, can be scheduled compared to mesh tasks.
+     * These values need to capture that there's a limit to how much data can be
+     * uploaded per frame. Since sort tasks generate index data, which is smaller
+     * per quad and (on average) per section, more of their results can be uploaded
+     * in one frame. This number should essentially be a conservative estimate of
+     * min((mesh task upload size) / (sort task upload size), (mesh task time) /
+     * (sort task time)).
      */
-    public static final int MESH_TASK_EFFORT_FACTOR = 10;
-    public static final int EFFORT_PER_THREAD_PER_FRAME = MESH_TASK_EFFORT_FACTOR;
+    public static final int HIGH_EFFORT = 10;
+    public static final int LOW_EFFORT = 1;
+    public static final int EFFORT_PER_THREAD_PER_FRAME = HIGH_EFFORT + LOW_EFFORT;
+    private static final float HIGH_EFFORT_BUDGET_FACTOR = (float)HIGH_EFFORT / EFFORT_PER_THREAD_PER_FRAME;
 
     static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
@@ -60,11 +63,19 @@ public class ChunkBuilder {
     }
 
     /**
-     * Returns the remaining number of build tasks which should be scheduled this frame. If an attempt is made to
+     * Returns the remaining effort for tasks which should be scheduled this frame. If an attempt is made to
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
-    public int getSchedulingBudget() {
+    private int getTotalRemainingBudget() {
         return Math.max(0, this.threads.size() * EFFORT_PER_THREAD_PER_FRAME - this.queue.getEffortSum());
+    }
+
+    public int getHighEffortSchedulingBudget() {
+        return Math.max(HIGH_EFFORT, (int) (this.getTotalRemainingBudget() * HIGH_EFFORT_BUDGET_FACTOR));
+    }
+
+    public int getLowEffortSchedulingBudget() {
+        return Math.max(LOW_EFFORT, this.getTotalRemainingBudget() - this.getHighEffortSchedulingBudget());
     }
 
     /**

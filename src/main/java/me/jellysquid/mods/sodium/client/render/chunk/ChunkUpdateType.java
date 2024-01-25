@@ -1,14 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderSortingTask;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
 
 public enum ChunkUpdateType {
-    SORT(Integer.MAX_VALUE, ChunkBuilderSortingTask.SORT_TASK_EFFORT),
-    INITIAL_BUILD(128, ChunkBuilderMeshingTask.MESH_TASK_EFFORT),
-    REBUILD(Integer.MAX_VALUE, ChunkBuilderMeshingTask.MESH_TASK_EFFORT),
-    IMPORTANT_REBUILD(Integer.MAX_VALUE, ChunkBuilderMeshingTask.MESH_TASK_EFFORT),
-    IMPORTANT_SORT(Integer.MAX_VALUE, ChunkBuilderSortingTask.SORT_TASK_EFFORT);
+    SORT(Integer.MAX_VALUE, ChunkBuilder.LOW_EFFORT),
+    INITIAL_BUILD(128, ChunkBuilder.HIGH_EFFORT),
+    REBUILD(Integer.MAX_VALUE, ChunkBuilder.HIGH_EFFORT),
+    IMPORTANT_REBUILD(Integer.MAX_VALUE, ChunkBuilder.HIGH_EFFORT),
+    IMPORTANT_SORT(Integer.MAX_VALUE, ChunkBuilder.LOW_EFFORT);
 
     private final int maximumQueueSize;
     private final int taskEffort;

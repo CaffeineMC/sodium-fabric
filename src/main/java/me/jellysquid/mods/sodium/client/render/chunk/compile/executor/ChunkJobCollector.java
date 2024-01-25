@@ -11,12 +11,20 @@ public class ChunkJobCollector {
     private final Semaphore semaphore = new Semaphore(0);
     private final Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector;
     private final List<ChunkJob> submitted = new ArrayList<>();
-    private int submittedEffort = 0;
+    private int submittedHighEffort = 0;
+    private int submittedLowEffort = 0;
 
-    private final int budget;
+    private final int highEffortBudget;
+    private final int lowEffortBudget;
 
-    public ChunkJobCollector(int budget, Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector) {
-        this.budget = budget;
+    public ChunkJobCollector(Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector) {
+        this(Integer.MAX_VALUE, Integer.MAX_VALUE, collector);
+    }
+
+    public ChunkJobCollector(int highEffortBudget, int lowEffortBudget,
+            Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector) {
+        this.highEffortBudget = highEffortBudget;
+        this.lowEffortBudget = lowEffortBudget;
         this.collector = collector;
     }
 
@@ -43,10 +51,21 @@ public class ChunkJobCollector {
 
     public void addSubmittedJob(ChunkJob job) {
         this.submitted.add(job);
-        this.submittedEffort += job.getEffort();
+        var effort = job.getEffort();
+        if (effort <= ChunkBuilder.LOW_EFFORT) {
+            this.submittedLowEffort += effort;
+        } else {
+            this.submittedHighEffort += effort;
+        }
     }
 
-    public boolean hasBudgetFor(int effort) {
-        return (this.budget - this.submittedEffort) >= effort;
+    public boolean hasBudgetFor(int effort, boolean ignoreEffortCategory) {
+        if (ignoreEffortCategory) {
+            return this.submittedLowEffort + this.submittedHighEffort + effort
+                <= this.highEffortBudget + this.lowEffortBudget;
+        }
+        return effort <= ChunkBuilder.LOW_EFFORT
+                ? this.submittedLowEffort + effort <= this.lowEffortBudget
+                : this.submittedHighEffort + effort <= this.highEffortBudget;
     }
 }
