@@ -16,13 +16,18 @@ public class ChunkJobCollector {
 
     private final int highEffortBudget;
     private final int lowEffortBudget;
+    private final boolean unlimitedBudget;
 
     public ChunkJobCollector(Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector) {
-        this(Integer.MAX_VALUE, Integer.MAX_VALUE, collector);
+        this.unlimitedBudget = true;
+        this.highEffortBudget = 0;
+        this.lowEffortBudget = 0;
+        this.collector = collector;
     }
 
     public ChunkJobCollector(int highEffortBudget, int lowEffortBudget,
             Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector) {
+        this.unlimitedBudget = false;
         this.highEffortBudget = highEffortBudget;
         this.lowEffortBudget = lowEffortBudget;
         this.collector = collector;
@@ -51,6 +56,10 @@ public class ChunkJobCollector {
 
     public void addSubmittedJob(ChunkJob job) {
         this.submitted.add(job);
+
+        if (this.unlimitedBudget) {
+            return;
+        }
         var effort = job.getEffort();
         if (effort <= ChunkBuilder.LOW_EFFORT) {
             this.submittedLowEffort += effort;
@@ -60,6 +69,9 @@ public class ChunkJobCollector {
     }
 
     public boolean hasBudgetFor(int effort, boolean ignoreEffortCategory) {
+        if (this.unlimitedBudget) {
+            return true;
+        }
         if (ignoreEffortCategory) {
             return this.submittedLowEffort + this.submittedHighEffort + effort
                 <= this.highEffortBudget + this.lowEffortBudget;
