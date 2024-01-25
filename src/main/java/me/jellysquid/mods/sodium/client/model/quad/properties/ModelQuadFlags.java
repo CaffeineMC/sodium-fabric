@@ -21,6 +21,11 @@ public class ModelQuadFlags {
     public static final int IS_ALIGNED = 0b100;
 
     /**
+     * Number of flags.
+     */
+    public static final int FLAG_BIT_COUNT = 3;
+
+    /**
      * @return True if the bit-flag of {@link ModelQuadFlags} contains the given flag
      */
     public static boolean contains(int flags, int mask) {
@@ -31,7 +36,7 @@ public class ModelQuadFlags {
      * Calculates the properties of the given quad. This data is used later by the light pipeline in order to make
      * certain optimizations.
      */
-    public static int getQuadFlags(ModelQuadView quad, Direction face) {
+    public static int computeFlags(ModelQuadView quad, Direction face) {
         float minX = 32.0F;
         float minY = 32.0F;
         float minZ = 32.0F;

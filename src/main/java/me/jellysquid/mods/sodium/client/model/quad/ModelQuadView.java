@@ -39,14 +39,13 @@ public interface ModelQuadView {
     float getTexV(int idx);
 
     /**
-     * @return The integer bit flags containing the {@link ModelQuadFlags} for this quad
-     */
-    int getFlags();
-
-    /**
      * @return The color index of this quad.
      */
     int getColorIndex();
+
+    default boolean hasColor() {
+        return this.getColorIndex() != -1;
+    }
 
     /**
      * @return The sprite texture used by this quad, or null if none is attached
@@ -58,7 +57,8 @@ public interface ModelQuadView {
      */
     Direction getLightFace();
 
-    default boolean hasColor() {
-        return this.getColorIndex() != -1;
-    }
+    /**
+     * @return The integer bit flags containing the {@link ModelQuadFlags} for this quad
+     */
+    int getFlags();
 }

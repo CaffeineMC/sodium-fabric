@@ -11,7 +11,7 @@ import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-
+import org.jetbrains.annotations.Nullable;
 
 // TODO: Make the registry a global somewhere that is only initialized once after content load
 public class ColorProviderRegistry {
@@ -64,10 +64,12 @@ public class ColorProviderRegistry {
         }
     }
 
+    @Nullable
     public ColorProvider<BlockState> getColorProvider(Block block) {
         return this.blocks.get(block);
     }
 
+    @Nullable
     public ColorProvider<FluidState> getColorProvider(Fluid fluid) {
         return this.fluids.get(fluid);
     }
