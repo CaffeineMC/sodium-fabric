@@ -1,8 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
-import me.jellysquid.mods.sodium.client.events.RenderBlockCallback;
-import net.caffeinemc.mods.sodium.api.blocks.ISelfHandleOcclusion;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SideShapeType;
 import net.minecraft.util.function.BooleanBiFunction;
@@ -11,6 +9,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
+import org.jetbrains.annotations.NotNull;
 
 public class BlockOcclusionCache {
     private static final byte UNCACHED_VALUE = (byte) 127;
@@ -130,5 +129,13 @@ public class BlockOcclusionCache {
         public int hashCode() {
             return this.hashCode;
         }
+    }
+
+    /**
+     * Allows for manually handling occlusion of blocks, useful for forge/porting-lib's obj loader
+     * where you cannot specify how you want culling to work
+     */
+    interface ISelfHandleOcclusion {
+        boolean selfManageOcclusion(@NotNull BlockState state, BlockState adjacentBlockState, @NotNull Direction direction);
     }
 }
