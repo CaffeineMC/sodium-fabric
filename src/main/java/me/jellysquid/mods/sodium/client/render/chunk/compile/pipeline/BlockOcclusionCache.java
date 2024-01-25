@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
+import me.jellysquid.mods.sodium.client.events.RenderBlockCallback;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SideShapeType;
 import net.minecraft.util.function.BooleanBiFunction;
@@ -34,6 +35,10 @@ public class BlockOcclusionCache {
         adjPos.set(pos.getX() + facing.getOffsetX(), pos.getY() + facing.getOffsetY(), pos.getZ() + facing.getOffsetZ());
 
         BlockState adjState = view.getBlockState(adjPos);
+
+        // If a mod/block wants to handle culling itself
+        if (RenderBlockCallback.EVENT.invoker().forceRender(selfState, adjState, facing))
+            return false;
 
         if (selfState.isSideInvisible(adjState, facing)) {
             return false;
