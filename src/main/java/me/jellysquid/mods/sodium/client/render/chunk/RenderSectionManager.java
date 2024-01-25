@@ -506,7 +506,6 @@ public class RenderSectionManager {
 
             section.setLastSubmittedFrame(frame);
             section.setPendingUpdate(null);
-            System.out.println(frame + " " + section.getPosition() + " " + type);
         }
     }
 
