@@ -37,7 +37,7 @@ public class BlockOcclusionCache {
         BlockState adjState = view.getBlockState(adjPos);
 
         // If a mod/block wants to handle culling itself
-        if (RenderBlockCallback.EVENT.invoker().forceRender(selfState, adjState, facing))
+        if (RenderBlockCallback.EVENT.invoker().selfManageOcclusion(selfState, adjState, facing))
             return false;
 
         if (selfState.isSideInvisible(adjState, facing)) {

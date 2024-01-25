@@ -25,11 +25,10 @@ public interface RenderBlockCallback {
     Event<RenderBlockCallback> EVENT = EventFactory.createArrayBacked(RenderBlockCallback.class,
             (listeners) -> (state, adjacentBlockState, direction) -> {
                 for (RenderBlockCallback listener : listeners) {
-                    return listener.forceRender(state, adjacentBlockState, direction);
+                    return listener.selfManageOcclusion(state, adjacentBlockState, direction);
                 }
                 return true;
             });
 
-    //todo name it better
-    boolean forceRender(@NotNull BlockState state, BlockState adjacentBlockState, @NotNull Direction direction);
+    boolean selfManageOcclusion(@NotNull BlockState state, BlockState adjacentBlockState, @NotNull Direction direction);
 }
