@@ -11,8 +11,6 @@ import it.unimi.dsi.fastutil.objects.ReferenceSets;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior.DeferMode;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior.PriorityMode;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
@@ -31,6 +29,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.occlusion.OcclusionCuller;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior.DeferMode;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior.PriorityMode;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.NoData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
@@ -418,7 +418,7 @@ public class RenderSectionManager {
 
             // if zero frame delay is allowed, submit important sorts with the current frame blocking collector.
             // otherwise submit with the collector that the next frame is blocking on.
-            if (SodiumClientMod.options().performance.sortBehavior.getDeferMode() == DeferMode.ZERO_FRAMES) {
+            if (SodiumClientMod.options().performance.getSortBehavior().getDeferMode() == DeferMode.ZERO_FRAMES) {
                 this.submitSectionTasks(thisFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
             } else {
                 this.submitSectionTasks(nextFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
@@ -580,7 +580,7 @@ public class RenderSectionManager {
 
         if (section != null) {
             var pendingUpdate = ChunkUpdateType.SORT;
-            var priorityMode = SodiumClientMod.options().performance.sortBehavior.getPriorityMode();
+            var priorityMode = SodiumClientMod.options().performance.getSortBehavior().getPriorityMode();
             if (priorityMode == PriorityMode.ALL
                     || priorityMode == PriorityMode.NEARBY && this.shouldPrioritizeTask(section)) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_SORT;

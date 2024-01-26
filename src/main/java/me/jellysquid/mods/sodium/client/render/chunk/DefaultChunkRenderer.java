@@ -10,7 +10,6 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
@@ -21,6 +20,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPo
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
@@ -55,7 +55,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         super.begin(renderPass);
 
         boolean isTranslucent = renderPass == DefaultTerrainRenderPasses.TRANSLUCENT 
-                && SodiumClientMod.options().performance.sortBehavior != SortBehavior.OFF;
+                && SodiumClientMod.options().performance.getSortBehavior() != SortBehavior.OFF;
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();

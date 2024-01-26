@@ -7,8 +7,8 @@ import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
@@ -227,7 +227,7 @@ public class SortTriggering {
     }
 
     public void addDebugStrings(List<String> list) {
-        var sortBehavior = SodiumClientMod.options().performance.sortBehavior;
+        var sortBehavior = SodiumClientMod.options().performance.getSortBehavior();
         if (sortBehavior == SortBehavior.OFF) {
             list.add("TS OFF");
         } else {
