@@ -258,14 +258,6 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.performance.alwaysDeferChunkUpdates = value, opts -> opts.performance.alwaysDeferChunkUpdates)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.DeferSortMode.class, sodiumOpts)
-                        .setName(Text.translatable("sodium.options.defer_sorting.name"))
-                        .setTooltip(Text.translatable("sodium.options.defer_sorting.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.DeferSortMode.class))
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.deferSortMode = value, opts -> opts.performance.deferSortMode)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
-                        .build())
                 .build());
 
         groups.add(OptionGroup.createBuilder()

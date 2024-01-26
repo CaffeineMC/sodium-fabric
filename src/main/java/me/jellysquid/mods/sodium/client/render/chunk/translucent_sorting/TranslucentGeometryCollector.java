@@ -279,10 +279,8 @@ public class TranslucentGeometryCollector {
                 } else {
                     return SortType.NONE;
                 }
-            case DYNAMIC:
-                return sortType;
             default:
-                throw new IllegalStateException("Unknown sort behavior: " + sortBehavior);
+                return sortType;
         }
     }
 

@@ -231,9 +231,8 @@ public class SortTriggering {
         if (sortBehavior == SortBehavior.OFF) {
             list.add("TS OFF");
         } else {
-            list.add("TS (%s,%s) NL=%02d TrN=%02d TrS=G%03d/D%03d".formatted(
+            list.add("TS (%s) NL=%02d TrN=%02d TrS=G%03d/D%03d".formatted(
                     sortBehavior.getShortName(),
-                    SodiumClientMod.options().performance.deferSortMode.getShortName(),
                     this.gfni.getUniqueNormalCount(),
                     this.triggeredNormalCount,
                     this.gfniTriggerCount,

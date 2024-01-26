@@ -11,8 +11,8 @@ import it.unimi.dsi.fastutil.objects.ReferenceSets;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.DeferSortMode.DeferMode;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.DeferSortMode.PriorityMode;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior.DeferMode;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior.PriorityMode;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
@@ -418,7 +418,7 @@ public class RenderSectionManager {
 
             // if zero frame delay is allowed, submit important sorts with the current frame blocking collector.
             // otherwise submit with the collector that the next frame is blocking on.
-            if (SodiumClientMod.options().performance.deferSortMode.getDeferMode() == DeferMode.ZERO_FRAMES) {
+            if (SodiumClientMod.options().performance.sortBehavior.getDeferMode() == DeferMode.ZERO_FRAMES) {
                 this.submitSectionTasks(thisFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
             } else {
                 this.submitSectionTasks(nextFrameBlockingCollector, nextFrameBlockingCollector, deferredCollector);
@@ -580,7 +580,7 @@ public class RenderSectionManager {
 
         if (section != null) {
             var pendingUpdate = ChunkUpdateType.SORT;
-            var priorityMode = SodiumClientMod.options().performance.deferSortMode.getPriorityMode();
+            var priorityMode = SodiumClientMod.options().performance.sortBehavior.getPriorityMode();
             if (priorityMode == PriorityMode.ALL
                     || priorityMode == PriorityMode.NEARBY && this.shouldPrioritizeTask(section)) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_SORT;
