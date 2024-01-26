@@ -50,7 +50,6 @@ sourceSets {
     launchWarn {
         java {
             srcDir "src/desktop/java"
-            include "**/LaunchWarn.java"
         }
     }
 }
