@@ -2,17 +2,18 @@ package me.jellysquid.mods.sodium.client.render.immediate;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.mixin.features.render.world.clouds.BackgroundRendererInvoker;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.mixin.features.render.world.clouds.BackgroundRendererInvoker;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.math.MatrixStack;
@@ -53,10 +54,11 @@ public class CloudRenderer {
 
     private VertexBuffer vertexBuffer;
     private CloudEdges edges;
-    private ShaderProgram clouds;
+    private ShaderProgram shader;
     private final BackgroundRenderer.FogData fogData = new BackgroundRenderer.FogData(BackgroundRenderer.FogType.FOG_TERRAIN);
 
     private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
+    private CloudRenderMode cloudRenderMode;
 
     public CloudRenderer(ResourceFactory factory) {
         this.reloadTextures(factory);
@@ -67,9 +69,14 @@ public class CloudRenderer {
             return;
         }
 
-        Vec3d color = world.getCloudsColor(tickDelta);
-
         float cloudHeight = world.getDimensionEffects().getCloudsHeight();
+
+        // Vanilla uses NaN height as a way to disable cloud rendering
+        if (Float.isNaN(cloudHeight)) {
+            return;
+        }
+
+        Vec3d color = world.getCloudsColor(tickDelta);
 
         double cloudTime = (ticks + tickDelta) * 0.03F;
         double cloudCenterX = (cameraX + cloudTime);
@@ -81,9 +88,11 @@ public class CloudRenderer {
         int centerCellX = (int) (Math.floor(cloudCenterX / 12));
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12));
 
-        if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ || this.cachedRenderDistance != renderDistance) {
+        if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ || this.cachedRenderDistance != renderDistance || cloudRenderMode != MinecraftClient.getInstance().options.getCloudRenderModeValue()) {
             BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
             bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+
+            this.cloudRenderMode = MinecraftClient.getInstance().options.getCloudRenderModeValue();
 
             this.rebuildGeometry(bufferBuilder, cloudDistance, centerCellX, centerCellZ);
 
@@ -120,8 +129,9 @@ public class CloudRenderer {
         this.vertexBuffer.bind();
 
         boolean insideClouds = cameraY < cloudHeight + 4.5f && cameraY > cloudHeight - 0.5f;
+        boolean fastClouds = cloudRenderMode == CloudRenderMode.FAST;
 
-        if (insideClouds) {
+        if (insideClouds || fastClouds) {
             RenderSystem.disableCull();
         } else {
             RenderSystem.enableCull();
@@ -139,7 +149,7 @@ public class CloudRenderer {
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(false, false, false, false);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.shader);
 
         // PASS 2: Render geometry
         RenderSystem.enableBlend();
@@ -149,7 +159,7 @@ public class CloudRenderer {
         RenderSystem.depthFunc(GL30C.GL_EQUAL);
         RenderSystem.colorMask(true, true, true, true);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.shader);
 
         matrices.pop();
 
@@ -215,6 +225,7 @@ public class CloudRenderer {
 
     private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
         var writer = VertexBufferWriter.of(bufferBuilder);
+        boolean fastClouds = cloudRenderMode == CloudRenderMode.FAST;
 
         for (int offsetX = -cloudDistance; offsetX < cloudDistance; offsetX++) {
             for (int offsetZ = -cloudDistance; offsetZ < cloudDistance; offsetZ++) {
@@ -230,14 +241,14 @@ public class CloudRenderer {
                 float z = offsetZ * 12;
 
                 try (MemoryStack stack = MemoryStack.stackPush()) {
-                    final long buffer = stack.nmalloc(6 * 4 * ColorVertex.STRIDE);
+                    final long buffer = stack.nmalloc((fastClouds ? 4 : (6 * 4)) * ColorVertex.STRIDE);
 
                     long ptr = buffer;
                     int count = 0;
 
                     // -Y
                     if ((connectedEdges & DIR_NEG_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
+                        int mixedColor = ColorMixer.mul(texel, fastClouds ? CLOUD_COLOR_POS_Y : CLOUD_COLOR_NEG_Y);
 
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
@@ -245,6 +256,12 @@ public class CloudRenderer {
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
 
                         count += 4;
+                    }
+
+                    // Only emit -Y geometry to emulate vanilla fast clouds
+                    if (fastClouds) {
+                        writer.push(stack, buffer, count, ColorVertex.FORMAT);
+                        continue;
                     }
 
                     // +Y
@@ -321,26 +338,22 @@ public class CloudRenderer {
     }
 
     public void reloadTextures(ResourceFactory factory) {
+        this.destroy();
+
         this.edges = createCloudEdges();
 
-        if (this.clouds != null) {
-            this.clouds.close();
-        }
-
         try {
-            this.clouds = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
+            this.shader = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-
-        if (this.vertexBuffer != null) {
-            this.vertexBuffer.close();
-            this.vertexBuffer = null;
         }
     }
 
     public void destroy() {
-        this.clouds.close();
+        if (this.shader != null) {
+            this.shader.close();
+            this.shader = null;
+        }
 
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
@@ -349,19 +362,17 @@ public class CloudRenderer {
     }
 
     private static CloudEdges createCloudEdges() {
-        NativeImage nativeImage;
-
         ResourceManager resourceManager = MinecraftClient.getInstance().getResourceManager();
         Resource resource = resourceManager.getResource(CLOUDS_TEXTURE_ID)
                 .orElseThrow();
 
         try (InputStream inputStream = resource.getInputStream()){
-            nativeImage = NativeImage.read(inputStream);
+            try (NativeImage nativeImage = NativeImage.read(inputStream)) {
+                return new CloudEdges(nativeImage);
+            }
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load texture data", ex);
         }
-
-        return new CloudEdges(nativeImage);
     }
 
     private static class CloudEdges {

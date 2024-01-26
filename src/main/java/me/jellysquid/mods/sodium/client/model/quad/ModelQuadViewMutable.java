@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.model.quad;
 
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.util.math.Direction;
 
 /**
  * Provides a mutable view to a model quad.
@@ -53,12 +54,12 @@ public interface ModelQuadViewMutable extends ModelQuadView {
     void setSprite(Sprite sprite);
 
     /**
+     * Sets the face used by this quad for lighting effects
+     */
+    void setLightFace(Direction direction);
+
+    /**
      * Sets the color index used by this quad
      */
     void setColorIndex(int index);
-
-    /**
-     * Sets the 3-byte packed normal for this quad
-     */
-    void setNormal(int norm);
 }

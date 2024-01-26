@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.gui.font;
 
+import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.GlyphVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -9,6 +10,9 @@ import net.minecraft.client.render.VertexConsumer;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GlyphRenderer.class)
 public class GlyphRendererMixin {
@@ -48,8 +52,16 @@ public class GlyphRendererMixin {
      * @reason Use intrinsics
      * @author JellySquid
      */
-    @Overwrite
-    public void draw(boolean italic, float x, float y, Matrix4f matrix, VertexConsumer vertexConsumer, float red, float green, float blue, float alpha, int light) {
+    @Inject(method = "draw", at = @At("HEAD"), cancellable = true)
+    private void drawFast(boolean italic, float x, float y, Matrix4f matrix, VertexConsumer vertexConsumer, float red, float green, float blue, float alpha, int light, CallbackInfo ci) {
+        var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
+
+        if (writer == null) {
+            return;
+        }
+
+        ci.cancel();
+
         float x1 = x + this.minX;
         float x2 = x + this.maxX;
         float y1 = this.minY - 3.0F;
@@ -60,8 +72,6 @@ public class GlyphRendererMixin {
         float w2 = italic ? 1.0F - 0.25F * y2 : 0.0F;
 
         int color = ColorABGR.pack(red, green, blue, alpha);
-
-        var writer = VertexBufferWriter.of(vertexConsumer);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * GlyphVertex.STRIDE);

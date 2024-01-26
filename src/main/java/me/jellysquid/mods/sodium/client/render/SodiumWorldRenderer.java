@@ -371,6 +371,8 @@ public class SodiumWorldRenderer {
         matrices.pop();
     }
 
+    // the volume of a section multiplied by the number of sections to be checked at most
+    private static final double MAX_ENTITY_CHECK_VOLUME = 16 * 16 * 16 * 15;
 
     /**
      * Returns whether or not the entity intersects with any visible chunks in the graph.
@@ -387,6 +389,13 @@ public class SodiumWorldRenderer {
         }
 
         Box box = entity.getVisibilityBoundingBox();
+
+        // bail on very large entities to avoid checking many sections
+        double entityVolume = (box.maxX - box.minX) * (box.maxY - box.minY) * (box.maxZ - box.minZ);
+        if (entityVolume > MAX_ENTITY_CHECK_VOLUME) {
+            // TODO: do a frustum check instead, even large entities aren't visible if they're outside the frustum
+            return true;
+        }
 
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }

@@ -20,7 +20,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEn
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
-import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.block.BlockState;
@@ -61,7 +60,7 @@ public class FluidRenderer {
     private final ColorProviderRegistry colorProviderRegistry;
 
     public FluidRenderer(ColorProviderRegistry colorProviderRegistry, LightPipelineProvider lighters) {
-        this.quad.setNormal(NormI8.pack(0.0f, 1.0f, 0.0f));
+        this.quad.setLightFace(Direction.UP);
 
         this.lighters = lighters;
         this.colorProviderRegistry = colorProviderRegistry;
@@ -181,11 +180,11 @@ public class FluidRenderer {
             if (velocity.x == 0.0D && velocity.z == 0.0D) {
                 sprite = sprites[0];
                 facing = ModelQuadFacing.POS_Y;
-                u1 = sprite.getFrameU(0.0D);
-                v1 = sprite.getFrameV(0.0D);
+                u1 = sprite.getFrameU(0.0f);
+                v1 = sprite.getFrameV(0.0f);
                 u2 = u1;
-                v2 = sprite.getFrameV(16.0D);
-                u3 = sprite.getFrameU(16.0D);
+                v2 = sprite.getFrameV(1.0f);
+                u3 = sprite.getFrameU(1.0f);
                 v3 = v2;
                 u4 = u3;
                 v4 = v1;
@@ -195,21 +194,19 @@ public class FluidRenderer {
                 float dir = (float) MathHelper.atan2(velocity.z, velocity.x) - (1.5707964f);
                 float sin = MathHelper.sin(dir) * 0.25F;
                 float cos = MathHelper.cos(dir) * 0.25F;
-                u1 = sprite.getFrameU(8.0F + (-cos - sin) * 16.0F);
-                v1 = sprite.getFrameV(8.0F + (-cos + sin) * 16.0F);
-                u2 = sprite.getFrameU(8.0F + (-cos + sin) * 16.0F);
-                v2 = sprite.getFrameV(8.0F + (cos + sin) * 16.0F);
-                u3 = sprite.getFrameU(8.0F + (cos + sin) * 16.0F);
-                v3 = sprite.getFrameV(8.0F + (cos - sin) * 16.0F);
-                u4 = sprite.getFrameU(8.0F + (cos - sin) * 16.0F);
-                v4 = sprite.getFrameV(8.0F + (-cos - sin) * 16.0F);
+                u1 = sprite.getFrameU(0.5F + (-cos - sin));
+                v1 = sprite.getFrameV(0.5F + -cos + sin);
+                u2 = sprite.getFrameU(0.5F + -cos + sin);
+                v2 = sprite.getFrameV(0.5F + cos + sin);
+                u3 = sprite.getFrameU(0.5F + cos + sin);
+                v3 = sprite.getFrameV(0.5F + (cos - sin));
+                u4 = sprite.getFrameU(0.5F + (cos - sin));
+                v4 = sprite.getFrameV(0.5F + (-cos - sin));
             }
 
             float uAvg = (u1 + u2 + u3 + u4) / 4.0F;
             float vAvg = (v1 + v2 + v3 + v4) / 4.0F;
-            float s1 = (float) sprites[0].getContents().getWidth() / (sprites[0].getMaxU() - sprites[0].getMinU());
-            float s2 = (float) sprites[0].getContents().getHeight() / (sprites[0].getMaxV() - sprites[0].getMinV());
-            float s3 = 4.0F / Math.max(s2, s1);
+            float s3 = sprites[0].getAnimationFrameDelta();
 
             u1 = MathHelper.lerp(s3, u1, uAvg);
             u2 = MathHelper.lerp(s3, u2, uAvg);
@@ -336,11 +333,11 @@ public class FluidRenderer {
                     }
                 }
 
-                float u1 = sprite.getFrameU(0.0D);
-                float u2 = sprite.getFrameU(8.0D);
-                float v1 = sprite.getFrameV((1.0F - c1) * 16.0F * 0.5F);
-                float v2 = sprite.getFrameV((1.0F - c2) * 16.0F * 0.5F);
-                float v3 = sprite.getFrameV(8.0D);
+                float u1 = sprite.getFrameU(0.0F);
+                float u2 = sprite.getFrameU(0.5F);
+                float v1 = sprite.getFrameV((1.0F - c1) * 0.5F);
+                float v2 = sprite.getFrameV((1.0F - c2) * 0.5F);
+                float v3 = sprite.getFrameV(0.5F);
 
                 quad.setSprite(sprite);
 

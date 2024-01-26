@@ -72,27 +72,29 @@ public class SpriteContentsInterpolationMixin {
             long ppSrcPixel = NativeImageHelper.getPointerRGBA(src);
             long ppDstPixel = NativeImageHelper.getPointerRGBA(dst);
 
-            // Pointers to the pixel array for the current and next frame
-            long pRgba1 = ppSrcPixel + (curX + (long) curY * src.getWidth() * STRIDE);
-            long pRgba2 = ppSrcPixel + (nextX + (long) nextY * src.getWidth() * STRIDE);
+            for (int layerY = 0; layerY < height; layerY++) {
+                // Pointers to the pixel array for the current and next frame
+                long pRgba1 = ppSrcPixel + (curX + (long) (curY + layerY) * src.getWidth()) * STRIDE;
+                long pRgba2 = ppSrcPixel + (nextX + (long) (nextY + layerY) * src.getWidth()) * STRIDE;
 
-            for (int pixelIndex = 0, pixelCount = width * height; pixelIndex < pixelCount; pixelIndex++) {
-                int rgba1 = MemoryUtil.memGetInt(pRgba1);
-                int rgba2 = MemoryUtil.memGetInt(pRgba2);
+                for (int layerX = 0; layerX < width; layerX++) {
+                    int rgba1 = MemoryUtil.memGetInt(pRgba1);
+                    int rgba2 = MemoryUtil.memGetInt(pRgba2);
 
-                // Mix the RGB components and truncate the A component
-                int mixedRgb = ColorMixer.mix(rgba1, rgba2, mix) & 0x00FFFFFF;
+                    // Mix the RGB components and truncate the A component
+                    int mixedRgb = ColorMixer.mix(rgba1, rgba2, mix) & 0x00FFFFFF;
 
-                // Take the A component from the source pixel
-                int alpha = rgba1 & 0xFF000000;
+                    // Take the A component from the source pixel
+                    int alpha = rgba1 & 0xFF000000;
 
-                // Update the pixel within the interpolated frame using the combined RGB and A components
-                MemoryUtil.memPutInt(ppDstPixel, mixedRgb | alpha);
+                    // Update the pixel within the interpolated frame using the combined RGB and A components
+                    MemoryUtil.memPutInt(ppDstPixel, mixedRgb | alpha);
 
-                pRgba1 += STRIDE;
-                pRgba2 += STRIDE;
+                    pRgba1 += STRIDE;
+                    pRgba2 += STRIDE;
 
-                ppDstPixel += STRIDE;
+                    ppDstPixel += STRIDE;
+                }
             }
         }
 

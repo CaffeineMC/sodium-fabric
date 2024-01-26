@@ -1,19 +1,20 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur;
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur.ColorBuffer;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
-
-import java.util.Arrays;
+import net.minecraft.world.biome.ColorResolver;
 
 public class BiomeColorCache {
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
     private final BiomeSlice biomeData;
 
-    private final Slice[] slices;
-    private final boolean[] populatedSlices;
+    private final Reference2ReferenceOpenHashMap<ColorResolver, Slice[]> slices;
+    private long populateStamp;
 
     private final int blendRadius;
 
@@ -22,21 +23,19 @@ public class BiomeColorCache {
     private int minX, minY, minZ;
     private int maxX, maxY, maxZ;
 
+    private final int sizeXZ, sizeY;
+
     public BiomeColorCache(BiomeSlice biomeData, int blendRadius) {
         this.biomeData = biomeData;
         this.blendRadius = blendRadius;
 
-        int sizeXZ = 16 + ((NEIGHBOR_BLOCK_RADIUS + this.blendRadius) * 2);
-        int sizeY = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
+        this.sizeXZ = 16 + ((NEIGHBOR_BLOCK_RADIUS + this.blendRadius) * 2);
+        this.sizeY = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
 
-        this.slices = new Slice[sizeY];
-        this.populatedSlices = new boolean[sizeY];
+        this.slices = new Reference2ReferenceOpenHashMap<>();
+        this.populateStamp = 1;
 
-        for (int y = 0; y < sizeY; y++) {
-            this.slices[y] = new Slice(sizeXZ);
-        }
-
-        this.tempColorBuffer = new ColorBuffer(sizeXZ, sizeXZ);
+        this.tempColorBuffer = new ColorBuffer(this.sizeXZ, this.sizeXZ);
     }
 
     public void update(ChunkRenderContext context) {
@@ -48,68 +47,78 @@ public class BiomeColorCache {
         this.maxY = (context.getOrigin().getMaxY() + NEIGHBOR_BLOCK_RADIUS);
         this.maxZ = (context.getOrigin().getMaxZ() + NEIGHBOR_BLOCK_RADIUS) + this.blendRadius;
 
-        Arrays.fill(this.populatedSlices, false);
+        this.populateStamp++;
     }
 
     public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
+        return switch (source) {
+            case GRASS -> getColor(BiomeColors.GRASS_COLOR, blockX, blockY, blockZ);
+            case FOLIAGE -> getColor(BiomeColors.FOLIAGE_COLOR, blockX, blockY, blockZ);
+            case WATER -> getColor(BiomeColors.WATER_COLOR, blockX, blockY, blockZ);
+        };
+    }
+
+    public int getColor(ColorResolver resolver, int blockX, int blockY, int blockZ) {
         var relX = MathHelper.clamp(blockX, this.minX, this.maxX) - this.minX;
         var relY = MathHelper.clamp(blockY, this.minY, this.maxY) - this.minY;
         var relZ = MathHelper.clamp(blockZ, this.minZ, this.maxZ) - this.minZ;
 
-        if (!this.populatedSlices[relY]) {
-            this.updateColorBuffers(relY);
+        if (!this.slices.containsKey(resolver)) {
+            this.initializeSlices(resolver);
         }
 
-        var slice = this.slices[relY];
-        var buffer = slice.getBuffer(source);
+        var slice = this.slices.get(resolver)[relY];
+
+        if (slice.lastPopulateStamp < this.populateStamp) {
+            this.updateColorBuffers(relY, resolver, slice);
+        }
+
+        var buffer = slice.getBuffer();
 
         return buffer.get(relX, relZ);
     }
 
-    private void updateColorBuffers(int relY) {
-        var slice = this.slices[relY];
+    private void initializeSlices(ColorResolver resolver) {
+        var slice = new Slice[this.sizeY];
+        this.slices.put(resolver, slice);
 
+        for (int y = 0; y < this.sizeY; y++) {
+            slice[y] = new Slice(this.sizeXZ);
+        }
+    }
+
+    private void updateColorBuffers(int relY, ColorResolver resolver, Slice slice) {
         int worldY = this.minY + relY;
 
         for (int worldZ = this.minZ; worldZ <= this.maxZ; worldZ++) {
             for (int worldX = this.minX; worldX <= this.maxX; worldX++) {
-                Biome biome = this.biomeData.getBiome(worldX, worldY, worldZ);
+                Biome biome = this.biomeData.getBiome(worldX, worldY, worldZ).value();
 
                 int relativeX = worldX - this.minX;
                 int relativeZ = worldZ - this.minZ;
 
-                slice.grass.set(relativeX, relativeZ, biome.getGrassColorAt(worldX, worldZ));
-                slice.foliage.set(relativeX, relativeZ, biome.getFoliageColor());
-                slice.water.set(relativeX, relativeZ, biome.getWaterColor());
+                slice.buffer.set(relativeX, relativeZ, resolver.getColor(biome, worldX, worldZ));
             }
         }
 
         if (this.blendRadius > 0) {
-            BoxBlur.blur(slice.grass, this.tempColorBuffer, this.blendRadius);
-            BoxBlur.blur(slice.foliage, this.tempColorBuffer, this.blendRadius);
-            BoxBlur.blur(slice.water, this.tempColorBuffer, this.blendRadius);
+            BoxBlur.blur(slice.buffer, this.tempColorBuffer, this.blendRadius);
         }
 
-        this.populatedSlices[relY] = true;
+        slice.lastPopulateStamp = this.populateStamp;
     }
 
     private static class Slice {
-        private final ColorBuffer grass;
-        private final ColorBuffer foliage;
-        private final ColorBuffer water;
+        private final ColorBuffer buffer;
+        private long lastPopulateStamp;
 
         private Slice(int size) {
-            this.grass = new ColorBuffer(size, size);
-            this.foliage = new ColorBuffer(size, size);
-            this.water = new ColorBuffer(size, size);
+            this.buffer = new ColorBuffer(size, size);
+            this.lastPopulateStamp = 0;
         }
 
-        public ColorBuffer getBuffer(BiomeColorSource source) {
-            return switch (source) {
-                case GRASS -> this.grass;
-                case FOLIAGE -> this.foliage;
-                case WATER -> this.water;
-            };
+        public ColorBuffer getBuffer() {
+            return this.buffer;
         }
     }
 }

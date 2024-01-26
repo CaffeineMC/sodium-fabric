@@ -220,8 +220,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
                 TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), new GlVertexAttributeBinding[] {
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_MATERIAL_MESH)),
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR_SHADE)),
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_TEXTURE)),
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE))
                 }),
                 TessellationBinding.forElementBuffer(this.sharedIndexBuffer.getBufferObject())
         });
