@@ -26,13 +26,12 @@ public class SodiumGameOptions {
 
     private boolean readOnly;
 
-    private Path configPath;
+    private SodiumGameOptions() {
+        // NO-OP
+    }
 
     public static SodiumGameOptions defaults() {
-        var options = new SodiumGameOptions();
-        options.configPath = getConfigPath(DEFAULT_FILE_NAME);
-
-        return options;
+        return new SodiumGameOptions();
     }
 
     public static class PerformanceSettings {
@@ -92,12 +91,8 @@ public class SodiumGameOptions {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static SodiumGameOptions load() {
-        return load(DEFAULT_FILE_NAME);
-    }
-
-    public static SodiumGameOptions load(String name) {
-        Path path = getConfigPath(name);
+    public static SodiumGameOptions loadFromDisk() {
+        Path path = getConfigPath();
         SodiumGameOptions config;
 
         if (Files.exists(path)) {
@@ -110,10 +105,8 @@ public class SodiumGameOptions {
             config = new SodiumGameOptions();
         }
 
-        config.configPath = path;
-
         try {
-            config.writeChanges();
+            writeToDisk(config);
         } catch (IOException e) {
             throw new RuntimeException("Couldn't update config file", e);
         }
@@ -121,18 +114,19 @@ public class SodiumGameOptions {
         return config;
     }
 
-    private static Path getConfigPath(String name) {
+    private static Path getConfigPath() {
         return FabricLoader.getInstance()
                 .getConfigDir()
-                .resolve(name);
+                .resolve(DEFAULT_FILE_NAME);
     }
 
-    public void writeChanges() throws IOException {
-        if (this.isReadOnly()) {
+    public static void writeToDisk(SodiumGameOptions config) throws IOException {
+        if (config.isReadOnly()) {
             throw new IllegalStateException("Config file is read-only");
         }
 
-        Path dir = this.configPath.getParent();
+        Path path = getConfigPath();
+        Path dir = path.getParent();
 
         if (!Files.exists(dir)) {
             Files.createDirectories(dir);
@@ -141,13 +135,13 @@ public class SodiumGameOptions {
         }
 
         // Use a temporary location next to the config's final destination
-        Path tempPath = this.configPath.resolveSibling(this.configPath.getFileName() + ".tmp");
+        Path tempPath = path.resolveSibling(path.getFileName() + ".tmp");
 
         // Write the file to our temporary location
-        Files.writeString(tempPath, GSON.toJson(this));
+        Files.writeString(tempPath, GSON.toJson(config));
 
         // Atomically replace the old config file (if it exists) with the temporary file
-        Files.move(tempPath, this.configPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(tempPath, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     }
 
     public boolean isReadOnly() {
@@ -156,9 +150,5 @@ public class SodiumGameOptions {
 
     public void setReadOnly() {
         this.readOnly = true;
-    }
-
-    public String getFileName() {
-        return this.configPath.getFileName().toString();
     }
 }

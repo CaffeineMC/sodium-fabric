@@ -1,10 +1,13 @@
 package me.jellysquid.mods.sodium.client;
 
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.gui.console.Console;
+import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,12 +53,14 @@ public class SodiumClientMod implements ClientModInitializer {
 
     private static SodiumGameOptions loadConfig() {
         try {
-            return SodiumGameOptions.load();
+            return SodiumGameOptions.loadFromDisk();
         } catch (Exception e) {
             LOGGER.error("Failed to load configuration file", e);
             LOGGER.error("Using default configuration file in read-only mode");
 
-            var config = new SodiumGameOptions();
+            Console.instance().logMessage(MessageLevel.SEVERE, Text.translatable("sodium.console.config_not_loaded"), 12.5);
+
+            var config = SodiumGameOptions.defaults();
             config.setReadOnly();
 
             return config;
@@ -66,7 +71,7 @@ public class SodiumClientMod implements ClientModInitializer {
         CONFIG = SodiumGameOptions.defaults();
 
         try {
-            CONFIG.writeChanges();
+            SodiumGameOptions.writeToDisk(CONFIG);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write config file", e);
         }

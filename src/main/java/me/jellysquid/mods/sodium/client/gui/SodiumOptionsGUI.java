@@ -7,15 +7,14 @@ import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
+import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.text.OrderedText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
@@ -44,8 +43,8 @@ public class SodiumOptionsGUI extends Screen {
     private boolean hasPendingChanges;
     private ControlElement<?> hoveredElement;
 
-    public SodiumOptionsGUI(Screen prevScreen) {
-        super(Text.translatable("Sodium Options"));
+    private SodiumOptionsGUI(Screen prevScreen) {
+        super(Text.literal("Sodium Renderer Settings"));
 
         this.prevScreen = prevScreen;
 
@@ -53,6 +52,14 @@ public class SodiumOptionsGUI extends Screen {
         this.pages.add(SodiumGameOptionPages.quality());
         this.pages.add(SodiumGameOptionPages.performance());
         this.pages.add(SodiumGameOptionPages.advanced());
+    }
+
+    public static Screen createScreen(Screen currentScreen) {
+        if (SodiumClientMod.options().isReadOnly()) {
+            return new ConfigCorruptedScreen(currentScreen, SodiumOptionsGUI::new);
+        } else {
+            return new SodiumOptionsGUI(currentScreen);
+        }
     }
 
     public void setPage(OptionPage page) {
@@ -112,7 +119,7 @@ public class SodiumOptionsGUI extends Screen {
         options.notifications.hideDonationButton = true;
 
         try {
-            options.writeChanges();
+            SodiumGameOptions.writeToDisk(options);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save configuration", e);
         }

@@ -1,14 +1,18 @@
 package me.jellysquid.mods.sodium.client.gui.screen;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.console.Console;
+import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -18,9 +22,9 @@ public class ConfigCorruptedScreen extends Screen {
         can happen when the file has been corrupted on disk, or when trying
         to manually edit the file by hand.
         
-        We can attempt to fix this problem automatically by restoring the
-        config file back to known-good defaults, but you will lose any
-        changes that have since been made to your video settings.
+        If you continue, the configuration file will be reset back to known-good
+        defaults, and you will lose any changes that have since been made to your
+        Video Settings.
         
         More information about the error can be found in the log file.
         """;
@@ -29,29 +33,37 @@ public class ConfigCorruptedScreen extends Screen {
             .map(Text::literal)
             .collect(Collectors.toList());
 
-    private static final Text TEXT_BUTTON_RESTORE_DEFAULTS = Text.literal("Restore defaults");
-    private static final Text TEXT_BUTTON_CLOSE_GAME = Text.literal("Close game");
+    private static final int BUTTON_WIDTH = 140;
+    private static final int BUTTON_HEIGHT = 20;
 
-    private final Supplier<Screen> child;
+    private static final int SCREEN_PADDING = 32;
 
-    public ConfigCorruptedScreen(Supplier<Screen> child) {
-        super(Text.literal("Config corruption detected"));
+    private final @Nullable Screen prevScreen;
+    private final Function<Screen, Screen> nextScreen;
 
-        this.child = child;
+    public ConfigCorruptedScreen(@Nullable Screen prevScreen, @Nullable Function<Screen, Screen> nextScreen) {
+        super(Text.literal("Sodium failed to load the configuration file"));
+
+        this.prevScreen = prevScreen;
+        this.nextScreen = nextScreen;
     }
 
     @Override
     protected void init() {
         super.init();
 
-        this.addDrawableChild(ButtonWidget.builder(TEXT_BUTTON_RESTORE_DEFAULTS, (btn) -> {
-            SodiumClientMod.restoreDefaultOptions();
-            MinecraftClient.getInstance().setScreen(this.child.get());
-        }).dimensions(32, this.height - 40, 174, 20).build());
+        int buttonY = this.height - SCREEN_PADDING - BUTTON_HEIGHT;
 
-        this.addDrawableChild(ButtonWidget.builder(TEXT_BUTTON_CLOSE_GAME, (btn) -> {
-            MinecraftClient.getInstance().scheduleStop();
-        }).dimensions(this.width - 174 - 32, this.height - 40, 174, 20).build());
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Continue"), (btn) -> {
+            Console.instance().logMessage(MessageLevel.INFO, Text.translatable("sodium.console.config_file_was_reset"), 3.0);
+
+            SodiumClientMod.restoreDefaultOptions();
+            MinecraftClient.getInstance().setScreen(this.nextScreen.apply(this.prevScreen));
+        }).dimensions(this.width - SCREEN_PADDING - BUTTON_WIDTH, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Go back"), (btn) -> {
+            MinecraftClient.getInstance().setScreen(this.prevScreen);
+        }).dimensions(SCREEN_PADDING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
 
     @Override
@@ -59,7 +71,7 @@ public class ConfigCorruptedScreen extends Screen {
         super.render(drawContext, mouseX, mouseY, delta);
 
         drawContext.drawTextWithShadow(this.textRenderer, Text.literal("Sodium Renderer"), 32, 32, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.literal("Could not load configuration file"), 32, 48, 0xff0000);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.literal("Could not load the configuration file"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
             if (TEXT_BODY.get(i).getString().isEmpty()) {
