@@ -83,12 +83,50 @@ jar {
     manifest.attributes["Main-Class"] = "${project.main_class}"
 }
 
-dependencies {
-    //to change the versions see the gradle.properties file
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+repositories {
+    // Log if any unknown repositories were added non-explicitly.
+    forEach { repo ->
+        if (repo.name == 'Fabric' || repo.name == 'Mojang' || repo.name == 'MavenRepo') {
+            // We know these exist already.
+            return
+        }
+        var url = repo.url as URI
+        var protocol = url.getScheme()
+        if (protocol == "file") {
+            // Local repositories are most likely safe.
+            return
+        }
+        println("[Sodium] Unknown repository \"${repo.name}\" with URL \"${url}\"")
+    }
+    Mojang {
+        content {
+            includeGroup('com.mojang')
+        }
+    }
+    Fabric {
+        content {
+            includeGroup('net.fabricmc.fabric-api')
+            includeGroup('net.fabricmc.unpick')
+            includeGroup('net.fabricmc')
+        }
+    }
+    // Most dependencies should be downloaded from maven central since they have the most strict security policy and most dependencies are just mirrored from maven central.
+    MavenRepo {
+        content {
+            // OW2 ASM is an exception which we download directly from their maven server which is signed with their PGP key.
+            excludeGroup('org.ow2.asm')
+        }
+    }
+    maven {
+        name 'ObjectWeb'
+        url 'https://repository.ow2.org/nexus/content/repositories/releases'
+        content {
+            includeGroup('org.ow2.asm')
+        }
+    }
+}
 
+dependencies {
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-block-view-api-v2", project.fabric_version))

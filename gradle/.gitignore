@@ -1,0 +1,2 @@
+# Do not commit the binary pgp keyring.
+verification-keyring.gpg
