@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gui;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.data.config.UserConfig;
+import me.jellysquid.mods.sodium.client.data.fingerprint.HashedFingerprint;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.gui.options.*;
@@ -13,6 +14,7 @@ import me.jellysquid.mods.sodium.client.gui.prompt.ScreenPromptable;
 import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -27,6 +29,8 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -59,6 +63,61 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
         this.pages.add(RendererSettingsLayout.quality());
         this.pages.add(RendererSettingsLayout.performance());
         this.pages.add(RendererSettingsLayout.advanced());
+
+        this.checkPromptTimers();
+    }
+
+    private void checkPromptTimers() {
+        // Never show the prompt in developer workspaces.
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            return;
+        }
+
+        var options = SodiumClientMod.options();
+
+        // If the user has disabled the nags forcefully (by config), or has already seen the prompt, don't show it again.
+        if (options.notifications.forceDisableDonationPrompts || options.notifications.hasSeenDonationPrompt) {
+            return;
+        }
+
+        HashedFingerprint fingerprint = null;
+
+        try {
+            fingerprint = HashedFingerprint.loadFromDisk();
+        } catch (Throwable t) {
+            SodiumClientMod.logger()
+                    .error("Failed to read the fingerprint from disk", t);
+        }
+
+        // If the fingerprint doesn't exist, or failed to be loaded, abort.
+        if (fingerprint == null) {
+            return;
+        }
+
+        // The fingerprint records the installation time. If it's been a while since installation, show the user
+        // a prompt asking for them to consider donating.
+        var now = Instant.now();
+        var threshold = Instant.ofEpochSecond(fingerprint.timestamp())
+                .plus(3, ChronoUnit.DAYS);
+
+        if (now.isAfter(threshold)) {
+            this.openDonationPrompt(options);
+        }
+    }
+
+    private void openDonationPrompt(UserConfig options) {
+        var prompt = new ScreenPrompt(this, DONATION_PROMPT_MESSAGE, 320, 190,
+                new ScreenPrompt.Action(Text.literal("Buy us a coffee"), this::openDonationPage));
+        prompt.setFocused(true);
+
+        options.notifications.hasSeenDonationPrompt = true;
+
+        try {
+            UserConfig.writeToDisk(options);
+        } catch (IOException e) {
+            SodiumClientMod.logger()
+                    .error("Failed to update config file", e);
+        }
     }
 
     public static Screen createScreen(Screen currentScreen) {
@@ -105,7 +164,7 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
         this.donateButton = new FlatButtonWidget(new Dim2i(this.width - 128, 6, 100, 20), Text.translatable("sodium.options.buttons.donate"), this::openDonationPage);
         this.hideDonateButton = new FlatButtonWidget(new Dim2i(this.width - 26, 6, 20, 20), Text.literal("x"), this::hideDonationButton);
 
-        if (SodiumClientMod.options().notifications.hideDonationButton) {
+        if (SodiumClientMod.options().notifications.hasClearedDonationButton || SodiumClientMod.options().notifications.forceDisableDonationPrompts) {
             this.setDonationButtonVisibility(false);
         }
 
@@ -123,7 +182,7 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
 
     private void hideDonationButton() {
         UserConfig options = SodiumClientMod.options();
-        options.notifications.hideDonationButton = true;
+        options.notifications.hasClearedDonationButton = true;
 
         try {
             UserConfig.writeToDisk(options);
@@ -366,5 +425,17 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
     @Override
     public Dim2i getDimensions() {
         return new Dim2i(0, 0, this.width, this.height);
+    }
+
+    private static final List<StringVisitable> DONATION_PROMPT_MESSAGE;
+
+    static {
+        DONATION_PROMPT_MESSAGE = List.of(
+                StringVisitable.concat(Text.literal("Hello!")),
+                StringVisitable.concat(Text.literal("It seems that you've been enjoying "), Text.literal("Sodium").withColor(0x27eb92), Text.literal(", the free and open-source optimization mod for Minecraft.")),
+                StringVisitable.concat(Text.literal("Mods like these are complex. They require "), Text.literal("thousands of hours").withColor(0xff6e00), Text.literal(" of development, debugging, and tuning to create the experience that players have come to expect.")),
+                StringVisitable.concat(Text.literal("If you'd like to show your token of appreciation, and support the development of our mod in the process, then consider "), Text.literal("buying us a coffee").withColor(0xed49ce), Text.literal(".")),
+                StringVisitable.concat(Text.literal("And thanks again for using our mod! We hope it helps you (and your computer.)"))
+        );
     }
 }

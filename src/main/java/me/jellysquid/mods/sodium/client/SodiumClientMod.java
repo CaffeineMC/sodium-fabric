@@ -111,7 +111,8 @@ public class SodiumClientMod implements ClientModInitializer {
         if (saved == null || !current.looselyMatches(saved)) {
             HashedFingerprint.writeToDisk(current.hashed());
 
-            CONFIG.notifications.hideDonationButton = false;
+            CONFIG.notifications.hasSeenDonationPrompt = false;
+            CONFIG.notifications.hasClearedDonationButton = false;
 
             try {
                 UserConfig.writeToDisk(CONFIG);
