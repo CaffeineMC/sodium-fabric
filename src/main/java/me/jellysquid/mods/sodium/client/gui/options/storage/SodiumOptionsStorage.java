@@ -20,7 +20,7 @@ public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
     @Override
     public void save() {
         try {
-            this.options.writeChanges();
+            SodiumGameOptions.writeToDisk(this.options);
         } catch (IOException e) {
             throw new RuntimeException("Couldn't save configuration changes", e);
         }
