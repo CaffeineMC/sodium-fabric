@@ -11,11 +11,17 @@ public class MixinOption {
     private Set<String> modDefined = null;
     private boolean enabled;
     private boolean userDefined;
+    private boolean overrideable;
 
-    public MixinOption(String name, boolean enabled, boolean userDefined) {
+    public MixinOption(String name, boolean enabled, boolean userDefined, boolean overrideable) {
         this.name = name;
         this.enabled = enabled;
         this.userDefined = userDefined;
+        this.overrideable = overrideable;
+    }
+
+    public void setOverrideable(boolean overrideable) {
+        this.overrideable = overrideable;
     }
 
     public void setEnabled(boolean enabled, boolean userDefined) {
@@ -47,6 +53,10 @@ public class MixinOption {
 
     public boolean isModDefined() {
         return this.modDefined != null;
+    }
+
+    public boolean isOverrideable() {
+        return overrideable;
     }
 
     public String getName() {
