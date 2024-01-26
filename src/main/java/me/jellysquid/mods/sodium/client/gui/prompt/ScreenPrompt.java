@@ -9,7 +9,6 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
-import net.minecraft.util.Util;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
@@ -19,16 +18,20 @@ public class ScreenPrompt implements Element, Drawable {
     private final ScreenPromptable parent;
     private final List<StringVisitable> text;
 
+    private final Action action;
+
     private FlatButtonWidget closeButton, actionButton;
 
     private final int width, height;
 
-    public ScreenPrompt(ScreenPromptable parent, List<StringVisitable> text, int width, int height) {
+    public ScreenPrompt(ScreenPromptable parent, List<StringVisitable> text, int width, int height, Action action) {
         this.parent = parent;
         this.text = text;
 
         this.width = width;
         this.height = height;
+
+        this.action = action;
     }
 
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
@@ -64,7 +67,7 @@ public class ScreenPrompt implements Element, Drawable {
             var formatted = textRenderer.wrapLines(paragraph, textMaxWidth);
 
             for (var line : formatted) {
-                drawContext.drawText(textRenderer, line, textX, textY, 0x0, true);
+                drawContext.drawText(textRenderer, line, textX, textY, 0xFFFFFFFF, true);
                 textY += textRenderer.fontHeight + 2;
             }
 
@@ -74,7 +77,7 @@ public class ScreenPrompt implements Element, Drawable {
         this.closeButton = new FlatButtonWidget(new Dim2i((boxX + width) - 84, (boxY + height) - 24, 80, 20), Text.literal("Close"), this::close);
         this.closeButton.setStyle(createButtonStyle());
 
-        this.actionButton = new FlatButtonWidget(new Dim2i((boxX + width) - 198, (boxY + height) - 24, 110, 20), Text.literal("Perform action"), this::close);
+        this.actionButton = new FlatButtonWidget(new Dim2i((boxX + width) - 198, (boxY + height) - 24, 110, 20), this.action.label, this::runAction);
         this.actionButton.setStyle(createButtonStyle());
 
         for (var button : getWidgets()) {
@@ -137,5 +140,14 @@ public class ScreenPrompt implements Element, Drawable {
 
     private void close() {
         this.parent.setPrompt(null);
+    }
+
+    private void runAction() {
+        this.action.runnable.run();
+        this.close();
+    }
+
+    public record Action(Text label, Runnable runnable) {
+
     }
 }
