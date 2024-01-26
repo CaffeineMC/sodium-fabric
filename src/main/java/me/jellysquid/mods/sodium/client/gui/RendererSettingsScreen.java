@@ -1,12 +1,15 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.data.config.UserConfig;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
+import me.jellysquid.mods.sodium.client.gui.prompt.ScreenPrompt;
+import me.jellysquid.mods.sodium.client.gui.prompt.ScreenPromptable;
 import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
@@ -15,10 +18,12 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.text.OrderedText;
+import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
 import net.minecraft.util.Util;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
@@ -28,7 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class SodiumOptionsGUI extends Screen {
+public class RendererSettingsScreen extends Screen implements ScreenPromptable {
     private final List<OptionPage> pages = new ArrayList<>();
 
     private final List<ControlElement<?>> controls = new ArrayList<>();
@@ -43,22 +48,24 @@ public class SodiumOptionsGUI extends Screen {
     private boolean hasPendingChanges;
     private ControlElement<?> hoveredElement;
 
-    private SodiumOptionsGUI(Screen prevScreen) {
+    private @Nullable ScreenPrompt prompt;
+
+    private RendererSettingsScreen(Screen prevScreen) {
         super(Text.literal("Sodium Renderer Settings"));
 
         this.prevScreen = prevScreen;
 
-        this.pages.add(SodiumGameOptionPages.general());
-        this.pages.add(SodiumGameOptionPages.quality());
-        this.pages.add(SodiumGameOptionPages.performance());
-        this.pages.add(SodiumGameOptionPages.advanced());
+        this.pages.add(RendererSettingsLayout.general());
+        this.pages.add(RendererSettingsLayout.quality());
+        this.pages.add(RendererSettingsLayout.performance());
+        this.pages.add(RendererSettingsLayout.advanced());
     }
 
     public static Screen createScreen(Screen currentScreen) {
         if (SodiumClientMod.options().isReadOnly()) {
-            return new ConfigCorruptedScreen(currentScreen, SodiumOptionsGUI::new);
+            return new ConfigCorruptedScreen(currentScreen, RendererSettingsScreen::new);
         } else {
-            return new SodiumOptionsGUI(currentScreen);
+            return new RendererSettingsScreen(currentScreen);
         }
     }
 
@@ -115,11 +122,11 @@ public class SodiumOptionsGUI extends Screen {
     }
 
     private void hideDonationButton() {
-        SodiumGameOptions options = SodiumClientMod.options();
+        UserConfig options = SodiumClientMod.options();
         options.notifications.hideDonationButton = true;
 
         try {
-            SodiumGameOptions.writeToDisk(options);
+            UserConfig.writeToDisk(options);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save configuration", e);
         }
@@ -170,10 +177,14 @@ public class SodiumOptionsGUI extends Screen {
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
         this.updateControls();
 
-        super.render(drawContext, mouseX, mouseY, delta);
+        super.render(drawContext, this.prompt != null ? -1 : mouseX, this.prompt != null ? -1 : mouseY, delta);
 
         if (this.hoveredElement != null) {
             this.renderOptionTooltip(drawContext, this.hoveredElement);
+        }
+
+        if (this.prompt != null) {
+            this.prompt.render(drawContext, mouseX, mouseY, delta);
         }
     }
 
@@ -302,6 +313,10 @@ public class SodiumOptionsGUI extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.prompt != null) {
+            return this.prompt.keyPressed(keyCode, scanCode, modifiers);
+        }
+
         if (keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
             MinecraftClient.getInstance().setScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
 
@@ -313,6 +328,10 @@ public class SodiumOptionsGUI extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.prompt != null) {
+            return this.prompt.mouseClicked(mouseX, mouseY, button);
+        }
+
         boolean clicked = super.mouseClicked(mouseX, mouseY, button);
 
         if (!clicked) {
@@ -331,5 +350,21 @@ public class SodiumOptionsGUI extends Screen {
     @Override
     public void close() {
         this.client.setScreen(this.prevScreen);
+    }
+
+    @Override
+    public void setPrompt(@Nullable ScreenPrompt prompt) {
+        this.prompt = prompt;
+    }
+
+    @Nullable
+    @Override
+    public ScreenPrompt getPrompt() {
+        return this.prompt;
+    }
+
+    @Override
+    public Dim2i getDimensions() {
+        return new Dim2i(0, 0, this.width, this.height);
     }
 }
