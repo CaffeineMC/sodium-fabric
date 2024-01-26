@@ -50,7 +50,7 @@
   "sodium.options.always_defer_chunk_updates.name": "Always Defer Chunk Updates",
   "sodium.options.always_defer_chunk_updates.tooltip": "If enabled, rendering will never wait for chunk updates to finish, even if they are important. This can greatly improve frame rates in some scenarios, but it may create significant visual lag where blocks take a while to appear or disappear.",
   "sodium.options.sort_behavior.name": "Translucency Sorting",
-  "sodium.options.sort_behavior.tooltip": "Controls when and with how much effort translucency sorting is performed. While in Reduced mode there will be glitches, the other mods attempt accurate sorting with varying degrees of urgency to avoid holes and glitches during camera movement. More sorting has a performance impact on chunk loading and update speeds, but usually not frame rates.",
+  "sodium.options.sort_behavior.tooltip": "Controls when and with how much effort translucency sorting is performed. While in Reduced mode there will be glitches, the other modes attempt accurate sorting with varying degrees of urgency to avoid holes and glitches during camera movement. More sorting has a performance impact on chunk loading and update speeds, but usually not frame rates.",
   "sodium.options.sort_behavior.reduced": "Reduced",
   "sodium.options.sort_behavior.df": "Accurate DF",
   "sodium.options.sort_behavior.n1": "Accurate N1",
