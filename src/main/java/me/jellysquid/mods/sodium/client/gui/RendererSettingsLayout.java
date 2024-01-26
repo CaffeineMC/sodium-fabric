@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.data.config.UserConfig;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gui.options.*;
@@ -23,7 +24,7 @@ import org.lwjgl.opengl.GLCapabilities;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SodiumGameOptionPages {
+public class RendererSettingsLayout {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
     private static final MinecraftOptionsStorage vanillaOpts = new MinecraftOptionsStorage();
 
@@ -160,17 +161,17 @@ public class SodiumGameOptionPages {
                         }, opts -> opts.getCloudRenderMode().getValue())
                         .setImpact(OptionImpact.LOW)
                         .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
+                .add(OptionImpl.createBuilder(UserConfig.GraphicsQuality.class, sodiumOpts)
                         .setName(Text.translatable("soundCategory.weather"))
                         .setTooltip(Text.translatable("sodium.options.weather_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
+                        .setControl(option -> new CyclingControl<>(option, UserConfig.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.weatherQuality = value, opts -> opts.quality.weatherQuality)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
+                .add(OptionImpl.createBuilder(UserConfig.GraphicsQuality.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.leaves_quality.name"))
                         .setTooltip(Text.translatable("sodium.options.leaves_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
+                        .setControl(option -> new CyclingControl<>(option, UserConfig.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.leavesQuality = value, opts -> opts.quality.leavesQuality)
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)

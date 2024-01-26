@@ -1,10 +1,11 @@
-package me.jellysquid.mods.sodium.client.gui;
+package me.jellysquid.mods.sodium.client.data.config;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
+import me.jellysquid.mods.sodium.client.util.FileUtil;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.Text;
@@ -14,9 +15,8 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
-public class SodiumGameOptions {
+public class UserConfig {
     private static final String DEFAULT_FILE_NAME = "sodium-options.json";
 
     public final QualitySettings quality = new QualitySettings();
@@ -26,12 +26,12 @@ public class SodiumGameOptions {
 
     private boolean readOnly;
 
-    private SodiumGameOptions() {
+    private UserConfig() {
         // NO-OP
     }
 
-    public static SodiumGameOptions defaults() {
-        return new SodiumGameOptions();
+    public static UserConfig defaults() {
+        return new UserConfig();
     }
 
     public static class PerformanceSettings {
@@ -91,18 +91,18 @@ public class SodiumGameOptions {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static SodiumGameOptions loadFromDisk() {
+    public static UserConfig loadFromDisk() {
         Path path = getConfigPath();
-        SodiumGameOptions config;
+        UserConfig config;
 
         if (Files.exists(path)) {
             try (FileReader reader = new FileReader(path.toFile())) {
-                config = GSON.fromJson(reader, SodiumGameOptions.class);
+                config = GSON.fromJson(reader, UserConfig.class);
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             }
         } else {
-            config = new SodiumGameOptions();
+            config = new UserConfig();
         }
 
         try {
@@ -120,7 +120,7 @@ public class SodiumGameOptions {
                 .resolve(DEFAULT_FILE_NAME);
     }
 
-    public static void writeToDisk(SodiumGameOptions config) throws IOException {
+    public static void writeToDisk(UserConfig config) throws IOException {
         if (config.isReadOnly()) {
             throw new IllegalStateException("Config file is read-only");
         }
@@ -134,14 +134,7 @@ public class SodiumGameOptions {
             throw new IOException("Not a directory: " + dir);
         }
 
-        // Use a temporary location next to the config's final destination
-        Path tempPath = path.resolveSibling(path.getFileName() + ".tmp");
-
-        // Write the file to our temporary location
-        Files.writeString(tempPath, GSON.toJson(config));
-
-        // Atomically replace the old config file (if it exists) with the temporary file
-        Files.move(tempPath, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        FileUtil.writeTextRobustly(GSON.toJson(config), path);
     }
 
     public boolean isReadOnly() {

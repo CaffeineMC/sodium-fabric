@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.gui.hooks.settings;
 
-import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
+import me.jellysquid.mods.sodium.client.gui.RendererSettingsScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.OptionsScreen;
 import net.minecraft.text.Text;
@@ -19,6 +19,6 @@ public class OptionsScreenMixin extends Screen {
     @Dynamic
     @Inject(method = "method_19828", at = @At("HEAD"), cancellable = true)
     private void open(CallbackInfoReturnable<Screen> ci) {
-        ci.setReturnValue(SodiumOptionsGUI.createScreen(this));
+        ci.setReturnValue(RendererSettingsScreen.createScreen(this));
     }
 }
