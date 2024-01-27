@@ -164,7 +164,7 @@ public class OcclusionCuller {
 
         // vanilla's "cylindrical fog" algorithm
         // max(length(distance.xz), abs(distance.y))
-        return (((dx * dx) + (dz * dz)) < (maxDistance * maxDistance)) || (Math.abs(dy) < maxDistance);
+        return (((dx * dx) + (dz * dz)) < (maxDistance * maxDistance)) && (Math.abs(dy) < maxDistance);
     }
 
     @SuppressWarnings("ManualMinMaxCalculation") // we know what we are doing.
