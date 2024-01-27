@@ -12,13 +12,8 @@ apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
 apply from: "${rootProject.projectDir}/gradle/java.gradle"
 
 archivesBaseName = project.archives_base_name
-version = project.version
+version = createVersionString()
 group = project.maven_group
-
-afterEvaluate {
-    // ensure the version string isn't cached with old values
-    version = createVersionString()
-}
 
 loom {
     mixin.defaultRefmapName = "mixins.sodium.refmap.json"
@@ -117,7 +112,7 @@ def createVersionString() {
         builder.append("-snapshot")
     }
 
-    var minecraft_version = (project.minecraft_version as String).replace('-', '_')
+    var minecraft_version = (project.minecraft_version as String)
     builder.append("+mc").append(minecraft_version)
 
     if (build_id != null) {
