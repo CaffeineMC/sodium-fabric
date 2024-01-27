@@ -96,10 +96,12 @@ dependencies {
 def createVersionString() {
     var builder = new StringBuilder()
 
+    boolean release = project.hasProperty("build.release")
+
     String build_id = System.getenv("GITHUB_RUN_NUMBER")
     String mod_version = project.mod_version as String
 
-    if (project.hasProperty("build.release")) {
+    if (release) {
         builder.append(mod_version)
     } else {
         // Strip the existing pre-release version
@@ -115,10 +117,12 @@ def createVersionString() {
     var minecraft_version = (project.minecraft_version as String)
     builder.append("+mc").append(minecraft_version)
 
-    if (build_id != null) {
-        builder.append("-build.${build_id}")
-    } else {
-        builder.append("-local")
+    if (!release) {
+        if (build_id != null) {
+            builder.append("-build.${build_id}")
+        } else {
+            builder.append("-local")
+        }
     }
 
     return builder.toString()
