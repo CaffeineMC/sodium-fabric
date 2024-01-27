@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.data.config;
+package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -16,7 +16,8 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class UserConfig {
+// TODO: Rename in Sodium 0.6
+public class SodiumGameOptions {
     private static final String DEFAULT_FILE_NAME = "sodium-options.json";
 
     public final QualitySettings quality = new QualitySettings();
@@ -26,12 +27,12 @@ public class UserConfig {
 
     private boolean readOnly;
 
-    private UserConfig() {
+    private SodiumGameOptions() {
         // NO-OP
     }
 
-    public static UserConfig defaults() {
-        return new UserConfig();
+    public static SodiumGameOptions defaults() {
+        return new SodiumGameOptions();
     }
 
     public static class PerformanceSettings {
@@ -94,18 +95,18 @@ public class UserConfig {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static UserConfig loadFromDisk() {
+    public static SodiumGameOptions loadFromDisk() {
         Path path = getConfigPath();
-        UserConfig config;
+        SodiumGameOptions config;
 
         if (Files.exists(path)) {
             try (FileReader reader = new FileReader(path.toFile())) {
-                config = GSON.fromJson(reader, UserConfig.class);
+                config = GSON.fromJson(reader, SodiumGameOptions.class);
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             }
         } else {
-            config = new UserConfig();
+            config = new SodiumGameOptions();
         }
 
         try {
@@ -123,7 +124,7 @@ public class UserConfig {
                 .resolve(DEFAULT_FILE_NAME);
     }
 
-    public static void writeToDisk(UserConfig config) throws IOException {
+    public static void writeToDisk(SodiumGameOptions config) throws IOException {
         if (config.isReadOnly()) {
             throw new IllegalStateException("Config file is read-only");
         }

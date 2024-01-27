@@ -1,26 +1,26 @@
 package me.jellysquid.mods.sodium.client.gui.options.storage;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.data.config.UserConfig;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 
 import java.io.IOException;
 
-public class SodiumOptionsStorage implements OptionStorage<UserConfig> {
-    private final UserConfig options;
+public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
+    private final SodiumGameOptions options;
 
     public SodiumOptionsStorage() {
         this.options = SodiumClientMod.options();
     }
 
     @Override
-    public UserConfig getData() {
+    public SodiumGameOptions getData() {
         return this.options;
     }
 
     @Override
     public void save() {
         try {
-            UserConfig.writeToDisk(this.options);
+            SodiumGameOptions.writeToDisk(this.options);
         } catch (IOException e) {
             throw new RuntimeException("Couldn't save configuration changes", e);
         }

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client;
 
-import me.jellysquid.mods.sodium.client.data.config.UserConfig;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.data.fingerprint.FingerprintMeasure;
 import me.jellysquid.mods.sodium.client.data.fingerprint.HashedFingerprint;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 public class SodiumClientMod implements ClientModInitializer {
-    private static UserConfig CONFIG;
+    private static SodiumGameOptions CONFIG;
     private static Logger LOGGER;
 
     private static String MOD_VERSION;
@@ -43,7 +43,7 @@ public class SodiumClientMod implements ClientModInitializer {
         }
     }
 
-    public static UserConfig options() {
+    public static SodiumGameOptions options() {
         if (CONFIG == null) {
             throw new IllegalStateException("Config not yet available");
         }
@@ -59,16 +59,16 @@ public class SodiumClientMod implements ClientModInitializer {
         return LOGGER;
     }
 
-    private static UserConfig loadConfig() {
+    private static SodiumGameOptions loadConfig() {
         try {
-            return UserConfig.loadFromDisk();
+            return SodiumGameOptions.loadFromDisk();
         } catch (Exception e) {
             LOGGER.error("Failed to load configuration file", e);
             LOGGER.error("Using default configuration file in read-only mode");
 
             Console.instance().logMessage(MessageLevel.SEVERE, Text.translatable("sodium.console.config_not_loaded"), 12.5);
 
-            var config = UserConfig.defaults();
+            var config = SodiumGameOptions.defaults();
             config.setReadOnly();
 
             return config;
@@ -76,10 +76,10 @@ public class SodiumClientMod implements ClientModInitializer {
     }
 
     public static void restoreDefaultOptions() {
-        CONFIG = UserConfig.defaults();
+        CONFIG = SodiumGameOptions.defaults();
 
         try {
-            UserConfig.writeToDisk(CONFIG);
+            SodiumGameOptions.writeToDisk(CONFIG);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write config file", e);
         }
@@ -115,7 +115,7 @@ public class SodiumClientMod implements ClientModInitializer {
             CONFIG.notifications.hasClearedDonationButton = false;
 
             try {
-                UserConfig.writeToDisk(CONFIG);
+                SodiumGameOptions.writeToDisk(CONFIG);
             } catch (IOException e) {
                 LOGGER.error("Failed to update config file", e);
             }
