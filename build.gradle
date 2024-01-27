@@ -6,18 +6,19 @@ plugins {
     // is not reachable for some reason, and it makes builds much more reproducible. Observation also shows that it
     // really helps to improve startup times on slow connections.
     id 'fabric-loom' version '1.4.1'
-
-    // This dependency is only used to determine the state of the Git working tree so that build artifacts can be
-    // more easily identified. TODO: Lazily load GrGit via a service only when builds are performed.
-    id 'org.ajoberstar.grgit' version '5.2.0'
 }
 
 apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
 apply from: "${rootProject.projectDir}/gradle/java.gradle"
 
-archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
-version = "${project.mod_version}${getVersionMetadata()}"
+archivesBaseName = project.archives_base_name
+version = project.version
 group = project.maven_group
+
+afterEvaluate {
+    // ensure the version string isn't cached with old values
+    version = createVersionString()
+}
 
 loom {
     mixin.defaultRefmapName = "mixins.sodium.refmap.json"
@@ -93,30 +94,37 @@ dependencies {
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-block-view-api-v2", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
-    // `fabricApi.module` does not work with deprecated modules, so add the module dependency manually.
-    // This is planned to be fixed in Loom 1.4.
     modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
 }
 
-def getVersionMetadata() {
-    // CI builds only
+def createVersionString() {
+    var builder = new StringBuilder()
+
+    String build_id = System.getenv("GITHUB_RUN_NUMBER")
+    String mod_version = project.mod_version as String
+
     if (project.hasProperty("build.release")) {
-        return "" // no tag whatsoever
-    }
-
-    if (grgit != null) {
-        def head = grgit.head()
-        def id = head.abbreviatedId
-
-        // Flag the build if the build tree is not clean
-        if (!grgit.status().clean) {
-            id += "-dirty"
+        builder.append(mod_version)
+    } else {
+        // Strip the existing pre-release version
+        if (mod_version.contains('-')) {
+            builder.append(mod_version.substring(0, mod_version.indexOf('-')))
+        } else {
+            builder.append(mod_version)
         }
 
-        return "+git.${id}"
+        builder.append("-snapshot")
     }
 
-    // No tracking information could be found about the build
-    return "+unknown"
+    var minecraft_version = (project.minecraft_version as String).replace('-', '_')
+    builder.append("+mc").append(minecraft_version)
+
+    if (build_id != null) {
+        builder.append("-build.${build_id}")
+    } else {
+        builder.append("-local")
+    }
+
+    return builder.toString()
 }
