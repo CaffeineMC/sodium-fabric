@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenCustomHashMap;
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
@@ -30,39 +31,51 @@ public class BlockOcclusionCache {
     /**
      * @param selfState The state of the block in the world
      * @param view The world view for this render context
-     * @param pos The position of the block
+     * @param selfPos The position of the block
      * @param facing The facing direction of the side to check
      * @return True if the block side facing {@param dir} is not occluded, otherwise false
      */
-    public boolean shouldDrawSide(BlockState selfState, BlockView view, BlockPos pos, Direction facing) {
-        BlockPos.Mutable adjPos = this.cachedPositionObject;
-        adjPos.set(pos.getX() + facing.getOffsetX(), pos.getY() + facing.getOffsetY(), pos.getZ() + facing.getOffsetZ());
+    public boolean shouldDrawSide(BlockState selfState, BlockView view, BlockPos selfPos, Direction facing) {
+        BlockPos.Mutable otherPos = this.cachedPositionObject;
+        otherPos.set(selfPos.getX() + facing.getOffsetX(), selfPos.getY() + facing.getOffsetY(), selfPos.getZ() + facing.getOffsetZ());
 
-        BlockState adjState = view.getBlockState(adjPos);
+        BlockState otherState = view.getBlockState(otherPos);
 
-        if (selfState.isSideInvisible(adjState, facing)) {
+        // Blocks can define special behavior to control whether faces are rendered.
+        // This is mostly used by transparent blocks (Leaves, Glass, etc.) to not render interior faces between blocks
+        // of the same type.
+        if (selfState.isSideInvisible(otherState, facing)) {
             return false;
-        } else if (adjState.isOpaque()) {
-            VoxelShape selfShape = selfState.getCullingFace(view, pos, facing);
-            VoxelShape adjShape = adjState.getCullingFace(view, adjPos, facing.getOpposite());
+        }
 
-            if (selfShape == VoxelShapes.fullCube() && adjShape == VoxelShapes.fullCube()) {
-                return false;
-            }
-
-            if (selfShape.isEmpty()) {
-                if (adjShape.isEmpty()){
-                    return true; //example: top face of potted plants if top slab is placed above
-                }
-                else if (!adjState.isSideSolid(view,pos,facing.getOpposite(), SideShapeType.FULL)){
-                    return true; //example: face of potted plants rendered if top stair placed above
-                }
-            }
-
-            return this.lookup(selfShape, adjShape);
-        } else {
+        // If the other block is transparent, then it is unable to hide any geometry.
+        if (!otherState.isOpaque()) {
             return true;
         }
+
+        // The cull shape of the block being rendered
+        VoxelShape selfShape = selfState.getCullingFace(view, selfPos, facing);
+
+        // If the block being rendered has an empty cull shape, intersection tests will always fail
+        if (selfShape.isEmpty()) {
+            return true;
+        }
+
+        // The cull shape of the block neighboring the one being rendered
+        VoxelShape otherShape = otherState.getCullingFace(view, otherPos, DirectionUtil.getOpposite(facing));
+
+        // If the other block has an empty cull shape, then it cannot hide any geometry
+        if (otherShape.isEmpty()) {
+            return true;
+        }
+
+        // If both blocks use a full-cube cull shape, then they will always hide the faces between each other
+        if (selfShape == VoxelShapes.fullCube() && otherShape == VoxelShapes.fullCube()) {
+            return false;
+        }
+
+        // No other simplifications apply, so we need to perform a full shape comparison, which is very slow
+        return this.lookup(selfShape, otherShape);
     }
 
     private boolean lookup(VoxelShape self, VoxelShape other) {
@@ -70,6 +83,8 @@ public class BlockOcclusionCache {
         comparison.self = self;
         comparison.other = other;
 
+        // Entries at the cache are promoted to the top of the table when accessed
+        // The entries at the bottom of the table are removed when it gets too large
         return switch (this.comparisonLookupTable.getAndMoveToFirst(comparison)) {
             case ENTRY_FALSE -> false;
             case ENTRY_TRUE -> true;
@@ -80,6 +95,7 @@ public class BlockOcclusionCache {
     private boolean calculate(ShapeComparison comparison) {
         boolean result = VoxelShapes.matchesAnywhere(comparison.self, comparison.other, BooleanBiFunction.ONLY_FIRST);
 
+        // Remove entries while the table is too large
         while (this.comparisonLookupTable.size() >= CACHE_SIZE) {
             this.comparisonLookupTable.removeLastInt();
         }
