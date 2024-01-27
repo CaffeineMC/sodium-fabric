@@ -23,6 +23,7 @@ import org.lwjgl.opengl.GLCapabilities;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO: Rename in Sodium 0.6
 public class SodiumGameOptionPages {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
     private static final MinecraftOptionsStorage vanillaOpts = new MinecraftOptionsStorage();

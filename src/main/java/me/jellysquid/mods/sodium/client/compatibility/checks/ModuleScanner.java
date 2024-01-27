@@ -75,7 +75,10 @@ public class ModuleScanner {
         }
     }
 
-    private static final Pattern RTSS_VERSION_PATTERN = Pattern.compile("^(?<x>\\d*), (?<y>\\d*), (?<z>\\d*), (?<w>\\d*)$");
+    // BUG: For some reason, the version string can either be in the format of "X.Y.Z.W" or "X, Y, Z, W"...
+    // This does not make sense, and probably points to our handling of code pages being wrong. But for the time being,
+    // the regex has been made to handle both formats, because looking at Win32 code any longer is going to break me.
+    private static final Pattern RTSS_VERSION_PATTERN = Pattern.compile("^(?<x>\\d*)(, |\\.)(?<y>\\d*)(, |\\.)(?<z>\\d*)(, |\\.)(?<w>\\d*)$");
 
     private static boolean isRTSSCompatible(String version) {
         var matcher = RTSS_VERSION_PATTERN.matcher(version);

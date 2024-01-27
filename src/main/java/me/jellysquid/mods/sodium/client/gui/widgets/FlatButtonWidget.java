@@ -8,11 +8,16 @@ import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 public class FlatButtonWidget extends AbstractWidget implements Drawable {
     private final Dim2i dim;
     private final Runnable action;
+
+    private @NotNull Style style = Style.defaults();
 
     private boolean selected;
     private boolean enabled = true;
@@ -34,8 +39,8 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
-        int backgroundColor = this.enabled ? (this.hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
-        int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;
+        int backgroundColor = this.enabled ? (this.hovered ? this.style.bgHovered : this.style.bgDefault) : this.style.bgDisabled;
+        int textColor = this.enabled ? this.style.textDefault : this.style.textDisabled;
 
         int strWidth = this.font.getWidth(this.label);
 
@@ -48,6 +53,12 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         if (this.enabled && this.isFocused()) {
             this.drawBorder(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), -1);
         }
+    }
+
+    public void setStyle(@NotNull Style style) {
+        Objects.requireNonNull(style);
+
+        this.style = style;
     }
 
     public void setSelected(boolean selected) {
@@ -113,5 +124,21 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
     @Override
     public ScreenRect getNavigationFocus() {
         return new ScreenRect(this.dim.x(), this.dim.y(), this.dim.width(), this.dim.height());
+    }
+
+    public static class Style {
+        public int bgHovered, bgDefault, bgDisabled;
+        public int textDefault, textDisabled;
+
+        public static Style defaults() {
+            var style = new Style();
+            style.bgHovered = 0xE0000000;
+            style.bgDefault = 0x90000000;
+            style.bgDisabled = 0x60000000;
+            style.textDefault = 0xFFFFFFFF;
+            style.textDisabled = 0x90FFFFFF;
+
+            return style;
+        }
     }
 }

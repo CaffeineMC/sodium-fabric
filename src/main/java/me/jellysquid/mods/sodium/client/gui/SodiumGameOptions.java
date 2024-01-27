@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
+import me.jellysquid.mods.sodium.client.util.FileUtil;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.Text;
@@ -14,8 +15,8 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
+// TODO: Rename in Sodium 0.6
 public class SodiumGameOptions {
     private static final String DEFAULT_FILE_NAME = "sodium-options.json";
 
@@ -61,7 +62,10 @@ public class SodiumGameOptions {
     }
 
     public static class NotificationSettings {
-        public boolean hideDonationButton = false;
+        public boolean forceDisableDonationPrompts = false;
+
+        public boolean hasClearedDonationButton = false;
+        public boolean hasSeenDonationPrompt = false;
     }
 
     public enum GraphicsQuality implements TextProvider {
@@ -134,14 +138,7 @@ public class SodiumGameOptions {
             throw new IOException("Not a directory: " + dir);
         }
 
-        // Use a temporary location next to the config's final destination
-        Path tempPath = path.resolveSibling(path.getFileName() + ".tmp");
-
-        // Write the file to our temporary location
-        Files.writeString(tempPath, GSON.toJson(config));
-
-        // Atomically replace the old config file (if it exists) with the temporary file
-        Files.move(tempPath, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        FileUtil.writeTextRobustly(GSON.toJson(config), path);
     }
 
     public boolean isReadOnly() {

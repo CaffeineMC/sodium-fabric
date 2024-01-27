@@ -106,6 +106,10 @@ public class ResourcePackScanner {
             var path = entry.getKey();
             var result = entry.getValue();
 
+            if (result.shaderPrograms.isEmpty() && result.shaderIncludes.isEmpty()) {
+                continue;
+            }
+
             builder.append("- Resource pack: ").append(getResourcePackName(path)).append("\n");
 
             if (!result.shaderPrograms.isEmpty()) {
