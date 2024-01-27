@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.data.config.UserConfig;
 import me.jellysquid.mods.sodium.client.data.fingerprint.HashedFingerprint;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
@@ -37,7 +36,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class RendererSettingsScreen extends Screen implements ScreenPromptable {
+// TODO: Rename in Sodium 0.6
+public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     private final List<OptionPage> pages = new ArrayList<>();
 
     private final List<ControlElement<?>> controls = new ArrayList<>();
@@ -54,15 +54,15 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
 
     private @Nullable ScreenPrompt prompt;
 
-    private RendererSettingsScreen(Screen prevScreen) {
+    private SodiumOptionsGUI(Screen prevScreen) {
         super(Text.literal("Sodium Renderer Settings"));
 
         this.prevScreen = prevScreen;
 
-        this.pages.add(RendererSettingsLayout.general());
-        this.pages.add(RendererSettingsLayout.quality());
-        this.pages.add(RendererSettingsLayout.performance());
-        this.pages.add(RendererSettingsLayout.advanced());
+        this.pages.add(SodiumGameOptionPages.general());
+        this.pages.add(SodiumGameOptionPages.quality());
+        this.pages.add(SodiumGameOptionPages.performance());
+        this.pages.add(SodiumGameOptionPages.advanced());
 
         this.checkPromptTimers();
     }
@@ -105,7 +105,7 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
         }
     }
 
-    private void openDonationPrompt(UserConfig options) {
+    private void openDonationPrompt(SodiumGameOptions options) {
         var prompt = new ScreenPrompt(this, DONATION_PROMPT_MESSAGE, 320, 190,
                 new ScreenPrompt.Action(Text.literal("Buy us a coffee"), this::openDonationPage));
         prompt.setFocused(true);
@@ -113,7 +113,7 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
         options.notifications.hasSeenDonationPrompt = true;
 
         try {
-            UserConfig.writeToDisk(options);
+            SodiumGameOptions.writeToDisk(options);
         } catch (IOException e) {
             SodiumClientMod.logger()
                     .error("Failed to update config file", e);
@@ -122,9 +122,9 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
 
     public static Screen createScreen(Screen currentScreen) {
         if (SodiumClientMod.options().isReadOnly()) {
-            return new ConfigCorruptedScreen(currentScreen, RendererSettingsScreen::new);
+            return new ConfigCorruptedScreen(currentScreen, SodiumOptionsGUI::new);
         } else {
-            return new RendererSettingsScreen(currentScreen);
+            return new SodiumOptionsGUI(currentScreen);
         }
     }
 
@@ -181,11 +181,11 @@ public class RendererSettingsScreen extends Screen implements ScreenPromptable {
     }
 
     private void hideDonationButton() {
-        UserConfig options = SodiumClientMod.options();
+        SodiumGameOptions options = SodiumClientMod.options();
         options.notifications.hasClearedDonationButton = true;
 
         try {
-            UserConfig.writeToDisk(options);
+            SodiumGameOptions.writeToDisk(options);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save configuration", e);
         }
