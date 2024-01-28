@@ -19,7 +19,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.text.OrderedText;
-import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
@@ -30,10 +29,7 @@ import org.lwjgl.glfw.GLFW;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 // TODO: Rename in Sodium 0.6
@@ -106,7 +102,8 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     }
 
     private void openDonationPrompt(SodiumGameOptions options) {
-        var prompt = new ScreenPrompt(this, DONATION_PROMPT_MESSAGE, 320, 190,
+
+        var prompt = new ScreenPrompt(this, Collections.singletonList(Text.translatable("sodium.prompt.donate.contents")), 320, 190,
                 new ScreenPrompt.Action(Text.translatable("sodium.prompt.donate.action"), this::openDonationPage));
         prompt.setFocused(true);
 
@@ -425,17 +422,5 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     @Override
     public Dim2i getDimensions() {
         return new Dim2i(0, 0, this.width, this.height);
-    }
-
-    private static final List<StringVisitable> DONATION_PROMPT_MESSAGE;
-
-    static {
-        DONATION_PROMPT_MESSAGE = List.of(
-                StringVisitable.concat(Text.literal("Hello!")),
-                StringVisitable.concat(Text.literal("It seems that you've been enjoying "), Text.literal("Sodium").withColor(0x27eb92), Text.literal(", the free and open-source optimization mod for Minecraft.")),
-                StringVisitable.concat(Text.literal("Mods like these are complex. They require "), Text.literal("thousands of hours").withColor(0xff6e00), Text.literal(" of development, debugging, and tuning to create the experience that players have come to expect.")),
-                StringVisitable.concat(Text.literal("If you'd like to show your token of appreciation, and support the development of our mod in the process, then consider "), Text.literal("buying us a coffee").withColor(0xed49ce), Text.literal(".")),
-                StringVisitable.concat(Text.literal("And thanks again for using our mod! We hope it helps you (and your computer.)"))
-        );
     }
 }

@@ -17,21 +17,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ConfigCorruptedScreen extends Screen {
-    private static final String TEXT_BODY_RAW = """
-        A problem occurred while trying to load the configuration file. This
-        can happen when the file has been corrupted on disk, or when trying
-        to manually edit the file by hand.
-        
-        If you continue, the configuration file will be reset back to known-good
-        defaults, and you will lose any changes that have since been made to your
-        Video Settings.
-        
-        More information about the error can be found in the log file.
-        """;
-
-    private static final List<Text> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
-            .map(Text::literal)
-            .collect(Collectors.toList());
 
     private static final int BUTTON_WIDTH = 140;
     private static final int BUTTON_HEIGHT = 20;
@@ -42,7 +27,7 @@ public class ConfigCorruptedScreen extends Screen {
     private final Function<Screen, Screen> nextScreen;
 
     public ConfigCorruptedScreen(@Nullable Screen prevScreen, @Nullable Function<Screen, Screen> nextScreen) {
-        super(Text.translatable("sodium.console.config_not_loaded.title"));
+        super(Text.translatable("sodium.console.config_corrupt.short"));
 
         this.prevScreen = prevScreen;
         this.nextScreen = nextScreen;
@@ -71,14 +56,7 @@ public class ConfigCorruptedScreen extends Screen {
         super.render(drawContext, mouseX, mouseY, delta);
 
         drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.name_renderer"), 32, 32, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_not_loaded.title"), 32, 48, 0xff0000);
-
-        for (int i = 0; i < TEXT_BODY.size(); i++) {
-            if (TEXT_BODY.get(i).getString().isEmpty()) {
-                continue;
-            }
-
-            drawContext.drawTextWithShadow(this.textRenderer, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
-        }
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.title"), 32, 48, 0xff0000);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents"), 32, 68, 0xffffff);
     }
 }
