@@ -293,7 +293,7 @@ public class OcclusionCuller {
     private void tryVisitNode(WriteQueue<RenderSection> queue, int x, int y, int z, int direction, int frame, Viewport viewport) {
         RenderSection section = this.getRenderSection(x, y, z);
 
-        if (section == null || isWithinFrustum(viewport, section)) {
+        if (section == null || !isWithinFrustum(viewport, section)) {
             return;
         }
 
