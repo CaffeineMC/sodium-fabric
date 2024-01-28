@@ -47,8 +47,10 @@ public abstract class DebugHudMixin {
         String version = SodiumClientMod.getVersion();
         Formatting color;
 
-        if (version.contains("+git.")) {
+        if (version.contains("-local")) {
             color = Formatting.RED;
+        } else if (version.contains("-snapshot")) {
+            color = Formatting.LIGHT_PURPLE;
         } else {
             color = Formatting.GREEN;
         }
