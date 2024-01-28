@@ -106,7 +106,11 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     }
 
     private void openDonationPrompt(SodiumGameOptions options) {
-        var prompt = new ScreenPrompt(this, Collections.singletonList(Text.translatable("sodium.prompt.donate.contents")), 320, 190,
+        var donateContents = Text.translatable("sodium.prompt.donate.contents.main",
+                Text.translatable("sodium.prompt.donate.contents.segment.1").withColor(0x27eb92),
+                Text.translatable("sodium.prompt.donate.contents.segment.2").withColor(0xff6e00),
+                Text.translatable("sodium.prompt.donate.contents.segment.3").withColor(0xed49ce));
+        var prompt = new ScreenPrompt(this, Collections.singletonList(donateContents), 320, 190,
                 new ScreenPrompt.Action(Text.translatable("sodium.prompt.donate.action"), this::openDonationPage));
         prompt.setFocused(true);
 
