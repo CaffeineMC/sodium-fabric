@@ -55,7 +55,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     private @Nullable ScreenPrompt prompt;
 
     private SodiumOptionsGUI(Screen prevScreen) {
-        super(Text.literal("Sodium Renderer Settings"));
+        super(Text.translatable("sodium.name_renderer.settings"));
 
         this.prevScreen = prevScreen;
 
@@ -107,7 +107,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
     private void openDonationPrompt(SodiumGameOptions options) {
         var prompt = new ScreenPrompt(this, DONATION_PROMPT_MESSAGE, 320, 190,
-                new ScreenPrompt.Action(Text.literal("Buy us a coffee"), this::openDonationPage));
+                new ScreenPrompt.Action(Text.translatable("sodium.prompt.donate.action"), this::openDonationPage));
         prompt.setFocused(true);
 
         options.notifications.hasSeenDonationPrompt = true;

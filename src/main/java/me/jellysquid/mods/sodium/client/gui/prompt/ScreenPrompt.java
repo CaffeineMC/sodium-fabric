@@ -74,7 +74,7 @@ public class ScreenPrompt implements Element, Drawable {
             textY += 8;
         }
 
-        this.closeButton = new FlatButtonWidget(new Dim2i((boxX + width) - 84, (boxY + height) - 24, 80, 20), Text.literal("Close"), this::close);
+        this.closeButton = new FlatButtonWidget(new Dim2i((boxX + width) - 84, (boxY + height) - 24, 80, 20), Text.translatable("sodium.options.buttons.close"), this::close);
         this.closeButton.setStyle(createButtonStyle());
 
         this.actionButton = new FlatButtonWidget(new Dim2i((boxX + width) - 198, (boxY + height) - 24, 110, 20), this.action.label, this::runAction);
