@@ -67,7 +67,13 @@
   "sodium.console.core_shaders_info": "Check the game log for detailed information.",
   "sodium.console.config_corrupt.title": "Could not load the configuration file",
   "sodium.console.config_corrupt.short": "Sodium failed to load the configuration file",
-  "sodium.console.config_corrupt.contents": "A problem occurred while trying to load the configuration file. This\ncan happen when the file has been corrupted on disk, or when trying\nto manually edit the file by hand.\n\nIf you continue, the configuration file will be reset back to known-good\ndefaults, and you will lose any changes that have since been made to your\\nVideo Settings.\n\nMore information about the error can be found in the log file.",
+  "sodium.console.config_corrupt.contents.1": "A problem occurred while trying to load the configuration file. This",
+  "sodium.console.config_corrupt.contents.2": "can happen when the file has been corrupted on disk, or when trying",
+  "sodium.console.config_corrupt.contents.3": "to manually edit the file by hand.",
+  "sodium.console.config_corrupt.contents.4": "If you continue, the configuration file will be reset back to known-good",
+  "sodium.console.config_corrupt.contents.5": "defaults, and you will lose any changes that have since been made to your",
+  "sodium.console.config_corrupt.contents.6": "Video Settings.",
+  "sodium.console.config_corrupt.contents.7": "More information about the error can be found in the log file.",
   "sodium.console.config_not_loaded": "The configuration file for Sodium has been corrupted, or is currently unreadable. Some options have been temporarily reset to their defaults. Please open the Video Settings screen to resolve this problem.",
   "sodium.console.config_file_was_reset": "The config file has been reset to known-good defaults."
 }

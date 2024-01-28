@@ -56,6 +56,12 @@ public class ConfigCorruptedScreen extends Screen {
 
         drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.name_renderer"), 32, 32, 0xffffff);
         drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.title"), 32, 48, 0xff0000);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents"), 32, 68, 0xffffff);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.1"), 32, 68, 0xffffff);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.2"), 32, 88, 0xffffff);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.3"), 32, 108, 0xffffff);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.4"), 32, 128, 0xffffff);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.5"), 32, 148, 0xffffff);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.6"), 32, 168, 0xffffff);
+        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.7"), 32, 188, 0xffffff);
     }
 }
