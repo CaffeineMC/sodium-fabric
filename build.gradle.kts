@@ -25,6 +25,10 @@ base {
 }
 
 loom {
+    mixin {
+        defaultRefmapName = "sodium.refmap.json"
+    }
+
     accessWidenerPath = file("src/main/resources/sodium.accesswidener")
 }
 
@@ -78,6 +82,11 @@ dependencies {
 }
 
 tasks {
+    getByName<JavaCompile>("compileDesktopJava") {
+        sourceCompatibility = JavaVersion.VERSION_1_8.toString()
+        targetCompatibility = JavaVersion.VERSION_1_8.toString()
+    }
+
     jar {
         from("${rootProject.projectDir}/COPYING")
         from("${rootProject.projectDir}/COPYING.LESSER")
