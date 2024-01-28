@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ConfigCorruptedScreen extends Screen {
-    private static final List<Text> TEXT_BODY = IntStream.rangeClosed(1, 7)
+    private static final List<Text> TEXT_BODY = IntStream.rangeClosed(1, 9)
             .mapToObj(i -> Text.translatable("sodium.console.config_corrupt.contents." + i))
             .collect(Collectors.toList());
 
