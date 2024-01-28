@@ -1,22 +1,25 @@
-import net.fabricmc.loom.task.RemapJarTask
-
 plugins {
     // Unlike most projects, we choose to pin the specific version of Loom.
     // This prevents a lot of issues where the build script can fail randomly because the Fabric Maven server
     // is not reachable for some reason, and it makes builds much more reproducible. Observation also shows that it
     // really helps to improve startup times on slow connections.
-    id 'fabric-loom' version '1.4.1'
+    id 'fabric-loom' version '1.5.7'
 }
 
-apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
-apply from: "${rootProject.projectDir}/gradle/java.gradle"
+apply plugin: "fabric-loom"
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 archivesBaseName = project.archives_base_name
 version = createVersionString()
 group = project.maven_group
 
 loom {
-    mixin.defaultRefmapName = "mixins.sodium.refmap.json"
+    mixin {
+        defaultRefmapName = "mixins.sodium.refmap.json"
+    }
+
     accessWidenerPath = file("src/main/resources/sodium.accesswidener")
 }
 
@@ -41,46 +44,16 @@ sourceSets {
         }
     }
 
-    // only includes /src/desktop/java/net/caffeinemc/mods/sodium/desktop/LaunchWarn.java
     // this source set is should be compiled with Java 8
-    launchWarn {
+    desktop {
         java {
             srcDir "src/desktop/java"
         }
     }
 }
 
-tasks.named('compileLaunchWarnJava') {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
-
-tasks.register('apiJar', Jar) {
-    archiveClassifier.set "api-dev"
-
-    from sourceSets.api.output
-}
-
-tasks.register('remapApiJar', RemapJarTask) {
-    dependsOn apiJar
-    archiveClassifier.set "api"
-
-    input = apiJar.archiveFile.get().asFile
-    addNestedDependencies = false
-}
-
-build.dependsOn apiJar
-build.dependsOn remapApiJar
-
-jar {
-    from sourceSets.api.output.classesDirs
-    from sourceSets.api.output.resourcesDir
-    from sourceSets.launchWarn.output.classesDirs // add launch warn to the main jar
-    manifest.attributes["Main-Class"] = "${project.main_class}"
-}
-
 dependencies {
-    //to change the versions see the gradle.properties file
+    // Sourced from the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
@@ -91,6 +64,42 @@ dependencies {
     modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
+}
+
+jar {
+    // License files
+    from "${rootProject.projectDir}/COPYING"
+    from "${rootProject.projectDir}/COPYING.LESSER"
+
+    // API files
+    from sourceSets.api.output.classesDirs
+    from sourceSets.api.output.resourcesDir
+
+    // Desktop application files
+    from sourceSets.desktop.output.classesDirs
+    from sourceSets.desktop.output.resourcesDir
+
+    manifest.attributes["Main-Class"] = "${project.main_class}"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.named('compileDesktopJava') {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+// ensure that the encoding is set to UTF-8, no matter what the system default is
+// this fixes some edge cases with special characters not displaying correctly
+// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
 }
 
 def createVersionString() {
