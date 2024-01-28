@@ -15,8 +15,13 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ConfigCorruptedScreen extends Screen {
+    private static final List<Text> TEXT_BODY = IntStream.rangeClosed(1, 7)
+            .mapToObj(i -> Text.translatable("sodium.console.config_corrupt.contents." + i))
+            .collect(Collectors.toList());
+
     private static final int BUTTON_WIDTH = 140;
     private static final int BUTTON_HEIGHT = 20;
 
@@ -56,12 +61,13 @@ public class ConfigCorruptedScreen extends Screen {
 
         drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.name_renderer"), 32, 32, 0xffffff);
         drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.title"), 32, 48, 0xff0000);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.1"), 32, 68, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.2"), 32, 88, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.3"), 32, 108, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.4"), 32, 128, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.5"), 32, 148, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.6"), 32, 168, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.translatable("sodium.console.config_corrupt.contents.7"), 32, 188, 0xffffff);
+
+        for (int i = 0; i < TEXT_BODY.size(); i++) {
+            if (TEXT_BODY.get(i).getString().isEmpty()) {
+                continue;
+            }
+
+            drawContext.drawTextWithShadow(this.textRenderer, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
+        }
     }
 }
