@@ -72,12 +72,7 @@ public class SortTriggering {
      * Triggers the sections that the given camera movement crosses face planes of.
      * 
      * @param triggerSectionCallback called for each section that is triggered
-     * @param lastCameraX            the camera x position before the movement
-     * @param lastCameraY            the camera y position before the movement
-     * @param lastCameraZ            the camera z position before the movement
-     * @param cameraX                the camera x position after the movement
-     * @param cameraY                the camera y position after the movement
-     * @param cameraZ                the camera z position after the movement
+     * @param movement the camera movement to trigger for
      */
     public void triggerSections(BiConsumer<Long, Boolean> triggerSectionCallback, CameraMovement movement) {
         triggeredNormals.clear();
@@ -97,7 +92,7 @@ public class SortTriggering {
             this.directTriggerCount = oldDirectTriggerCount;
         }
 
-        triggerSectionCallback = null;
+        this.triggerSectionCallback = null;
     }
 
     private boolean isCatchingUp() {
