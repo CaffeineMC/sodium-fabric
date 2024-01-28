@@ -11,7 +11,7 @@ import net.minecraft.util.math.ChunkSectionPos;
 /**
  * Performs Global Face Normal Indexing-based triggering as described in
  * https://hackmd.io/@douira100/sodium-sl-gfni
- * 
+ *
  * Note on precision: Global distances are stored as doubles while
  * section-relative distances are stored as floats. The distances of the camera
  * are calculated as doubles, but using float normal vectors (furthermore normal
@@ -57,13 +57,7 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
 
     @Override
     public void removeSection(long sectionPos, TranslucentData data) {
-        var iterator = this.normalLists.values().iterator();
-        while (iterator.hasNext()) {
-            var normalList = iterator.next();
-            if (this.removeSectionFromList(normalList, sectionPos)) {
-                iterator.remove();
-            }
-        }
+        this.normalLists.values().removeIf(normalList -> this.removeSectionFromList(normalList, sectionPos));
     }
 
     @Override
