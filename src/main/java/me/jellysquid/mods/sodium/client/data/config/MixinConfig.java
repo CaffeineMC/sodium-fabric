@@ -1,5 +1,6 @@
-package me.jellysquid.mods.sodium.mixin;
+package me.jellysquid.mods.sodium.client.data.config;
 
+import me.jellysquid.mods.sodium.mixin.MixinOption;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;

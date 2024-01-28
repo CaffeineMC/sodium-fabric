@@ -27,14 +27,6 @@ public class MinecraftClientMixin {
     @Unique
     private final LongArrayFIFOQueue fences = new LongArrayFIFOQueue();
 
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void postInit(RunArgs args, CallbackInfo ci) {
-        if (SodiumClientMod.options().isReadOnly()) {
-            var parent = MinecraftClient.getInstance().currentScreen;
-            MinecraftClient.getInstance().setScreen(new ConfigCorruptedScreen(() -> parent));
-        }
-    }
-
     /**
      * We run this at the beginning of the frame (except for the first frame) to give the previous frame plenty of time
      * to render on the GPU. This allows us to stall on ClientWaitSync for less time.

@@ -164,7 +164,7 @@ public class OcclusionCuller {
 
         // vanilla's "cylindrical fog" algorithm
         // max(length(distance.xz), abs(distance.y))
-        return (((dx * dx) + (dz * dz)) < (maxDistance * maxDistance)) || (Math.abs(dy) < maxDistance);
+        return (((dx * dx) + (dz * dz)) < (maxDistance * maxDistance)) && (Math.abs(dy) < maxDistance);
     }
 
     @SuppressWarnings("ManualMinMaxCalculation") // we know what we are doing.
@@ -293,7 +293,7 @@ public class OcclusionCuller {
     private void tryVisitNode(WriteQueue<RenderSection> queue, int x, int y, int z, int direction, int frame, Viewport viewport) {
         RenderSection section = this.getRenderSection(x, y, z);
 
-        if (section == null || isWithinFrustum(viewport, section)) {
+        if (section == null || !isWithinFrustum(viewport, section)) {
             return;
         }
 

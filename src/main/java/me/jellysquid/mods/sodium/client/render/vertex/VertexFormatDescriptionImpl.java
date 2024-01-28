@@ -4,8 +4,10 @@ import me.jellysquid.mods.sodium.mixin.core.render.VertexFormatAccessor;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.NoSuchElementException;
 
 public class VertexFormatDescriptionImpl implements VertexFormatDescription {
@@ -14,11 +16,29 @@ public class VertexFormatDescriptionImpl implements VertexFormatDescription {
 
     private final int[] offsets;
 
+    private final boolean isSimple;
+
     public VertexFormatDescriptionImpl(VertexFormat format, int id) {
         this.id = id;
         this.stride = format.getVertexSizeByte();
 
         this.offsets = getOffsets(format);
+        this.isSimple = checkSimple(format);
+    }
+
+    private static boolean checkSimple(VertexFormat format) {
+        EnumSet<CommonVertexAttribute> attributeSet = EnumSet.noneOf(CommonVertexAttribute.class);
+        var elementList = format.getElements();
+
+        for (int elementIndex = 0; elementIndex < elementList.size(); elementIndex++) {
+            var element = elementList.get(elementIndex);
+            var commonType = CommonVertexAttribute.getCommonType(element);
+            if (element != VertexFormats.PADDING_ELEMENT && (commonType == null || !attributeSet.add(commonType))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static int[] getOffsets(VertexFormat format) {
@@ -65,5 +85,10 @@ public class VertexFormatDescriptionImpl implements VertexFormatDescription {
     @Override
     public int stride() {
         return this.stride;
+    }
+
+    @Override
+    public boolean isSimpleFormat() {
+        return this.isSimple;
     }
 }
