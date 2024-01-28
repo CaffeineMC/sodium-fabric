@@ -17,7 +17,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ConfigCorruptedScreen extends Screen {
-
     private static final int BUTTON_WIDTH = 140;
     private static final int BUTTON_HEIGHT = 20;
 
