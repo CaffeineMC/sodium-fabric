@@ -59,7 +59,6 @@ public class NormalList {
      * normal index.
      * 
      * @param normal       The unit normal vector
-     * @param collectorKey The geometry collector index
      */
     NormalList(AlignableNormal normal) {
         this.normal = normal;

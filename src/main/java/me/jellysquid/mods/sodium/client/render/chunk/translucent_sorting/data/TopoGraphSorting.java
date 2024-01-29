@@ -14,7 +14,7 @@ import me.jellysquid.mods.sodium.client.util.collections.BitArray;
  * This class contains the sorting algorithms that do topological or distance
  * sorting. The algorithms are combined in this class to separate them from the
  * general management code in other classes.
- * 
+ *
  * Rough attempts at underapproximation of the visibility graph where the
  * conditions for visibility between quads are made more strict did not yield
  * significantly more robust topo sorting.
@@ -27,10 +27,10 @@ public class TopoGraphSorting {
      * Test if the given point is within the half space defined by the plane anchor
      * and the plane normal. The normal points away from the space considered to be
      * inside.
-     * 
-     * @param planeAnchor the anchor of the plane
-     * @param planeNormal the normal of the plane
-     * @param point       the point to test
+     *
+     * @param planeDistance dot product of the plane
+     * @param planeNormal   the normal of the plane
+     * @param point         the point to test
      */
     private static boolean pointOutsideHalfspace(float planeDistance, Vector3fc planeNormal, Vector3fc point) {
         return planeNormal.dot(point) > planeDistance;
@@ -118,14 +118,14 @@ public class TopoGraphSorting {
     /**
      * Checks if one quad is visible through the other quad. This accepts arbitrary
      * quads, even unaligned ones.
-     * 
+     *
      * @param quad              the quad through which the other quad is being
      *                          tested
      * @param other             the quad being tested
      * @param distancesByNormal a map of normals to sorted arrays of face plane
      *                          distances for disproving that the quads are visible
      *                          through eachother, null to disable
-     * 
+     *
      * @return true if the other quad is visible through the first quad
      */
     private static boolean quadVisibleThrough(TQuad quad, TQuad other,
@@ -175,7 +175,7 @@ public class TopoGraphSorting {
      * Performs a topological sort without constructing the full graph in memory by
      * doing a DFS on the implicit graph. Edges are tested as they are searched for
      * and if necessary separator planes are used to disprove visibility.
-     * 
+     *
      * @param indexBuffer       the buffer to write the topo sort result to
      * @param allQuads          the quads to sort
      * @param distancesByNormal a map of normals to sorted arrays of face plane
