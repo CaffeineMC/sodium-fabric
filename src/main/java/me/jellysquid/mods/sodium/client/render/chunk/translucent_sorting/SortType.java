@@ -46,7 +46,7 @@ public enum SortType {
 
     public final boolean needsDirectionMixing;
 
-    private SortType(boolean needsDirectionMixing) {
+    SortType(boolean needsDirectionMixing) {
         this.needsDirectionMixing = needsDirectionMixing;
     }
 }

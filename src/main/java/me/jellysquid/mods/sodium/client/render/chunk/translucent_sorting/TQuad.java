@@ -23,12 +23,12 @@ public class TQuad {
      */
     private static final int QUANTIZATION_FACTOR = 4;
 
-    private ModelQuadFacing facing;
-    private float[] extents;
+    private final ModelQuadFacing facing;
+    private final float[] extents;
+    private final int packedNormal;
+    private final float dotProduct;
     private Vector3fc center; // null on aligned quads
-    private int packedNormal;
     private Vector3fc quantizedNormal;
-    private float dotProduct;
 
     private TQuad(ModelQuadFacing facing, float[] extents, Vector3fc center, int packedNormal) {
         this.facing = facing;
@@ -125,7 +125,7 @@ public class TQuad {
         // the hash code needs to be particularly collision resistant
         int result = 1;
         result = 31 * result + Arrays.hashCode(this.extents);
-        if (facing.isAligned()) {
+        if (this.facing.isAligned()) {
             result = 31 * result + this.facing.hashCode();
         } else {
             result = 31 * result + this.packedNormal;
@@ -144,11 +144,11 @@ public class TQuad {
         var dZ = this.extents[5] - this.extents[2];
 
         if (dX == 0) {
-            return (float) (dY * dZ);
+            return dY * dZ;
         } else if (dY == 0) {
-            return (float) (dX * dZ);
+            return dX * dZ;
         } else if (dZ == 0) {
-            return (float) (dX * dY);
+            return dX * dY;
         } else {
             // non-flat aligned quad, weird edge case
             return 90;

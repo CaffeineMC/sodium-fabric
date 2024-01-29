@@ -46,15 +46,15 @@ public enum SortBehavior {
         return this.deferMode;
     }
 
-    public static enum SortMode {
+    public enum SortMode {
         NONE, STATIC, DYNAMIC
     }
 
-    public static enum PriorityMode {
+    public enum PriorityMode {
         NONE, NEARBY, ALL
     }
 
-    public static enum DeferMode {
+    public enum DeferMode {
         ALWAYS, ONE_FRAME, ZERO_FRAMES
     }
 }

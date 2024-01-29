@@ -39,13 +39,13 @@ import net.minecraft.util.math.ChunkSectionPos;
  * 
  * An instance of this class is created for each meshing task. It goes through
  * three stages:
- * 1. During meshing it collects the geometry and calculates some metrics on the
+ * 1. During meshing, it collects the geometry and calculates some metrics on the
  * fly. These are later used for the sort type heuristic.
  * 2. With {@link #finishRendering()} it finishes the geometry collection,
  * generates the quad list, and calculates additional metrics. Then the sort
  * type is determined with a heuristic based on the collected metrics. This
  * determines if block face culling can be enabled.
- * - Now the {@link BuiltSectionMeshParts} is generates which yields the vertex
+ * - Now the {@link BuiltSectionMeshParts} is generated, which yields the vertex
  * ranges.
  * 3. The vertex ranges and the mesh parts object are used by the collector in
  * the construction of the {@link TranslucentData} object. The data object
@@ -69,7 +69,7 @@ public class TranslucentGeometryCollector {
     private int alignedFacingBitmap = 0;
 
     // AABB of the geometry
-    private float[] extents = new float[] {
+    private final float[] extents = new float[] {
             Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY,
             Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY
     };
@@ -79,7 +79,7 @@ public class TranslucentGeometryCollector {
 
     // the maximum (or minimum for negative directions) of quads with a particular
     // facing. (Dot product of the normal with a vertex for all aligned facings)
-    private float[] alignedExtremes = new float[] {
+    private final float[] alignedExtremes = new float[] {
             Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY,
             Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY
     };
@@ -198,7 +198,7 @@ public class TranslucentGeometryCollector {
 
         if (facing.isAligned()) {
             // only update global extents if there are no unaligned quads since this is only
-            // used for the convex box test which doesn't work with unaligned quads anyways
+            // used for the convex box test which doesn't work with unaligned quads anyway
             if (!this.hasUnaligned) {
                 this.extents[0] = Math.max(this.extents[0], posXExtent);
                 this.extents[1] = Math.max(this.extents[1], posYExtent);
@@ -288,7 +288,7 @@ public class TranslucentGeometryCollector {
      * normals so that a static topo sort is attempted on it. -1 means the value is
      * unused and doesn't make sense to give.
      */
-    private static int[] STATIC_TOPO_SORT_ATTEMPT_LIMITS = new int[] { -1, -1, 250, 100, 50, 30 };
+    private static final int[] STATIC_TOPO_SORT_ATTEMPT_LIMITS = new int[] { -1, -1, 250, 100, 50, 30 };
 
     /**
      * Determines the sort type for the collected geometry from the section. It
@@ -319,7 +319,7 @@ public class TranslucentGeometryCollector {
      * each other, then a special fixed sort order is always a correct sort order.
      * This ordering sorts the two sets of face planes by their ascending
      * normal-relative distance. The ordering between the two normals is irrelevant
-     * as they can't be seen through each other anyways.
+     * as they can't be seen through each other anyway.
      * 
      * More heuristics can be performed here to conservatively determine if this
      * section could possibly have more than one translucent sort order.
@@ -328,40 +328,25 @@ public class TranslucentGeometryCollector {
      */
     private SortType sortTypeHeuristic() {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.getSortBehavior();
+        if (sortBehavior.getSortMode() == SortBehavior.SortMode.NONE) {
+            return SortType.NONE;
+        }
+
         int alignedNormalCount = Integer.bitCount(this.alignedFacingBitmap);
-        int alignedPlaneCount = alignedNormalCount;
-        if (this.alignedExtentsMultiple) {
-            alignedPlaneCount = 100;
-        }
-
-        int unalignedPlaneCount = 0;
-        if (!Float.isNaN(this.unalignedADistance1)) {
-            unalignedPlaneCount++;
-        }
-        if (!Float.isNaN(this.unalignedADistance2)) {
-            unalignedPlaneCount++;
-        }
-        if (!Float.isNaN(this.unalignedBDistance1)) {
-            unalignedPlaneCount++;
-        }
-        if (!Float.isNaN(this.unalignedBDistance2)) {
-            unalignedPlaneCount++;
-        }
-
-        int planeCount = alignedPlaneCount + unalignedPlaneCount;
+        int planeCount = getPlaneCount(alignedNormalCount);
 
         int unalignedNormalCount = 0;
-        if (unalignedANormal != -1) {
+        if (this.unalignedANormal != -1) {
             unalignedNormalCount++;
         }
-        if (unalignedBNormal != -1) {
+        if (this.unalignedBNormal != -1) {
             unalignedNormalCount++;
         }
 
         int normalCount = alignedNormalCount + unalignedNormalCount;
 
         // special case A
-        if (sortBehavior == SortBehavior.OFF || planeCount <= 1) {
+        if (planeCount <= 1) {
             return SortType.NONE;
         }
 
@@ -371,7 +356,7 @@ public class TranslucentGeometryCollector {
                     || this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_Z;
 
             // special case B
-            // if there are just two normals, they are exact opposites of eachother and they
+            // if there are just two normals, they are exact opposites of each other and they
             // each only have one distance, there is no way to see through one face to the
             // other.
             if (planeCount == 2 && opposingAlignedNormals) {
@@ -430,6 +415,29 @@ public class TranslucentGeometryCollector {
         }
 
         return SortType.DYNAMIC;
+    }
+
+    private int getPlaneCount(int alignedNormalCount) {
+        int alignedPlaneCount = alignedNormalCount;
+        if (this.alignedExtentsMultiple) {
+            alignedPlaneCount = 100;
+        }
+
+        int unalignedPlaneCount = 0;
+        if (!Float.isNaN(this.unalignedADistance1)) {
+            unalignedPlaneCount++;
+        }
+        if (!Float.isNaN(this.unalignedADistance2)) {
+            unalignedPlaneCount++;
+        }
+        if (!Float.isNaN(this.unalignedBDistance1)) {
+            unalignedPlaneCount++;
+        }
+        if (!Float.isNaN(this.unalignedBDistance2)) {
+            unalignedPlaneCount++;
+        }
+
+        return alignedPlaneCount + unalignedPlaneCount;
     }
 
     public SortType finishRendering() {
@@ -497,8 +505,8 @@ public class TranslucentGeometryCollector {
                 // TODO: investigate existing BSP build failures, then remove this logging
                 LOGGER.warn(
                         "BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates and world file or seed)",
-                        sectionPos);
-                var geometryPlanes = GeometryPlanes.fromQuadLists(sectionPos, this.quads);
+                        this.sectionPos);
+                var geometryPlanes = GeometryPlanes.fromQuadLists(this.sectionPos, this.quads);
                 return TopoSortDynamicData.fromMesh(
                         translucentMesh, cameraPos, this.quads, this.sectionPos,
                         geometryPlanes, buffer);
@@ -517,6 +525,7 @@ public class TranslucentGeometryCollector {
             var quad = quads[i];
             this.quadHash = this.quadHash * 31 + quad.getQuadHash() + i * 3;
         }
+        this.quadHashPresent = true;
         return this.quadHash;
     }
 
@@ -524,7 +533,7 @@ public class TranslucentGeometryCollector {
             TranslucentData oldData, BuiltSectionMeshParts translucentMesh, CombinedCameraPos cameraPos) {
         // means there is no translucent geometry
         if (translucentMesh == null) {
-            return NoData.forNoTranslucent(sectionPos);
+            return NoData.forNoTranslucent(this.sectionPos);
         }
 
         // re-use the original translucent data if it's the same. This reduces the

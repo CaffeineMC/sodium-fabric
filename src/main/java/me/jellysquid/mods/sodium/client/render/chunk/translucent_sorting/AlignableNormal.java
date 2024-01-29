@@ -55,15 +55,19 @@ public class AlignableNormal extends Vector3f {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (!super.equals(obj)) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         AlignableNormal other = (AlignableNormal) obj;
-        if (alignedDirection != other.alignedDirection)
+        if (this.alignedDirection != other.alignedDirection) {
             return false;
+        }
         return true;
     }
 
