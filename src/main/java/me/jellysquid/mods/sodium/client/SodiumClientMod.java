@@ -94,7 +94,9 @@ public class SodiumClientMod implements ClientModInitializer {
     }
 
     private static void updateFingerprint() {
-        if(CONFIG.notifications.forceDisableDonationPrompts) return;
+        if (CONFIG.notifications.forceDisableDonationPrompts) {
+            return;
+        }
 
         var current = FingerprintMeasure.create();
 
