@@ -55,8 +55,8 @@ public class SodiumGameOptions {
     }
 
     public static class QualitySettings {
-        public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
-        public GraphicsQuality leavesQuality = GraphicsQuality.DEFAULT;
+        public WeatherQuality weatherQuality = WeatherQuality.DEFAULT;
+        public LeavesQuality leavesQuality = LeavesQuality.DEFAULT;
 
         public boolean enableVignette = true;
     }
@@ -70,12 +70,54 @@ public class SodiumGameOptions {
 
     public enum GraphicsQuality implements TextProvider {
         DEFAULT("options.gamma.default"),
-        FANCY("options.clouds.fancy"),
-        FAST("options.clouds.fast");
+        FANCY("options.graphics.fancy"),
+        FAST("options.graphics.fast");
 
         private final Text name;
 
         GraphicsQuality(String name) {
+            this.name = Text.translatable(name);
+        }
+
+        @Override
+        public Text getLocalizedName() {
+            return this.name;
+        }
+
+        public boolean isFancy(GraphicsMode graphicsMode) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
+        }
+    }
+
+    public enum WeatherQuality implements TextProvider {
+        DEFAULT("options.gamma.default"),
+        FANCY("sodium.options.weather_quality.fancy"),
+        FAST("sodium.options.weather_quality.fast");
+
+        private final Text name;
+
+        WeatherQuality(String name) {
+            this.name = Text.translatable(name);
+        }
+
+        @Override
+        public Text getLocalizedName() {
+            return this.name;
+        }
+
+        public boolean isFancy(GraphicsMode graphicsMode) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
+        }
+    }
+
+    public enum LeavesQuality implements TextProvider {
+        DEFAULT("options.gamma.default"),
+        FANCY("sodium.options.leaves_quality.fancy"),
+        FAST("sodium.options.leaves_quality.fast");
+
+        private final Text name;
+
+        LeavesQuality(String name) {
             this.name = Text.translatable(name);
         }
 
