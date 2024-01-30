@@ -148,7 +148,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(CloudRenderMode.class, vanillaOpts)
                         .setName(Text.translatable("options.renderClouds"))
                         .setTooltip(Text.translatable("sodium.options.clouds_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { Text.translatable("options.off"), Text.translatable("sodium.options.clouds_quality.fast"), Text.translatable("sodium.options.clouds_quality.fancy") }))
+                        .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { Text.translatable("options.off"), Text.translatable("options.clouds.fast"), Text.translatable("options.clouds.fancy") }))
                         .setBinding((opts, value) -> {
                             opts.getCloudRenderMode().setValue(value);
 
