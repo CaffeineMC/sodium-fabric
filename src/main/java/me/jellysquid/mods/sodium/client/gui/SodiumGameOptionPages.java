@@ -36,25 +36,6 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName(Text.translatable("options.fullscreen.resolution"))
-                        .setTooltip(Text.translatable("options.fullscreen.resolution"))
-                        .setControl(option -> new SliderControl(option, 0, null != window.getMonitor()? window.getMonitor().getVideoModeCount(): 0, 1, ControlValueFormatter.resolution()))
-                        .setBinding((options, value) -> {
-                            if (null != window.getMonitor()) {
-                                window.setVideoMode(0 == value? Optional.empty(): Optional.of(window.getMonitor().getVideoMode(value - 1)));
-                            }
-                        }, options -> {
-                            if (null == window.getMonitor()) {
-                                return 0;
-                            } else {
-                                Optional<VideoMode> optional = window.getVideoMode();
-                                return optional.map((videoMode) -> window.getMonitor().findClosestVideoModeIndex(videoMode) + 1).orElse(0);
-                            }
-                        })
-                        .setImpact(OptionImpact.HIGH)
-                        .setFlags(OptionFlag.REQUIRES_VIDEOMODE_RELOAD)
-                        .build())
-                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.renderDistance"))
                         .setTooltip(Text.translatable("sodium.options.view_distance.tooltip"))
                         .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
@@ -107,6 +88,25 @@ public class SodiumGameOptionPages {
                                 opts.getFullscreen().setValue(window.isFullscreen());
                             }
                         }, (opts) -> opts.getFullscreen().getValue())
+                        .build())
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName(Text.translatable("options.fullscreen.resolution"))
+                        .setTooltip(Text.translatable("options.fullscreen.resolution"))
+                        .setControl(option -> new SliderControl(option, 0, null != window.getMonitor()? window.getMonitor().getVideoModeCount(): 0, 1, ControlValueFormatter.resolution()))
+                        .setBinding((options, value) -> {
+                            if (null != window.getMonitor()) {
+                                window.setVideoMode(0 == value? Optional.empty(): Optional.of(window.getMonitor().getVideoMode(value - 1)));
+                            }
+                        }, options -> {
+                            if (null == window.getMonitor()) {
+                                return 0;
+                            } else {
+                                Optional<VideoMode> optional = window.getVideoMode();
+                                return optional.map((videoMode) -> window.getMonitor().findClosestVideoModeIndex(videoMode) + 1).orElse(0);
+                            }
+                        })
+                        .setImpact(OptionImpact.HIGH)
+                        .setFlags(OptionFlag.REQUIRES_VIDEOMODE_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(Text.translatable("options.vsync"))

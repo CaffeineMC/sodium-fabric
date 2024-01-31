@@ -69,7 +69,7 @@ public class SliderControl implements Control<Integer> {
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
             this.formatter = formatter;
 
-            this.sliderBounds = new Rect2i(dim.getLimitX() - 96, dim.getCenterY() - 5, 90, 10);
+            this.sliderBounds = new Rect2i(dim.getLimitX() - 56, dim.getCenterY() - 5, 50, 10);
             this.sliderHeld = false;
         }
 
