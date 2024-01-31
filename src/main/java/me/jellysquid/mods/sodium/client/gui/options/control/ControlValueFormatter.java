@@ -37,7 +37,7 @@ public interface ControlValueFormatter {
             } else if (0 == v) {
                 return Text.translatable("options.fullscreen.current");
             } else {
-                return Text.literal(monitor.getVideoMode(v - 1).toString());
+                return Text.literal(monitor.getVideoMode(v - 1).toString().replace(" (24bit)",""));
             }
         };
     }

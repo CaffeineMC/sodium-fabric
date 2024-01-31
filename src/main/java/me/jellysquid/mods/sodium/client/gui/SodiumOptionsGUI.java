@@ -217,7 +217,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
             // Add each option's control element
             for (Option<?> option : group.getOptions()) {
                 Control<?> control = option.getControl();
-                ControlElement<?> element = control.createElement(new Dim2i(x, y, 250, 18));
+                ControlElement<?> element = control.createElement(new Dim2i(x, y, 206, 18));
 
                 this.addDrawableChild(element);
 
@@ -290,7 +290,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         int textPadding = 3;
         int boxPadding = 3;
 
-        int boxWidth = 160;
+        int boxWidth = 200;
 
         int boxY = dim.y();
         int boxX = dim.getLimitX() + boxPadding;
