@@ -77,7 +77,7 @@ public class SliderControl implements Control<Integer> {
         public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
             super.render(drawContext, mouseX, mouseY, delta);
 
-            if (this.option.isAvailable() && (this.hovered || this.isFocused())) {
+            if (this.option.isAvailable()) { // && (this.hovered || this.isFocused())) {
                 this.renderSlider(drawContext);
             } else {
                 this.renderStandaloneValue(drawContext);
@@ -102,21 +102,20 @@ public class SliderControl implements Control<Integer> {
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
 
+            String label = this.formatter.format(this.option.getValue()).getString();
+            int labelWidth = this.font.getWidth(label);
+
+            this.drawString(drawContext, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
+
             this.thumbPosition = this.getThumbPositionForValue(this.option.getValue());
 
             double thumbOffset = MathHelper.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
 
             int thumbX = (int) (sliderX + thumbOffset - THUMB_WIDTH);
-            int trackY = (int) (sliderY + (sliderHeight / 2f) - ((double) TRACK_HEIGHT / 2));
+            int trackY = sliderY + sliderHeight;
 
-            this.drawRect(drawContext, thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
+            this.drawRect(drawContext, thumbX, trackY + 2*TRACK_HEIGHT,thumbX + (THUMB_WIDTH * 2), trackY - TRACK_HEIGHT, 0xFFFFFFFF);
             this.drawRect(drawContext, sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
-
-            String label = String.valueOf(this.getIntValue());
-
-            int labelWidth = this.font.getWidth(label);
-
-            this.drawString(drawContext, label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
         }
 
         public int getIntValue() {

@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.util.Monitor;
 import net.minecraft.text.Text;
 
 public interface ControlValueFormatter {
@@ -25,6 +27,19 @@ public interface ControlValueFormatter {
 
     static ControlValueFormatter biomeBlend() {
         return (v) -> (v == 0) ? Text.translatable("gui.none") : Text.translatable("sodium.options.biome_blend.value", v);
+    }
+
+    static ControlValueFormatter resolution() {
+        Monitor monitor = MinecraftClient.getInstance().getWindow().getMonitor();
+        return (v) -> {
+            if (null == monitor) {
+                return Text.translatable("options.fullscreen.unavailable");
+            } else if (0 == v) {
+                return Text.translatable("options.fullscreen.current");
+            } else {
+                return Text.literal(monitor.getVideoMode(v - 1).toString());
+            }
+        };
     }
 
     Text format(int value);
