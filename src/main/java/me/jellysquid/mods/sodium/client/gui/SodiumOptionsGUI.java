@@ -75,8 +75,8 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
         var options = SodiumClientMod.options();
 
-        // If the user has disabled the nags forcefully (by config), or has already seen the prompt, don't show it again.
-        if (options.notifications.forceDisableDonationPrompts || options.notifications.hasSeenDonationPrompt) {
+        // If the user has already seen the prompt, don't show it again.
+        if (options.notifications.hasSeenDonationPrompt) {
             return;
         }
 
@@ -164,7 +164,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         this.donateButton = new FlatButtonWidget(new Dim2i(this.width - 128, 6, 100, 20), Text.translatable("sodium.options.buttons.donate"), this::openDonationPage);
         this.hideDonateButton = new FlatButtonWidget(new Dim2i(this.width - 26, 6, 20, 20), Text.literal("x"), this::hideDonationButton);
 
-        if (SodiumClientMod.options().notifications.hasClearedDonationButton || SodiumClientMod.options().notifications.forceDisableDonationPrompts) {
+        if (SodiumClientMod.options().notifications.hasClearedDonationButton) {
             this.setDonationButtonVisibility(false);
         }
 
