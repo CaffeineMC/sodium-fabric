@@ -1,20 +1,6 @@
-### :warning: Maintenance Status
-
-Sodium is no longer actively maintained by the original author (@jellysquid3). Future updates are not guaranteed, and it is unlikely that any new features or
-enhancements will be implemented going forward.
-
-<sub>The [last release](https://github.com/CaffeineMC/sodium-fabric/releases/tag/mc1.20.1-0.5.3) is signed
-(see [public keys](https://github.com/jellysquid3.gpg)) to provide attestation of this notice, and the published source code/binaries.</sub>
-
----
-
 <img src="src/main/resources/assets/sodium/icon.png" width="128">
 
 # Sodium (for Fabric)
-
-![GitHub license](https://img.shields.io/github/license/CaffeineMC/sodium-fabric.svg)
-![GitHub issues](https://img.shields.io/github/issues/CaffeineMC/sodium-fabric.svg)
-![GitHub tag](https://img.shields.io/github/tag/CaffeineMC/sodium-fabric.svg)
 
 Sodium is a free and open-source optimization mod for the Minecraft client which improves frame rates and reduces
 micro-stutter  while fixing many graphical issues in Minecraft.
@@ -80,7 +66,7 @@ them up to date. For many Linux distributions, these dependencies will be standa
 repositories.
 
 - OpenJDK 17
-    - We recommend using the [Eclipse Termurin](https://adoptium.net/) distribution, as it's known to be high quality 
+    - We recommend using the [Eclipse Temurin](https://adoptium.net/) distribution, as it's known to be high quality 
       and to work without issues.
 - Gradle 8.2.1 (optional)
     - The [Gradle wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:using_wrapper) is provided
@@ -92,8 +78,8 @@ repositories.
 
 ## 📜 License
 
-Except where otherwise stated, this source code is provided under the terms of the GNU LGPLv3, a free and open-source
-license. For more information, please see the [license file](LICENSE.txt).
+Except where otherwise stated, the files in this repository are provided under the terms of the GNU LGPLv3, a free and
+open-source license. For more information, please see the [license file](COPYING.LESSER).
 
 When submitting pull requests to this repository, it is assumed that you are licensing your contribution under the
 GNU LGPLv3, unless you state otherwise.

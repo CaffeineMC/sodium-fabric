@@ -8,10 +8,10 @@ import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.WorldGenerationProgressTracker;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
+import net.minecraft.client.gui.screen.world.LevelLoadingScreen;
 import net.minecraft.client.render.*;
 
+import net.minecraft.server.WorldGenerationProgressTracker;
 import net.minecraft.world.chunk.ChunkStatus;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;

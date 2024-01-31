@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.model.quad;
 
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.util.math.Direction;
 
 /**
  * Provides a read-only view of a model quad. For mutable access to a model quad, see {@link ModelQuadViewMutable}.
@@ -51,11 +52,11 @@ public interface ModelQuadView {
      * @return The sprite texture used by this quad, or null if none is attached
      */
     Sprite getSprite();
-
+    
     /**
-     * @return The normal vector of the quad in 3-byte packed format
+     * @return The face used by this quad for lighting effects
      */
-    int getNormal();
+    Direction getLightFace();
 
     default boolean hasColor() {
         return this.getColorIndex() != -1;

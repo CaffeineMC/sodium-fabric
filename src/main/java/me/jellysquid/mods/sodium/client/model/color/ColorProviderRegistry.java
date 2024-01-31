@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.model.color;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import me.jellysquid.mods.sodium.client.model.color.interop.BlockColorsExtended;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -17,6 +18,8 @@ public class ColorProviderRegistry {
     private final Reference2ReferenceMap<Block, ColorProvider<BlockState>> blocks = new Reference2ReferenceOpenHashMap<>();
     private final Reference2ReferenceMap<Fluid, ColorProvider<FluidState>> fluids = new Reference2ReferenceOpenHashMap<>();
 
+    private final ReferenceSet<Block> overridenBlocks;
+
     public ColorProviderRegistry(BlockColors blockColors) {
         var providers = BlockColorsExtended.getProviders(blockColors);
 
@@ -24,13 +27,15 @@ public class ColorProviderRegistry {
             this.blocks.put(entry.getKey(), DefaultColorProviders.adapt(entry.getValue()));
         }
 
+        this.overridenBlocks = BlockColorsExtended.getOverridenVanillaBlocks(blockColors);
+
         this.installOverrides();
     }
 
     // TODO: Allow mods to install their own color resolvers here
     private void installOverrides() {
         this.registerBlocks(DefaultColorProviders.GrassColorProvider.BLOCKS,
-                Blocks.GRASS_BLOCK, Blocks.FERN, Blocks.GRASS, Blocks.POTTED_FERN,
+                Blocks.GRASS_BLOCK, Blocks.FERN, Blocks.SHORT_GRASS, Blocks.POTTED_FERN,
                 Blocks.PINK_PETALS, Blocks.SUGAR_CANE, Blocks.LARGE_FERN, Blocks.TALL_GRASS);
 
         this.registerBlocks(DefaultColorProviders.FoliageColorProvider.BLOCKS,
@@ -46,6 +51,9 @@ public class ColorProviderRegistry {
 
     private void registerBlocks(ColorProvider<BlockState> resolver, Block... blocks) {
         for (var block : blocks) {
+            // Do not register our resolver if the block is overriden
+            if (this.overridenBlocks.contains(block))
+                continue;
             this.blocks.put(block, resolver);
         }
     }

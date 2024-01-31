@@ -1,17 +1,18 @@
 {
-  "package" : "me.jellysquid.mods.sodium.mixin",
-  "required" : true,
-  "compatibilityLevel" : "JAVA_17",
-  "plugin" : "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
-  "injectors" : {
-    "defaultRequire" : 1
+  "package": "me.jellysquid.mods.sodium.mixin",
+  "required": true,
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+  "injectors": {
+    "defaultRequire": 1
   },
-  "overwrites" : {
-    "conformVisibility" : true
+  "overwrites": {
+    "conformVisibility": true
   },
-  "client" : [
+  "client": [
     "core.MinecraftClientMixin",
     "core.WindowMixin",
+    "core.gui.WorldLoadingStateMixin",
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
     "core.model.quad.BakedQuadMixin",
@@ -21,9 +22,10 @@
     "core.render.immediate.consumer.OutlineVertexConsumerMixin",
     "core.render.immediate.consumer.OverlayVertexConsumerMixin",
     "core.render.immediate.consumer.SpriteTexturedVertexConsumerMixin",
+    "core.render.immediate.consumer.VertexConsumerProviderImmediateMixin",
     "core.render.immediate.consumer.VertexConsumersMixin$DualMixin",
     "core.render.immediate.consumer.VertexConsumersMixin$UnionMixin",
-    "core.render.world.ChunkBuilderMixin",
+    "core.render.world.BufferBuilderStorageMixin",
     "core.render.world.WorldRendererMixin",
     "core.world.biome.ClientWorldMixin",
     "core.world.chunk.EmptyPaletteStorageMixin",
@@ -49,7 +51,6 @@
     "features.render.gui.font.GlyphRendererMixin",
     "features.render.gui.outlines.WorldRendererMixin",
     "features.render.immediate.DirectionMixin",
-    "features.render.immediate.buffer_builder.BufferBuilderMixin",
     "features.render.immediate.buffer_builder.intrinsics.BufferBuilderMixin",
     "features.render.immediate.buffer_builder.sorting.BufferBuilderMixin",
     "features.render.immediate.buffer_builder.sorting.VertexSorterMixin",
@@ -61,7 +62,6 @@
     "features.render.particle.BillboardParticleMixin",
     "features.render.particle.ParticleManagerMixin",
     "features.render.particle.ParticleMixin",
-    "features.render.world.clouds.BackgroundRendererInvoker",
     "features.render.world.clouds.WorldRendererMixin",
     "features.render.world.sky.BackgroundRendererMixin",
     "features.render.world.sky.ClientWorldMixin",
@@ -69,9 +69,12 @@
     "features.shader.uniform.ShaderProgramMixin",
     "features.textures.NativeImageAccessor",
     "features.textures.SpriteContentsInvoker",
+    "features.textures.animations.tracking.BlockModelRendererMixin",
     "features.textures.animations.tracking.DrawContextMixin",
     "features.textures.animations.tracking.SpriteAtlasTextureMixin",
     "features.textures.animations.tracking.SpriteBillboardParticleMixin",
+    "features.textures.animations.tracking.SpriteContentsAnimationAccessor",
+    "features.textures.animations.tracking.SpriteContentsAnimationFrameAccessor",
     "features.textures.animations.tracking.SpriteContentsAnimatorImplMixin",
     "features.textures.animations.tracking.SpriteContentsMixin",
     "features.textures.animations.upload.SpriteContentsAccessor",
@@ -82,8 +85,6 @@
     "features.textures.mipmaps.MipmapHelperMixin",
     "features.textures.mipmaps.SpriteContentsMixin",
     "features.world.biome.BiomeMixin",
-    "features.world.biome.FoliageColorsAccessor",
-    "features.world.biome.GrassColorsAccessor",
     "features.world.storage.ClientChunkMapMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.event_loop.RenderSystemMixin"
