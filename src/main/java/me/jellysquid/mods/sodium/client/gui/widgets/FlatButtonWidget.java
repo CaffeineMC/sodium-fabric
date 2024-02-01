@@ -6,6 +6,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.client.gui.navigation.GuiNavigationPath;
+import net.minecraft.client.input.KeyCodes;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
@@ -85,7 +86,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         if (!this.isFocused())
             return false;
 
-        if (keyCode == InputUtil.GLFW_KEY_ENTER) {
+        if (KeyCodes.isToggle(keyCode)) {
             doAction();
             return true;
         }
