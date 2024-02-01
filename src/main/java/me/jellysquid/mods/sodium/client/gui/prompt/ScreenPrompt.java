@@ -34,6 +34,19 @@ public class ScreenPrompt implements Element, Drawable {
         this.action = action;
     }
 
+    public void init() {
+        var parentDimensions = this.parent.getDimensions();
+
+        int boxX = (parentDimensions.width() / 2) - (width / 2);
+        int boxY = (parentDimensions.height() / 2) - (height / 2);
+
+        this.closeButton = new FlatButtonWidget(new Dim2i((boxX + width) - 84, (boxY + height) - 24, 80, 20), Text.literal("Close"), this::close);
+        this.closeButton.setStyle(createButtonStyle());
+
+        this.actionButton = new FlatButtonWidget(new Dim2i((boxX + width) - 198, (boxY + height) - 24, 110, 20), this.action.label, this::runAction);
+        this.actionButton.setStyle(createButtonStyle());
+    }
+
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
         var matrices = drawContext.getMatrices();
         matrices.push();
@@ -74,12 +87,6 @@ public class ScreenPrompt implements Element, Drawable {
             textY += 8;
         }
 
-        this.closeButton = new FlatButtonWidget(new Dim2i((boxX + width) - 84, (boxY + height) - 24, 80, 20), Text.literal("Close"), this::close);
-        this.closeButton.setStyle(createButtonStyle());
-
-        this.actionButton = new FlatButtonWidget(new Dim2i((boxX + width) - 198, (boxY + height) - 24, 110, 20), this.action.label, this::runAction);
-        this.actionButton.setStyle(createButtonStyle());
-
         for (var button : getWidgets()) {
             button.render(drawContext, mouseX, mouseY, delta);
         }
@@ -100,8 +107,8 @@ public class ScreenPrompt implements Element, Drawable {
     }
 
     @NotNull
-    private List<AbstractWidget> getWidgets() {
-        return List.of(this.closeButton, this.actionButton);
+    public List<AbstractWidget> getWidgets() {
+        return List.of(this.actionButton, this.closeButton);
     }
 
     @Override
@@ -128,6 +135,7 @@ public class ScreenPrompt implements Element, Drawable {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             this.close();
+            return true;
         }
 
         return Element.super.keyPressed(keyCode, scanCode, modifiers);
