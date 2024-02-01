@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyCodes;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.Validate;
@@ -112,7 +113,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
             if (!isFocused()) return false;
 
-            if (keyCode == InputUtil.GLFW_KEY_ENTER) {
+            if (KeyCodes.isToggle(keyCode)) {
                 cycleControl(Screen.hasShiftDown());
                 return true;
             }
