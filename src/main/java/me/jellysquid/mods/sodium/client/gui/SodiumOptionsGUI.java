@@ -16,6 +16,7 @@ import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.text.OrderedText;
@@ -140,6 +141,10 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         super.init();
 
         this.rebuildGUI();
+
+        if (this.prompt != null) {
+            this.prompt.init();
+        }
     }
 
     private void rebuildGUI() {
@@ -374,11 +379,11 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.prompt != null) {
-            return this.prompt.keyPressed(keyCode, scanCode, modifiers);
+        if (this.prompt != null && this.prompt.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
         }
 
-        if (keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+        if (this.prompt == null && keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
             MinecraftClient.getInstance().setScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
 
             return true;
@@ -411,6 +416,11 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     @Override
     public void close() {
         this.client.setScreen(this.prevScreen);
+    }
+
+    @Override
+    public List<? extends Element> children() {
+        return this.prompt == null ? super.children() : this.prompt.getWidgets();
     }
 
     @Override
