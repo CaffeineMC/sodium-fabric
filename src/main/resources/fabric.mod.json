@@ -94,6 +94,7 @@
     "rayon": "<=1.7.2+1.20.1",
     "reeses-sodium-options": "<1.7.1",
     "sodium-extra": "<0.5.4",
-    "sspb": "<3.2.0"
+    "sspb": "<3.2.0",
+    "supplementaries": "<=1.20-2.7.32"
   }
 }
