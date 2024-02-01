@@ -16,6 +16,7 @@ import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.text.OrderedText;
@@ -75,8 +76,8 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
         var options = SodiumClientMod.options();
 
-        // If the user has disabled the nags forcefully (by config), or has already seen the prompt, don't show it again.
-        if (options.notifications.forceDisableDonationPrompts || options.notifications.hasSeenDonationPrompt) {
+        // If the user has already seen the prompt, don't show it again.
+        if (options.notifications.hasSeenDonationPrompt) {
             return;
         }
 
@@ -143,6 +144,10 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         super.init();
 
         this.rebuildGUI();
+
+        if (this.prompt != null) {
+            this.prompt.init();
+        }
     }
 
     private void rebuildGUI() {
@@ -168,7 +173,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         this.donateButton = new FlatButtonWidget(new Dim2i(this.width - 128, 6, 100, 20), Text.translatable("sodium.options.buttons.donate"), this::openDonationPage);
         this.hideDonateButton = new FlatButtonWidget(new Dim2i(this.width - 26, 6, 20, 20), Text.literal("x"), this::hideDonationButton);
 
-        if (SodiumClientMod.options().notifications.hasClearedDonationButton || SodiumClientMod.options().notifications.forceDisableDonationPrompts) {
+        if (SodiumClientMod.options().notifications.hasClearedDonationButton) {
             this.setDonationButtonVisibility(false);
         }
 
@@ -376,11 +381,11 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.prompt != null) {
-            return this.prompt.keyPressed(keyCode, scanCode, modifiers);
+        if (this.prompt != null && this.prompt.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
         }
 
-        if (keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+        if (this.prompt == null && keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
             MinecraftClient.getInstance().setScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
 
             return true;
@@ -413,6 +418,11 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     @Override
     public void close() {
         this.client.setScreen(this.prevScreen);
+    }
+
+    @Override
+    public List<? extends Element> children() {
+        return this.prompt == null ? super.children() : this.prompt.getWidgets();
     }
 
     @Override
