@@ -56,7 +56,6 @@
   "sodium.options.use_no_error_context.tooltip": "When enabled, the OpenGL context will be created with error checking disabled. This slightly improves rendering performance, but it can make debugging sudden unexplained crashes much harder.",
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",
-  "sodium.options.buttons.close": "Close",
   "sodium.options.buttons.donate": "Buy us a coffee!",
   "sodium.prompt.donate.contents.main": "Hello!\n\nIt seems that you've been enjoying %s, the free and open-source optimization mod for Minecraft.\n\nMods like these are complex. They require %s of development, debugging, and tuning to create the experience that players have come to expect.\n\nIf you'd like to show your token of appreciation, and support the development of our mod in the process, then consider %s.\n\nAnd thanks again for using our mod! We hope it helps you (and your computer.)",
   "sodium.prompt.donate.contents.segment.1": "Sodium",
