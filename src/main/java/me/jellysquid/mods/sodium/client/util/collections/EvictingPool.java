@@ -16,7 +16,7 @@ import java.util.Iterator;
  */
 public class EvictingPool<E> extends AbstractCollection<E> {
     E[] pool;
-    IntIntMutablePair[] links;
+    Link[] links;
     int oldestIdx;
     int newestIdx;
 
@@ -27,8 +27,8 @@ public class EvictingPool<E> extends AbstractCollection<E> {
 
     public EvictingPool(int size) {
         this.pool = (E[]) new Object[size];
-        this.links = new IntIntMutablePair[size];
-        Arrays.asList(this.links).replaceAll(i -> new IntIntMutablePair(-1, -1));
+        this.links = new Link[size];
+        Arrays.asList(this.links).replaceAll(i -> new Link(-1, -1));
 
         this.free = new IntArrayFIFOQueue();
         this.top = 0;
@@ -47,8 +47,8 @@ public class EvictingPool<E> extends AbstractCollection<E> {
                 ++this.top;
             } else {
                 pool[this.oldestIdx] = item;
-                int nextOldest = links[this.oldestIdx].rightInt();
-                links[nextOldest].left(-1);
+                int nextOldest = links[this.oldestIdx].next();
+                links[nextOldest].prev(-1);
 
                 this.newest(this.oldestIdx);
                 this.oldestIdx = nextOldest;
@@ -64,17 +64,19 @@ public class EvictingPool<E> extends AbstractCollection<E> {
 
     public void remove(int index) {
         free.enqueue(index);
-        IntIntMutablePair link = this.links[index];
+        Link link = this.links[index];
+
+        System.out.println(link);
 
         if (index == oldestIdx) {
-            links[link.leftInt()].right(-1);
-            this.oldestIdx = link.leftInt();
+            links[link.next()].prev(-1);
+            this.oldestIdx = link.next();
         } else if (index == newestIdx) {
-            links[link.rightInt()].left(-1);
-            this.newestIdx = link.rightInt();
+            links[link.prev()].next(-1);
+            this.newestIdx = link.prev();
         } else {
-            links[link.leftInt()].right(link.rightInt());
-            links[link.rightInt()].left(link.leftInt());
+            links[link.prev()].next(link.next());
+            links[link.next()].prev(link.prev());
         }
 
         pool[index] = null;
@@ -83,10 +85,6 @@ public class EvictingPool<E> extends AbstractCollection<E> {
     @Override
     public int size() {
         return top - free.size();
-    }
-
-    public boolean isEmpty() {
-        return size() == 0;
     }
 
     public @NotNull Iterator<E> iterator() {
@@ -105,8 +103,33 @@ public class EvictingPool<E> extends AbstractCollection<E> {
         int prevNewest = this.newestIdx;
         this.newestIdx = idx;
 
-        links[prevNewest].right(newestIdx);
-        links[newestIdx] = new IntIntMutablePair(prevNewest, -1);
+        if (prevNewest >= 0) links[prevNewest].next(newestIdx);
+        links[newestIdx] = new Link(prevNewest, -1);
+    }
+
+    /**
+     * Added to prevent confusion on left/right
+     */
+    private static class Link extends IntIntMutablePair {
+        public Link(int prev, int next) {
+            super(prev, next);
+        }
+
+        public int next() {
+            return this.right;
+        }
+
+        public void next(int next) {
+            this.right = next;
+        }
+
+        public int prev() {
+            return this.left;
+        }
+
+        public void prev(int prev) {
+            this.left = prev;
+        }
     }
 
     private abstract class Itr implements Iterator<E> {
@@ -121,7 +144,7 @@ public class EvictingPool<E> extends AbstractCollection<E> {
 
     private class LinkItr extends Itr {
         boolean beganIterating;
-        IntIntMutablePair currentLink;
+        Link currentLink;
 
         LinkItr() {
             this.cursor = -1;
@@ -130,7 +153,7 @@ public class EvictingPool<E> extends AbstractCollection<E> {
 
         @Override
         public boolean hasNext() {
-            return this.currentLink.rightInt() != -1;
+            return this.currentLink.next() != -1;
         }
 
         @Override
@@ -139,7 +162,7 @@ public class EvictingPool<E> extends AbstractCollection<E> {
                 this.cursor = EvictingPool.this.newestIdx;
                 beganIterating = true;
             } else {
-                this.cursor = this.currentLink.rightInt();
+                this.cursor = this.currentLink.next();
             }
 
             this.currentLink = EvictingPool.this.links[this.cursor];
