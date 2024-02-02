@@ -5,13 +5,12 @@ import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockRenderView;
-
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.Arrays;
 
 import static me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess.*;
@@ -49,12 +48,12 @@ public class FlatLightPipeline implements LightPipeline {
         }
 
         Arrays.fill(out.lm, lightmap);
-        Arrays.fill(out.br, this.lightCache.getWorld().getBrightness(lightFace, shade));
+        Arrays.fill(out.br, this.lightCache.getWorld().getShade(lightFace, shade));
     }
 
     /**
      * When vanilla computes an offset lightmap with flat lighting, it passes the original BlockState but the
-     * offset BlockPos to {@link WorldRenderer#getLightmapCoordinates(BlockRenderView, BlockState, BlockPos)}.
+     * offset BlockPos to {@link LevelRenderer#getLightColor(BlockAndTintGetter, BlockState, BlockPos)}.
      * This does not make much sense but fixes certain issues, primarily dark quads on light-emitting blocks
      * behind tinted glass. {@link LightDataAccess} cannot efficiently store lightmaps computed with
      * inconsistent values so this method exists to mirror vanilla behavior as closely as possible.
@@ -64,11 +63,11 @@ public class FlatLightPipeline implements LightPipeline {
 
         // Check emissivity of the origin state
         if (unpackEM(word)) {
-            return LightmapTextureManager.MAX_LIGHT_COORDINATE;
+            return LightTexture.FULL_BRIGHT;
         }
 
         // Use world light values from the offset pos, but luminance from the origin pos
         int adjWord = this.lightCache.get(pos, face);
-        return LightmapTextureManager.pack(Math.max(unpackBL(adjWord), unpackLU(word)), unpackSL(adjWord));
+        return LightTexture.pack(Math.max(unpackBL(adjWord), unpackLU(word)), unpackSL(adjWord));
     }
 }

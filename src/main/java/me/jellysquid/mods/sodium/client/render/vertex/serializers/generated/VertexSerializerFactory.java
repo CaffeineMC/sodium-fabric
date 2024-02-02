@@ -5,7 +5,6 @@ import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializer;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.*;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;

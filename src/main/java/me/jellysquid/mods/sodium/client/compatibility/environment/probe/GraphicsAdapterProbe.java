@@ -1,9 +1,10 @@
 package me.jellysquid.mods.sodium.client.compatibility.environment.probe;
 
-import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
+import oshi.hardware.GraphicsCard;
+import oshi.hardware.HardwareAbstractionLayer;
 import oshi.util.ExecutingCommand;
 
 import java.io.IOException;
@@ -12,6 +13,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
+import net.minecraft.Util;
 
 public class GraphicsAdapterProbe {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-GraphicsAdapterProbe");
@@ -23,7 +26,7 @@ public class GraphicsAdapterProbe {
 
         // We rely on separate detection logic for Linux because Oshi fails to find GPUs without
         // display outputs, and we can also retrieve the driver version for NVIDIA GPUs this way.
-        var results = Util.getOperatingSystem() == Util.OperatingSystem.LINUX
+        var results = Util.getPlatform() == Util.OS.LINUX
                 ? findAdaptersLinux()
                 : findAdaptersCrossPlatform();
 

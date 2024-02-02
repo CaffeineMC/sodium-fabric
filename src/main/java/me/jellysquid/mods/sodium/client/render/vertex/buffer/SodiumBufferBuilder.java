@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.vertex.buffer;
 
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
@@ -7,8 +9,6 @@ import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.*;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.VertexConsumer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Unique;
@@ -213,18 +213,18 @@ public class SodiumBufferBuilder implements VertexConsumer, VertexBufferWriter {
         this.writtenAttributes = ATTRIBUTE_POSITION_BIT | ATTRIBUTE_COLOR_BIT | ATTRIBUTE_TEXTURE_BIT |
                 ATTRIBUTE_OVERLAY_BIT | ATTRIBUTE_LIGHT_BIT | ATTRIBUTE_NORMAL_BIT;
 
-        this.next();
+        this.endVertex();
     }
 
     @Override
-    public void fixedColor(int red, int green, int blue, int alpha) {
-        ((BufferBuilder)this.builder).fixedColor(red, green, blue, alpha);
+    public void defaultColor(int red, int green, int blue, int alpha) {
+        ((BufferBuilder)this.builder).defaultColor(red, green, blue, alpha);
         this.packedFixedColor = ColorABGR.pack(red, green, blue, alpha);
     }
 
     @Override
-    public void unfixColor() {
-        ((BufferBuilder)this.builder).unfixColor();
+    public void unsetDefaultColor() {
+        ((BufferBuilder)this.builder).unsetDefaultColor();
     }
 
     @Override
@@ -262,14 +262,14 @@ public class SodiumBufferBuilder implements VertexConsumer, VertexBufferWriter {
     }
 
     @Override
-    public VertexConsumer texture(float u, float v) {
+    public VertexConsumer uv(float u, float v) {
         this.putTextureAttribute(u, v);
 
         return this;
     }
 
     @Override
-    public VertexConsumer overlay(int uv) {
+    public VertexConsumer overlayCoords(int uv) {
         this.putOverlayAttribute(uv);
 
         return this;
@@ -277,7 +277,7 @@ public class SodiumBufferBuilder implements VertexConsumer, VertexBufferWriter {
 
 
     @Override
-    public VertexConsumer light(int uv) {
+    public VertexConsumer uv2(int uv) {
         this.putLightAttribute(uv);
 
         return this;
@@ -290,7 +290,7 @@ public class SodiumBufferBuilder implements VertexConsumer, VertexBufferWriter {
     }
 
     @Override
-    public void next() {
+    public void endVertex() {
         if (this.builder.sodium$usingFixedColor()) {
             this.putColorAttribute(this.packedFixedColor);
         }
@@ -317,13 +317,13 @@ public class SodiumBufferBuilder implements VertexConsumer, VertexBufferWriter {
     }
 
     @Override
-    public VertexConsumer light(int u, int v) {
-        return this.light(packU16x2(u, v));
+    public VertexConsumer uv2(int u, int v) {
+        return this.uv2(packU16x2(u, v));
     }
 
     @Override
-    public VertexConsumer overlay(int u, int v) {
-        return this.overlay(packU16x2(u, v));
+    public VertexConsumer overlayCoords(int u, int v) {
+        return this.overlayCoords(packU16x2(u, v));
     }
 
     @Unique

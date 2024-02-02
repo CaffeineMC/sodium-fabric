@@ -3,9 +3,9 @@ package me.jellysquid.mods.sodium.client.compatibility.checks;
 import me.jellysquid.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaDriverVersion;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
+import net.minecraft.Util;
+import net.minecraft.network.chat.Component;
 import me.jellysquid.mods.sodium.client.compatibility.environment.GLContextInfo;
-import net.minecraft.text.Text;
-import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class LateDriverScanner {
         checkContextImplementation();
 
         if (isUsingPojavLauncher()) {
-            Console.instance().logMessage(MessageLevel.SEVERE, Text.translatable("sodium.console.pojav_launcher"), 30.0);
+            Console.instance().logMessage(MessageLevel.SEVERE, Component.translatable("sodium.console.pojav_launcher"), 30.0);
             LOGGER.error("It appears that PojavLauncher is being used with an OpenGL compatibility layer. This will " +
                     "likely cause severe performance issues, graphical issues, and crashes when used with Sodium. This " +
                     "configuration is not supported -- you are on your own!");
@@ -41,7 +41,7 @@ public class LateDriverScanner {
 
         if (!isSupportedNvidiaDriver(driver)) {
             Console.instance()
-                    .logMessage(MessageLevel.SEVERE, Text.translatable("sodium.console.broken_nvidia_driver"), 30.0);
+                    .logMessage(MessageLevel.SEVERE, Component.translatable("sodium.console.broken_nvidia_driver"), 30.0);
 
             LOGGER.error("The NVIDIA graphics driver appears to be out of date. This will likely cause severe " +
                     "performance issues and crashes when used with Sodium. The graphics driver should be updated to " +
@@ -56,7 +56,7 @@ public class LateDriverScanner {
     private static boolean isSupportedNvidiaDriver(GLContextInfo driver) {
         // The Linux driver has two separate branches which have overlapping version numbers, despite also having
         // different feature sets. As a result, we can't reliably determine which Linux drivers are broken...
-        if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
+        if (Util.getPlatform() != Util.OS.WINDOWS) {
             return true;
         }
 

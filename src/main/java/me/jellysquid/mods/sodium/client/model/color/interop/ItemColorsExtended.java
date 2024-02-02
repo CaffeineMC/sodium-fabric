@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.model.color.interop;
 
-import net.minecraft.client.color.item.ItemColorProvider;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.color.item.ItemColor;
+import net.minecraft.world.item.ItemStack;
 
 public interface ItemColorsExtended {
-    ItemColorProvider sodium$getColorProvider(ItemStack stack);
+    ItemColor sodium$getColorProvider(ItemStack stack);
 }

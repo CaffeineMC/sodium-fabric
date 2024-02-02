@@ -2,10 +2,14 @@ package me.jellysquid.mods.sodium.client.compatibility.checks;
 
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
-import net.minecraft.resource.*;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.FilePackResources;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.PathPackResources;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +54,7 @@ public class ResourcePackScanner {
      * Detailed information on shader files replaced by resource packs is printed in the client log.
      */
     public static void checkIfCoreShaderLoaded(ResourceManager manager) {
-        var outputs = manager.streamResourcePacks()
+        var outputs = manager.listPacks()
                 .filter(ResourcePackScanner::isExternalResourcePack)
                 .map(ResourcePackScanner::scanResources)
                 .toList();
@@ -71,27 +75,27 @@ public class ResourcePackScanner {
         boolean shown = false;
 
         if (!incompatibleResourcePacks.isEmpty()) {
-            showConsoleMessage(Text.translatable("sodium.console.core_shaders_error"), MessageLevel.SEVERE);
+            showConsoleMessage(Component.translatable("sodium.console.core_shaders_error"), MessageLevel.SEVERE);
 
             for (var entry : incompatibleResourcePacks) {
-                showConsoleMessage(Text.literal(getResourcePackName(entry.resourcePack)), MessageLevel.SEVERE);
+                showConsoleMessage(Component.literal(getResourcePackName(entry.resourcePack)), MessageLevel.SEVERE);
             }
 
             shown = true;
         }
 
         if (!likelyIncompatibleResourcePacks.isEmpty()) {
-            showConsoleMessage(Text.translatable("sodium.console.core_shaders_warn"), MessageLevel.WARN);
+            showConsoleMessage(Component.translatable("sodium.console.core_shaders_warn"), MessageLevel.WARN);
 
             for (var entry : likelyIncompatibleResourcePacks) {
-                showConsoleMessage(Text.literal(getResourcePackName(entry.resourcePack)), MessageLevel.WARN);
+                showConsoleMessage(Component.literal(getResourcePackName(entry.resourcePack)), MessageLevel.WARN);
             }
 
             shown = true;
         }
 
         if (shown) {
-            showConsoleMessage(Text.translatable("sodium.console.core_shaders_info"), MessageLevel.INFO);
+            showConsoleMessage(Component.translatable("sodium.console.core_shaders_info"), MessageLevel.INFO);
         }
     }
 
@@ -139,7 +143,7 @@ public class ResourcePackScanner {
     }
 
     @NotNull
-    private static ScannedResourcePack scanResources(ResourcePack resourcePack) {
+    private static ScannedResourcePack scanResources(PackResources resourcePack) {
         final var ignoredShaders = determineIgnoredShaders(resourcePack);
 
         if (!ignoredShaders.isEmpty()) {
@@ -150,7 +154,7 @@ public class ResourcePackScanner {
         final var unsupportedShaderPrograms = new ArrayList<String>();
         final var unsupportedShaderIncludes = new ArrayList<String>();
 
-        resourcePack.findResources(ResourceType.CLIENT_RESOURCES, Identifier.DEFAULT_NAMESPACE, "shaders", (identifier, supplier) -> {
+        resourcePack.listResources(PackType.CLIENT_RESOURCES, ResourceLocation.DEFAULT_NAMESPACE, "shaders", (identifier, supplier) -> {
             // Trim full shader file path to only contain the filename
             final var path = identifier.getPath();
             final var name = path.substring(path.lastIndexOf('/') + 1);
@@ -172,12 +176,12 @@ public class ResourcePackScanner {
         return new ScannedResourcePack(resourcePack, unsupportedShaderPrograms, unsupportedShaderIncludes);
     }
 
-    private static boolean isExternalResourcePack(ResourcePack pack) {
-        return pack instanceof DirectoryResourcePack || pack instanceof ZipResourcePack;
+    private static boolean isExternalResourcePack(PackResources pack) {
+        return pack instanceof PathPackResources || pack instanceof FilePackResources;
     }
 
-    private static String getResourcePackName(ResourcePack pack) {
-        var path = pack.getName();
+    private static String getResourcePackName(PackResources pack) {
+        var path = pack.packId();
 
         // Omit 'file/' prefix for the in-game message
         return path.startsWith("file/") ? path.substring(5) : path;
@@ -191,24 +195,24 @@ public class ResourcePackScanner {
      * @param resourcePack The resource pack to fetch the ignored shaders of
      * @return A list of shaders to ignore, this is the filename only without the path
      */
-    private static List<String> determineIgnoredShaders(ResourcePack resourcePack) {
+    private static List<String> determineIgnoredShaders(PackResources resourcePack) {
         var ignoredShaders = new ArrayList<String>();
         try {
-            var meta = resourcePack.parseMetadata(SodiumResourcePackMetadata.SERIALIZER);
+            var meta = resourcePack.getMetadataSection(SodiumResourcePackMetadata.SERIALIZER);
             if (meta != null) {
                 ignoredShaders.addAll(meta.ignoredShaders());
             }
         } catch (IOException x) {
-            LOGGER.error("Failed to load pack.mcmeta file for resource pack '{}'", resourcePack.getName());
+            LOGGER.error("Failed to load pack.mcmeta file for resource pack '{}'", resourcePack.packId());
         }
         return ignoredShaders;
     }
 
-    private static void showConsoleMessage(MutableText message, MessageLevel messageLevel) {
+    private static void showConsoleMessage(MutableComponent message, MessageLevel messageLevel) {
         Console.instance().logMessage(messageLevel, message, 12.5);
     }
 
-    private record ScannedResourcePack(ResourcePack resourcePack,
+    private record ScannedResourcePack(PackResources resourcePack,
                                        ArrayList<String> shaderPrograms,
                                        ArrayList<String> shaderIncludes)
     {

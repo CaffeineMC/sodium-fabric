@@ -3,7 +3,8 @@ package me.jellysquid.mods.sodium.client.compatibility.workarounds;
 import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
+import net.minecraft.Util.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ public class Workarounds {
 
     private static Set<Reference> findNecessaryWorkarounds() {
         var workarounds = EnumSet.noneOf(Reference.class);
-        var operatingSystem = Util.getOperatingSystem();
+        var operatingSystem = Util.getPlatform();
 
         var graphicsAdapters = GraphicsAdapterProbe.getAdapters();
 
@@ -41,7 +42,7 @@ public class Workarounds {
             workarounds.add(Reference.NVIDIA_THREADED_OPTIMIZATIONS);
         }
 
-        if (operatingSystem == Util.OperatingSystem.LINUX) {
+        if (operatingSystem == Util.OS.LINUX) {
             var session = System.getenv("XDG_SESSION_TYPE");
 
             if (session == null) {
@@ -58,8 +59,8 @@ public class Workarounds {
         return Collections.unmodifiableSet(workarounds);
     }
 
-    private static boolean isUsingNvidiaGraphicsCard(Util.OperatingSystem operatingSystem, Collection<GraphicsAdapterInfo> adapters) {
-        return (operatingSystem == Util.OperatingSystem.WINDOWS || operatingSystem == Util.OperatingSystem.LINUX) &&
+    private static boolean isUsingNvidiaGraphicsCard(Util.OS operatingSystem, Collection<GraphicsAdapterInfo> adapters) {
+        return (operatingSystem == Util.OS.WINDOWS || operatingSystem == Util.OS.LINUX) &&
                 adapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterVendor.NVIDIA);
     }
 

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.model.color;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 public interface ColorProvider<T> {
     /**

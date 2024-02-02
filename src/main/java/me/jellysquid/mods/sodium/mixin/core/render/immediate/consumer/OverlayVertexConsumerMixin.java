@@ -1,15 +1,15 @@
 package me.jellysquid.mods.sodium.mixin.core.render.immediate.consumer;
 
+import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.ColorAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.TextureAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import net.minecraft.core.Direction;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.minecraft.client.render.OverlayVertexConsumer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.util.math.Direction;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(OverlayVertexConsumer.class)
+@Mixin(SheetedDecalTextureGenerator.class)
 public class OverlayVertexConsumerMixin implements VertexBufferWriter {
     @Shadow
     @Final
@@ -32,11 +32,11 @@ public class OverlayVertexConsumerMixin implements VertexBufferWriter {
 
     @Shadow
     @Final
-    private Matrix3f inverseNormalMatrix;
+    private Matrix3f normalInversePose;
 
     @Shadow
     @Final
-    private Matrix4f inverseTextureMatrix;
+    private Matrix4f cameraInversePose;
 
     @Shadow
     @Final
@@ -58,7 +58,7 @@ public class OverlayVertexConsumerMixin implements VertexBufferWriter {
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
         transform(ptr, count, format,
-                this.inverseNormalMatrix, this.inverseTextureMatrix, this.textureScale);
+                this.normalInversePose, this.cameraInversePose, this.textureScale);
 
         VertexBufferWriter.of(this.delegate)
                 .push(stack, ptr, count, format);
@@ -101,12 +101,12 @@ public class OverlayVertexConsumerMixin implements VertexBufferWriter {
             normal.z = NormI8.unpackZ(packedNormal);
 
             Vector3f transformedNormal = inverseNormalMatrix.transform(normal);
-            Direction direction = Direction.getFacing(transformedNormal.x(), transformedNormal.y(), transformedNormal.z());
+            Direction direction = Direction.getNearest(transformedNormal.x(), transformedNormal.y(), transformedNormal.z());
 
             Vector4f transformedTexture = inverseTextureMatrix.transform(position);
             transformedTexture.rotateY(3.1415927F);
             transformedTexture.rotateX(-1.5707964F);
-            transformedTexture.rotate(direction.getRotationQuaternion());
+            transformedTexture.rotate(direction.getRotation());
 
             float textureU = -transformedTexture.x() * textureScale;
             float textureV = -transformedTexture.y() * textureScale;

@@ -1,9 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.world.biome;
 
+import java.util.Optional;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorMaps;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeEffects;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSpecialEffects;
+import net.minecraft.world.level.biome.BiomeSpecialEffects.GrassColorModifier;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,11 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class BiomeMixin {
     @Shadow
     @Final
-    private BiomeEffects effects;
+    private BiomeSpecialEffects specialEffects;
 
     @Shadow
     @Final
-    private Biome.Weather weather;
+    private Biome.ClimateSettings climateSettings;
 
     @Unique
     private boolean hasCustomGrassColor;
@@ -36,14 +38,14 @@ public abstract class BiomeMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void setupColors(CallbackInfo ci) {
-        var grassColor = this.effects.getGrassColor();
+        var grassColor = this.specialEffects.getGrassColorOverride();
 
         if (grassColor.isPresent()) {
             this.hasCustomGrassColor = true;
             this.customGrassColor = grassColor.get();
         }
 
-        var foliageColor = this.effects.getFoliageColor();
+        var foliageColor = this.specialEffects.getFoliageColorOverride();
 
         if (foliageColor.isPresent()) {
             this.hasCustomFoliageColor = true;
@@ -58,7 +60,7 @@ public abstract class BiomeMixin {
      * @reason Avoid unnecessary pointer de-references and allocations
      */
     @Overwrite
-    public int getGrassColorAt(double x, double z) {
+    public int getGrassColor(double x, double z) {
         int color;
 
         if (this.hasCustomGrassColor) {
@@ -67,10 +69,10 @@ public abstract class BiomeMixin {
             color = BiomeColorMaps.getGrassColor(this.defaultColorIndex);
         }
 
-        var modifier = this.effects.getGrassColorModifier();
+        var modifier = this.specialEffects.getGrassColorModifier();
 
-        if (modifier != BiomeEffects.GrassColorModifier.NONE) {
-            color = modifier.getModifiedGrassColor(x, z, color);
+        if (modifier != BiomeSpecialEffects.GrassColorModifier.NONE) {
+            color = modifier.modifyColor(x, z, color);
         }
 
         return color;
@@ -95,8 +97,8 @@ public abstract class BiomeMixin {
 
     @Unique
     private int getDefaultColorIndex() {
-        double temperature = MathHelper.clamp(this.weather.temperature(), 0.0F, 1.0F);
-        double humidity = MathHelper.clamp(this.weather.downfall(), 0.0F, 1.0F);
+        double temperature = Mth.clamp(this.climateSettings.temperature(), 0.0F, 1.0F);
+        double humidity = Mth.clamp(this.climateSettings.downfall(), 0.0F, 1.0F);
 
         return BiomeColorMaps.getIndex(temperature, humidity);
     }

@@ -1,24 +1,24 @@
 package me.jellysquid.mods.sodium.mixin.debug.checks;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import me.jellysquid.mods.sodium.client.render.util.RenderAsserts;
-import net.minecraft.client.gl.Framebuffer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(Framebuffer.class)
+@Mixin(RenderTarget.class)
 public class FramebufferMixin {
     @Redirect(method = {
             "resize",
-            "beginWrite",
-            "endWrite",
+            "bindWrite",
+            "unbindWrite",
     }, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;isOnRenderThread()Z"))
     private boolean validateCurrentThread$imageOperations() {
         return RenderAsserts.validateCurrentThread();
     }
 
     @Redirect(method = {
-            "draw(IIZ)V",
+            "blitToScreen(IIZ)V",
     }, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;isInInitPhase()Z"))
     private boolean validateCurrentThread$draw() {
         return RenderAsserts.validateCurrentThread();

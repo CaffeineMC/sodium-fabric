@@ -1,9 +1,6 @@
 
 package me.jellysquid.mods.sodium.mixin.features.render.immediate.buffer_builder.sorting;
 
-import com.mojang.blaze3d.systems.VertexSorter;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.VertexFormat;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
@@ -11,7 +8,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
@@ -20,39 +19,39 @@ public abstract class BufferBuilderMixin {
     private ByteBuffer buffer;
 
     @Shadow
-    private int elementOffset;
+    private int nextElementByte;
 
     @Shadow
     @Nullable
-    private Vector3f[] sortingPrimitiveCenters;
+    private Vector3f[] sortingPoints;
 
     @Shadow
-    private int vertexCount;
+    private int vertices;
 
     @Shadow
     private VertexFormat format;
 
     @Shadow
-    private int batchOffset;
+    private int renderedBufferPointer;
 
     @Shadow
     @Nullable
-    private VertexSorter sorter;
+    private VertexSorting sorting;
 
     /**
      * @author JellySquid
      * @reason Avoid slow memory accesses
      */
     @Overwrite
-    private Vector3f[] buildPrimitiveCenters() {
-        int vertexStride = this.format.getVertexSizeByte();
-        int primitiveCount = this.vertexCount / 4;
+    private Vector3f[] makeQuadSortingPoints() {
+        int vertexStride = this.format.getVertexSize();
+        int primitiveCount = this.vertices / 4;
 
         Vector3f[] centers = new Vector3f[primitiveCount];
 
         for (int index = 0; index < primitiveCount; ++index) {
-            long v1 = MemoryUtil.memAddress(this.buffer, this.batchOffset + (((index * 4) + 0) * vertexStride));
-            long v2 = MemoryUtil.memAddress(this.buffer, this.batchOffset + (((index * 4) + 2) * vertexStride));
+            long v1 = MemoryUtil.memAddress(this.buffer, this.renderedBufferPointer + (((index * 4) + 0) * vertexStride));
+            long v2 = MemoryUtil.memAddress(this.buffer, this.renderedBufferPointer + (((index * 4) + 2) * vertexStride));
 
             float x1 = MemoryUtil.memGetFloat(v1 + 0);
             float y1 = MemoryUtil.memGetFloat(v1 + 4);
@@ -73,9 +72,9 @@ public abstract class BufferBuilderMixin {
      * @reason Use direct memory access, avoid indirection
      */
     @Overwrite
-    private void writeSortedIndices(VertexFormat.IndexType indexType) {
-        if (this.sorter != null) {
-            int[] indices = this.sorter.sort(this.sortingPrimitiveCenters);
+    private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
+        if (this.sorting != null) {
+            int[] indices = this.sorting.sort(this.sortingPoints);
             this.writePrimitiveIndices(indexType, indices);
         }
     }
@@ -85,9 +84,9 @@ public abstract class BufferBuilderMixin {
 
     @Unique
     private void writePrimitiveIndices(VertexFormat.IndexType indexType, int[] indices) {
-        long ptr = MemoryUtil.memAddress(this.buffer, this.elementOffset);
+        long ptr = MemoryUtil.memAddress(this.buffer, this.nextElementByte);
 
-        switch (indexType.size) {
+        switch (indexType.bytes) {
             case 2 -> { // SHORT
                 for (int index : indices) {
                     int start = index * 4;

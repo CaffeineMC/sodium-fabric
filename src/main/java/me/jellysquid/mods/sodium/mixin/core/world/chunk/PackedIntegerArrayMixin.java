@@ -1,15 +1,15 @@
 package me.jellysquid.mods.sodium.mixin.core.world.chunk;
 
 import me.jellysquid.mods.sodium.client.world.PaletteStorageExtended;
-import net.minecraft.util.collection.PackedIntegerArray;
-import net.minecraft.world.chunk.Palette;
+import net.minecraft.util.SimpleBitStorage;
+import net.minecraft.world.level.chunk.Palette;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.Objects;
 
-@Mixin(PackedIntegerArray.class)
+@Mixin(SimpleBitStorage.class)
 public class PackedIntegerArrayMixin implements PaletteStorageExtended {
     @Shadow
     @Final
@@ -17,15 +17,15 @@ public class PackedIntegerArrayMixin implements PaletteStorageExtended {
 
     @Shadow
     @Final
-    private int elementsPerLong;
+    private int valuesPerLong;
 
     @Shadow
     @Final
-    private long maxValue;
+    private long mask;
 
     @Shadow
     @Final
-    private int elementBits;
+    private int bits;
 
     @Shadow
     @Final
@@ -38,10 +38,10 @@ public class PackedIntegerArrayMixin implements PaletteStorageExtended {
         for (long word : this.data) {
             long l = word;
 
-            for (int j = 0; j < this.elementsPerLong; ++j) {
-                out[idx] = Objects.requireNonNull(palette.get((int) (l & this.maxValue)),
+            for (int j = 0; j < this.valuesPerLong; ++j) {
+                out[idx] = Objects.requireNonNull(palette.valueFor((int) (l & this.mask)),
                         "Palette does not contain entry for value in storage");
-                l >>= this.elementBits;
+                l >>= this.bits;
 
                 if (++idx >= this.size) {
                     return;

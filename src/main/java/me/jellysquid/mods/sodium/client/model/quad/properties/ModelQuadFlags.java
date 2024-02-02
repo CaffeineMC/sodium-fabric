@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad.properties;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.Direction;
 
 public class ModelQuadFlags {
     /**
