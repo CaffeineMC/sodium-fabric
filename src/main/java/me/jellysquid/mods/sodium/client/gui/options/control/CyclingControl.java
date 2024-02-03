@@ -6,7 +6,6 @@ import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.input.KeyCodes;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.Validate;
 
@@ -101,8 +100,6 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 cycleControl(Screen.hasShiftDown());
-                this.playClickSound();
-
                 return true;
             }
 
@@ -121,7 +118,9 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             return false;
         }
 
-        public void cycleControl(boolean reverse) {
+        private void cycleControl(boolean reverse) {
+            this.playClickSound();
+
             if (reverse) {
                 this.currentIndex = (this.currentIndex + this.allowedValues.length - 1) % this.allowedValues.length;
             } else {

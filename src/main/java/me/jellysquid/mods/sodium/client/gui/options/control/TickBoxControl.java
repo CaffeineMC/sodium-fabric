@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.input.KeyCodes;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.Rect2i;
 
 public class TickBoxControl implements Control<Boolean> {
@@ -69,8 +68,6 @@ public class TickBoxControl implements Control<Boolean> {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 toggleControl();
-                this.playClickSound();
-
                 return true;
             }
 
@@ -83,15 +80,14 @@ public class TickBoxControl implements Control<Boolean> {
 
             if (KeyCodes.isToggle(keyCode)) {
                 toggleControl();
-                this.playClickSound();
-
                 return true;
             }
 
             return false;
         }
 
-        public void toggleControl() {
+        private void toggleControl() {
+            this.playClickSound();
             this.option.setValue(!this.option.getValue());
         }
     }
