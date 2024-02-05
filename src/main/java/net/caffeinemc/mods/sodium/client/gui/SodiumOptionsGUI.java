@@ -31,10 +31,7 @@ import org.lwjgl.glfw.GLFW;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 // TODO: Rename in Sodium 0.6
@@ -302,12 +299,27 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
         Option<?> option = element.getOption();
         List<FormattedCharSequence> tooltip = new ArrayList<>(this.font.split(option.getTooltip(), boxWidth - (textPadding * 2)));
+        List<FormattedCharSequence> tooltipDetails = new ArrayList<>();
 
         OptionImpact impact = option.getImpact();
 
         if (impact != null) {
-            tooltip.add(Language.getInstance().getVisualOrder(Component.translatable("sodium.options.performance_impact_string", impact.getLocalizedName()).withStyle(ChatFormatting.GRAY)));
+            tooltipDetails.add(Language.getInstance().getVisualOrder(Component.translatable("sodium.options.performance_impact_string", impact.getLocalizedName()).withStyle(ChatFormatting.GRAY)));
         }
+
+        Collection<OptionFlag> flags = option.getFlags();
+
+        for (OptionFlag flag: flags) {
+            if (flag.ordinal() < 1) continue; // ignore irrelevant flags
+            tooltipDetails.add(Language.getInstance().getVisualOrder(Component.translatable("sodium.options.flags_requirement_string", flag.getLocalizedName()).withStyle(ChatFormatting.GRAY)));
+        }
+
+        if (!tooltip.isEmpty() && !tooltipDetails.isEmpty()) {
+            tooltip.add(Language.getInstance().getVisualOrder(Component.literal("")));
+        }
+
+        tooltip.addAll(tooltipDetails);
+        tooltipDetails.clear();
 
         int boxHeight = (tooltip.size() * 12) + boxPadding;
         int boxYLimit = boxY + boxHeight;
