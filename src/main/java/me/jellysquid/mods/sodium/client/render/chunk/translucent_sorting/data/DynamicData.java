@@ -6,13 +6,13 @@ import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 public abstract class DynamicData extends MixedDirectionData {
     private GeometryPlanes geometryPlanes;
     private final Vector3dc initialCameraPos;
 
-    DynamicData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range, GeometryPlanes geometryPlanes, Vector3dc initialCameraPos) {
+    DynamicData(SectionPos sectionPos, NativeBuffer buffer, VertexRange range, GeometryPlanes geometryPlanes, Vector3dc initialCameraPos) {
         super(sectionPos, buffer, range);
         this.geometryPlanes = geometryPlanes;
         this.initialCameraPos = initialCameraPos;

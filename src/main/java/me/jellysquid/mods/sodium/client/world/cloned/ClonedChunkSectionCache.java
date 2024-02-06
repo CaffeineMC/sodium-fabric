@@ -1,26 +1,26 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.WorldChunk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.TimeUnit;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 
 public class ClonedChunkSectionCache {
     private static final int MAX_CACHE_SIZE = 512; /* number of entries */
     private static final long MAX_CACHE_DURATION = TimeUnit.SECONDS.toNanos(5); /* number of nanoseconds */
 
-    private final World world;
+    private final Level world;
 
     private final Long2ReferenceLinkedOpenHashMap<ClonedChunkSection> positionToEntry = new Long2ReferenceLinkedOpenHashMap<>();
 
     private long time; // updated once per frame to be the elapsed time since application start
 
-    public ClonedChunkSectionCache(World world) {
+    public ClonedChunkSectionCache(Level world) {
         this.world = world;
         this.time = getMonotonicTimeSource();
     }
@@ -33,7 +33,7 @@ public class ClonedChunkSectionCache {
 
     @Nullable
     public ClonedChunkSection acquire(int x, int y, int z) {
-        var pos = ChunkSectionPos.asLong(x, y, z);
+        var pos = SectionPos.asLong(x, y, z);
         var section = this.positionToEntry.getAndMoveToLast(pos);
 
         if (section == null) {
@@ -53,23 +53,23 @@ public class ClonedChunkSectionCache {
 
     @NotNull
     private ClonedChunkSection clone(int x, int y, int z) {
-        WorldChunk chunk = this.world.getChunk(x, z);
+        LevelChunk chunk = this.world.getChunk(x, z);
 
         if (chunk == null) {
-            throw new RuntimeException("Chunk is not loaded at: " + ChunkSectionPos.asLong(x, y, z));
+            throw new RuntimeException("Chunk is not loaded at: " + SectionPos.asLong(x, y, z));
         }
 
-        @Nullable ChunkSection section = null;
+        @Nullable LevelChunkSection section = null;
 
-        if (!this.world.isOutOfHeightLimit(ChunkSectionPos.getBlockCoord(y))) {
-            section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
+        if (!this.world.isOutsideBuildHeight(SectionPos.sectionToBlockCoord(y))) {
+            section = chunk.getSections()[this.world.getSectionIndexFromSectionY(y)];
         }
 
-        return new ClonedChunkSection(this.world, chunk, section, ChunkSectionPos.from(x, y, z));
+        return new ClonedChunkSection(this.world, chunk, section, SectionPos.of(x, y, z));
     }
 
     public void invalidate(int x, int y, int z) {
-        this.positionToEntry.remove(ChunkSectionPos.asLong(x, y, z));
+        this.positionToEntry.remove(SectionPos.asLong(x, y, z));
     }
 
     private static long getMonotonicTimeSource() {

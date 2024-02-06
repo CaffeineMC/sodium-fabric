@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * With this sort type the section's translucent quads can be rendered in any
@@ -22,7 +22,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * use it.
  */
 public class AnyOrderData extends SplitDirectionData {
-    AnyOrderData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
+    AnyOrderData(SectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
         super(sectionPos, buffer, ranges);
     }
 
@@ -35,7 +35,7 @@ public class AnyOrderData extends SplitDirectionData {
      * Important: The vertex indexes must start at zero for each facing.
      */
     public static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos, NativeBuffer buffer) {
+            TQuad[] quads, SectionPos sectionPos, NativeBuffer buffer) {
         buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 

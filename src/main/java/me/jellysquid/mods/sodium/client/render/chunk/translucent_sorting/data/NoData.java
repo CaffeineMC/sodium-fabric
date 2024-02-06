@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortType;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * This class means there is no translucent data and is used to signal that the
@@ -13,7 +13,7 @@ import net.minecraft.util.math.ChunkSectionPos;
 public class NoData extends TranslucentData {
     private final SortType reason;
 
-    private NoData(ChunkSectionPos sectionPos, SortType reason) {
+    private NoData(SectionPos sectionPos, SortType reason) {
         super(sectionPos);
         this.reason = reason;
     }
@@ -23,11 +23,11 @@ public class NoData extends TranslucentData {
         return reason;
     }
 
-    public static NoData forEmptySection(ChunkSectionPos sectionPos) {
+    public static NoData forEmptySection(SectionPos sectionPos) {
         return new NoData(sectionPos, SortType.EMPTY_SECTION);
     }
 
-    public static NoData forNoTranslucent(ChunkSectionPos sectionPos) {
+    public static NoData forNoTranslucent(SectionPos sectionPos) {
         return new NoData(sectionPos, SortType.NO_TRANSLUCENT);
     }
 }

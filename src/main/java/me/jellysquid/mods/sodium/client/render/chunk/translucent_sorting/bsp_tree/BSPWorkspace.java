@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tr
 
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * The BSP workspace holds the state during the BSP building process. (see also
@@ -19,13 +19,13 @@ class BSPWorkspace {
      */
     final TQuad[] quads;
 
-    final ChunkSectionPos sectionPos;
+    final SectionPos sectionPos;
 
     final BSPResult result = new BSPResult();
 
     final boolean prepareNodeReuse;
 
-    BSPWorkspace(TQuad[] quads, ChunkSectionPos sectionPos, boolean prepareNodeReuse) {
+    BSPWorkspace(TQuad[] quads, SectionPos sectionPos, boolean prepareNodeReuse) {
         this.quads = quads;
         this.sectionPos = sectionPos;
         this.prepareNodeReuse = prepareNodeReuse;

@@ -7,10 +7,10 @@ import me.jellysquid.mods.sodium.client.render.chunk.occlusion.VisibilityEncodin
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,9 +47,9 @@ public class RenderSection {
     private int flags = RenderSectionFlags.NONE;
     private BlockEntity @Nullable[] globalBlockEntities;
     private BlockEntity @Nullable[] culledBlockEntities;
-    private Sprite @Nullable[] animatedSprites;
+    private TextureAtlasSprite @Nullable[] animatedSprites;
     @Nullable
-    private TranslucentData translucentData; // TODO: is this the right category?
+    private TranslucentData translucentData;
 
     // Pending Update State
     @Nullable
@@ -173,8 +173,8 @@ public class RenderSection {
     /**
      * Returns the chunk section position which this render refers to in the world.
      */
-    public ChunkSectionPos getPosition() {
-        return ChunkSectionPos.from(this.chunkX, this.chunkY, this.chunkZ);
+    public SectionPos getPosition() {
+        return SectionPos.of(this.chunkX, this.chunkY, this.chunkZ);
     }
 
     /**
@@ -311,7 +311,7 @@ public class RenderSection {
     /**
      * Returns the collection of animated sprites contained by this rendered chunk section.
      */
-    public Sprite @Nullable[] getAnimatedSprites() {
+    public TextureAtlasSprite @Nullable[] getAnimatedSprites() {
         return this.animatedSprites;
     }
 

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.map;
 
 import it.unimi.dsi.fastutil.longs.*;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.level.ChunkPos;
 
 public class ChunkTracker implements ClientChunkEventListener {
     private final Long2IntOpenHashMap chunkStatus = new Long2IntOpenHashMap();
@@ -26,7 +26,7 @@ public class ChunkTracker implements ClientChunkEventListener {
 
     @Override
     public void onChunkStatusAdded(int x, int z, int flags) {
-        var key = ChunkPos.toLong(x, z);
+        var key = ChunkPos.asLong(x, z);
 
         var prev = this.chunkStatus.get(key);
         var cur = prev | flags;
@@ -42,7 +42,7 @@ public class ChunkTracker implements ClientChunkEventListener {
 
     @Override
     public void onChunkStatusRemoved(int x, int z, int flags) {
-        var key = ChunkPos.toLong(x, z);
+        var key = ChunkPos.asLong(x, z);
 
         var prev = this.chunkStatus.get(key);
         int cur = prev & ~flags;
@@ -69,13 +69,13 @@ public class ChunkTracker implements ClientChunkEventListener {
     }
 
     private void updateMerged(int x, int z) {
-        long key = ChunkPos.toLong(x, z);
+        long key = ChunkPos.asLong(x, z);
 
         int flags = this.chunkStatus.get(key);
 
         for (int ox = -1; ox <= 1; ox++) {
             for (int oz = -1; oz <= 1; oz++) {
-                flags &= this.chunkStatus.get(ChunkPos.toLong(ox + x, oz + z));
+                flags &= this.chunkStatus.get(ChunkPos.asLong(ox + x, oz + z));
             }
         }
 
@@ -108,8 +108,8 @@ public class ChunkTracker implements ClientChunkEventListener {
         while (iterator.hasNext()) {
             var pos = iterator.nextLong();
 
-            var x = ChunkPos.getPackedX(pos);
-            var z = ChunkPos.getPackedZ(pos);
+            var x = ChunkPos.getX(pos);
+            var z = ChunkPos.getZ(pos);
 
             handler.apply(x, z);
         }

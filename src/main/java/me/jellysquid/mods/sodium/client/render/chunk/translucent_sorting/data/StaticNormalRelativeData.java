@@ -10,7 +10,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.sorting.RadixSort;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * Static normal relative sorting orders quads by the dot product of their
@@ -20,7 +20,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * be correct, sorting by dot product is ascending instead.
  */
 public class StaticNormalRelativeData extends SplitDirectionData {
-    public StaticNormalRelativeData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
+    public StaticNormalRelativeData(SectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
         super(sectionPos, buffer, ranges);
     }
 
@@ -30,7 +30,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     }
 
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos) {
+            TQuad[] quads, SectionPos sectionPos) {
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
@@ -70,7 +70,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
      * Important: The vertex indexes must start at zero for each facing.
      */
     private static StaticNormalRelativeData fromMixed(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos) {
+            TQuad[] quads, SectionPos sectionPos) {
         var buffer = PresentTranslucentData.nativeBufferForQuads(quads);
         IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
@@ -139,7 +139,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     }
 
     public static StaticNormalRelativeData fromMesh(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos, boolean isDoubleUnaligned) {
+            TQuad[] quads, SectionPos sectionPos, boolean isDoubleUnaligned) {
         if (isDoubleUnaligned) {
             return fromDoubleUnaligned(translucentMesh, quads, sectionPos);
         } else {

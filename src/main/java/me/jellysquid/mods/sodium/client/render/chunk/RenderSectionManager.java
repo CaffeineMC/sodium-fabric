@@ -15,8 +15,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobCollector;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderSortingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
@@ -45,15 +45,15 @@ import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +74,7 @@ public class RenderSectionManager {
 
     private final ChunkRenderer chunkRenderer;
 
-    private final ClientWorld world;
+    private final ClientLevel world;
 
     private final ReferenceSet<RenderSection> sectionsWithGlobalEntities = new ReferenceOpenHashSet<>();
 
@@ -99,7 +99,7 @@ public class RenderSectionManager {
     private @Nullable BlockPos cameraBlockPos;
     private @Nullable Vector3dc cameraPosition;
 
-    public RenderSectionManager(ClientWorld world, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(ClientLevel world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.world = world;
@@ -125,7 +125,7 @@ public class RenderSectionManager {
     }
 
     public void updateCameraState(Vector3dc cameraPosition, Camera camera) {
-        this.cameraBlockPos = camera.getBlockPos();
+        this.cameraBlockPos = camera.getBlockPosition();
         this.cameraPosition = cameraPosition;
     }
 
@@ -164,14 +164,14 @@ public class RenderSectionManager {
 
     private boolean shouldUseOcclusionCulling(Camera camera, boolean spectator) {
         final boolean useOcclusionCulling;
-        BlockPos origin = camera.getBlockPos();
+        BlockPos origin = camera.getBlockPosition();
 
         if (spectator && this.world.getBlockState(origin)
-                .isOpaqueFullCube(this.world, origin))
+                .isSolidRender(this.world, origin))
         {
             useOcclusionCulling = false;
         } else {
-            useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
+            useOcclusionCulling = Minecraft.getInstance().smartCull;
         }
         return useOcclusionCulling;
     }
@@ -185,7 +185,7 @@ public class RenderSectionManager {
     }
 
     public void onSectionAdded(int x, int y, int z) {
-        long key = ChunkSectionPos.asLong(x, y, z);
+        long key = SectionPos.asLong(x, y, z);
 
         if (this.sectionByPosition.containsKey(key)) {
             return;
@@ -198,10 +198,10 @@ public class RenderSectionManager {
 
         this.sectionByPosition.put(key, renderSection);
 
-        Chunk chunk = this.world.getChunk(x, z);
-        ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
+        ChunkAccess chunk = this.world.getChunk(x, z);
+        LevelChunkSection section = chunk.getSections()[this.world.getSectionIndexFromSectionY(y)];
 
-        if (section.isEmpty()) {
+        if (section.hasOnlyAir()) {
             this.updateSectionInfo(renderSection, BuiltSectionInfo.EMPTY);
         } else {
             renderSection.setPendingUpdate(ChunkUpdateType.INITIAL_BUILD);
@@ -213,7 +213,7 @@ public class RenderSectionManager {
     }
 
     public void onSectionRemoved(int x, int y, int z) {
-        long sectionPos = ChunkSectionPos.asLong(x, y, z);
+        long sectionPos = SectionPos.asLong(x, y, z);
         RenderSection section = this.sectionByPosition.remove(sectionPos);
 
         if (section == null) {
@@ -273,7 +273,7 @@ public class RenderSectionManager {
                     continue;
                 }
 
-                for (Sprite sprite : sprites) {
+                for (TextureAtlasSprite sprite : sprites) {
                     SpriteUtil.markSpriteActive(sprite);
                 }
             }
@@ -326,7 +326,7 @@ public class RenderSectionManager {
                     // a rebuild always generates new translucent data which means applyTriggerChanges isn't necessary
                     result.render.setTranslucentData(chunkBuildOutput.translucentData);
                 }
-            } else if (result instanceof ChunkSortOutput chunkSortOutput 
+            } else if (result instanceof ChunkSortOutput chunkSortOutput
                     && chunkSortOutput.dynamicData instanceof TopoSortDynamicData data) {
                 this.ts.applyTriggerChanges(data, result.render.getPosition(), this.cameraPosition);
             }
@@ -598,7 +598,7 @@ public class RenderSectionManager {
 
         this.sectionCache.invalidate(x, y, z);
 
-        RenderSection section = this.sectionByPosition.get(ChunkSectionPos.asLong(x, y, z));
+        RenderSection section = this.sectionByPosition.get(SectionPos.asLong(x, y, z));
 
         if (section != null && section.isBuilt()) {
             ChunkUpdateType pendingUpdate;
@@ -618,7 +618,7 @@ public class RenderSectionManager {
         }
     }
 
-    private static final float NEARBY_REBUILD_DISTANCE = MathHelper.square(16.0f);
+    private static final float NEARBY_REBUILD_DISTANCE = Mth.square(16.0f);
 
     private boolean shouldPrioritizeTask(RenderSection section) {
         return this.cameraPosition != null && section.getSquaredDistance(this.cameraBlockPos) < NEARBY_REBUILD_DISTANCE;
@@ -635,7 +635,7 @@ public class RenderSectionManager {
         var renderDistance = this.getRenderDistance();
 
         // The fog must be fully opaque in order to skip rendering of chunks behind it
-        if (!MathHelper.approximatelyEquals(color[3], 1.0f)) {
+        if (!Mth.equal(color[3], 1.0f)) {
             return renderDistance;
         }
 
@@ -671,7 +671,7 @@ public class RenderSectionManager {
     }
 
     private RenderSection getRenderSection(int x, int y, int z) {
-        return this.sectionByPosition.get(ChunkSectionPos.asLong(x, y, z));
+        return this.sectionByPosition.get(SectionPos.asLong(x, y, z));
     }
 
     public Collection<String> getDebugStrings() {
@@ -726,13 +726,13 @@ public class RenderSectionManager {
     }
 
     public void onChunkAdded(int x, int z) {
-        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
             this.onSectionAdded(x, y, z);
         }
     }
 
     public void onChunkRemoved(int x, int z) {
-        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
             this.onSectionRemoved(x, y, z);
         }
     }

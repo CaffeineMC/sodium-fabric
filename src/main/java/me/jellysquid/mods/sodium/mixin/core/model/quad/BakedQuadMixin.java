@@ -3,9 +3,9 @@ package me.jellysquid.mods.sodium.mixin.core.model.quad;
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.Direction;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,19 +20,19 @@ import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 public class BakedQuadMixin implements BakedQuadView {
     @Shadow
     @Final
-    protected int[] vertexData;
+    protected int[] vertices;
 
     @Shadow
     @Final
-    protected Sprite sprite;
+    protected TextureAtlasSprite sprite;
 
     @Shadow
     @Final
-    protected int colorIndex;
+    protected int tintIndex;
 
     @Shadow
     @Final
-    protected Direction face; // This is really the light face, but we can't rename it.
+    protected Direction direction; // This is really the light face, but we can't rename it.
 
     @Shadow
     @Final
@@ -48,7 +48,7 @@ public class BakedQuadMixin implements BakedQuadView {
     private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
+    private void init(int[] vertexData, int colorIndex, Direction face, TextureAtlasSprite sprite, boolean shade, CallbackInfo ci) {
         this.normal = this.calculateNormal();
         this.normalFace = ModelQuadFacing.fromPackedNormal(this.normal);
 
@@ -57,37 +57,37 @@ public class BakedQuadMixin implements BakedQuadView {
 
     @Override
     public float getX(int idx) {
-        return Float.intBitsToFloat(this.vertexData[vertexOffset(idx) + POSITION_INDEX]);
+        return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + POSITION_INDEX]);
     }
 
     @Override
     public float getY(int idx) {
-        return Float.intBitsToFloat(this.vertexData[vertexOffset(idx) + POSITION_INDEX + 1]);
+        return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + POSITION_INDEX + 1]);
     }
 
     @Override
     public float getZ(int idx) {
-        return Float.intBitsToFloat(this.vertexData[vertexOffset(idx) + POSITION_INDEX + 2]);
+        return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + POSITION_INDEX + 2]);
     }
 
     @Override
     public int getColor(int idx) {
-        return this.vertexData[vertexOffset(idx) + COLOR_INDEX];
+        return this.vertices[vertexOffset(idx) + COLOR_INDEX];
     }
 
     @Override
-    public Sprite getSprite() {
+    public TextureAtlasSprite getSprite() {
         return this.sprite;
     }
 
     @Override
     public float getTexU(int idx) {
-        return Float.intBitsToFloat(this.vertexData[vertexOffset(idx) + TEXTURE_INDEX]);
+        return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + TEXTURE_INDEX]);
     }
 
     @Override
     public float getTexV(int idx) {
-        return Float.intBitsToFloat(this.vertexData[vertexOffset(idx) + TEXTURE_INDEX + 1]);
+        return Float.intBitsToFloat(this.vertices[vertexOffset(idx) + TEXTURE_INDEX + 1]);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class BakedQuadMixin implements BakedQuadView {
 
     @Override
     public int getColorIndex() {
-        return this.colorIndex;
+        return this.tintIndex;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class BakedQuadMixin implements BakedQuadView {
 
     @Override
     public Direction getLightFace() {
-        return this.face;
+        return this.direction;
     }
 
     @Override

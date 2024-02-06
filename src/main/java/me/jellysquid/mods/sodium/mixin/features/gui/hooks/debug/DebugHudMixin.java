@@ -5,8 +5,8 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import net.minecraft.client.gui.hud.DebugHud;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.components.DebugScreenOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 
-@Mixin(DebugHud.class)
+@Mixin(DebugScreenOverlay.class)
 public abstract class DebugHudMixin {
-    @Redirect(method = "getRightText", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayList([Ljava/lang/Object;)Ljava/util/ArrayList;", remap = false))
+    @Redirect(method = "getSystemInformation", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayList([Ljava/lang/Object;)Ljava/util/ArrayList;", remap = false))
     private ArrayList<String> redirectRightTextEarly(Object[] elements) {
         ArrayList<String> strings = Lists.newArrayList((String[]) elements);
         strings.add("");
@@ -43,16 +43,16 @@ public abstract class DebugHudMixin {
     }
 
     @Unique
-    private static Formatting getVersionColor() {
+    private static ChatFormatting getVersionColor() {
         String version = SodiumClientMod.getVersion();
-        Formatting color;
+        ChatFormatting color;
 
         if (version.contains("-local")) {
-            color = Formatting.RED;
+            color = ChatFormatting.RED;
         } else if (version.contains("-snapshot")) {
-            color = Formatting.LIGHT_PURPLE;
+            color = ChatFormatting.LIGHT_PURPLE;
         } else {
-            color = Formatting.GREEN;
+            color = ChatFormatting.GREEN;
         }
 
         return color;

@@ -2,9 +2,10 @@ package me.jellysquid.mods.sodium.client.compatibility.checks;
 
 import me.jellysquid.mods.sodium.client.platform.MessageBox;
 import me.jellysquid.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
+import net.minecraft.Util;
+import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
-import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ public class EarlyDriverScanner {
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/899
     private static @Nullable WindowsDriverStoreVersion findBrokenIntelGen7GraphicsDriver() {
-        if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
+        if (Util.getPlatform() != Util.OS.WINDOWS) {
             return null;
         }
 

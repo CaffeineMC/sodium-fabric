@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * Super class for translucent data that contains an actual buffer.
@@ -14,7 +14,7 @@ public abstract class PresentTranslucentData extends TranslucentData {
     private int quadHash;
     private int length;
 
-    PresentTranslucentData(ChunkSectionPos sectionPos, NativeBuffer buffer) {
+    PresentTranslucentData(SectionPos sectionPos, NativeBuffer buffer) {
         super(sectionPos);
         this.buffer = buffer;
         this.length = TranslucentData.indexBytesToQuadCount(buffer.getLength());

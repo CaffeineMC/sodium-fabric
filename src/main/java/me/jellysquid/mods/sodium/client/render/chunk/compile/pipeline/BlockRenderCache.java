@@ -5,10 +5,9 @@ import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.data.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.block.BlockModels;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.block.BlockModelShaper;
 
 public class BlockRenderCache {
     private final ArrayLightDataCache lightDataCache;
@@ -16,10 +15,10 @@ public class BlockRenderCache {
     private final BlockRenderer blockRenderer;
     private final FluidRenderer fluidRenderer;
 
-    private final BlockModels blockModels;
+    private final BlockModelShaper blockModels;
     private final WorldSlice worldSlice;
 
-    public BlockRenderCache(MinecraftClient client, ClientWorld world) {
+    public BlockRenderCache(Minecraft client, ClientLevel world) {
         this.worldSlice = new WorldSlice(world);
         this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
 
@@ -30,10 +29,10 @@ public class BlockRenderCache {
         this.blockRenderer = new BlockRenderer(colorRegistry, lightPipelineProvider);
         this.fluidRenderer = new FluidRenderer(colorRegistry, lightPipelineProvider);
 
-        this.blockModels = client.getBakedModelManager().getBlockModels();
+        this.blockModels = client.getModelManager().getBlockModelShaper();
     }
 
-    public BlockModels getBlockModels() {
+    public BlockModelShaper getBlockModels() {
         return this.blockModels;
     }
 

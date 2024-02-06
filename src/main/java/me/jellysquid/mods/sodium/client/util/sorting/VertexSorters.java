@@ -1,11 +1,10 @@
 package me.jellysquid.mods.sodium.client.util.sorting;
 
-import com.mojang.blaze3d.systems.VertexSorter;
-
+import com.mojang.blaze3d.vertex.VertexSorting;
 import org.joml.Vector3f;
 
 public class VertexSorters {
-    public static VertexSorter sortByDistance(Vector3f origin) {
+    public static VertexSorting sortByDistance(Vector3f origin) {
         return new SortByDistance(origin);
     }
 
@@ -26,7 +25,7 @@ public class VertexSorters {
     /**
      * Sorts the keys given by the subclass by descending value.
      */
-    private static abstract class AbstractVertexSorter implements VertexSorter {
+    private static abstract class AbstractVertexSorter implements VertexSorting {
         @Override
         public final int[] sort(Vector3f[] positions) {
             return this.mergeSort(positions);

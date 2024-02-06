@@ -2,9 +2,9 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.Rect2i;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.CommonInputs;
+import net.minecraft.client.renderer.Rect2i;
 
 public class TickBoxControl implements Control<Boolean> {
     private final Option<Boolean> option;
@@ -38,7 +38,7 @@ public class TickBoxControl implements Control<Boolean> {
         }
 
         @Override
-        public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+        public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
             super.render(drawContext, mouseX, mouseY, delta);
 
             final int x = this.button.getX();
@@ -80,7 +80,7 @@ public class TickBoxControl implements Control<Boolean> {
         public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
             if (!isFocused()) return false;
 
-            if (keyCode == InputUtil.GLFW_KEY_ENTER) {
+            if (CommonInputs.selected(keyCode)) {
                 toggleControl();
                 this.playClickSound();
 

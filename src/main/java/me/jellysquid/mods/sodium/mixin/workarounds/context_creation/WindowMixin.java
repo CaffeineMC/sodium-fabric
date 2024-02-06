@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.mixin.workarounds.context_creation;
 
 import me.jellysquid.mods.sodium.client.compatibility.checks.ModuleScanner;
+import com.mojang.blaze3d.platform.DisplayData;
+import com.mojang.blaze3d.platform.ScreenManager;
+import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.platform.WindowEventHandler;
 import me.jellysquid.mods.sodium.client.compatibility.checks.LateDriverScanner;
 import me.jellysquid.mods.sodium.client.compatibility.workarounds.Workarounds;
 import me.jellysquid.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaWorkarounds;
-import net.minecraft.client.WindowEventHandler;
-import net.minecraft.client.WindowSettings;
-import net.minecraft.client.util.MonitorTracker;
-import net.minecraft.client.util.Window;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.WGL;
 import org.lwjgl.system.MemoryUtil;
@@ -50,9 +50,9 @@ public class WindowMixin {
     }
 
     @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;", shift = At.Shift.AFTER))
-    private void postWindowCreated(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings, String videoMode, String title, CallbackInfo ci) {
+    private void postWindowCreated(WindowEventHandler eventHandler, ScreenManager monitorTracker, DisplayData settings, String videoMode, String title, CallbackInfo ci) {
         // Capture the current WGL context so that we can detect it being replaced later.
-        if (Util.getOperatingSystem() == Util.OperatingSystem.WINDOWS) {
+        if (Util.getPlatform() == Util.OS.WINDOWS) {
             this.wglPrevContext = WGL.wglGetCurrentContext();
         } else {
             this.wglPrevContext = MemoryUtil.NULL;
@@ -62,7 +62,7 @@ public class WindowMixin {
         ModuleScanner.checkModules();
     }
 
-    @Inject(method = "swapBuffers", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;flipFrame(J)V", shift = At.Shift.AFTER))
+    @Inject(method = "updateDisplay", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;flipFrame(J)V", shift = At.Shift.AFTER))
     private void preSwapBuffers(CallbackInfo ci) {
         if (this.wglPrevContext == MemoryUtil.NULL) {
             // There is no prior recorded context.

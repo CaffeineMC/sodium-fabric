@@ -6,7 +6,7 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering.SectionTriggers;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * Performs Global Face Normal Indexing-based triggering as described in
@@ -61,7 +61,7 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
     }
 
     @Override
-    public void integrateSection(SortTriggering ts, ChunkSectionPos pos, DynamicData data, CameraMovement movement) {
+    public void integrateSection(SortTriggering ts, SectionPos pos, DynamicData data, CameraMovement movement) {
         long sectionPos = pos.asLong();
         var geometryPlanes = data.getGeometryPlanes();
 

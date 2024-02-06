@@ -1,6 +1,6 @@
 package net.caffeinemc.mods.sodium.api.util;
 
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import org.joml.Vector3fc;
 
 /**
@@ -52,7 +52,7 @@ public class NormI8 {
      */
     private static int encode(float comp) {
         // TODO: is the clamp necessary here? our inputs should always be normalized vector components
-        return ((int) (MathHelper.clamp(comp, -1.0F, 1.0F) * COMPONENT_RANGE) & 255);
+        return ((int) (Mth.clamp(comp, -1.0F, 1.0F) * COMPONENT_RANGE) & 255);
     }
 
     /**
@@ -93,12 +93,12 @@ public class NormI8 {
 
     /**
      * Returns true if the two packed normals are opposite directions.
-     * 
+     *
      * TODO: this could possibly be faster by using normA == (~normB + 0x010101) but
      * that has to special case when a component is zero since that wouldn't
      * overflow correctly back to zero. (~0+1 == 0 but not if it's somewhere inside
      * th int)
-     * 
+     *
      * @param normA The first packed normal
      * @param normB The second packed normal
      */

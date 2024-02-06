@@ -7,7 +7,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoGraphSorting;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * A node in the BSP tree. The BSP tree is made up of nodes that split quads
@@ -31,7 +31,7 @@ public abstract class BSPNode {
         this.collectSortedQuads(new BSPSortState(nativeBuffer), cameraPos);
     }
 
-    public static BSPResult buildBSP(TQuad[] quads, ChunkSectionPos sectionPos, BSPNode oldRoot,
+    public static BSPResult buildBSP(TQuad[] quads, SectionPos sectionPos, BSPNode oldRoot,
             boolean prepareNodeReuse) {
         // throw if there's too many quads
         InnerPartitionBSPNode.validateQuadCount(quads.length);

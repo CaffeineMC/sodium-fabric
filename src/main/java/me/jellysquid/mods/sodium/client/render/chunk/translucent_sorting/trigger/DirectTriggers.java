@@ -7,7 +7,7 @@ import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering.SectionTriggers;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * Performs direct triggering for sections that are sorted by distance. Direct
@@ -69,7 +69,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
     }
 
     private class DirectTriggerData {
-        final ChunkSectionPos sectionPos;
+        final SectionPos sectionPos;
         private Vector3dc sectionCenter;
         final TopoSortDynamicData dynamicData;
         DirectTriggerData next;
@@ -79,7 +79,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
          */
         Vector3dc triggerCameraPos;
 
-        DirectTriggerData(TopoSortDynamicData dynamicData, ChunkSectionPos sectionPos, Vector3dc triggerCameraPos) {
+        DirectTriggerData(TopoSortDynamicData dynamicData, SectionPos sectionPos, Vector3dc triggerCameraPos) {
             this.dynamicData = dynamicData;
             this.sectionPos = sectionPos;
             this.triggerCameraPos = triggerCameraPos;
@@ -88,9 +88,9 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
         Vector3dc getSectionCenter() {
             if (this.sectionCenter == null) {
                 this.sectionCenter = new Vector3d(
-                        sectionPos.getMinX() + 8,
-                        sectionPos.getMinY() + 8,
-                        sectionPos.getMinZ() + 8);
+                        sectionPos.minBlockX() + 8,
+                        sectionPos.minBlockY() + 8,
+                        sectionPos.minBlockZ() + 8);
             }
             return this.sectionCenter;
         }
@@ -213,7 +213,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
     }
 
     @Override
-    public void integrateSection(SortTriggering ts, ChunkSectionPos sectionPos, TopoSortDynamicData data,
+    public void integrateSection(SortTriggering ts, SectionPos sectionPos, TopoSortDynamicData data,
             CameraMovement movement) {
         // create data with last camera position
         var cameraPos = movement.start();

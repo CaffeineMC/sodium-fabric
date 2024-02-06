@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.debug.checks;
 
-import com.mojang.blaze3d.systems.RenderCall;
+import com.mojang.blaze3d.pipeline.RenderCall;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.render.util.DeferredRenderTask;
 import me.jellysquid.mods.sodium.client.render.util.RenderAsserts;
@@ -33,7 +33,7 @@ public abstract class RenderSystemMixin {
             "glGenBuffers",
             "glGenVertexArrays",
             "setShader",
-            "setShaderTexture(ILnet/minecraft/util/Identifier;)V",
+            "setShaderTexture(ILnet/minecraft/resources/ResourceLocation;)V",
             "setShaderTexture(II)V",
             "setProjectionMatrix",
             "setInverseViewRotationMatrix",

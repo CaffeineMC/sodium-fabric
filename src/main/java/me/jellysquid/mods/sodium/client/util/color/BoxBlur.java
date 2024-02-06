@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.util.color;
 
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 
 public class BoxBlur {
 
@@ -77,7 +77,7 @@ public class BoxBlur {
      * @author 2No2Name
      */
     private static int getAveragingMultiplier(int size) {
-        return MathHelper.ceil((1L << 24) / (double) size);
+        return Mth.ceil((1L << 24) / (double) size);
     }
 
     /**

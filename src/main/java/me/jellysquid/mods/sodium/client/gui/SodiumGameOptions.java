@@ -8,9 +8,8 @@ import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import me.jellysquid.mods.sodium.client.util.FileUtil;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.option.GraphicsMode;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.GraphicsStatus;
+import net.minecraft.network.chat.Component;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -78,19 +77,19 @@ public class SodiumGameOptions {
         FANCY("options.clouds.fancy"),
         FAST("options.clouds.fast");
 
-        private final Text name;
+        private final Component name;
 
         GraphicsQuality(String name) {
-            this.name = Text.translatable(name);
+            this.name = Component.translatable(name);
         }
 
         @Override
-        public Text getLocalizedName() {
+        public Component getLocalizedName() {
             return this.name;
         }
 
-        public boolean isFancy(GraphicsMode graphicsMode) {
-            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
+        public boolean isFancy(GraphicsStatus graphicsMode) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsStatus.FANCY || graphicsMode == GraphicsStatus.FABULOUS));
         }
     }
 

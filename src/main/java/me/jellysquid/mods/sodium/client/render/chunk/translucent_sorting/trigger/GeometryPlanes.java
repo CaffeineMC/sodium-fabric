@@ -7,7 +7,7 @@ import org.joml.Vector3fc;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 
 /**
  * GeometryPlanes stores the NormalPlanes for different normals, both aligned
@@ -64,7 +64,7 @@ public class GeometryPlanes {
         }
     }
 
-    public void addAlignedPlane(ChunkSectionPos sectionPos, int direction, float distance) {
+    public void addAlignedPlane(SectionPos sectionPos, int direction, float distance) {
         var alignedDistances = this.getAlignedOrCreate();
         var normalPlanes = alignedDistances[direction];
         if (normalPlanes == null) {
@@ -74,12 +74,12 @@ public class GeometryPlanes {
         normalPlanes.addPlaneMember(distance);
     }
 
-    public void addDoubleSidedPlane(ChunkSectionPos sectionPos, int axis, float distance) {
+    public void addDoubleSidedPlane(SectionPos sectionPos, int axis, float distance) {
         this.addAlignedPlane(sectionPos, axis, distance);
         this.addAlignedPlane(sectionPos, axis + 3, -distance);
     }
 
-    public void addUnalignedPlane(ChunkSectionPos sectionPos, Vector3fc normal, float distance) {
+    public void addUnalignedPlane(SectionPos sectionPos, Vector3fc normal, float distance) {
         var unalignedDistances = this.getUnalignedOrCreate();
         var normalPlanes = unalignedDistances.get(normal);
         if (normalPlanes == null) {
@@ -89,7 +89,7 @@ public class GeometryPlanes {
         normalPlanes.addPlaneMember(distance);
     }
 
-    public void addQuadPlane(ChunkSectionPos sectionPos, TQuad quad) {
+    public void addQuadPlane(SectionPos sectionPos, TQuad quad) {
         var facing = quad.getFacing();
         if (facing.isAligned()) {
             this.addAlignedPlane(sectionPos, facing.ordinal(), quad.getDotProduct());
@@ -123,7 +123,7 @@ public class GeometryPlanes {
         return distancesByNormal;
     }
 
-    public static GeometryPlanes fromQuadLists(ChunkSectionPos sectionPos, TQuad[] quads) {
+    public static GeometryPlanes fromQuadLists(SectionPos sectionPos, TQuad[] quads) {
         var geometryPlanes = new GeometryPlanes();
         for (var quad : quads) {
             geometryPlanes.addQuadPlane(sectionPos, quad);

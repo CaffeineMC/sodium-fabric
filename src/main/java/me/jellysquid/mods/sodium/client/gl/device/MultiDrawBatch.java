@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.gl.device;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Pointer;
-
 import java.nio.IntBuffer;
 
 /**

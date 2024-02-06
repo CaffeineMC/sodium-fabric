@@ -1,14 +1,13 @@
 package me.jellysquid.mods.sodium.client.model.quad.properties;
 
-import java.util.Arrays;
-
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
-import me.jellysquid.mods.sodium.client.util.DirectionUtil;
-import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
+import java.util.Arrays;
 
 public enum ModelQuadFacing {
     POS_X,
@@ -113,7 +112,7 @@ public enum ModelQuadFacing {
         Direction closestFace = null;
 
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
-            float dot = normal.dot(face.getUnitVector());
+            float dot = normal.dot(face.step());
 
             if (dot > maxDot) {
                 maxDot = dot;
@@ -121,7 +120,7 @@ public enum ModelQuadFacing {
             }
         }
 
-        if (closestFace != null && MathHelper.approximatelyEquals(maxDot, 1.0f)) {
+        if (closestFace != null && Mth.equal(maxDot, 1.0f)) {
             return ModelQuadFacing.fromDirection(closestFace);
         }
 
