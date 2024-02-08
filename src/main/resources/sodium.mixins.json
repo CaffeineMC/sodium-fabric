@@ -22,7 +22,6 @@
     "core.render.immediate.consumer.OutlineVertexConsumerMixin",
     "core.render.immediate.consumer.OverlayVertexConsumerMixin",
     "core.render.immediate.consumer.SpriteTexturedVertexConsumerMixin",
-    "core.render.immediate.consumer.VertexConsumerProviderImmediateMixin",
     "core.render.immediate.consumer.VertexConsumersMixin$DualMixin",
     "core.render.immediate.consumer.VertexConsumersMixin$UnionMixin",
     "core.render.world.ChunkBuilderMixin",
