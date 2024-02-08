@@ -12,7 +12,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.LevelSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
@@ -32,7 +32,7 @@ import java.util.Map;
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
  * to graphics memory on the main thread.
  *
- * This task takes a slice of the world from the thread it is created on. Since these slices require rather large
+ * This task takes a slice of the level from the thread it is created on. Since these slices require rather large
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
 public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> {
@@ -58,7 +58,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockRenderCache cache = buildContext.cache;
         cache.init(this.renderContext);
 
-        WorldSlice slice = cache.getWorldSlice();
+        LevelSlice slice = cache.getWorldSlice();
 
         int minX = this.render.getOriginX();
         int minY = this.render.getOriginY();
@@ -150,7 +150,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         return new ChunkBuildOutput(this.render, renderData.build(), meshes, this.buildTime);
     }
 
-    private ReportedException fillCrashInfo(CrashReport report, WorldSlice slice, BlockPos pos) {
+    private ReportedException fillCrashInfo(CrashReport report, LevelSlice slice, BlockPos pos) {
         CrashReportCategory crashReportSection = report.addCategory("Block being rendered", 1);
 
         BlockState state = null;

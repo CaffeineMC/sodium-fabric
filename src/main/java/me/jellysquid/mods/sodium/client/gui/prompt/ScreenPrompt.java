@@ -2,19 +2,16 @@ package me.jellysquid.mods.sodium.client.gui.prompt;
 
 import me.jellysquid.mods.sodium.client.gui.widgets.AbstractWidget;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
-import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget.Style;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
-import net.minecraft.util.FormattedCharSequence;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
-import com.mojang.blaze3d.vertex.PoseStack;
+
 import java.util.List;
 
 public class ScreenPrompt implements GuiEventListener, Renderable {
@@ -50,22 +47,22 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
         this.actionButton.setStyle(createButtonStyle());
     }
 
-    public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-        var matrices = drawContext.pose();
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+        var matrices = graphics.pose();
         matrices.pushPose();
         matrices.translate(0.0f, 0.0f, 1000.0f);
 
         var parentDimensions = this.parent.getDimensions();
 
-        drawContext.fill(0, 0, parentDimensions.width(), parentDimensions.height(), 0x70090909);
+        graphics.fill(0, 0, parentDimensions.width(), parentDimensions.height(), 0x70090909);
 
         matrices.translate(0.0f, 0.0f, 50.0f);
 
         int boxX = (parentDimensions.width() / 2) - (width / 2);
         int boxY = (parentDimensions.height() / 2) - (height / 2);
 
-        drawContext.fill(boxX, boxY, boxX + width, boxY + height, 0xFF171717);
-        drawContext.renderOutline(boxX, boxY, width, height, 0xFF121212);
+        graphics.fill(boxX, boxY, boxX + width, boxY + height, 0xFF171717);
+        graphics.renderOutline(boxX, boxY, width, height, 0xFF121212);
 
         matrices.translate(0.0f, 0.0f, 50.0f);
 
@@ -77,21 +74,21 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
         int textMaxWidth = width - (padding * 2);
         int textMaxHeight = height - (padding * 2);
 
-        var textRenderer = Minecraft.getInstance().font;
+        var font = Minecraft.getInstance().font;
 
         for (var paragraph : this.text) {
-            var formatted = textRenderer.split(paragraph, textMaxWidth);
+            var formatted = font.split(paragraph, textMaxWidth);
 
             for (var line : formatted) {
-                drawContext.drawString(textRenderer, line, textX, textY, 0xFFFFFFFF, true);
-                textY += textRenderer.lineHeight + 2;
+                graphics.drawString(font, line, textX, textY, 0xFFFFFFFF, true);
+                textY += font.lineHeight + 2;
             }
 
             textY += 8;
         }
 
         for (var button : getWidgets()) {
-            button.render(drawContext, mouseX, mouseY, delta);
+            button.render(graphics, mouseX, mouseY, delta);
         }
 
         matrices.popPose();

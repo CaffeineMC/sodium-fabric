@@ -4,7 +4,6 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.*;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 
 public class Kernel32 {
     private static final SharedLibrary LIBRARY = APIUtil.apiCreateLibrary("kernel32");

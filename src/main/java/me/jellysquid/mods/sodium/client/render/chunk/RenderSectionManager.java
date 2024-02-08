@@ -9,13 +9,11 @@ import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import it.unimi.dsi.fastutil.objects.ReferenceSets;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobTyped;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobCollector;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
@@ -25,7 +23,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.lists.VisibleChunkCollector
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.OcclusionCuller;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion.DeviceResources;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
@@ -34,9 +31,7 @@ import me.jellysquid.mods.sodium.client.render.util.RenderAsserts;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.iterator.ByteIterator;
-import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.LevelSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import net.minecraft.client.Camera;
@@ -67,7 +62,7 @@ public class RenderSectionManager {
 
     private final ChunkRenderer chunkRenderer;
 
-    private final ClientLevel world;
+    private final ClientLevel level;
 
     private final ReferenceSet<RenderSection> sectionsWithGlobalEntities = new ReferenceOpenHashSet<>();
 
@@ -87,20 +82,20 @@ public class RenderSectionManager {
 
     private @Nullable BlockPos lastCameraPosition;
 
-    public RenderSectionManager(ClientLevel world, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(ClientLevel level, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
-        this.world = world;
-        this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
+        this.level = level;
+        this.builder = new ChunkBuilder(level, ChunkMeshFormats.COMPACT);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
         this.regions = new RenderRegionManager(commandList);
-        this.sectionCache = new ClonedChunkSectionCache(this.world);
+        this.sectionCache = new ClonedChunkSectionCache(this.level);
 
         this.renderLists = SortedRenderLists.empty();
-        this.occlusionCuller = new OcclusionCuller(Long2ReferenceMaps.unmodifiable(this.sectionByPosition), this.world);
+        this.occlusionCuller = new OcclusionCuller(Long2ReferenceMaps.unmodifiable(this.sectionByPosition), this.level);
 
         this.rebuildLists = new EnumMap<>(ChunkUpdateType.class);
 
@@ -148,8 +143,8 @@ public class RenderSectionManager {
         final boolean useOcclusionCulling;
         BlockPos origin = camera.getBlockPosition();
 
-        if (spectator && this.world.getBlockState(origin)
-                .isSolidRender(this.world, origin))
+        if (spectator && this.level.getBlockState(origin)
+                .isSolidRender(this.level, origin))
         {
             useOcclusionCulling = false;
         } else {
@@ -180,8 +175,8 @@ public class RenderSectionManager {
 
         this.sectionByPosition.put(key, renderSection);
 
-        ChunkAccess chunk = this.world.getChunk(x, z);
-        LevelChunkSection section = chunk.getSections()[this.world.getSectionIndexFromSectionY(y)];
+        ChunkAccess chunk = this.level.getChunk(x, z);
+        LevelChunkSection section = chunk.getSections()[this.level.getSectionIndexFromSectionY(y)];
 
         if (section.hasOnlyAir()) {
             this.updateSectionInfo(renderSection, BuiltSectionInfo.EMPTY);
@@ -386,7 +381,7 @@ public class RenderSectionManager {
     }
 
     public @Nullable ChunkBuilderMeshingTask createRebuildTask(RenderSection render, int frame) {
-        ChunkRenderContext context = WorldSlice.prepare(this.world, render.getPosition(), this.sectionCache);
+        ChunkRenderContext context = LevelSlice.prepare(this.level, render.getPosition(), this.sectionCache);
 
         if (context == null) {
             return null;
@@ -569,13 +564,13 @@ public class RenderSectionManager {
     }
 
     public void onChunkAdded(int x, int z) {
-        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
+        for (int y = this.level.getMinSection(); y < this.level.getMaxSection(); y++) {
             this.onSectionAdded(x, y, z);
         }
     }
 
     public void onChunkRemoved(int x, int z) {
-        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
+        for (int y = this.level.getMinSection(); y < this.level.getMaxSection(); y++) {
             this.onSectionRemoved(x, y, z);
         }
     }

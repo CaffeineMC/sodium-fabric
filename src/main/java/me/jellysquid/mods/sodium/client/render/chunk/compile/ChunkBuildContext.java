@@ -9,9 +9,9 @@ public class ChunkBuildContext {
     public final ChunkBuildBuffers buffers;
     public final BlockRenderCache cache;
 
-    public ChunkBuildContext(ClientLevel world, ChunkVertexType vertexType) {
+    public ChunkBuildContext(ClientLevel level, ChunkVertexType vertexType) {
         this.buffers = new ChunkBuildBuffers(vertexType);
-        this.cache = new BlockRenderCache(Minecraft.getInstance(), world);
+        this.cache = new BlockRenderCache(Minecraft.getInstance(), level);
     }
 
     public void cleanup() {

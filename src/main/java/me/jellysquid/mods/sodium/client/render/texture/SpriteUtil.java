@@ -11,10 +11,10 @@ public class SpriteUtil {
             return;
         }
 
-        ((SpriteContentsExtended) sprite.contents()).sodium$setActive(true);
+        ((SpriteContentsExtension) sprite.contents()).sodium$setActive(true);
     }
 
     public static boolean hasAnimation(TextureAtlasSprite sprite) {
-        return ((SpriteContentsExtended) sprite.contents()).sodium$hasAnimation();
+        return ((SpriteContentsExtension) sprite.contents()).sodium$hasAnimation();
     }
 }

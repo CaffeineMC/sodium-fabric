@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.core.model.colors;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.model.color.interop.ItemColorsExtended;
+import me.jellysquid.mods.sodium.client.model.color.interop.ItemColorsExtension;
 import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.color.item.ItemColors;
 import net.minecraft.world.item.ItemStack;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemColors.class)
-public class ItemColorsMixin implements ItemColorsExtended {
+public class ItemColorsMixin implements ItemColorsExtension {
     @Unique
     private final Reference2ReferenceMap<ItemLike, ItemColor> itemsToColor =
             new Reference2ReferenceOpenHashMap<>();
