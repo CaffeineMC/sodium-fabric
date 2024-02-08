@@ -10,8 +10,8 @@ import net.minecraft.world.level.BlockAndTintGetter;
 public class HashLightDataCache extends LightDataAccess {
     private final Long2IntLinkedOpenHashMap map = new Long2IntLinkedOpenHashMap(1024, 0.50f);
 
-    public HashLightDataCache(BlockAndTintGetter world) {
-        this.world = world;
+    public HashLightDataCache(BlockAndTintGetter level) {
+        this.level = level;
     }
 
     @Override

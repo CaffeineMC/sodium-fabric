@@ -1,11 +1,10 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMap.Entry;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.world.ReadableContainerExtended;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.PalettedContainerROExtension;
+import me.jellysquid.mods.sodium.client.world.LevelSlice;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
@@ -46,7 +45,7 @@ public class ClonedChunkSection {
 
     private long lastUsedTimestamp = Long.MAX_VALUE;
 
-    public ClonedChunkSection(Level world, LevelChunk chunk, @Nullable LevelChunkSection section, SectionPos pos) {
+    public ClonedChunkSection(Level level, LevelChunk chunk, @Nullable LevelChunkSection section, SectionPos pos) {
         this.pos = pos;
 
         PalettedContainerRO<BlockState> blockData = null;
@@ -57,8 +56,8 @@ public class ClonedChunkSection {
 
         if (section != null) {
             if (!section.hasOnlyAir()) {
-                if (!world.isDebug()) {
-                    blockData = ReadableContainerExtended.clone(section.getStates());
+                if (!level.isDebug()) {
+                    blockData = PalettedContainerROExtension.clone(section.getStates());
                 } else {
                     blockData = constructDebugWorldContainer(pos);
                 }
@@ -69,7 +68,7 @@ public class ClonedChunkSection {
                 }
             }
 
-            biomeData = ReadableContainerExtended.clone(section.getBiomes());
+            biomeData = PalettedContainerROExtension.clone(section.getBiomes());
         }
 
         this.blockData = blockData;
@@ -78,7 +77,7 @@ public class ClonedChunkSection {
         this.blockEntityMap = blockEntityMap;
         this.blockEntityRenderDataMap = blockEntityRenderDataMap;
 
-        this.lightDataArrays = copyLightData(world, pos);
+        this.lightDataArrays = copyLightData(level, pos);
     }
 
     /**
@@ -113,13 +112,13 @@ public class ClonedChunkSection {
     }
 
     @NotNull
-    private static DataLayer[] copyLightData(Level world, SectionPos pos) {
+    private static DataLayer[] copyLightData(Level level, SectionPos pos) {
         var arrays = new DataLayer[2];
-        arrays[LightLayer.BLOCK.ordinal()] = copyLightArray(world, LightLayer.BLOCK, pos);
+        arrays[LightLayer.BLOCK.ordinal()] = copyLightArray(level, LightLayer.BLOCK, pos);
 
         // Dimensions without sky-light should not have a default-initialized array
-        if (world.dimensionType().hasSkyLight()) {
-            arrays[LightLayer.SKY.ordinal()] = copyLightArray(world, LightLayer.SKY, pos);
+        if (level.dimensionType().hasSkyLight()) {
+            arrays[LightLayer.SKY.ordinal()] = copyLightArray(level, LightLayer.SKY, pos);
         }
 
         return arrays;
@@ -130,8 +129,8 @@ public class ClonedChunkSection {
      * the light array is not loaded.
      */
     @NotNull
-    private static DataLayer copyLightArray(Level world, LightLayer type, SectionPos pos) {
-        var array = world.getLightEngine()
+    private static DataLayer copyLightArray(Level level, LightLayer type, SectionPos pos) {
+        var array = level.getLightEngine()
                 .getLayerListener(type)
                 .getDataLayerData(pos);
 
@@ -162,7 +161,7 @@ public class ClonedChunkSection {
                     blockEntities = new Int2ReferenceOpenHashMap<>();
                 }
 
-                blockEntities.put(WorldSlice.getLocalBlockIndex(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), entity);
+                blockEntities.put(LevelSlice.getLocalBlockIndex(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), entity);
             }
         }
 

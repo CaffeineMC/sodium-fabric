@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.model.color;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BlendedColorProvider;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorSource;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.minecraft.client.color.block.BlockColor;
@@ -13,8 +13,8 @@ import net.minecraft.world.level.material.FluidState;
 import java.util.Arrays;
 
 public class DefaultColorProviders {
-    public static ColorProvider<BlockState> adapt(BlockColor provider) {
-        return new VanillaAdapter(provider);
+    public static ColorProvider<BlockState> adapt(BlockColor color) {
+        return new VanillaAdapter(color);
     }
 
     public static ColorProvider<FluidState> adapt(FluidRenderHandler handler) {
@@ -29,8 +29,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(WorldSlice world, int x, int y, int z) {
-            return world.getColor(BiomeColorSource.GRASS, x, y, z);
+        protected int getColor(LevelSlice slice, int x, int y, int z) {
+            return slice.getColor(BiomeColorSource.GRASS, x, y, z);
         }
     }
 
@@ -42,8 +42,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(WorldSlice world, int x, int y, int z) {
-            return world.getColor(BiomeColorSource.FOLIAGE, x, y, z);
+        protected int getColor(LevelSlice slice, int x, int y, int z) {
+            return slice.getColor(BiomeColorSource.FOLIAGE, x, y, z);
         }
     }
 
@@ -56,21 +56,21 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(WorldSlice world, int x, int y, int z) {
-            return world.getColor(BiomeColorSource.WATER, x, y, z);
+        protected int getColor(LevelSlice slice, int x, int y, int z) {
+            return slice.getColor(BiomeColorSource.WATER, x, y, z);
         }
     }
 
     private static class VanillaAdapter implements ColorProvider<BlockState> {
-        private final BlockColor provider;
+        private final BlockColor color;
 
-        private VanillaAdapter(BlockColor provider) {
-            this.provider = provider;
+        private VanillaAdapter(BlockColor color) {
+            this.color = color;
         }
 
         @Override
-        public void getColors(WorldSlice view, BlockPos pos, BlockState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, ColorARGB.toABGR(this.provider.getColor(state, view, pos, quad.getColorIndex())));
+        public void getColors(LevelSlice slice, BlockPos pos, BlockState state, ModelQuadView quad, int[] output) {
+            Arrays.fill(output, ColorARGB.toABGR(this.color.getColor(state, slice, pos, quad.getColorIndex())));
         }
     }
 
@@ -82,8 +82,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        public void getColors(WorldSlice view, BlockPos pos, FluidState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, this.handler.getFluidColor(view, pos, state));
+        public void getColors(LevelSlice slice, BlockPos pos, FluidState state, ModelQuadView quad, int[] output) {
+            Arrays.fill(output, this.handler.getFluidColor(slice, pos, state));
         }
     }
 }

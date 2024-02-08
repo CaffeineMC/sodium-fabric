@@ -3,8 +3,6 @@ package me.jellysquid.mods.sodium.client.compatibility.environment.probe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
-import oshi.hardware.GraphicsCard;
-import oshi.hardware.HardwareAbstractionLayer;
 import oshi.util.ExecutingCommand;
 
 import java.io.IOException;
@@ -13,7 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
+
 import net.minecraft.Util;
 
 public class GraphicsAdapterProbe {

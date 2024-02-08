@@ -1,20 +1,17 @@
 package me.jellysquid.mods.sodium.client.compatibility.checks;
 
+import com.mojang.blaze3d.platform.Window;
 import me.jellysquid.mods.sodium.client.platform.MessageBox;
 import me.jellysquid.mods.sodium.client.platform.windows.api.Kernel32;
-import me.jellysquid.mods.sodium.client.platform.windows.api.version.LanguageCodePage;
 import me.jellysquid.mods.sodium.client.platform.windows.api.version.Version;
-import me.jellysquid.mods.sodium.client.platform.windows.api.version.VersionInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.NativeModuleLister;
-import net.minecraft.util.NativeModuleLister.NativeModuleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.mojang.blaze3d.platform.Window;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**

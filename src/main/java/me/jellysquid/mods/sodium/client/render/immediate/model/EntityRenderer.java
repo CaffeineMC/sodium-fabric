@@ -79,7 +79,7 @@ public class EntityRenderer {
         }
     }
 
-    public static void render(PoseStack matrixStack, VertexBufferWriter writer, ModelPart part, int light, int overlay, int color) {
+    public static void render(PoseStack poseStack, VertexBufferWriter writer, ModelPart part, int light, int overlay, int color) {
         ModelPartData accessor = ModelPartData.from(part);
         
         if (!accessor.isVisible()) {
@@ -93,22 +93,22 @@ public class EntityRenderer {
             return;
         }
 
-        matrixStack.pushPose();
+        poseStack.pushPose();
 
-        part.translateAndRotate(matrixStack);
+        part.translateAndRotate(poseStack);
 
         if (!accessor.isHidden()) {
-            renderCuboids(matrixStack.last(), writer, cuboids, light, overlay, color);
+            renderCuboids(poseStack.last(), writer, cuboids, light, overlay, color);
         }
 
-        renderChildren(matrixStack, writer, light, overlay, color, children);
+        renderChildren(poseStack, writer, light, overlay, color, children);
 
-        matrixStack.popPose();
+        poseStack.popPose();
     }
 
-    private static void renderChildren(PoseStack matrices, VertexBufferWriter writer, int light, int overlay, int color, ModelPart[] children) {
+    private static void renderChildren(PoseStack poseStack, VertexBufferWriter writer, int light, int overlay, int color, ModelPart[] children) {
         for (ModelPart part : children) {
-            render(matrices, writer, part, light, overlay, color);
+            render(poseStack, writer, part, light, overlay, color);
         }
     }
 

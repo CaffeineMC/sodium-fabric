@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.compatibility.environment.probe.Graphics
 import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import me.jellysquid.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import net.minecraft.Util;
-import net.minecraft.Util.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

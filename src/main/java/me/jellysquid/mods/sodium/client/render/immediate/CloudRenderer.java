@@ -66,23 +66,23 @@ public class CloudRenderer {
     private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
     private CloudStatus cloudRenderMode;
 
-    public CloudRenderer(ResourceProvider factory) {
-        this.reloadTextures(factory);
+    public CloudRenderer(ResourceProvider resourceProvider) {
+        this.reloadTextures(resourceProvider);
     }
 
-    public void render(@Nullable ClientLevel world, LocalPlayer player, PoseStack matrices, Matrix4f projectionMatrix, float ticks, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-        if (world == null) {
+    public void render(@Nullable ClientLevel level, LocalPlayer player, PoseStack matrices, Matrix4f projectionMatrix, float ticks, float tickDelta, double cameraX, double cameraY, double cameraZ) {
+        if (level == null) {
             return;
         }
 
-        float cloudHeight = world.effects().getCloudHeight();
+        float cloudHeight = level.effects().getCloudHeight();
 
         // Vanilla uses NaN height as a way to disable cloud rendering
         if (Float.isNaN(cloudHeight)) {
             return;
         }
 
-        Vec3 color = world.getCloudColor(tickDelta);
+        Vec3 color = level.getCloudColor(tickDelta);
 
         double cloudTime = (ticks + tickDelta) * 0.03F;
         double cloudCenterX = (cameraX + cloudTime);
@@ -121,7 +121,7 @@ public class CloudRenderer {
         this.fogData.end = cloudDistance * 8;
         this.fogData.start = (cloudDistance * 8) - 16;
 
-        applyFogModifiers(world, this.fogData, player, cloudDistance * 8, tickDelta);
+        applyFogModifiers(level, this.fogData, player, cloudDistance * 8, tickDelta);
 
 
         RenderSystem.setShaderFogEnd(this.fogData.end);
@@ -181,7 +181,7 @@ public class CloudRenderer {
         RenderSystem.setShaderFogStart(previousStart);
     }
 
-    private void applyFogModifiers(ClientLevel world, FogRenderer.FogData fogData, LocalPlayer player, int cloudDistance, float tickDelta) {
+    private void applyFogModifiers(ClientLevel level, FogRenderer.FogData fogData, LocalPlayer player, int cloudDistance, float tickDelta) {
         if (Minecraft.getInstance().gameRenderer == null || Minecraft.getInstance().gameRenderer.getMainCamera() == null) {
             return;
         }
@@ -215,7 +215,7 @@ public class CloudRenderer {
                 fogData.end = cloudDistance;
                 fogData.shape = FogShape.CYLINDER;
             }
-        } else if (world.effects().isFoggyAt(Mth.floor(camera.getPosition().x), Mth.floor(camera.getPosition().z)) || Minecraft.getInstance().gui.getBossOverlay().shouldCreateWorldFog()) {
+        } else if (level.effects().isFoggyAt(Mth.floor(camera.getPosition().x), Mth.floor(camera.getPosition().z)) || Minecraft.getInstance().gui.getBossOverlay().shouldCreateWorldFog()) {
             fogData.start = (cloudDistance) * 0.05f;
             fogData.end = Math.min((cloudDistance), 192.0f) * 0.5f;
         }
@@ -343,13 +343,13 @@ public class CloudRenderer {
         return buffer + ColorVertex.STRIDE;
     }
 
-    public void reloadTextures(ResourceProvider factory) {
+    public void reloadTextures(ResourceProvider resourceProvider) {
         this.destroy();
 
         this.edges = createCloudEdges();
 
         try {
-            this.shader = new ShaderInstance(factory, "clouds", DefaultVertexFormat.POSITION_COLOR);
+            this.shader = new ShaderInstance(resourceProvider, "clouds", DefaultVertexFormat.POSITION_COLOR);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

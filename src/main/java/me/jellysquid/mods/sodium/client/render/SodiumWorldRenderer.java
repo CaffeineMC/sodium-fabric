@@ -10,18 +10,15 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.util.iterator.ByteIterator;
-import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
+import me.jellysquid.mods.sodium.client.world.LevelRendererExtension;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -51,7 +48,7 @@ import java.util.SortedSet;
 public class SodiumWorldRenderer {
     private final Minecraft client;
 
-    private ClientLevel world;
+    private ClientLevel level;
     private int renderDistance;
 
     private double lastCameraX, lastCameraY, lastCameraZ;
@@ -69,7 +66,7 @@ public class SodiumWorldRenderer {
         var instance = instanceNullable();
 
         if (instance == null) {
-            throw new IllegalStateException("No renderer attached to active world");
+            throw new IllegalStateException("No renderer attached to active level");
         }
 
         return instance;
@@ -79,10 +76,10 @@ public class SodiumWorldRenderer {
      * @return The SodiumWorldRenderer based on the current dimension, or null if none is attached
      */
     public static SodiumWorldRenderer instanceNullable() {
-        var world = Minecraft.getInstance().levelRenderer;
+        var level = Minecraft.getInstance().levelRenderer;
 
-        if (world instanceof WorldRendererExtended) {
-            return ((WorldRendererExtended) world).sodium$getWorldRenderer();
+        if (level instanceof LevelRendererExtension extension) {
+            return extension.sodium$getWorldRenderer();
         }
 
         return null;
@@ -92,38 +89,38 @@ public class SodiumWorldRenderer {
         this.client = client;
     }
 
-    public void setWorld(ClientLevel world) {
-        // Check that the world is actually changing
-        if (this.world == world) {
+    public void setLevel(ClientLevel level) {
+        // Check that the level is actually changing
+        if (this.level == level) {
             return;
         }
 
-        // If we have a world is already loaded, unload the renderer
-        if (this.world != null) {
-            this.unloadWorld();
+        // If we have a level is already loaded, unload the renderer
+        if (this.level != null) {
+            this.unloadLevel();
         }
 
-        // If we're loading a new world, load the renderer
-        if (world != null) {
-            this.loadWorld(world);
+        // If we're loading a new level, load the renderer
+        if (level != null) {
+            this.loadLevel(level);
         }
     }
 
-    private void loadWorld(ClientLevel world) {
-        this.world = world;
+    private void loadLevel(ClientLevel level) {
+        this.level = level;
 
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.initRenderer(commandList);
         }
     }
 
-    private void unloadWorld() {
+    private void unloadLevel() {
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
         }
 
-        this.world = null;
+        this.level = null;
     }
 
     /**
@@ -226,7 +223,7 @@ public class SodiumWorldRenderer {
     }
 
     private void processChunkEvents() {
-        var tracker = ChunkTrackerHolder.get(this.world);
+        var tracker = ChunkTrackerHolder.get(this.level);
         tracker.forEachEvent(this.renderSectionManager::onChunkAdded, this.renderSectionManager::onChunkRemoved);
     }
 
@@ -245,7 +242,7 @@ public class SodiumWorldRenderer {
     }
 
     public void reload() {
-        if (this.world == null) {
+        if (this.level == null) {
             return;
         }
 
@@ -262,9 +259,9 @@ public class SodiumWorldRenderer {
 
         this.renderDistance = this.client.options.getEffectiveRenderDistance();
 
-        this.renderSectionManager = new RenderSectionManager(this.world, this.renderDistance, commandList);
+        this.renderSectionManager = new RenderSectionManager(this.level, this.renderDistance, commandList);
 
-        var tracker = ChunkTrackerHolder.get(this.world);
+        var tracker = ChunkTrackerHolder.get(this.level);
         ChunkTracker.forEachChunk(tracker.getReadyChunks(), this.renderSectionManager::onChunkAdded);
     }
 
@@ -402,22 +399,22 @@ public class SodiumWorldRenderer {
             return true;
         }
 
-        AABB box = entity.getBoundingBoxForCulling();
+        AABB bb = entity.getBoundingBoxForCulling();
 
         // bail on very large entities to avoid checking many sections
-        double entityVolume = (box.maxX - box.minX) * (box.maxY - box.minY) * (box.maxZ - box.minZ);
+        double entityVolume = (bb.maxX - bb.minX) * (bb.maxY - bb.minY) * (bb.maxZ - bb.minZ);
         if (entityVolume > MAX_ENTITY_CHECK_VOLUME) {
             // TODO: do a frustum check instead, even large entities aren't visible if they're outside the frustum
             return true;
         }
 
-        return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+        return this.isBoxVisible(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
     }
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
-        // Boxes outside the valid world height will never map to a rendered chunk
-        // Always render these boxes or they'll be culled incorrectly!
-        if (y2 < this.world.getMinBuildHeight() + 0.5D || y1 > this.world.getMaxBuildHeight() - 0.5D) {
+        // Boxes outside the valid level height will never map to a rendered chunk
+        // Always render these boxes, or they'll be culled incorrectly!
+        if (y2 < this.level.getMinBuildHeight() + 0.5D || y1 > this.level.getMaxBuildHeight() - 0.5D) {
             return true;
         }
 

@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.immediate.model;
 
-import org.joml.*;
 import java.util.Set;
 import net.minecraft.core.Direction;
 

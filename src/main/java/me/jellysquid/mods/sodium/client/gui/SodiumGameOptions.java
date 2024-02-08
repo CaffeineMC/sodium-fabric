@@ -81,8 +81,8 @@ public class SodiumGameOptions {
             return this.name;
         }
 
-        public boolean isFancy(GraphicsStatus graphicsMode) {
-            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsStatus.FANCY || graphicsMode == GraphicsStatus.FABULOUS));
+        public boolean isFancy(GraphicsStatus graphicsStatus) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsStatus == GraphicsStatus.FANCY || graphicsStatus == GraphicsStatus.FABULOUS));
         }
     }
 

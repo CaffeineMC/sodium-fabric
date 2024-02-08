@@ -3,9 +3,9 @@ package me.jellysquid.mods.sodium.client.world;
 import net.minecraft.client.multiplayer.ClientLevel;
 
 public interface BiomeSeedProvider {
-    static long getBiomeSeed(ClientLevel world) {
-        return ((BiomeSeedProvider) world).sodium$getBiomeSeed();
+    static long getBiomeZoomSeed(ClientLevel level) {
+        return ((BiomeSeedProvider) level).sodium$getBiomeZoomSeed();
     }
 
-    long sodium$getBiomeSeed();
+    long sodium$getBiomeZoomSeed();
 }

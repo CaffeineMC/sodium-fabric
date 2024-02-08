@@ -4,7 +4,7 @@ import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.render.immediate.model.BakedModelEncoder;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
-import me.jellysquid.mods.sodium.client.model.color.interop.ItemColorsExtended;
+import me.jellysquid.mods.sodium.client.model.color.interop.ItemColorsExtension;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
@@ -54,7 +54,7 @@ public class ItemRendererMixin {
         ItemColor colorProvider = null;
 
         if (!itemStack.isEmpty()) {
-            colorProvider = ((ItemColorsExtended) this.itemColors).sodium$getColorProvider(itemStack);
+            colorProvider = ((ItemColorsExtension) this.itemColors).sodium$getColorProvider(itemStack);
         }
 
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {

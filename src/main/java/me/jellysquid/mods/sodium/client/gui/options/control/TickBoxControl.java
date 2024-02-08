@@ -38,8 +38,8 @@ public class TickBoxControl implements Control<Boolean> {
         }
 
         @Override
-        public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-            super.render(drawContext, mouseX, mouseY, delta);
+        public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+            super.render(graphics, mouseX, mouseY, delta);
 
             final int x = this.button.getX();
             final int y = this.button.getY();
@@ -58,10 +58,10 @@ public class TickBoxControl implements Control<Boolean> {
             }
 
             if (ticked) {
-                this.drawRect(drawContext, x + 2, y + 2, w - 2, h - 2, color);
+                this.drawRect(graphics, x + 2, y + 2, w - 2, h - 2, color);
             }
 
-            this.drawBorder(drawContext, x, y, w, h, color);
+            this.drawBorder(graphics, x, y, w, h, color);
         }
 
         @Override
