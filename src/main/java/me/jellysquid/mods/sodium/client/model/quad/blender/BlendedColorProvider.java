@@ -5,8 +5,8 @@ import me.jellysquid.mods.sodium.client.model.color.ColorProvider;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 
 public abstract class BlendedColorProvider<T> implements ColorProvider<T> {
     @Override
@@ -25,9 +25,9 @@ public abstract class BlendedColorProvider<T> implements ColorProvider<T> {
         // Floor the positions here to always get the largest integer below the input
         // as negative values by default round toward zero when casting to an integer.
         // Which would cause negative ratios to be calculated in the interpolation later on.
-        final int intX = MathHelper.floor(posX);
-        final int intY = MathHelper.floor(posY);
-        final int intZ = MathHelper.floor(posZ);
+        final int intX = Mth.floor(posX);
+        final int intY = Mth.floor(posY);
+        final int intZ = Mth.floor(posZ);
 
         // Integer component of position vector
         final int worldIntX = blockPos.getX() + intX;

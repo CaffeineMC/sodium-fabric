@@ -2,16 +2,19 @@ package me.jellysquid.mods.sodium.client.compatibility.checks;
 
 import me.jellysquid.mods.sodium.client.platform.MessageBox;
 import me.jellysquid.mods.sodium.client.platform.windows.api.Kernel32;
+import me.jellysquid.mods.sodium.client.platform.windows.api.version.LanguageCodePage;
 import me.jellysquid.mods.sodium.client.platform.windows.api.version.Version;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.Window;
-import net.minecraft.util.WinNativeModuleUtil;
+import me.jellysquid.mods.sodium.client.platform.windows.api.version.VersionInfo;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.NativeModuleLister;
+import net.minecraft.util.NativeModuleLister.NativeModuleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.mojang.blaze3d.platform.Window;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -25,10 +28,10 @@ public class ModuleScanner {
     private static final String[] RTSS_HOOKS_MODULE_NAMES = { "RTSSHooks64.dll", "RTSSHooks.dll" };
 
     public static void checkModules() {
-        List<WinNativeModuleUtil.NativeModule> modules;
+        List<NativeModuleLister.NativeModuleInfo> modules;
 
         try {
-            modules = WinNativeModuleUtil.collectNativeModules();
+            modules = NativeModuleLister.listModules();
         } catch (Throwable t) {
             LOGGER.warn("Failed to scan the currently loaded modules", t);
             return;
@@ -63,7 +66,7 @@ public class ModuleScanner {
         }
 
         if (version == null || !isRTSSCompatible(version)) {
-            Window window = MinecraftClient.getInstance().getWindow();
+            Window window = Minecraft.getInstance().getWindow();
             MessageBox.showMessageBox(window, MessageBox.IconType.ERROR, "Sodium Renderer",
                     "You appear to be using an older version of RivaTuner Statistics Server (RTSS) which is not compatible with Sodium. " +
                             "You must either update to a newer version (7.3.4 and later) or close the RivaTuner Statistics Server application.\n\n" +
@@ -158,10 +161,10 @@ public class ModuleScanner {
         return fileVersion;
     }
 
-    private static boolean isModuleLoaded(List<WinNativeModuleUtil.NativeModule> modules, String[] names) {
+    private static boolean isModuleLoaded(List<NativeModuleLister.NativeModuleInfo> modules, String[] names) {
         for (var name : names) {
             for (var module : modules) {
-                if (module.path.equalsIgnoreCase(name)) {
+                if (module.name.equalsIgnoreCase(name)) {
                     return true;
                 }
             }

@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.immediate.model;
 
-import net.minecraft.util.math.Direction;
 import org.joml.*;
-
 import java.util.Set;
+import net.minecraft.core.Direction;
 
 public class ModelCuboid {
     public final float x1, y1, z1;

@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.render.world.clouds;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import me.jellysquid.mods.sodium.client.render.immediate.CloudRenderer;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.resource.ResourceManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
@@ -13,16 +13,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(WorldRenderer.class)
+@Mixin(LevelRenderer.class)
 public class WorldRendererMixin {
     @Shadow
-    private @Nullable ClientWorld world;
+    private @Nullable ClientLevel level;
     @Shadow
     private int ticks;
 
     @Shadow
     @Final
-    private MinecraftClient client;
+    private Minecraft minecraft;
 
     @Unique
     private CloudRenderer cloudRenderer;
@@ -32,22 +32,22 @@ public class WorldRendererMixin {
      * @reason Optimize cloud rendering
      */
     @Overwrite
-    public void renderClouds(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
+    public void renderClouds(PoseStack matrices, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
         if (this.cloudRenderer == null) {
-            this.cloudRenderer = new CloudRenderer(this.client.getResourceManager());
+            this.cloudRenderer = new CloudRenderer(this.minecraft.getResourceManager());
         }
 
-        this.cloudRenderer.render(this.world, this.client.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
+        this.cloudRenderer.render(this.level, this.minecraft.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
     }
 
-    @Inject(method = "reload(Lnet/minecraft/resource/ResourceManager;)V", at = @At("RETURN"))
+    @Inject(method = "onResourceManagerReload(Lnet/minecraft/server/packs/resources/ResourceManager;)V", at = @At("RETURN"))
     private void onReload(ResourceManager manager, CallbackInfo ci) {
         if (this.cloudRenderer != null) {
             this.cloudRenderer.reloadTextures(manager);
         }
     }
 
-    @Inject(method = "reload()V", at = @At("RETURN"))
+    @Inject(method = "allChanged()V", at = @At("RETURN"))
     private void onReload(CallbackInfo ci) {
         // will be re-allocated on next use
         if (this.cloudRenderer != null) {

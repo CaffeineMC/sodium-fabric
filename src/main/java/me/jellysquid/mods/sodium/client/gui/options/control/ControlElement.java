@@ -3,11 +3,11 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.widgets.AbstractWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.ScreenRect;
-import net.minecraft.client.gui.navigation.GuiNavigation;
-import net.minecraft.client.gui.navigation.GuiNavigationPath;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.ComponentPath;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.FocusNavigationEvent;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import org.jetbrains.annotations.Nullable;
 
 public class ControlElement<T> extends AbstractWidget {
@@ -21,22 +21,22 @@ public class ControlElement<T> extends AbstractWidget {
     }
 
     @Override
-    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
         String name = this.option.getName().getString();
         String label;
 
-        if ((this.hovered || this.isFocused()) && this.font.getWidth(name) > (this.dim.width() - this.option.getControl().getMaxWidth())) {
+        if ((this.hovered || this.isFocused()) && this.font.width(name) > (this.dim.width() - this.option.getControl().getMaxWidth())) {
             name = name.substring(0, Math.min(name.length(), 10)) + "...";
         }
 
         if (this.option.isAvailable()) {
             if (this.option.hasChanged()) {
-                label = Formatting.ITALIC + name + " *";
+                label = ChatFormatting.ITALIC + name + " *";
             } else {
-                label = Formatting.WHITE + name;
+                label = ChatFormatting.WHITE + name;
             }
         } else {
-            label = String.valueOf(Formatting.GRAY) + Formatting.STRIKETHROUGH + name;
+            label = String.valueOf(ChatFormatting.GRAY) + ChatFormatting.STRIKETHROUGH + name;
         }
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
@@ -58,14 +58,14 @@ public class ControlElement<T> extends AbstractWidget {
     }
 
     @Override
-    public @Nullable GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
+    public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent navigation) {
         if (!this.option.isAvailable())
             return null;
-        return super.getNavigationPath(navigation);
+        return super.nextFocusPath(navigation);
     }
 
     @Override
-    public ScreenRect getNavigationFocus() {
-        return new ScreenRect(this.dim.x(), this.dim.y(), this.dim.width(), this.dim.height());
+    public ScreenRectangle getRectangle() {
+        return new ScreenRectangle(this.dim.x(), this.dim.y(), this.dim.width(), this.dim.height());
     }
 }

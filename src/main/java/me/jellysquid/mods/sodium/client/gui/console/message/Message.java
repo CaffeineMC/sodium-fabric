@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui.console.message;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
-public record Message(MessageLevel level, Text text, double duration) {
+public record Message(MessageLevel level, Component text, double duration) {
 
 }

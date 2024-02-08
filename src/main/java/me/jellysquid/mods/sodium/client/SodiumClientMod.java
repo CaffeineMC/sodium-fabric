@@ -9,7 +9,7 @@ import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ public class SodiumClientMod implements ClientModInitializer {
             LOGGER.error("Failed to load configuration file", e);
             LOGGER.error("Using default configuration file in read-only mode");
 
-            Console.instance().logMessage(MessageLevel.SEVERE, Text.translatable("sodium.console.config_not_loaded"), 12.5);
+            Console.instance().logMessage(MessageLevel.SEVERE, Component.translatable("sodium.console.config_not_loaded"), 12.5);
 
             var config = SodiumGameOptions.defaults();
             config.setReadOnly();

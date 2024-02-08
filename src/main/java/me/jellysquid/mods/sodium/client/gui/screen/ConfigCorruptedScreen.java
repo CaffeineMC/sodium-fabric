@@ -3,11 +3,11 @@ package me.jellysquid.mods.sodium.client.gui.screen;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -29,8 +29,8 @@ public class ConfigCorruptedScreen extends Screen {
         More information about the error can be found in the log file.
         """;
 
-    private static final List<Text> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
-            .map(Text::literal)
+    private static final List<Component> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
+            .map(Component::literal)
             .collect(Collectors.toList());
 
     private static final int BUTTON_WIDTH = 140;
@@ -42,7 +42,7 @@ public class ConfigCorruptedScreen extends Screen {
     private final Function<Screen, Screen> nextScreen;
 
     public ConfigCorruptedScreen(@Nullable Screen prevScreen, @Nullable Function<Screen, Screen> nextScreen) {
-        super(Text.literal("Sodium failed to load the configuration file"));
+        super(Component.literal("Sodium failed to load the configuration file"));
 
         this.prevScreen = prevScreen;
         this.nextScreen = nextScreen;
@@ -54,31 +54,31 @@ public class ConfigCorruptedScreen extends Screen {
 
         int buttonY = this.height - SCREEN_PADDING - BUTTON_HEIGHT;
 
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Continue"), (btn) -> {
-            Console.instance().logMessage(MessageLevel.INFO, Text.translatable("sodium.console.config_file_was_reset"), 3.0);
+        this.addRenderableWidget(Button.builder(Component.literal("Continue"), (btn) -> {
+            Console.instance().logMessage(MessageLevel.INFO, Component.translatable("sodium.console.config_file_was_reset"), 3.0);
 
             SodiumClientMod.restoreDefaultOptions();
-            MinecraftClient.getInstance().setScreen(this.nextScreen.apply(this.prevScreen));
-        }).dimensions(this.width - SCREEN_PADDING - BUTTON_WIDTH, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+            Minecraft.getInstance().setScreen(this.nextScreen.apply(this.prevScreen));
+        }).bounds(this.width - SCREEN_PADDING - BUTTON_WIDTH, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
 
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("Go back"), (btn) -> {
-            MinecraftClient.getInstance().setScreen(this.prevScreen);
-        }).dimensions(SCREEN_PADDING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+        this.addRenderableWidget(Button.builder(Component.literal("Go back"), (btn) -> {
+            Minecraft.getInstance().setScreen(this.prevScreen);
+        }).bounds(SCREEN_PADDING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
 
     @Override
-    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
         super.render(drawContext, mouseX, mouseY, delta);
 
-        drawContext.drawTextWithShadow(this.textRenderer, Text.literal("Sodium Renderer"), 32, 32, 0xffffff);
-        drawContext.drawTextWithShadow(this.textRenderer, Text.literal("Could not load the configuration file"), 32, 48, 0xff0000);
+        drawContext.drawString(this.font, Component.literal("Sodium Renderer"), 32, 32, 0xffffff);
+        drawContext.drawString(this.font, Component.literal("Could not load the configuration file"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
             if (TEXT_BODY.get(i).getString().isEmpty()) {
                 continue;
             }
 
-            drawContext.drawTextWithShadow(this.textRenderer, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
+            drawContext.drawString(this.font, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
         }
     }
 }

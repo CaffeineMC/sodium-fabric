@@ -29,6 +29,7 @@
  */
 package me.jellysquid.mods.sodium.client.util.sorting;
 
+
 /**
  * Based upon {@link it.unimi.dsi.fastutil.ints.IntArrays} implementation, but it eliminates the use of a user-supplied
  * function and instead sorts an array of floats directly. This helps to improve runtime performance.

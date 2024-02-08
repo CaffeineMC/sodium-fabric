@@ -1,13 +1,13 @@
 package net.caffeinemc.mods.sodium.api.vertex.format.common;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.*;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatRegistry;
-import net.minecraft.client.render.VertexFormats;
 
 public final class ModelVertex {
     public static final VertexFormatDescription FORMAT = VertexFormatRegistry.instance()
-            .get(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL);
+            .get(DefaultVertexFormat.NEW_ENTITY);
 
     public static final int STRIDE = 36;
 
