@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.util.sorting;
 
+
 public class AbstractSort {
     protected static int[] createIndexBuffer(int length) {
         var indices = new int[length];

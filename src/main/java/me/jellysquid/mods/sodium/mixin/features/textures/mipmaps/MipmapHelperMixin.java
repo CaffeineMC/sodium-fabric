@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.textures.mipmaps;
 
 import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
-import net.minecraft.client.texture.MipmapHelper;
-import net.minecraft.util.math.ColorHelper;
+import net.minecraft.client.renderer.texture.MipmapGenerator;
+import net.minecraft.util.FastColor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
@@ -26,14 +26,14 @@ import org.spongepowered.asm.mixin.Unique;
  *
  * This Mixin is ported from Iris at <a href="https://github.com/IrisShaders/Iris/blob/41095ac23ea0add664afd1b85c414d1f1ed94066/src/main/java/net/coderbot/iris/mixin/bettermipmaps/MixinMipmapGenerator.java">MixinMipmapGenerator</a>.
  */
-@Mixin(MipmapHelper.class)
+@Mixin(MipmapGenerator.class)
 public class MipmapHelperMixin {
     /**
      * @author coderbot
      * @reason replace the vanilla blending function with our improved function
      */
     @Overwrite
-    private static int blend(int one, int two, int three, int four, boolean checkAlpha) {
+    private static int alphaBlend(int one, int two, int three, int four, boolean checkAlpha) {
         // First blend horizontally, then blend vertically.
         //
         // This works well for the case where our change is the most impactful (grass side overlays)
@@ -42,8 +42,8 @@ public class MipmapHelperMixin {
 
     @Unique
     private static int weightedAverageColor(int one, int two) {
-        int alphaOne = ColorHelper.Abgr.getAlpha(one);
-        int alphaTwo = ColorHelper.Abgr.getAlpha(two);
+        int alphaOne = FastColor.ABGR32.alpha(one);
+        int alphaTwo = FastColor.ABGR32.alpha(two);
 
         // In the case where the alpha values of the same, we can get by with an unweighted average.
         if (alphaOne == alphaTwo) {
@@ -68,13 +68,13 @@ public class MipmapHelperMixin {
         float relativeWeightTwo = alphaTwo * scale;
 
         // Convert the color components into linear space, then multiply the corresponding weight.
-        float oneR = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(one)) * relativeWeightOne;
-        float oneG = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(one)) * relativeWeightOne;
-        float oneB = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(one)) * relativeWeightOne;
+        float oneR = ColorSRGB.srgbToLinear(FastColor.ABGR32.red(one)) * relativeWeightOne;
+        float oneG = ColorSRGB.srgbToLinear(FastColor.ABGR32.green(one)) * relativeWeightOne;
+        float oneB = ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(one)) * relativeWeightOne;
 
-        float twoR = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(two)) * relativeWeightTwo;
-        float twoG = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(two)) * relativeWeightTwo;
-        float twoB = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(two)) * relativeWeightTwo;
+        float twoR = ColorSRGB.srgbToLinear(FastColor.ABGR32.red(two)) * relativeWeightTwo;
+        float twoG = ColorSRGB.srgbToLinear(FastColor.ABGR32.green(two)) * relativeWeightTwo;
+        float twoB = ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(two)) * relativeWeightTwo;
 
         // Combine the color components of each color
         float linearR = oneR + twoR;
@@ -91,13 +91,13 @@ public class MipmapHelperMixin {
     // Computes a non-weighted average of the two sRGB colors in linear space, avoiding brightness losses.
     @Unique
     private static int averageRgb(int a, int b, int alpha) {
-        float ar = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(a));
-        float ag = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(a));
-        float ab = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(a));
+        float ar = ColorSRGB.srgbToLinear(FastColor.ABGR32.red(a));
+        float ag = ColorSRGB.srgbToLinear(FastColor.ABGR32.green(a));
+        float ab = ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(a));
 
-        float br = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(b));
-        float bg = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(b));
-        float bb = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(b));
+        float br = ColorSRGB.srgbToLinear(FastColor.ABGR32.red(b));
+        float bg = ColorSRGB.srgbToLinear(FastColor.ABGR32.green(b));
+        float bb = ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(b));
 
         return ColorSRGB.linearToSrgb((ar + br) * 0.5f, (ag + bg) * 0.5f, (ab + bb) * 0.5f, alpha);
     }

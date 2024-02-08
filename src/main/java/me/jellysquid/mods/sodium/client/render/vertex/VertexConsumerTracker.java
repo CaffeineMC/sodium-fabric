@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.vertex;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import it.unimi.dsi.fastutil.objects.ReferenceSets;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import net.minecraft.client.render.VertexConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

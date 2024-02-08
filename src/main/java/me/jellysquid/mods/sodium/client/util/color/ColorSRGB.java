@@ -1,7 +1,7 @@
 
 package me.jellysquid.mods.sodium.client.util.color;
 
-import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.FastColor;
 
 /**
  * This is a port of the fast-srgb8 library from thomcc on <a href="https://github.com/thomcc/fast-srgb8">GitHub</a>.
@@ -82,7 +82,7 @@ public class ColorSRGB {
      * @param a The alpha-component in linear RGB space (0 to 255)
      */
     public static int linearToSrgb(float r, float g, float b, int a) {
-        return ColorHelper.Abgr.getAbgr(a, linearToSrgb(b), linearToSrgb(g), linearToSrgb(r));
+        return FastColor.ABGR32.color(a, linearToSrgb(b), linearToSrgb(g), linearToSrgb(r));
     }
 
     /**

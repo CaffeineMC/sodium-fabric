@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.platform.unix;
 
+import java.nio.ByteBuffer;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.*;
 

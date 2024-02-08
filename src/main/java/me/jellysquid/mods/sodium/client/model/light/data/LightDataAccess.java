@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.model.light.data;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockRenderView;
-import net.minecraft.world.LightType;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * The light data cache is used to make accessing the light data and occlusion properties of blocks cheaper. The data
@@ -28,19 +28,19 @@ import net.minecraft.world.LightType;
  * You can use the various static pack/unpack methods to extract these values in a usable format.
  */
 public abstract class LightDataAccess {
-    private final BlockPos.Mutable pos = new BlockPos.Mutable();
-    protected BlockRenderView world;
+    private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+    protected BlockAndTintGetter world;
 
     public int get(int x, int y, int z, Direction d1, Direction d2) {
-        return this.get(x + d1.getOffsetX() + d2.getOffsetX(),
-                y + d1.getOffsetY() + d2.getOffsetY(),
-                z + d1.getOffsetZ() + d2.getOffsetZ());
+        return this.get(x + d1.getStepX() + d2.getStepX(),
+                y + d1.getStepY() + d2.getStepY(),
+                z + d1.getStepZ() + d2.getStepZ());
     }
 
     public int get(int x, int y, int z, Direction dir) {
-        return this.get(x + dir.getOffsetX(),
-                y + dir.getOffsetY(),
-                z + dir.getOffsetZ());
+        return this.get(x + dir.getStepX(),
+                y + dir.getStepY(),
+                z + dir.getStepZ());
     }
 
     public int get(BlockPos pos, Direction dir) {
@@ -59,16 +59,16 @@ public abstract class LightDataAccess {
 
     protected int compute(int x, int y, int z) {
         BlockPos pos = this.pos.set(x, y, z);
-        BlockRenderView world = this.world;
+        BlockAndTintGetter world = this.world;
 
         BlockState state = world.getBlockState(pos);
 
-        boolean em = state.hasEmissiveLighting(world, pos);
-        boolean op = state.shouldBlockVision(world, pos) && state.getOpacity(world, pos) != 0;
-        boolean fo = state.isOpaqueFullCube(world, pos);
-        boolean fc = state.isFullCube(world, pos);
+        boolean em = state.emissiveRendering(world, pos);
+        boolean op = state.isViewBlocking(world, pos) && state.getLightBlock(world, pos) != 0;
+        boolean fo = state.isSolidRender(world, pos);
+        boolean fc = state.isCollisionShapeFullBlock(world, pos);
 
-        int lu = state.getLuminance();
+        int lu = state.getLightEmission();
 
         // OPTIMIZE: Do not calculate light data if the block is full and opaque and does not emit light.
         int bl;
@@ -77,14 +77,14 @@ public abstract class LightDataAccess {
             bl = 0;
             sl = 0;
         } else {
-            bl = world.getLightLevel(LightType.BLOCK, pos);
-            sl = world.getLightLevel(LightType.SKY, pos);
+            bl = world.getBrightness(LightLayer.BLOCK, pos);
+            sl = world.getBrightness(LightLayer.SKY, pos);
         }
 
         // FIX: Do not apply AO from blocks that emit light
         float ao;
         if (lu == 0) {
-            ao = state.getAmbientOcclusionLightLevel(world, pos);
+            ao = state.getShadeBrightness(world, pos);
         } else {
             ao = 1.0f;
         }
@@ -162,29 +162,29 @@ public abstract class LightDataAccess {
      * Computes the combined lightmap using block light, sky light, and luminance values.
      *
      * <p>This method's logic is equivalent to
-     * {@link WorldRenderer#getLightmapCoordinates(BlockRenderView, BlockPos)}, but without the
+     * {@link LevelRenderer#getLightColor(BlockAndTintGetter, BlockPos)}, but without the
      * emissive check.
      */
     public static int getLightmap(int word) {
-        return LightmapTextureManager.pack(Math.max(unpackBL(word), unpackLU(word)), unpackSL(word));
+        return LightTexture.pack(Math.max(unpackBL(word), unpackLU(word)), unpackSL(word));
     }
 
     /**
      * Like {@link #getLightmap(int)}, but checks {@link #unpackEM(int)} first and returns
-     * the {@link LightmapTextureManager#MAX_LIGHT_COORDINATE fullbright lightmap} if emissive.
+     * the {@link LightTexture#FULL_BRIGHT fullbright lightmap} if emissive.
      *
      * <p>This method's logic is equivalent to
-     * {@link WorldRenderer#getLightmapCoordinates(BlockRenderView, BlockPos)}.
+     * {@link LevelRenderer#getLightColor(BlockAndTintGetter, BlockPos)}.
      */
     public static int getEmissiveLightmap(int word) {
         if (unpackEM(word)) {
-            return LightmapTextureManager.MAX_LIGHT_COORDINATE;
+            return LightTexture.FULL_BRIGHT;
         } else {
             return getLightmap(word);
         }
     }
 
-    public BlockRenderView getWorld() {
+    public BlockAndTintGetter getWorld() {
         return this.world;
     }
 }

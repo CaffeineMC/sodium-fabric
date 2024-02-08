@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.client.util;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import org.joml.Vector3f;
 
 /**
@@ -51,7 +51,7 @@ public class ModelQuadUtil {
         Direction closestFace = null;
 
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
-            float dot = normal.dot(face.getUnitVector());
+            float dot = normal.dot(face.step());
 
             if (dot > maxDot) {
                 maxDot = dot;
@@ -59,7 +59,7 @@ public class ModelQuadUtil {
             }
         }
 
-        if (closestFace != null && MathHelper.approximatelyEquals(maxDot, 1.0f)) {
+        if (closestFace != null && Mth.equal(maxDot, 1.0f)) {
             return ModelQuadFacing.fromDirection(closestFace);
         }
 

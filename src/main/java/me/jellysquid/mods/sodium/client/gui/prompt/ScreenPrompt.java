@@ -2,21 +2,24 @@ package me.jellysquid.mods.sodium.client.gui.prompt;
 
 import me.jellysquid.mods.sodium.client.gui.widgets.AbstractWidget;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
+import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget.Style;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
-import net.minecraft.text.StringVisitable;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.util.FormattedCharSequence;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
-
+import com.mojang.blaze3d.vertex.PoseStack;
 import java.util.List;
 
-public class ScreenPrompt implements Element, Drawable {
+public class ScreenPrompt implements GuiEventListener, Renderable {
     private final ScreenPromptable parent;
-    private final List<StringVisitable> text;
+    private final List<FormattedText> text;
 
     private final Action action;
 
@@ -24,7 +27,7 @@ public class ScreenPrompt implements Element, Drawable {
 
     private final int width, height;
 
-    public ScreenPrompt(ScreenPromptable parent, List<StringVisitable> text, int width, int height, Action action) {
+    public ScreenPrompt(ScreenPromptable parent, List<FormattedText> text, int width, int height, Action action) {
         this.parent = parent;
         this.text = text;
 
@@ -40,16 +43,16 @@ public class ScreenPrompt implements Element, Drawable {
         int boxX = (parentDimensions.width() / 2) - (width / 2);
         int boxY = (parentDimensions.height() / 2) - (height / 2);
 
-        this.closeButton = new FlatButtonWidget(new Dim2i((boxX + width) - 84, (boxY + height) - 24, 80, 20), Text.literal("Close"), this::close);
+        this.closeButton = new FlatButtonWidget(new Dim2i((boxX + width) - 84, (boxY + height) - 24, 80, 20), Component.literal("Close"), this::close);
         this.closeButton.setStyle(createButtonStyle());
 
         this.actionButton = new FlatButtonWidget(new Dim2i((boxX + width) - 198, (boxY + height) - 24, 110, 20), this.action.label, this::runAction);
         this.actionButton.setStyle(createButtonStyle());
     }
 
-    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
-        var matrices = drawContext.getMatrices();
-        matrices.push();
+    public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
+        var matrices = drawContext.pose();
+        matrices.pushPose();
         matrices.translate(0.0f, 0.0f, 1000.0f);
 
         var parentDimensions = this.parent.getDimensions();
@@ -62,7 +65,7 @@ public class ScreenPrompt implements Element, Drawable {
         int boxY = (parentDimensions.height() / 2) - (height / 2);
 
         drawContext.fill(boxX, boxY, boxX + width, boxY + height, 0xFF171717);
-        drawContext.drawBorder(boxX, boxY, width, height, 0xFF121212);
+        drawContext.renderOutline(boxX, boxY, width, height, 0xFF121212);
 
         matrices.translate(0.0f, 0.0f, 50.0f);
 
@@ -74,14 +77,14 @@ public class ScreenPrompt implements Element, Drawable {
         int textMaxWidth = width - (padding * 2);
         int textMaxHeight = height - (padding * 2);
 
-        var textRenderer = MinecraftClient.getInstance().textRenderer;
+        var textRenderer = Minecraft.getInstance().font;
 
         for (var paragraph : this.text) {
-            var formatted = textRenderer.wrapLines(paragraph, textMaxWidth);
+            var formatted = textRenderer.split(paragraph, textMaxWidth);
 
             for (var line : formatted) {
-                drawContext.drawText(textRenderer, line, textX, textY, 0xFFFFFFFF, true);
-                textY += textRenderer.fontHeight + 2;
+                drawContext.drawString(textRenderer, line, textX, textY, 0xFFFFFFFF, true);
+                textY += textRenderer.lineHeight + 2;
             }
 
             textY += 8;
@@ -91,7 +94,7 @@ public class ScreenPrompt implements Element, Drawable {
             button.render(drawContext, mouseX, mouseY, delta);
         }
 
-        matrices.pop();
+        matrices.popPose();
     }
 
     private static FlatButtonWidget.Style createButtonStyle() {
@@ -138,7 +141,7 @@ public class ScreenPrompt implements Element, Drawable {
             return true;
         }
 
-        return Element.super.keyPressed(keyCode, scanCode, modifiers);
+        return GuiEventListener.super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -155,7 +158,7 @@ public class ScreenPrompt implements Element, Drawable {
         this.close();
     }
 
-    public record Action(Text label, Runnable runnable) {
+    public record Action(Component label, Runnable runnable) {
 
     }
 }

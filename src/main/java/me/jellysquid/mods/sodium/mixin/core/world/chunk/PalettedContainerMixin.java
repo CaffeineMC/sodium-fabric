@@ -2,8 +2,12 @@ package me.jellysquid.mods.sodium.mixin.core.world.chunk;
 
 import me.jellysquid.mods.sodium.client.world.PaletteStorageExtended;
 import me.jellysquid.mods.sodium.client.world.ReadableContainerExtended;
-import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.chunk.ReadableContainer;
+import net.minecraft.util.BitStorage;
+import net.minecraft.world.level.chunk.Palette;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.chunk.PalettedContainer.Data;
+import net.minecraft.world.level.chunk.PalettedContainer.Strategy;
+import net.minecraft.world.level.chunk.PalettedContainerRO;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -18,16 +22,16 @@ public abstract class PalettedContainerMixin<T> implements ReadableContainerExte
 
     @Shadow
     @Final
-    private PalettedContainer.PaletteProvider paletteProvider;
+    private PalettedContainer.Strategy strategy;
 
     @Shadow
     public abstract PalettedContainer<T> copy();
 
     @Override
     public void sodium$unpack(T[] values) {
-        var indexer = Objects.requireNonNull(this.paletteProvider);
+        var indexer = Objects.requireNonNull(this.strategy);
 
-        if (values.length != indexer.getContainerSize()) {
+        if (values.length != indexer.size()) {
             throw new IllegalArgumentException("Array is wrong size");
         }
 
@@ -39,9 +43,9 @@ public abstract class PalettedContainerMixin<T> implements ReadableContainerExte
 
     @Override
     public void sodium$unpack(T[] values, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        var indexer = Objects.requireNonNull(this.paletteProvider);
+        var indexer = Objects.requireNonNull(this.strategy);
 
-        if (values.length != indexer.getContainerSize()) {
+        if (values.length != indexer.size()) {
             throw new IllegalArgumentException("Array is wrong size");
         }
 
@@ -53,10 +57,10 @@ public abstract class PalettedContainerMixin<T> implements ReadableContainerExte
         for (int y = minY; y <= maxY; y++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int x = minX; x <= maxX; x++) {
-                    int localBlockIndex = indexer.computeIndex(x, y, z);
+                    int localBlockIndex = indexer.getIndex(x, y, z);
 
                     int paletteIndex = storage.get(localBlockIndex);
-                    var paletteValue =  palette.get(paletteIndex);
+                    var paletteValue =  palette.valueFor(paletteIndex);
 
                     values[localBlockIndex] = paletteValue;
                 }
@@ -65,7 +69,7 @@ public abstract class PalettedContainerMixin<T> implements ReadableContainerExte
     }
 
     @Override
-    public ReadableContainer<T> sodium$copy() {
+    public PalettedContainerRO<T> sodium$copy() {
         return this.copy();
     }
 }

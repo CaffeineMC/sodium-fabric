@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.debug.checks;
 
+import com.mojang.blaze3d.pipeline.MainTarget;
 import me.jellysquid.mods.sodium.client.render.util.RenderAsserts;
-import net.minecraft.client.gl.WindowFramebuffer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(WindowFramebuffer.class)
+@Mixin(MainTarget.class)
 public class WindowFramebufferMixin {
     @Redirect(method = {
             "<init>"

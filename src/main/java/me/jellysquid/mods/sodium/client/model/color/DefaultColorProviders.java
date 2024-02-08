@@ -6,15 +6,14 @@ import me.jellysquid.mods.sodium.client.world.biome.BiomeColorSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.color.block.BlockColorProvider;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.client.color.block.BlockColor;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 import java.util.Arrays;
 
 public class DefaultColorProviders {
-    public static ColorProvider<BlockState> adapt(BlockColorProvider provider) {
+    public static ColorProvider<BlockState> adapt(BlockColor provider) {
         return new VanillaAdapter(provider);
     }
 
@@ -63,9 +62,9 @@ public class DefaultColorProviders {
     }
 
     private static class VanillaAdapter implements ColorProvider<BlockState> {
-        private final BlockColorProvider provider;
+        private final BlockColor provider;
 
-        private VanillaAdapter(BlockColorProvider provider) {
+        private VanillaAdapter(BlockColor provider) {
             this.provider = provider;
         }
 

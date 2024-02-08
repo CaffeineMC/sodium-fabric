@@ -1,14 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.render.gui.outlines;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.LineVertex;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-
 import org.joml.Math;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -20,14 +19,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(WorldRenderer.class)
+@Mixin(LevelRenderer.class)
 public class WorldRendererMixin {
     /**
      * @author JellySquid
      * @reason Use intrinsics where possible to speed up vertex writing
      */
-    @Inject(method = "drawBox(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;DDDDDDFFFFFFF)V", at = @At("HEAD"), cancellable = true)
-    private static void drawBoxFast(MatrixStack matrices, VertexConsumer vertexConsumer, double x1, double y1, double z1,
+    @Inject(method = "renderLineBox(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;DDDDDDFFFFFFF)V", at = @At("HEAD"), cancellable = true)
+    private static void drawBoxFast(PoseStack matrices, VertexConsumer vertexConsumer, double x1, double y1, double z1,
                                     double x2, double y2, double z2, float red, float green, float blue, float alpha,
                                     float xAxisRed, float yAxisGreen, float zAxisBlue, CallbackInfo ci) {
         var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
@@ -38,8 +37,8 @@ public class WorldRendererMixin {
 
         ci.cancel();
 
-        Matrix4f position = matrices.peek().getPositionMatrix();
-        Matrix3f normal = matrices.peek().getNormalMatrix();
+        Matrix4f position = matrices.last().pose();
+        Matrix3f normal = matrices.last().normal();
 
         float x1f = (float) x1;
         float y1f = (float) y1;
