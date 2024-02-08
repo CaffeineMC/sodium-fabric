@@ -5,7 +5,6 @@ import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public record NvidiaDriverVersion(int major, int minor) {

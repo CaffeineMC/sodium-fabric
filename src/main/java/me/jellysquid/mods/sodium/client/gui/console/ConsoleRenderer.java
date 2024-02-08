@@ -9,18 +9,15 @@ import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
-import com.mojang.blaze3d.vertex.PoseStack;
+
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class ConsoleRenderer {
     static final ConsoleRenderer INSTANCE = new ConsoleRenderer();
@@ -48,7 +45,7 @@ public class ConsoleRenderer {
     public void draw(GuiGraphics context) {
         var currentTime = GLFW.glfwGetTime();
 
-        Minecraft client = Minecraft.getInstance();
+        Minecraft minecraft = Minecraft.getInstance();
 
         var matrices = context.pose();
         matrices.pushPose();
@@ -75,12 +72,12 @@ public class ConsoleRenderer {
 
                 var messageWidth = 270;
 
-                StringSplitter textHandler = client.font.getSplitter();
-                textHandler.splitLines(message.text(), messageWidth - 20, Style.EMPTY, (text, lastLineWrapped) -> {
+                StringSplitter splitter = minecraft.font.getSplitter();
+                splitter.splitLines(message.text(), messageWidth - 20, Style.EMPTY, (text, lastLineWrapped) -> {
                     lines.add(Language.getInstance().getVisualOrder(text));
                 });
 
-                var messageHeight = (client.font.lineHeight * lines.size()) + (paddingHeight * 2);
+                var messageHeight = (minecraft.font.lineHeight * lines.size()) + (paddingHeight * 2);
 
                 renders.add(new MessageRender(x, y, messageWidth, messageHeight, message.level(), lines, opacity));
 
@@ -88,8 +85,8 @@ public class ConsoleRenderer {
             }
         }
 
-        var mouseX = client.mouseHandler.xpos() / client.getWindow().getGuiScale();
-        var mouseY = client.mouseHandler.ypos() / client.getWindow().getGuiScale();
+        var mouseX = minecraft.mouseHandler.xpos() / minecraft.getWindow().getGuiScale();
+        var mouseY = minecraft.mouseHandler.ypos() / minecraft.getWindow().getGuiScale();
 
         boolean hovered = false;
 
@@ -124,10 +121,10 @@ public class ConsoleRenderer {
 
             for (var line : render.lines()) {
                 // message text
-                context.drawString(client.font, line, x + paddingWidth + 3, y + paddingHeight,
+                context.drawString(minecraft.font, line, x + paddingWidth + 3, y + paddingHeight,
                         ColorARGB.withAlpha(colors.text(), weightAlpha(opacity)), false);
 
-                y += client.font.lineHeight;
+                y += minecraft.font.lineHeight;
             }
         }
 

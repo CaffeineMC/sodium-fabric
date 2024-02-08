@@ -1,12 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.core.world.chunk;
 
-import me.jellysquid.mods.sodium.client.world.PaletteStorageExtended;
-import me.jellysquid.mods.sodium.client.world.ReadableContainerExtended;
-import net.minecraft.util.BitStorage;
-import net.minecraft.world.level.chunk.Palette;
+import me.jellysquid.mods.sodium.client.world.BitStorageExtension;
+import me.jellysquid.mods.sodium.client.world.PalettedContainerROExtension;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import net.minecraft.world.level.chunk.PalettedContainer.Data;
-import net.minecraft.world.level.chunk.PalettedContainer.Strategy;
 import net.minecraft.world.level.chunk.PalettedContainerRO;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,7 +11,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import java.util.Objects;
 
 @Mixin(PalettedContainer.class)
-public abstract class PalettedContainerMixin<T> implements ReadableContainerExtended<T> {
+public abstract class PalettedContainerMixin<T> implements PalettedContainerROExtension<T> {
 
     @Shadow
     private volatile PalettedContainer.Data<T> data;
@@ -29,23 +25,23 @@ public abstract class PalettedContainerMixin<T> implements ReadableContainerExte
 
     @Override
     public void sodium$unpack(T[] values) {
-        var indexer = Objects.requireNonNull(this.strategy);
+        var strategy = Objects.requireNonNull(this.strategy);
 
-        if (values.length != indexer.size()) {
+        if (values.length != strategy.size()) {
             throw new IllegalArgumentException("Array is wrong size");
         }
 
         var data = Objects.requireNonNull(this.data, "PalettedContainer must have data");
 
-        var storage = (PaletteStorageExtended) data.storage();
+        var storage = (BitStorageExtension) data.storage();
         storage.sodium$unpack(values, data.palette());
     }
 
     @Override
     public void sodium$unpack(T[] values, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        var indexer = Objects.requireNonNull(this.strategy);
+        var strategy = Objects.requireNonNull(this.strategy);
 
-        if (values.length != indexer.size()) {
+        if (values.length != strategy.size()) {
             throw new IllegalArgumentException("Array is wrong size");
         }
 
@@ -57,7 +53,7 @@ public abstract class PalettedContainerMixin<T> implements ReadableContainerExte
         for (int y = minY; y <= maxY; y++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int x = minX; x <= maxX; x++) {
-                    int localBlockIndex = indexer.getIndex(x, y, z);
+                    int localBlockIndex = strategy.getIndex(x, y, z);
 
                     int paletteIndex = storage.get(localBlockIndex);
                     var paletteValue =  palette.valueFor(paletteIndex);

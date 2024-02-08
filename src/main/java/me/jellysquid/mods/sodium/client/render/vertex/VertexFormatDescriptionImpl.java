@@ -3,11 +3,9 @@ package me.jellysquid.mods.sodium.client.render.vertex;
 import me.jellysquid.mods.sodium.mixin.core.render.VertexFormatAccessor;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
-import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
-import it.unimi.dsi.fastutil.ints.IntList;
+
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.NoSuchElementException;

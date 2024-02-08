@@ -39,14 +39,14 @@ public class SpriteContentsInterpolationMixin {
      */
     @Overwrite
     void uploadInterpolatedFrame(int x, int y, SpriteContents.Ticker arg) {
-        SpriteContents.AnimatedTexture animation = ((SpriteContentsAnimatorImplAccessor) arg).getAnimationInfo();
-        SpriteContentsAnimationAccessor animation2 = (SpriteContentsAnimationAccessor) ((SpriteContentsAnimatorImplAccessor) arg).getAnimationInfo();
-        List<SpriteContents.FrameInfo> frames = ((SpriteContentsAnimationAccessor) animation).getFrames();
-        SpriteContentsAnimatorImplAccessor accessor = (SpriteContentsAnimatorImplAccessor) arg;
-        SpriteContentsAnimationFrameAccessor animationFrame = (SpriteContentsAnimationFrameAccessor) frames.get(accessor.getFrameIndex());
+        SpriteContents.AnimatedTexture animation = ((SpriteContentsTickerAccessor) arg).getAnimationInfo();
+        SpriteContentsAnimatedTextureAccessor animation2 = (SpriteContentsAnimatedTextureAccessor) ((SpriteContentsTickerAccessor) arg).getAnimationInfo();
+        List<SpriteContents.FrameInfo> frames = ((SpriteContentsAnimatedTextureAccessor) animation).getFrames();
+        SpriteContentsTickerAccessor accessor = (SpriteContentsTickerAccessor) arg;
+        SpriteContentsFrameInfoAccessor animationFrame = (SpriteContentsFrameInfoAccessor) frames.get(accessor.getFrameIndex());
 
         int curIndex = animationFrame.getIndex();
-        int nextIndex = ((SpriteContentsAnimationFrameAccessor) animation2.getFrames().get((accessor.getFrameIndex() + 1) % frames.size())).getIndex();
+        int nextIndex = ((SpriteContentsFrameInfoAccessor) animation2.getFrames().get((accessor.getFrameIndex() + 1) % frames.size())).getIndex();
 
         if (curIndex == nextIndex) {
             return;

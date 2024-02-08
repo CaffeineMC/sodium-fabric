@@ -1,11 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.world.biome;
 
-import java.util.Optional;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorMaps;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
-import net.minecraft.world.level.biome.BiomeSpecialEffects.GrassColorModifier;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

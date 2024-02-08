@@ -14,14 +14,14 @@ public class ClonedChunkSectionCache {
     private static final int MAX_CACHE_SIZE = 512; /* number of entries */
     private static final long MAX_CACHE_DURATION = TimeUnit.SECONDS.toNanos(5); /* number of nanoseconds */
 
-    private final Level world;
+    private final Level level;
 
     private final Long2ReferenceLinkedOpenHashMap<ClonedChunkSection> positionToEntry = new Long2ReferenceLinkedOpenHashMap<>();
 
     private long time; // updated once per frame to be the elapsed time since application start
 
-    public ClonedChunkSectionCache(Level world) {
-        this.world = world;
+    public ClonedChunkSectionCache(Level level) {
+        this.level = level;
         this.time = getMonotonicTimeSource();
     }
 
@@ -53,7 +53,7 @@ public class ClonedChunkSectionCache {
 
     @NotNull
     private ClonedChunkSection clone(int x, int y, int z) {
-        LevelChunk chunk = this.world.getChunk(x, z);
+        LevelChunk chunk = this.level.getChunk(x, z);
 
         if (chunk == null) {
             throw new RuntimeException("Chunk is not loaded at: " + SectionPos.asLong(x, y, z));
@@ -61,11 +61,11 @@ public class ClonedChunkSectionCache {
 
         @Nullable LevelChunkSection section = null;
 
-        if (!this.world.isOutsideBuildHeight(SectionPos.sectionToBlockCoord(y))) {
-            section = chunk.getSections()[this.world.getSectionIndexFromSectionY(y)];
+        if (!this.level.isOutsideBuildHeight(SectionPos.sectionToBlockCoord(y))) {
+            section = chunk.getSections()[this.level.getSectionIndexFromSectionY(y)];
         }
 
-        return new ClonedChunkSection(this.world, chunk, section, SectionPos.of(x, y, z));
+        return new ClonedChunkSection(this.level, chunk, section, SectionPos.of(x, y, z));
     }
 
     public void invalidate(int x, int y, int z) {

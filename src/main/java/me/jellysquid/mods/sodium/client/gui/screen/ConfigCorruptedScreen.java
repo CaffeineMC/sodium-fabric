@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ConfigCorruptedScreen extends Screen {
@@ -67,18 +66,18 @@ public class ConfigCorruptedScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
-        super.render(drawContext, mouseX, mouseY, delta);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+        super.render(graphics, mouseX, mouseY, delta);
 
-        drawContext.drawString(this.font, Component.literal("Sodium Renderer"), 32, 32, 0xffffff);
-        drawContext.drawString(this.font, Component.literal("Could not load the configuration file"), 32, 48, 0xff0000);
+        graphics.drawString(this.font, Component.literal("Sodium Renderer"), 32, 32, 0xffffff);
+        graphics.drawString(this.font, Component.literal("Could not load the configuration file"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
             if (TEXT_BODY.get(i).getString().isEmpty()) {
                 continue;
             }
 
-            drawContext.drawString(this.font, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
+            graphics.drawString(this.font, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
         }
     }
 }

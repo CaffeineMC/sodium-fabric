@@ -238,17 +238,17 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     }
 
     @Override
-    public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         this.updateControls();
 
-        super.render(drawContext, this.prompt != null ? -1 : mouseX, this.prompt != null ? -1 : mouseY, delta);
+        super.render(graphics, this.prompt != null ? -1 : mouseX, this.prompt != null ? -1 : mouseY, delta);
 
         if (this.hoveredElement != null) {
-            this.renderOptionTooltip(drawContext, this.hoveredElement);
+            this.renderOptionTooltip(graphics, this.hoveredElement);
         }
 
         if (this.prompt != null) {
-            this.prompt.render(drawContext, mouseX, mouseY, delta);
+            this.prompt.render(graphics, mouseX, mouseY, delta);
         }
     }
 
@@ -289,7 +289,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         return this.controls.stream();
     }
 
-    private void renderOptionTooltip(GuiGraphics drawContext, ControlElement<?> element) {
+    private void renderOptionTooltip(GuiGraphics graphics, ControlElement<?> element) {
         Dim2i dim = element.getDimensions();
 
         int textPadding = 3;
@@ -318,10 +318,10 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
             boxY -= boxYLimit - boxYCutoff;
         }
 
-        drawContext.fillGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
+        graphics.fillGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
 
         for (int i = 0; i < tooltip.size(); i++) {
-            drawContext.drawString(this.font, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), 0xFFFFFFFF);
+            graphics.drawString(this.font, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), 0xFFFFFFFF);
         }
     }
 

@@ -20,9 +20,9 @@ public class ChunkJobResult<OUTPUT> {
     }
 
     public OUTPUT unwrap() {
-        if (this.throwable instanceof ReportedException crashException) {
-            // Propagate CrashExceptions directly to provide extra information
-            throw crashException;
+        if (this.throwable instanceof ReportedException exception) {
+            // Propagate ReportedExceptions directly to provide extra information
+            throw exception;
         } else if (this.throwable != null) {
             throw new RuntimeException("Exception thrown while executing job", this.throwable);
         }
