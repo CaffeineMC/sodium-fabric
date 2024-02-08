@@ -1,21 +1,21 @@
 package me.jellysquid.mods.sodium.mixin.features.render.immediate.matrix_stack;
 
-import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
-
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.PoseStack.Pose;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-@Mixin(MatrixStack.class)
+@Mixin(PoseStack.class)
 public abstract class MatrixStackMixin {
     @Shadow
     @Final
-    private Deque<MatrixStack.Entry> stack;
+    private Deque<PoseStack.Pose> poseStack;
 
     @Unique
-    private final Deque<MatrixStack.Entry> cache = new ArrayDeque<>();
+    private final Deque<PoseStack.Pose> cache = new ArrayDeque<>();
 
 
     /**
@@ -23,22 +23,22 @@ public abstract class MatrixStackMixin {
      * @reason Re-use entries when possible
      */
     @Overwrite
-    public void push() {
-        var prev = this.stack.getLast();
+    public void pushPose() {
+        var prev = this.poseStack.getLast();
 
-        MatrixStack.Entry entry;
+        PoseStack.Pose entry;
 
         if (!this.cache.isEmpty()) {
             entry = this.cache.removeLast();
-            entry.getPositionMatrix()
-                    .set(prev.getPositionMatrix());
-            entry.getNormalMatrix()
-                    .set(prev.getNormalMatrix());
+            entry.pose()
+                    .set(prev.pose());
+            entry.normal()
+                    .set(prev.normal());
         } else {
-            entry = new MatrixStack.Entry(new Matrix4f(prev.getPositionMatrix()), new Matrix3f(prev.getNormalMatrix()));
+            entry = new PoseStack.Pose(new Matrix4f(prev.pose()), new Matrix3f(prev.normal()));
         }
 
-        this.stack.addLast(entry);
+        this.poseStack.addLast(entry);
     }
 
     /**
@@ -46,7 +46,7 @@ public abstract class MatrixStackMixin {
      * @reason Re-use entries when possible
      */
     @Overwrite
-    public void pop() {
-        this.cache.addLast(this.stack.removeLast());
+    public void popPose() {
+        this.cache.addLast(this.poseStack.removeLast());
     }
 }

@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.textures.mipmaps;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import me.jellysquid.mods.sodium.client.util.NativeImageHelper;
 import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.SpriteContents;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.ColorHelper;
+import net.minecraft.client.renderer.texture.SpriteContents;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FastColor;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
@@ -24,7 +24,7 @@ public class SpriteContentsMixin {
     @Mutable
     @Shadow
     @Final
-    private NativeImage image;
+    private NativeImage originalImage;
 
     // While Fabric allows us to @Inject into the constructor here, that's just a specific detail of FabricMC's mixin
     // fork. Upstream Mixin doesn't allow arbitrary @Inject usage in constructor. However, we can use @ModifyVariable
@@ -34,12 +34,12 @@ public class SpriteContentsMixin {
     // support Forge, since this works well on Fabric too, it's fine to ensure that the diff between Fabric and Forge
     // can remain minimal. Being less dependent on specific details of Fabric is good, since it means we can be more
     // cross-platform.
-    @Redirect(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/texture/SpriteContents;image:Lnet/minecraft/client/texture/NativeImage;", opcode = Opcodes.PUTFIELD))
-    private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, Identifier identifier) {
+    @Redirect(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;originalImage:Lcom/mojang/blaze3d/platform/NativeImage;", opcode = Opcodes.PUTFIELD))
+    private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, ResourceLocation identifier) {
         // We're injecting after the "info" field has been set, so this is safe even though we're in a constructor.
         sodium$fillInTransparentPixelColors(nativeImage);
 
-        this.image = nativeImage;
+        this.originalImage = nativeImage;
     }
 
     /**
@@ -67,16 +67,16 @@ public class SpriteContentsMixin {
             long pPixel = ppPixel + (pixelIndex * 4);
 
             int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = ColorHelper.Abgr.getAlpha(color);
+            int alpha = FastColor.ABGR32.alpha(color);
 
             // Ignore all fully-transparent pixels for the purposes of computing an average color.
             if (alpha != 0) {
                 float weight = (float) alpha;
 
                 // Make sure to convert to linear space so that we don't lose brightness.
-                r += ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(color)) * weight;
-                g += ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(color)) * weight;
-                b += ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(color)) * weight;
+                r += ColorSRGB.srgbToLinear(FastColor.ABGR32.red(color)) * weight;
+                g += ColorSRGB.srgbToLinear(FastColor.ABGR32.green(color)) * weight;
+                b += ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(color)) * weight;
 
                 totalWeight += weight;
             }
@@ -99,7 +99,7 @@ public class SpriteContentsMixin {
             long pPixel = ppPixel + (pixelIndex * 4);
 
             int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = ColorHelper.Abgr.getAlpha(color);
+            int alpha = FastColor.ABGR32.alpha(color);
 
             // Replace the color values of pixels which are fully transparent, since they have no color data.
             if (alpha == 0) {

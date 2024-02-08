@@ -1,18 +1,18 @@
 package me.jellysquid.mods.sodium.client.render.chunk.occlusion;
 
 
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
+import net.minecraft.client.renderer.chunk.VisibilitySet;
 import org.jetbrains.annotations.NotNull;
 
 public class VisibilityEncoding {
     public static final long NULL = 0L;
 
-    public static long encode(@NotNull ChunkOcclusionData occlusionData) {
+    public static long encode(@NotNull VisibilitySet occlusionData) {
         long visibilityData = 0;
 
         for (int from = 0; from < GraphDirection.COUNT; from++) {
             for (int to = 0; to < GraphDirection.COUNT; to++) {
-                if (occlusionData.isVisibleThrough(GraphDirection.toEnum(from), GraphDirection.toEnum(to))) {
+                if (occlusionData.visibilityBetween(GraphDirection.toEnum(from), GraphDirection.toEnum(to))) {
                     visibilityData |= 1L << bit(from, to);
                 }
             }

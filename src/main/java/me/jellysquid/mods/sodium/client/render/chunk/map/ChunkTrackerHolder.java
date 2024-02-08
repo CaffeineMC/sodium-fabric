@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.map;
 
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.multiplayer.ClientLevel;
 
 public interface ChunkTrackerHolder {
-    static ChunkTracker get(ClientWorld world) {
+    static ChunkTracker get(ClientLevel world) {
         return ((ChunkTrackerHolder) world).sodium$getTracker();
     }
 

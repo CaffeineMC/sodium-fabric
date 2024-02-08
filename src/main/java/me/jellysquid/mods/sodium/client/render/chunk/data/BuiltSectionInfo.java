@@ -5,10 +5,10 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.Direction;
+import net.minecraft.client.renderer.chunk.VisibilitySet;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,16 +27,16 @@ public class BuiltSectionInfo {
 
     public final BlockEntity @Nullable[] globalBlockEntities;
     public final BlockEntity @Nullable[] culledBlockEntities;
-    public final Sprite @Nullable[] animatedSprites;
+    public final TextureAtlasSprite @Nullable[] animatedSprites;
 
     private BuiltSectionInfo(@NotNull Collection<TerrainRenderPass> blockRenderPasses,
                              @NotNull Collection<BlockEntity> globalBlockEntities,
                              @NotNull Collection<BlockEntity> culledBlockEntities,
-                             @NotNull Collection<Sprite> animatedSprites,
-                             @NotNull ChunkOcclusionData occlusionData) {
+                             @NotNull Collection<TextureAtlasSprite> animatedSprites,
+                             @NotNull VisibilitySet occlusionData) {
         this.globalBlockEntities = toArray(globalBlockEntities, BlockEntity[]::new);
         this.culledBlockEntities = toArray(culledBlockEntities, BlockEntity[]::new);
-        this.animatedSprites = toArray(animatedSprites, Sprite[]::new);
+        this.animatedSprites = toArray(animatedSprites, TextureAtlasSprite[]::new);
 
         int flags = 0;
 
@@ -61,15 +61,15 @@ public class BuiltSectionInfo {
         private final List<TerrainRenderPass> blockRenderPasses = new ArrayList<>();
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> culledBlockEntities = new ArrayList<>();
-        private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
+        private final Set<TextureAtlasSprite> animatedSprites = new ObjectOpenHashSet<>();
 
-        private ChunkOcclusionData occlusionData;
+        private VisibilitySet occlusionData;
 
         public void addRenderPass(TerrainRenderPass pass) {
             this.blockRenderPasses.add(pass);
         }
 
-        public void setOcclusionData(ChunkOcclusionData data) {
+        public void setOcclusionData(VisibilitySet data) {
             this.occlusionData = data;
         }
 
@@ -78,7 +78,7 @@ public class BuiltSectionInfo {
          * before rendering as necessary.
          * @param sprite The sprite
          */
-        public void addSprite(Sprite sprite) {
+        public void addSprite(TextureAtlasSprite sprite) {
             if (SpriteUtil.hasAnimation(sprite)) {
                 this.animatedSprites.add(sprite);
             }
@@ -99,8 +99,8 @@ public class BuiltSectionInfo {
     }
 
     private static BuiltSectionInfo createEmptyData() {
-        ChunkOcclusionData occlusionData = new ChunkOcclusionData();
-        occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
+        VisibilitySet occlusionData = new VisibilitySet();
+        occlusionData.add(EnumSet.allOf(Direction.class));
 
         BuiltSectionInfo.Builder meshInfo = new BuiltSectionInfo.Builder();
         meshInfo.setOcclusionData(occlusionData);

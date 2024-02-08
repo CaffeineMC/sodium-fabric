@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;

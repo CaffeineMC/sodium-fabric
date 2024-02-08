@@ -2,9 +2,8 @@ package me.jellysquid.mods.sodium.client.compatibility.checks;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.resource.metadata.ResourceMetadataSerializer;
-
 import java.util.List;
+import net.minecraft.server.packs.metadata.MetadataSectionType;
 
 /**
  * Reads additional metadata for Sodium from a resource pack's `pack.mcmeta` file. This allows the
@@ -17,6 +16,6 @@ public record SodiumResourcePackMetadata(List<String> ignoredShaders) {
                     .forGetter(SodiumResourcePackMetadata::ignoredShaders))
                     .apply(instance, SodiumResourcePackMetadata::new)
     );
-    public static final ResourceMetadataSerializer<SodiumResourcePackMetadata> SERIALIZER =
-            ResourceMetadataSerializer.fromCodec("sodium", CODEC);
+    public static final MetadataSectionType<SodiumResourcePackMetadata> SERIALIZER =
+            MetadataSectionType.fromCodec("sodium", CODEC);
 }

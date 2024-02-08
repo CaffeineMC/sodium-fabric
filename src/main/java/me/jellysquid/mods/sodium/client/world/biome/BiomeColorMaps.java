@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import net.minecraft.client.color.world.FoliageColors;
-import net.minecraft.client.color.world.GrassColors;
+import net.minecraft.world.level.FoliageColor;
+import net.minecraft.world.level.GrassColor;
 
 public class BiomeColorMaps {
     private static final int WIDTH = 256;
@@ -15,7 +15,7 @@ public class BiomeColorMaps {
             return DEFAULT_COLOR;
         }
 
-        return GrassColors.colorMap[index];
+        return GrassColor.pixels[index];
     }
 
     public static int getFoliageColor(int index) {
@@ -23,7 +23,7 @@ public class BiomeColorMaps {
             return DEFAULT_COLOR;
         }
 
-        return FoliageColors.colorMap[index];
+        return FoliageColor.pixels[index];
     }
 
     public static int getIndex(double temperature, double humidity) {

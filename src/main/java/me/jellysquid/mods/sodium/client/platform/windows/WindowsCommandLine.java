@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.platform.windows;
 
 import me.jellysquid.mods.sodium.client.platform.windows.api.Kernel32;
 import org.lwjgl.system.MemoryUtil;
-
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Objects;

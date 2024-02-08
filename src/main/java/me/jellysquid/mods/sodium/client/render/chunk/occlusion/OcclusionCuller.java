@@ -7,18 +7,18 @@ import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.collections.DoubleBufferedQueue;
 import me.jellysquid.mods.sodium.client.util.collections.ReadQueue;
 import me.jellysquid.mods.sodium.client.util.collections.WriteQueue;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.core.SectionPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
 public class OcclusionCuller {
     private final Long2ReferenceMap<RenderSection> sections;
-    private final World world;
+    private final Level world;
 
     private final DoubleBufferedQueue<RenderSection> queue = new DoubleBufferedQueue<>();
 
-    public OcclusionCuller(Long2ReferenceMap<RenderSection> sections, World world) {
+    public OcclusionCuller(Long2ReferenceMap<RenderSection> sections, Level world) {
         this.sections = sections;
         this.world = world;
     }
@@ -135,7 +135,7 @@ public class OcclusionCuller {
         render.addIncomingDirections(incoming);
     }
 
-    private static int getOutwardDirections(ChunkSectionPos origin, RenderSection section) {
+    private static int getOutwardDirections(SectionPos origin, RenderSection section) {
         int planes = 0;
 
         planes |= section.getChunkX() <= origin.getX() ? 1 << GraphDirection.WEST  : 0;
@@ -195,14 +195,14 @@ public class OcclusionCuller {
     {
         var origin = viewport.getChunkCoord();
 
-        if (origin.getY() < this.world.getBottomSectionCoord()) {
+        if (origin.getY() < this.world.getMinSection()) {
             // below the world
             this.initOutsideWorldHeight(queue, viewport, searchDistance, frame,
-                    this.world.getBottomSectionCoord(), GraphDirection.DOWN);
-        } else if (origin.getY() >= this.world.getTopSectionCoord()) {
+                    this.world.getMinSection(), GraphDirection.DOWN);
+        } else if (origin.getY() >= this.world.getMaxSection()) {
             // above the world
             this.initOutsideWorldHeight(queue, viewport, searchDistance, frame,
-                    this.world.getTopSectionCoord() - 1, GraphDirection.UP);
+                    this.world.getMaxSection() - 1, GraphDirection.UP);
         } else {
             this.initWithinWorld(visitor, queue, viewport, useOcclusionCulling, frame);
         }
@@ -246,7 +246,7 @@ public class OcclusionCuller {
                                         int direction)
     {
         var origin = viewport.getChunkCoord();
-        var radius = MathHelper.floor(searchDistance / 16.0f);
+        var radius = Mth.floor(searchDistance / 16.0f);
 
         // Layer 0
         this.tryVisitNode(queue, origin.getX(), height, origin.getZ(), direction, frame, viewport);
@@ -301,7 +301,7 @@ public class OcclusionCuller {
     }
 
     private RenderSection getRenderSection(int x, int y, int z) {
-        return this.sections.get(ChunkSectionPos.asLong(x, y, z));
+        return this.sections.get(SectionPos.asLong(x, y, z));
     }
 
     public interface Visitor {

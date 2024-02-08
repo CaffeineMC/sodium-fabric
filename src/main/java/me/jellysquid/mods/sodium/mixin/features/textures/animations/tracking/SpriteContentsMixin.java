@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.textures.animations.tracking;
 
 import me.jellysquid.mods.sodium.client.render.texture.SpriteContentsExtended;
-import net.minecraft.client.texture.SpriteContents;
+import net.minecraft.client.renderer.texture.SpriteContents;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,7 +13,7 @@ public abstract class SpriteContentsMixin implements SpriteContentsExtended {
     @Shadow
     @Final
     @Nullable
-    private SpriteContents.Animation animation;
+    private SpriteContents.AnimatedTexture animatedTexture;
 
     @Unique
     private boolean active;
@@ -25,7 +25,7 @@ public abstract class SpriteContentsMixin implements SpriteContentsExtended {
 
     @Override
     public boolean sodium$hasAnimation() {
-        return this.animation != null;
+        return this.animatedTexture != null;
     }
 
     @Override
