@@ -50,6 +50,7 @@ public class FluidRenderer {
     // TODO: allow this to be changed by vertex format, WARNING: make sure TranslucentGeometryCollector knows about EPSILON
     // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
     public static final float EPSILON = 0.001f;
+    private static final float ALIGNED_EQUALS_EPSILON = 0.011f;
 
     private final BlockPos.MutableBlockPos scratchPos = new BlockPos.MutableBlockPos();
     private final MutableFloat scratchHeight = new MutableFloat(0);
@@ -179,13 +180,11 @@ public class FluidRenderer {
             Vec3 velocity = fluidState.getFlow(world, blockPos);
 
             TextureAtlasSprite sprite;
-            ModelQuadFacing facing;
             float u1, u2, u3, u4;
             float v1, v2, v3, v4;
 
             if (velocity.x == 0.0D && velocity.z == 0.0D) {
                 sprite = sprites[0];
-                facing = ModelQuadFacing.POS_Y;
                 u1 = sprite.getU(0.0f);
                 v1 = sprite.getV(0.0f);
                 u2 = u1;
@@ -196,7 +195,6 @@ public class FluidRenderer {
                 v4 = v1;
             } else {
                 sprite = sprites[1];
-                facing = ModelQuadFacing.UNASSIGNED;
                 float dir = (float) Mth.atan2(velocity.z, velocity.x) - (1.5707964f);
                 float sin = Mth.sin(dir) * 0.25F;
                 float cos = Mth.cos(dir) * 0.25F;
@@ -230,12 +228,14 @@ public class FluidRenderer {
             setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
             setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
 
-            boolean aligned = northEastHeight == northWestHeight
-                    && northWestHeight == southEastHeight
-                    && southEastHeight == southWestHeight;
+            // top surface alignedness is calculated with a more relaxed epsilon
+            boolean aligned = isAlignedEquals(northEastHeight, northWestHeight)
+                    && isAlignedEquals(northWestHeight, southEastHeight)
+                    && isAlignedEquals(southEastHeight, southWestHeight)
+                    && isAlignedEquals(southWestHeight, northEastHeight);
 
             this.updateQuad(quad, world, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, collector, material, offset, quad, aligned ? facing : ModelQuadFacing.UNASSIGNED, false);
+            this.writeQuad(meshBuilder, collector, material, offset, quad, aligned ? ModelQuadFacing.POS_Y : ModelQuadFacing.UNASSIGNED, false);
 
             if (fluidState.shouldRenderBackwardUpFace(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.writeQuad(meshBuilder, collector, material, offset, quad,
@@ -369,6 +369,10 @@ public class FluidRenderer {
 
             }
         }
+    }
+
+    private static boolean isAlignedEquals(float a, float b) {
+        return Math.abs(a - b) <= ALIGNED_EQUALS_EPSILON;
     }
 
     private ColorProvider<FluidState> getColorProvider(Fluid fluid, FluidRenderHandler handler) {

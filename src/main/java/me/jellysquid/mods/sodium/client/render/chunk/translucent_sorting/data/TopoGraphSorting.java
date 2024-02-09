@@ -32,7 +32,7 @@ public class TopoGraphSorting {
      * @param planeNormal   the normal of the plane
      * @param point         the point to test
      */
-    private static boolean pointOutsideHalfspace(float planeDistance, Vector3fc planeNormal, Vector3fc point) {
+    private static boolean pointOutsideHalfSpace(float planeDistance, Vector3fc planeNormal, Vector3fc point) {
         return planeNormal.dot(point) > planeDistance;
     }
 
@@ -40,17 +40,27 @@ public class TopoGraphSorting {
         return planeNormal.dot(point) < planeDistance;
     }
 
-    public static boolean orthogonalQuadVisibleThrough(TQuad halfspace, TQuad otherQuad) {
-        var hd = halfspace.getFacing().ordinal();
-        var hdOpposite = halfspace.getFacing().getOpposite().ordinal();
-        var od = otherQuad.getFacing().ordinal();
-        var hSign = halfspace.getFacing().getSign();
-        var otherSign = otherQuad.getFacing().getSign();
+    public static boolean orthogonalQuadVisibleThrough(TQuad quadA, TQuad quadB) {
+        var aDirection = quadA.getFacing().ordinal();
+        var aOpposite = quadA.getFacing().getOpposite().ordinal();
+        var bDirection = quadB.getFacing().ordinal();
+        var aSign = quadA.getFacing().getSign();
+        var bSign = quadB.getFacing().getSign();
 
-        // A: test that the other quad has an extent within this quad's halfspace
-        return hSign * halfspace.getExtents()[hd] > hSign * otherQuad.getExtents()[hdOpposite]
-                // B: test that this quad is not fully within the other quad's halfspace
-                && !(otherSign * otherQuad.getExtents()[od] >= otherSign * halfspace.getExtents()[od]);
+        var aExtents = quadA.getExtents();
+        var bExtents = quadB.getExtents();
+
+        // test that B has an extent within A's half space and that A is not fully within B's half space
+        float BIntoADescent = aSign * aExtents[aDirection] - aSign * bExtents[aOpposite];
+        float AOutsideBAscent = bSign * aExtents[bDirection] - bSign * bExtents[bDirection];
+
+        var vis = BIntoADescent > 0 && AOutsideBAscent > 0;
+
+        // if they're visible and their bounding boxes intersect and apply a heuristic to resolve
+        if (vis && TQuad.extentsIntersect(aExtents, bExtents)) {
+            return BIntoADescent + AOutsideBAscent > 1;
+        }
+        return vis;
     }
 
     private static boolean testSeparatorRange(Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
@@ -75,7 +85,7 @@ public class TopoGraphSorting {
             // sign makes the > work in the other direction which is necessary since the
             // facing turns the whole space around. The start and end are ordered along the
             // < relation as is the normal. The normal always points in the direction of
-            // greater values, even if all of the geometry has negative values.
+            // greater values, even if all the geometry has negative values.
             var separatorRangeStart = sign * quadB.getExtents()[direction];
             var separatorRangeEnd = sign * quadA.getExtents()[oppositeDirection];
             if (separatorRangeStart > separatorRangeEnd) {
@@ -91,7 +101,7 @@ public class TopoGraphSorting {
 
             // use camera distance as the start because even if there's no geometry that
             // generates such separator plane itself, if there's any plane that triggers the
-            // section before the camera can see B through A this is enough. The separator
+            // section before the camera can see B through A, this is enough. The separator
             // doesn't need to be between B and A if the camera will cross another separator
             // before any separator that could be between B and A.
             separatorRangeStart = cameraDistance;
@@ -107,8 +117,7 @@ public class TopoGraphSorting {
         }
 
         // NOTE: unaligned normals for separators are not checked because doing so is a
-        // hard
-        // problem and this is an approximation. The fully correct topo sort would need
+        // hard problem and this is an approximation. The fully correct topo sort would need
         // to be much more complicated.
 
         // visibility not disproven
@@ -124,7 +133,7 @@ public class TopoGraphSorting {
      * @param other             the quad being tested
      * @param distancesByNormal a map of normals to sorted arrays of face plane
      *                          distances for disproving that the quads are visible
-     *                          through eachother, null to disable
+     *                          through each other, null to disable
      *
      * @return true if the other quad is visible through the first quad
      */
@@ -135,16 +144,16 @@ public class TopoGraphSorting {
         }
 
         // aligned quads
-        var quadFacing = quad.getFacing();
-        var otherFacing = other.getFacing();
+        var quadFacing = quad.useQuantizedFacing();
+        var otherFacing = other.useQuantizedFacing();
         boolean result;
         if (quadFacing != ModelQuadFacing.UNASSIGNED && otherFacing != ModelQuadFacing.UNASSIGNED) {
-            // opposites never see eachother
+            // opposites never see each other
             if (quadFacing.getOpposite() == otherFacing) {
                 return false;
             }
 
-            // parallel quads, coplanar quads are not visible to eachother
+            // parallel quads, coplanar quads are not visible to each other
             if (quadFacing == otherFacing) {
                 var sign = quadFacing.getSign();
                 var direction = quadFacing.ordinal();
@@ -156,8 +165,8 @@ public class TopoGraphSorting {
         } else {
             // at least one unaligned quad
             // this is an approximation since our quads don't store all their vertices.
-            // check that other center is within the halfspace of quad and that quad isn't
-            // in the halfspace of other
+            // check that other center is within the half space of quad and that quad isn't
+            // in the half space of other
             result = pointInsideHalfSpace(quad.getDotProduct(), quad.getQuantizedNormal(), other.getCenter())
                     && !pointInsideHalfSpace(other.getDotProduct(), other.getQuantizedNormal(), quad.getCenter());
         }
@@ -188,7 +197,7 @@ public class TopoGraphSorting {
             Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
             Vector3fc cameraPos) {
         // if enabled, check for visibility and produce a mapping of indices
-        TQuad[] quads = null;
+        TQuad[] quads;
         int[] activeToRealIndex = null;
         int activeQuads = 0;
         if (cameraPos != null) {
@@ -202,7 +211,7 @@ public class TopoGraphSorting {
                 // NOTE: This approximation may introduce wrong sorting if the real and the
                 // quantized normal aren't the same. A quad may be ignored with the quantized
                 // normal, but it's actually visible in camera.
-                if (pointOutsideHalfspace(quad.getDotProduct(), quad.getQuantizedNormal(), cameraPos)) {
+                if (pointOutsideHalfSpace(quad.getDotProduct(), quad.getQuantizedNormal(), cameraPos)) {
                     activeToRealIndex[activeQuads] = i;
                     quads[activeQuads] = quad;
                     activeQuads++;
@@ -258,31 +267,33 @@ public class TopoGraphSorting {
                 var currentQuadIndex = stack[stackPos];
                 var nextEdgeTest = unvisited.nextSetBit(nextEdge[stackPos]);
                 if (nextEdgeTest != -1) {
-                    var currentQuad = quads[currentQuadIndex];
-                    var nextQuad = quads[nextEdgeTest];
-                    if (quadVisibleThrough(currentQuad, nextQuad, distancesByNormal, cameraPos)) {
-                        // if the visible quad is on the stack, there is a cycle
-                        if (onStack.getAndSet(nextEdgeTest)) {
-                            return false;
-                        }
+                    if (currentQuadIndex != nextEdgeTest) {
+                        var currentQuad = quads[currentQuadIndex];
+                        var nextQuad = quads[nextEdgeTest];
+                        if (quadVisibleThrough(currentQuad, nextQuad, distancesByNormal, cameraPos)) {
+                            // if the visible quad is on the stack, there is a cycle
+                            if (onStack.getAndSet(nextEdgeTest)) {
+                                return false;
+                            }
 
-                        // set the next edge
-                        nextEdge[stackPos] = nextEdgeTest + 1;
+                            // set the next edge
+                            nextEdge[stackPos] = nextEdgeTest + 1;
 
-                        // visit the next quad, onStack is already set
-                        stackPos++;
-                        stack[stackPos] = nextEdgeTest;
-                        nextEdge[stackPos] = 0;
-                        continue;
-                    } else {
-                        // go to the next edge
-                        nextEdgeTest++;
-
-                        // if we haven't reached the end of the edges yet
-                        if (nextEdgeTest < activeQuads) {
-                            nextEdge[stackPos] = nextEdgeTest;
+                            // visit the next quad, onStack is already set
+                            stackPos++;
+                            stack[stackPos] = nextEdgeTest;
+                            nextEdge[stackPos] = 0;
                             continue;
                         }
+                    }
+
+                    // go to the next edge
+                    nextEdgeTest++;
+
+                    // if we haven't reached the end of the edges yet
+                    if (nextEdgeTest < activeQuads) {
+                        nextEdge[stackPos] = nextEdgeTest;
+                        continue;
                     }
                 }
 

@@ -40,7 +40,7 @@ public class TopoSortDynamicData extends DynamicData {
     private double directTriggerKey = -1;
     private int consecutiveTopoSortFailures = 0;
     private boolean pendingTriggerIsDirect;
-    private Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal;
+    private final Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal;
 
     private static final int MAX_TOPO_SORT_QUADS = 1000;
     private static final int MAX_TOPO_SORT_TIME_NS = 1_000_000;
@@ -184,7 +184,6 @@ public class TopoSortDynamicData extends DynamicData {
         if (this.directTrigger) {
             indexBuffer.rewind();
             distanceSortDirect(indexBuffer, this.quads, cameraPos);
-            return;
         }
     }
 

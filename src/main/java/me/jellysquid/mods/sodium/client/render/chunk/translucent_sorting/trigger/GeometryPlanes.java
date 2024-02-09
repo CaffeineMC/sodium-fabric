@@ -90,7 +90,7 @@ public class GeometryPlanes {
     }
 
     public void addQuadPlane(SectionPos sectionPos, TQuad quad) {
-        var facing = quad.getFacing();
+        var facing = quad.useQuantizedFacing();
         if (facing.isAligned()) {
             this.addAlignedPlane(sectionPos, facing.ordinal(), quad.getDotProduct());
         } else {

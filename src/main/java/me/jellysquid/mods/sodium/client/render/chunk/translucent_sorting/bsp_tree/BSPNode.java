@@ -63,11 +63,9 @@ public abstract class BSPNode {
             var packedNormalA = quadA.getPackedNormal();
             var packedNormalB = quadB.getPackedNormal();
             // opposite normal (distance irrelevant)
-            if (NormI8.isOpposite(packedNormalA, packedNormalB)
+            return NormI8.isOpposite(packedNormalA, packedNormalB)
                     // same normal and same distance
-                    || packedNormalA == packedNormalB && quadA.getDotProduct() == quadB.getDotProduct()) {
-                return true;
-            }
+                    || packedNormalA == packedNormalB && quadA.getDotProduct() == quadB.getDotProduct();
         }
 
         // coplanar aligned
@@ -75,18 +73,16 @@ public abstract class BSPNode {
             return true;
         }
 
-        // aligned facing away from eachother
+        // aligned facing away from each other
         else if (facingA == facingB.getOpposite()) {
             return true;
         }
 
         // aligned otherwise mutually invisible
-        else if (!TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
-                && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA)) {
-            return true;
+        else {
+            return !TopoGraphSorting.orthogonalQuadVisibleThrough(quadA, quadB)
+                    && !TopoGraphSorting.orthogonalQuadVisibleThrough(quadB, quadA);
         }
-
-        return false;
     }
 
     static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {

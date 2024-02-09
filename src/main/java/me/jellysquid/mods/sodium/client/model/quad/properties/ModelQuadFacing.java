@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import org.joml.Math;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -101,33 +102,22 @@ public enum ModelQuadFacing {
         return PACKED_ALIGNED_NORMALS[this.ordinal()];
     }
 
-    public static ModelQuadFacing fromPackedNormal(float x, float y, float z) {
-        Vector3f normal = new Vector3f(x, y, z);
-
-        if (!normal.isFinite()) {
+    public static ModelQuadFacing fromNormal(float x, float y, float z) {
+        if (!(Math.isFinite(x) && Math.isFinite(y) && Math.isFinite(z))) {
             return ModelQuadFacing.UNASSIGNED;
         }
 
-        float maxDot = 0;
-        Direction closestFace = null;
-
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
-            float dot = normal.dot(face.step());
-
-            if (dot > maxDot) {
-                maxDot = dot;
-                closestFace = face;
+            var step = face.step();
+            if (Mth.equal(Math.fma(x, step.x(), Math.fma(y, step.y(), z * step.z())), 1.0f)) {
+                return ModelQuadFacing.fromDirection(face);
             }
-        }
-
-        if (closestFace != null && Mth.equal(maxDot, 1.0f)) {
-            return ModelQuadFacing.fromDirection(closestFace);
         }
 
         return ModelQuadFacing.UNASSIGNED;
     }
 
     public static ModelQuadFacing fromPackedNormal(int normal) {
-        return fromPackedNormal(NormI8.unpackX(normal), NormI8.unpackY(normal), NormI8.unpackZ(normal));
+        return fromNormal(NormI8.unpackX(normal), NormI8.unpackY(normal), NormI8.unpackZ(normal));
     }
 }

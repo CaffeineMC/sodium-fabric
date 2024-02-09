@@ -23,10 +23,10 @@ public class TQuad {
      */
     private static final int QUANTIZATION_FACTOR = 4;
 
-    private final ModelQuadFacing facing;
+    private ModelQuadFacing facing;
     private final float[] extents;
     private final int packedNormal;
-    private final float dotProduct;
+    private float dotProduct;
     private Vector3fc center; // null on aligned quads
     private Vector3fc quantizedNormal;
 
@@ -37,13 +37,17 @@ public class TQuad {
         this.packedNormal = packedNormal;
 
         if (this.facing.isAligned()) {
-            this.dotProduct = this.extents[this.facing.ordinal()] * this.facing.getSign();
+            this.dotProduct = getAlignedDotProduct(this.facing, this.extents);
         } else {
             float normX = NormI8.unpackX(this.packedNormal);
             float normY = NormI8.unpackY(this.packedNormal);
             float normZ = NormI8.unpackZ(this.packedNormal);
             this.dotProduct = this.getCenter().dot(normX, normY, normZ);
         }
+    }
+
+    private static float getAlignedDotProduct(ModelQuadFacing facing, float[] extents) {
+        return extents[facing.ordinal()] * facing.getSign();
     }
 
     static TQuad fromAligned(ModelQuadFacing facing, float[] extents) {
@@ -55,6 +59,24 @@ public class TQuad {
     }
 
     public ModelQuadFacing getFacing() {
+        return this.facing;
+    }
+
+    /**
+     * Calculates the facing of the quad based on the quantized normal. This updates the dot product to be consistent with the new facing. Since this method computed and allocates the quantized normal, it should be used sparingly and only when the quantized normal is calculated anyway. Additionally, it can modify the facing and not product of the quad which the caller should be aware of.
+     *
+     * @return the (potentially changed) facing of the quad
+     */
+    public ModelQuadFacing useQuantizedFacing() {
+        if (!this.facing.isAligned()) {
+            // quantize the normal, get the new facing and get fix the dot product to match
+            this.getQuantizedNormal();
+            this.facing = ModelQuadFacing.fromNormal(this.quantizedNormal.x(), this.quantizedNormal.y(), this.quantizedNormal.z());
+            if (this.facing.isAligned()) {
+                this.dotProduct = getAlignedDotProduct(this.facing, this.extents);
+            }
+        }
+
         return this.facing;
     }
 
@@ -79,10 +101,6 @@ public class TQuad {
 
     public int getPackedNormal() {
         return this.packedNormal;
-    }
-
-    public static boolean isOpposite(int normA, int normB) {
-        return NormI8.isOpposite(normA, normB);
     }
 
     public Vector3fc getQuantizedNormal() {
@@ -134,27 +152,6 @@ public class TQuad {
         return result;
     }
 
-    public float getAlignedSurfaceArea() {
-        if (!this.facing.isAligned()) {
-            return 100;
-        }
-
-        var dX = this.extents[3] - this.extents[0];
-        var dY = this.extents[4] - this.extents[1];
-        var dZ = this.extents[5] - this.extents[2];
-
-        if (dX == 0) {
-            return dY * dZ;
-        } else if (dY == 0) {
-            return dX * dZ;
-        } else if (dZ == 0) {
-            return dX * dY;
-        } else {
-            // non-flat aligned quad, weird edge case
-            return 90;
-        }
-    }
-
     public boolean extentsEqual(float[] other) {
         return extentsEqual(this.extents, other);
     }
@@ -166,5 +163,21 @@ public class TQuad {
             }
         }
         return true;
+    }
+
+    public static boolean extentsIntersect(float[] extentsA, float[] extentsB) {
+        for (int axis = 0; axis < 3; axis++) {
+            var opposite = axis + 3;
+
+            if (extentsA[axis] <= extentsB[opposite]
+                    || extentsB[axis] <= extentsA[opposite]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean extentsIntersect(TQuad a, TQuad b) {
+        return extentsIntersect(a.extents, b.extents);
     }
 }

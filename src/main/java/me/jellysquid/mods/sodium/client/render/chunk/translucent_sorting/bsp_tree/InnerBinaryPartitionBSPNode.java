@@ -30,11 +30,11 @@ class InnerBinaryPartitionBSPNode extends InnerPartitionBSPNode {
         workspace.addAlignedPartitionPlane(this.axis, this.planeDistance);
 
         // also add the planes of the children
-        if (this.inside instanceof InnerPartitionBSPNode inside) {
-            inside.addPartitionPlanes(workspace);
+        if (this.inside instanceof InnerPartitionBSPNode insideChild) {
+            insideChild.addPartitionPlanes(workspace);
         }
-        if (this.outside instanceof InnerPartitionBSPNode outside) {
-            outside.addPartitionPlanes(workspace);
+        if (this.outside instanceof InnerPartitionBSPNode outsideChild) {
+            outsideChild.addPartitionPlanes(workspace);
         }
     }
 

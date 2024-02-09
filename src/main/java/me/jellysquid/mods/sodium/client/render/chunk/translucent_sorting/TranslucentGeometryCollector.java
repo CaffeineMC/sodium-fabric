@@ -58,7 +58,6 @@ import net.minecraft.core.SectionPos;
  * received by the main thread.
  */
 public class TranslucentGeometryCollector {
-    private static final Logger LOGGER = LogManager.getLogger(TranslucentGeometryCollector.class);
 
     private final SectionPos sectionPos;
 
@@ -482,10 +481,10 @@ public class TranslucentGeometryCollector {
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
         NativeBuffer buffer = PresentTranslucentData.nativeBufferForQuads(this.quads);
         if (this.sortType == SortType.STATIC_TOPO) {
-            var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
-            if (result != null) {
-                return result;
-            }
+//            var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
+//            if (result != null) {
+//                return result;
+//            }
             this.sortType = SortType.DYNAMIC;
         }
 
@@ -502,10 +501,6 @@ public class TranslucentGeometryCollector {
                         translucentMesh, cameraPos, this.quads, this.sectionPos,
                         buffer, oldData);
             } catch (BSPBuildFailureException e) {
-                // TODO: investigate existing BSP build failures, then remove this logging
-                LOGGER.warn(
-                        "BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates and world file or seed)",
-                        this.sectionPos);
                 var geometryPlanes = GeometryPlanes.fromQuadLists(this.sectionPos, this.quads);
                 return TopoSortDynamicData.fromMesh(
                         translucentMesh, cameraPos, this.quads, this.sectionPos,

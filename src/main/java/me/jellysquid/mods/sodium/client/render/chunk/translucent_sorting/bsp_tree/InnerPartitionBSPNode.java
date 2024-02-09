@@ -1,19 +1,21 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
-import java.util.Arrays;
-
-import org.joml.Vector3fc;
-
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntConsumer;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.joml.Vector3fc;
+
+import java.util.Arrays;
 
 /**
  * Performs aligned BSP partitioning of many nodes and constructs appropriate
  * BSP nodes based on the result.
- * 
+ * <p>
  * Implementation notes:
  * - Presorting the points in block-sized buckets doesn't help. It seems the
  * sort algorithm is just fast enough to handle this.
@@ -25,14 +27,14 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * - A simple attempt at lazily writing index data to the buffer didn't yield a
  * performance improvement. Maybe applying it to the multi partition node would
  * be more effective (but also much more complex and slower).
- * 
+ * <p>
  * The encoding doesn't currently support negative distances (nor does such
  * support appear to be required). Their ordering is wrong when sorting them by
  * their binary representation. To fix this: "XOR all positive numbers with
  * 0x8000... and negative numbers with 0xffff... This should flip the sign bit
  * on both (so negative numbers go first), and then reverse the ordering on
- * negative numbers." from https://stackoverflow.com/q/43299299
- * 
+ * negative numbers." from <a href="https://stackoverflow.com/q/43299299">StackOverflow</a>
+ * <p>
  * When aligned partitioning fails the geometry is checked for intersection. If
  * there is intersection it means the section is unsortable and an approximation
  * is used instead. When it doesn't intersect but is not aligned partitionable,
@@ -42,7 +44,9 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
  * reasonable and common use case (I haven't been able to determine that it is).
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
-    private static int NODE_REUSE_THRESHOLD = 30;
+    private static final Logger LOGGER = LogManager.getLogger(InnerPartitionBSPNode.class);
+
+    private static final int NODE_REUSE_THRESHOLD = 30;
 
     final Vector3fc planeNormal;
     final int axis;
@@ -54,11 +58,11 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     /**
      * Stores data required for testing if the node can be re-used. This data is
      * only generated for select candidate nodes.
-     * 
+     * <p>
      * It only stores the set of indexes that this node was constructed from and
      * their extents since the BSP construction only cares about the "opaque" quad
      * geometry and not the normal or facing.
-     * 
+     * <p>
      * Since the indexes might be compressed, the count needs to be stored
      * separately from before compression.
      */
@@ -114,8 +118,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
         @Override
         public void accept(int oldIndex) {
-            var newIndex = newIndexes.getInt(this.index);
-            indexMap[oldIndex] = newIndex;
+            var newIndex = this.newIndexes.getInt(this.index);
+            this.indexMap[oldIndex] = newIndex;
             var newOffset = newIndex - oldIndex;
             if (this.index == 0) {
                 this.firstOffset = newOffset;
@@ -130,8 +134,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         }
     }
 
-    static InnerPartitionBSPNode attemptNodeReuse(BSPWorkspace workspace, IntArrayList newIndexes, int depth,
-            InnerPartitionBSPNode oldNode) {
+    static InnerPartitionBSPNode attemptNodeReuse(BSPWorkspace workspace, IntArrayList newIndexes, InnerPartitionBSPNode oldNode) {
         if (oldNode == null) {
             return null;
         }
@@ -179,15 +182,15 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         return ((long) Float.floatToRawIntBits(distance) << 32) | ((long) type << 30) | quadIndex;
     }
 
-    private static float decodeIntervalPointDistance(long encoded) {
+    private static float decodeDistance(long encoded) {
         return Float.intBitsToFloat((int) (encoded >>> 32));
     }
 
-    private static int decodeIntervalPointQuadIndex(long encoded) {
+    private static int decodeQuadIndex(long encoded) {
         return (int) (encoded & 0x3FFFFFFF);
     }
 
-    private static int decodeIntervalPointType(long encoded) {
+    private static int decodeType(long encoded) {
         return (int) (encoded >>> 30) & 0b11;
     }
 
@@ -214,7 +217,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     static BSPNode build(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
         // attempt reuse of the old node if possible
         if (oldNode instanceof InnerPartitionBSPNode oldInnerNode) {
-            var reusedNode = InnerPartitionBSPNode.attemptNodeReuse(workspace, indexes, depth, oldInnerNode);
+            var reusedNode = InnerPartitionBSPNode.attemptNodeReuse(workspace, indexes, oldInnerNode);
             if (reusedNode != null) {
                 return reusedNode;
             }
@@ -254,7 +257,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             IntArrayList quadsOn = null;
             int thickness = 0;
             for (long point : points) {
-                switch (decodeIntervalPointType(point)) {
+                switch (decodeType(point)) {
                     case INTERVAL_START -> {
                         // unless at the start, flush if there's a gap
                         if (thickness == 0 && (quadsBefore != null || quadsOn != null)) {
@@ -274,24 +277,23 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                             partitions.add(new Partition(distance, quadsBefore, quadsOn));
                             distance = -1;
                             quadsOn = null;
-                            quadsOn = null;
                         }
                         if (quadsBefore == null) {
                             quadsBefore = new IntArrayList();
                         }
-                        quadsBefore.add(decodeIntervalPointQuadIndex(point));
+                        quadsBefore.add(decodeQuadIndex(point));
                     }
                     case INTERVAL_END -> {
                         thickness--;
                         if (quadsOn == null) {
-                            distance = decodeIntervalPointDistance(point);
+                            distance = decodeDistance(point);
                         }
                     }
                     case INTERVAL_SIDE -> {
                         // if this point in a gap, it can be put on the plane itself
-                        int pointQuadIndex = decodeIntervalPointQuadIndex(point);
+                        int pointQuadIndex = decodeQuadIndex(point);
                         if (thickness == 0) {
-                            float pointDistance = decodeIntervalPointDistance(point);
+                            float pointDistance = decodeDistance(point);
                             if (quadsOn == null) {
                                 // no partition end created yet, set here
                                 quadsOn = new IntArrayList();
@@ -310,7 +312,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                             }
                             quadsBefore.add(pointQuadIndex);
                             if (quadsOn == null) {
-                                distance = decodeIntervalPointDistance(point);
+                                distance = decodeDistance(point);
                             }
                         }
                     }
@@ -323,7 +325,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 continue;
             }
 
-            // check if there's a trailing plane. Otherwise the last plane has distance -1
+            // check if there's a trailing plane. Otherwise, the last plane has distance -1
             // since it just holds the trailing quads
             boolean endsWithPlane = quadsOn != null;
 
@@ -350,12 +352,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     partitions, axis, endsWithPlane);
         }
 
-        // test if the geometry intersects with itself.
-        // if there is self-intersection, return a multi leaf node to just give up
-        // sorting this geometry. Intersecting geometry is rare but when it does happen,
-        // it should simply be accepted and rendered as-is. Whatever artifacts this
-        // causes are considered "ok".
-        int testsRemaining = 10000;
+        // test if there is intersecting geometry to avoid logging an error when it's not necessary. It just uses teh fallback for the rare cases of intersecting geometry.
+        int testsRemaining = 100;
         for (int quadAIndex = 0; quadAIndex < indexes.size(); quadAIndex++) {
             var quadA = workspace.quads[indexes.getInt(quadAIndex)];
 
@@ -363,30 +361,12 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 var quadB = workspace.quads[indexes.getInt(quadBIndex)];
 
                 // aligned quads intersect if their bounding boxes intersect
-                boolean intersects = true;
-                for (int axis = 0; axis < 3; axis++) {
-                    var opposite = axis + 3;
-                    var extentsA = quadA.getExtents();
-                    var extentsB = quadB.getExtents();
-
-                    if (extentsA[axis] <= extentsB[opposite]
-                            || extentsB[axis] <= extentsA[opposite]) {
-                        intersects = false;
-                        break;
-                    }
+                if (TQuad.extentsIntersect(quadA, quadB)) {
+                    // TODO: use topo sort to better resolve intersecting geometry. When this falls back to topo sorting the entire thing it fails on non-intersecting but unsortable geometry (edge-orthogonal quads) that it can't deal with since it can't generate its own separators. However it can deal with intersecting geometry pretty well with the intersection edge heuristic.
+                    throw new BSPBuildFailureException("Geometry is self-intersecting");
                 }
 
-                if (intersects) {
-                    // sort quads by size ascending
-                    indexes.sort((a, b) -> {
-                        var quadX = workspace.quads[a];
-                        var quadY = workspace.quads[b];
-                        return Float.compare(quadX.getAlignedSurfaceArea(), quadY.getAlignedSurfaceArea());
-                    });
-                    return new LeafMultiBSPNode(BSPSortState.compressIndexes(indexes));
-                }
-
-                if (--testsRemaining == 0) {
+                if (--testsRemaining <= 0) {
                     break;
                 }
             }
@@ -401,11 +381,15 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         // geometry is unpartitionable with free cuts (partitions that don't fragment
         // geometry) or it required unaligned partitioning. Unaligned partitioning is a
         // hard problem and solving it here isn't really necessary. Fully aligned
-        // unpartitonable constructions exist but not in normal Minecraft and also not
-        // likely in any other normal scenario.
+        // unpartitonable constructions exist but not in normal Minecraft and  are also
+        // not likely in any other normal scenario.
 
         // Throwing this exception will cause the entire section to be either topo
         // sorted or the distance sorting fallback to be used.
-        throw new BSPBuildFailureException("no partition found");
+        // TODO: investigate BSP build failures if they happen, then remove this logging
+        LOGGER.warn(
+                "BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates, and world file or seed)",
+                workspace.sectionPos);
+        throw new BSPBuildFailureException("No partition found");
     }
 }
