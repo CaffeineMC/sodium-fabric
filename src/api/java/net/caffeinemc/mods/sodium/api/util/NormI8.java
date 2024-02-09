@@ -103,13 +103,14 @@ public class NormI8 {
      * @param normB The second packed normal
      */
     public static boolean isOpposite(int normA, int normB) {
-        int normAX = (normA >> X_COMPONENT_OFFSET) & 0xFF;
-        int normAY = (normA >> Y_COMPONENT_OFFSET) & 0xFF;
-        int normAZ = (normA >> Z_COMPONENT_OFFSET) & 0xFF;
+        // use byte to automatically sign extend the components
+        byte normAX = (byte) (normA >> X_COMPONENT_OFFSET);
+        byte normAY = (byte) (normA >> Y_COMPONENT_OFFSET);
+        byte normAZ = (byte) (normA >> Z_COMPONENT_OFFSET);
 
-        int normBX = (normB >> X_COMPONENT_OFFSET) & 0xFF;
-        int normBY = (normB >> Y_COMPONENT_OFFSET) & 0xFF;
-        int normBZ = (normB >> Z_COMPONENT_OFFSET) & 0xFF;
+        byte normBX = (byte) (normB >> X_COMPONENT_OFFSET);
+        byte normBY = (byte) (normB >> Y_COMPONENT_OFFSET);
+        byte normBZ = (byte) (normB >> Z_COMPONENT_OFFSET);
 
         return normAX == -normBX && normAY == -normBY && normAZ == -normBZ;
     }
