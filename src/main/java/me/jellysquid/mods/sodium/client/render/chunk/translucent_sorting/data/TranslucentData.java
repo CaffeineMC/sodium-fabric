@@ -49,11 +49,6 @@ public abstract class TranslucentData {
         // no-op for other translucent data than GFNI dynamic
     }
 
-    public static int vertexCountToIndexBytes(int vertexCount) {
-        // convert vertex count to quads, and then to indices, and then to bytes
-        return vertexCount / VERTICES_PER_QUAD * BYTES_PER_QUAD;
-    }
-
     public static int vertexCountToQuadCount(int vertexCount) {
         return vertexCount / VERTICES_PER_QUAD;
     }
@@ -62,20 +57,8 @@ public abstract class TranslucentData {
         return quadCount * BYTES_PER_QUAD;
     }
 
-    public static int quadCountToIndexCount(int quadCount) {
-        return quadCount * INDICES_PER_QUAD;
-    }
-
     public static int indexBytesToQuadCount(int indexBytes) {
         return indexBytes / BYTES_PER_QUAD;
-    }
-
-    public static void writeMappedQuadVertexIndexes(IntBuffer intBuffer, int quadIndex, int[] indexMapping) {
-        if (indexMapping == null) {
-            writeQuadVertexIndexes(intBuffer, quadIndex);
-        } else {
-            writeQuadVertexIndexes(intBuffer, indexMapping[quadIndex]);
-        }
     }
 
     public static void writeQuadVertexIndexes(IntBuffer intBuffer, int quadIndex) {

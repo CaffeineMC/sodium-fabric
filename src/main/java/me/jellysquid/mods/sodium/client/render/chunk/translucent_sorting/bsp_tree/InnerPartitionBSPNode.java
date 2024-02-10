@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoGraphSorting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector3fc;
@@ -362,8 +363,11 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
                 // aligned quads intersect if their bounding boxes intersect
                 if (TQuad.extentsIntersect(quadA, quadB)) {
-                    // TODO: use topo sort to better resolve intersecting geometry. When this falls back to topo sorting the entire thing it fails on non-intersecting but unsortable geometry (edge-orthogonal quads) that it can't deal with since it can't generate its own separators. However it can deal with intersecting geometry pretty well with the intersection edge heuristic.
-                    throw new BSPBuildFailureException("Geometry is self-intersecting");
+                    var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
+                    if (multiLeafNode == null) {
+                        throw new BSPBuildFailureException("Geometry is self-intersecting and can't be statically topo sorted");
+                    }
+                    return multiLeafNode;
                 }
 
                 if (--testsRemaining <= 0) {
@@ -381,7 +385,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         // geometry is unpartitionable with free cuts (partitions that don't fragment
         // geometry) or it required unaligned partitioning. Unaligned partitioning is a
         // hard problem and solving it here isn't really necessary. Fully aligned
-        // unpartitonable constructions exist but not in normal Minecraft and  are also
+        // unpartitonable constructions exist but not in normal Minecraft and are also
         // not likely in any other normal scenario.
 
         // Throwing this exception will cause the entire section to be either topo
@@ -390,6 +394,44 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         LOGGER.warn(
                 "BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates, and world file or seed)",
                 workspace.sectionPos);
-        throw new BSPBuildFailureException("No partition found");
+
+        // unpartitionable non-intersecting geometry is warned about, but then we attempt to topo sort it anyway
+        var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
+        if (multiLeafNode == null) {
+            throw new BSPBuildFailureException("No partition found but not intersecting and can't be statically topo sorted");
+        }
+        return multiLeafNode;
+    }
+
+    private static class QuadIndexConsumerIntoArray implements IntConsumer {
+        final int[] indexes;
+        private int index = 0;
+
+        QuadIndexConsumerIntoArray(int size) {
+            this.indexes = new int[size];
+        }
+
+        @Override
+        public void accept(int value) {
+            this.indexes[this.index++] = value;
+        }
+    }
+
+    static private BSPNode buildTopoMultiLeafNode(BSPWorkspace workspace, IntArrayList indexes) {
+        var quadCount = indexes.size();
+        var quads = new TQuad[quadCount];
+        var activeToRealIndex = new int[quadCount];
+        for (int i = 0; i < indexes.size(); i++) {
+            var quadIndex = indexes.getInt(i);
+            quads[i] = workspace.quads[quadIndex];
+            activeToRealIndex[i] = quadIndex;
+        }
+
+        var indexWriter = new QuadIndexConsumerIntoArray(quadCount);
+        if (!TopoGraphSorting.topoGraphSort(indexWriter, quads, activeToRealIndex, null, null)) {
+            return null;
+        }
+
+        return new LeafMultiBSPNode(BSPSortState.compressIndexesInPlace(indexWriter.indexes, false));
     }
 }

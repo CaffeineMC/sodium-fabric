@@ -1,20 +1,19 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import java.nio.IntBuffer;
-
-import org.joml.Vector3fc;
-
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.collections.BitArray;
+import org.joml.Vector3fc;
+
+import java.util.function.IntConsumer;
 
 /**
  * This class contains the sorting algorithms that do topological or distance
  * sorting. The algorithms are combined in this class to separate them from the
  * general management code in other classes.
- *
+ * <p>
  * Rough attempts at underapproximation of the visibility graph where the
  * conditions for visibility between quads are made more strict did not yield
  * significantly more robust topo sorting.
@@ -64,7 +63,7 @@ public class TopoGraphSorting {
     }
 
     private static boolean testSeparatorRange(Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
-            Vector3fc normal, float start, float end) {
+                                              Vector3fc normal, float start, float end) {
         var distances = distancesByNormal.get(normal);
         if (distances == null) {
             return false;
@@ -73,7 +72,7 @@ public class TopoGraphSorting {
     }
 
     private static boolean visibilityWithSeparator(TQuad quadA, TQuad quadB,
-            Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
+                                                   Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
         // check if there is an aligned separator
         for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
             var facing = ModelQuadFacing.VALUES[direction];
@@ -134,11 +133,10 @@ public class TopoGraphSorting {
      * @param distancesByNormal a map of normals to sorted arrays of face plane
      *                          distances for disproving that the quads are visible
      *                          through each other, null to disable
-     *
      * @return true if the other quad is visible through the first quad
      */
     private static boolean quadVisibleThrough(TQuad quad, TQuad other,
-            Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
+                                              Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
         if (quad == other) {
             return false;
         }
@@ -185,27 +183,27 @@ public class TopoGraphSorting {
      * doing a DFS on the implicit graph. Edges are tested as they are searched for
      * and if necessary separator planes are used to disprove visibility.
      *
-     * @param indexBuffer       the buffer to write the topo sort result to
+     * @param indexConsumer     the consumer to write the topo sort result to
      * @param allQuads          the quads to sort
      * @param distancesByNormal a map of normals to sorted arrays of face plane
      *                          distances, null to disable
      * @param cameraPos         the camera position, or null to disable the
      *                          visibility check
      */
-    public static boolean topoSortDepthFirstCyclic(
-            IntBuffer indexBuffer, TQuad[] allQuads,
+    public static boolean topoGraphSort(
+            IntConsumer indexConsumer, TQuad[] allQuads,
             Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal,
             Vector3fc cameraPos) {
         // if enabled, check for visibility and produce a mapping of indices
         TQuad[] quads;
         int[] activeToRealIndex = null;
-        int activeQuads = 0;
         if (cameraPos != null) {
             // allocate the working quads and index map at the full size to avoid needing to
             // iterate the quads again after checking visibility
             quads = new TQuad[allQuads.length];
             activeToRealIndex = new int[allQuads.length];
 
+            int activeQuads = 0;
             for (int i = 0; i < allQuads.length; i++) {
                 TQuad quad = allQuads[i];
                 // NOTE: This approximation may introduce wrong sorting if the real and the
@@ -217,45 +215,59 @@ public class TopoGraphSorting {
                     activeQuads++;
                 } else {
                     // write the invisible quads right away
-                    TranslucentData.writeQuadVertexIndexes(indexBuffer, i);
+                    indexConsumer.accept(i);
                 }
             }
         } else {
             quads = allQuads;
-            activeQuads = allQuads.length;
         }
 
+        return topoGraphSort(indexConsumer, quads, activeToRealIndex, distancesByNormal, cameraPos);
+    }
+
+    public static boolean topoGraphSort(IntConsumer indexConsumer, TQuad[] quads, int[] activeToRealIndex, Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
+        int quadCount = quads.length;
+
         // special case for 0 to 2 quads
-        if (activeQuads == 0) {
+        if (quadCount == 0) {
             return true;
         }
-        if (activeQuads == 1) {
-            TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, 0, activeToRealIndex);
+        if (quadCount == 1) {
+            if (activeToRealIndex != null) {
+                indexConsumer.accept(activeToRealIndex[0]);
+            } else {
+                indexConsumer.accept(0);
+            }
             return true;
         }
 
         // special case 2 quads for performance
-        if (activeQuads == 2) {
+        if (quadCount == 2) {
             var a = 0;
             var b = 1;
             if (quadVisibleThrough(quads[a], quads[b], null, null)) {
                 a = 1;
                 b = 0;
             }
-            TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, a, activeToRealIndex);
-            TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, b, activeToRealIndex);
+            if (activeToRealIndex != null) {
+                indexConsumer.accept(activeToRealIndex[a]);
+                indexConsumer.accept(activeToRealIndex[b]);
+            } else {
+                indexConsumer.accept(a);
+                indexConsumer.accept(b);
+            }
             return true;
         }
 
-        BitArray unvisited = new BitArray(activeQuads);
-        unvisited.set(0, activeQuads);
+        BitArray unvisited = new BitArray(quadCount);
+        unvisited.set(0, quadCount);
         int visitedCount = 0;
-        BitArray onStack = new BitArray(activeQuads);
-        int[] stack = new int[activeQuads];
-        int[] nextEdge = new int[activeQuads];
+        BitArray onStack = new BitArray(quadCount);
+        int[] stack = new int[quadCount];
+        int[] nextEdge = new int[quadCount];
 
         // start dfs searches until all quads are visited
-        while (visitedCount < activeQuads) {
+        while (visitedCount < quadCount) {
             int stackPos = 0;
             var root = unvisited.nextSetBit(0);
             stack[stackPos] = root;
@@ -291,7 +303,7 @@ public class TopoGraphSorting {
                     nextEdgeTest++;
 
                     // if we haven't reached the end of the edges yet
-                    if (nextEdgeTest < activeQuads) {
+                    if (nextEdgeTest < quadCount) {
                         nextEdge[stackPos] = nextEdgeTest;
                         continue;
                     }
@@ -304,7 +316,11 @@ public class TopoGraphSorting {
                 stackPos--;
 
                 // write to the index buffer since the order is now correct
-                TranslucentData.writeMappedQuadVertexIndexes(indexBuffer, currentQuadIndex, activeToRealIndex);
+                if (activeToRealIndex != null) {
+                    indexConsumer.accept(activeToRealIndex[currentQuadIndex]);
+                } else {
+                    indexConsumer.accept(currentQuadIndex);
+                }
             }
         }
 

@@ -7,6 +7,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.core.SectionPos;
 
+import java.nio.IntBuffer;
+import java.util.function.IntConsumer;
+
 /**
  * Static topo acyclic sorting uses the topo sorting algorithm but only if it's
  * possible to sort without dynamic triggering, meaning the sort order never
@@ -22,12 +25,20 @@ public class StaticTopoAcyclicData extends MixedDirectionData {
         return SortType.STATIC_TOPO;
     }
 
+    private record QuadIndexConsumerIntoBuffer(IntBuffer buffer) implements IntConsumer {
+        @Override
+        public void accept(int value) {
+            TranslucentData.writeQuadVertexIndexes(this.buffer, value);
+        }
+    }
+
+
     public static StaticTopoAcyclicData fromMesh(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, SectionPos sectionPos, NativeBuffer buffer) {
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
-        var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
+        var indexWriter = new QuadIndexConsumerIntoBuffer(buffer.getDirectBuffer().asIntBuffer());
 
-        if (!TopoGraphSorting.topoSortDepthFirstCyclic(indexBuffer, quads, null, null)) {
+        if (!TopoGraphSorting.topoGraphSort(indexWriter, quads, null, null)) {
             return null;
         }
 

@@ -1,11 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting;
 
-import java.util.Arrays;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.joml.Vector3f;
-
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -13,22 +7,16 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPBuildFailureException;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.AnyOrderData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.BSPDynamicData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.CombinedCameraPos;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.NoData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.StaticNormalRelativeData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.StaticTopoAcyclicData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
-import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.data.*;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import me.jellysquid.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.core.SectionPos;
+import org.joml.Vector3f;
+
+import java.util.Arrays;
 
 /**
  * The translucent geometry collector collects the data from the renderers and
@@ -293,17 +281,17 @@ public class TranslucentGeometryCollector {
      * Determines the sort type for the collected geometry from the section. It
      * determines a sort type, which is either no sorting, a static sort or a
      * dynamic sort (section in GFNI only in this case).
-     * 
+     *
      * See the section on special cases for an explanation of the special sorting
-     * cases: https://hackmd.io/@douira100/sodium-sl-gfni#Special-Sorting-Cases
-     * 
+     * cases: <a href="https://hackmd.io/@douira100/sodium-sl-gfni#Special-Sorting-Cases">...</a>
+     *
      * A: If there are no or only one normal, this builder can be considered
      * practically empty.
-     * 
+     *
      * B: If there are two face planes with opposing normals at the same distance,
      * then
      * they can't be seen through each other and this section can be ignored.
-     * 
+     *
      * C: If the translucent faces are on the surface of the convex hull of all
      * translucent faces in the section and face outwards, then there is no way to
      * see one through another. Since convex hulls are hard, a simpler case only
@@ -313,16 +301,16 @@ public class TranslucentGeometryCollector {
      * distances line up with the bounding box allows the exclusion of some
      * sections containing a single convex translucent cuboid (of which not all
      * faces need to exist).
-     * 
+     *
      * D: If there are only two normals which are opposites of
      * each other, then a special fixed sort order is always a correct sort order.
      * This ordering sorts the two sets of face planes by their ascending
      * normal-relative distance. The ordering between the two normals is irrelevant
      * as they can't be seen through each other anyway.
-     * 
+     *
      * More heuristics can be performed here to conservatively determine if this
      * section could possibly have more than one translucent sort order.
-     * 
+     *
      * @return the required sort type to ensure this section always looks correct
      */
     private SortType sortTypeHeuristic() {
@@ -481,10 +469,10 @@ public class TranslucentGeometryCollector {
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
         NativeBuffer buffer = PresentTranslucentData.nativeBufferForQuads(this.quads);
         if (this.sortType == SortType.STATIC_TOPO) {
-//            var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
-//            if (result != null) {
-//                return result;
-//            }
+            var result = StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, this.sectionPos, buffer);
+            if (result != null) {
+                return result;
+            }
             this.sortType = SortType.DYNAMIC;
         }
 

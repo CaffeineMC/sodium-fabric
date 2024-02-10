@@ -65,10 +65,7 @@ public class AlignableNormal extends Vector3f {
             return false;
         }
         AlignableNormal other = (AlignableNormal) obj;
-        if (this.alignedDirection != other.alignedDirection) {
-            return false;
-        }
-        return true;
+        return this.alignedDirection == other.alignedDirection;
     }
 
     public static boolean queryRange(float[] sortedDistances, float start, float end) {

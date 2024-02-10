@@ -85,6 +85,17 @@ class BSPSortState {
         return -Math.floorDiv(-x, y);
     }
 
+    private static boolean isOutOfBounds(int size) {
+        return size < INDEX_COMPRESSION_MIN_LENGTH || size > 1 << 10;
+    }
+
+    static int[] compressIndexesInPlace(int[] indexes, boolean doSort) {
+        if (isOutOfBounds(indexes.length)) {
+            return indexes;
+        }
+        return compressIndexes(IntArrayList.wrap(indexes), doSort);
+    }
+
     static int[] compressIndexes(IntArrayList indexes) {
         return compressIndexes(indexes, true);
     }
@@ -104,7 +115,7 @@ class BSPSortState {
      */
     static int[] compressIndexes(IntArrayList indexes, boolean doSort) {
         // bail on short lists
-        if (indexes.size() < INDEX_COMPRESSION_MIN_LENGTH || indexes.size() > 1 << 10) {
+        if (isOutOfBounds(indexes.size())) {
             return indexes.toIntArray();
         }
 
