@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * The screen which is shown when the user's configuration file is corrupted.
+ */
 public class ConfigCorruptedScreen extends Screen {
     private static final String TEXT_BODY_RAW = """
         A problem occurred while trying to load the configuration file. This

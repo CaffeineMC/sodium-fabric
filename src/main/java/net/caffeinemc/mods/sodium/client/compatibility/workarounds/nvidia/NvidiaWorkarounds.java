@@ -7,6 +7,9 @@ import net.caffeinemc.mods.sodium.client.platform.windows.WindowsCommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Utility class for applying NVIDIA-specific workarounds at OpenGL context creation.
+ */
 public class NvidiaWorkarounds {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-NvidiaWorkarounds");
 

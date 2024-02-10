@@ -11,6 +11,7 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.PathPackResources;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +24,10 @@ import java.util.Set;
 public class ResourcePackScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-ResourcePackScanner");
 
+    /**
+     * The list of shader program paths which our renderer is known to completely ignore. Any resource pack providing
+     * overrides for these files is marked as incompatible.
+     */
     private static final Set<String> SHADER_PROGRAM_BLACKLIST = Set.of(
             "rendertype_solid.vsh",
             "rendertype_solid.fsh",
@@ -41,6 +46,12 @@ public class ResourcePackScanner {
             "rendertype_tripwire.json"
     );
 
+    /**
+     * The list of shader include paths which our renderer is known to ignore in some cases. Because other
+     * shader programs (such as those outside terrain rendering) are not changed, they will still be affected by any
+     * change to these shader includes. For this reason, we only show a notice of *possible* incompatibility
+     * for resource packs containing overrides for these files.
+     */
     private static final Set<String> SHADER_INCLUDE_BLACKLIST = Set.of(
             "light.glsl",
             "fog.glsl"
@@ -63,6 +74,10 @@ public class ResourcePackScanner {
         printCompatibilityReport(outputs);
     }
 
+    /**
+     * Pushes notifications to the in-game toast system for resource packs that were found to have problems.
+     * @param resourcePacks A collection of resource packs and any problematic files they include
+     */
     private static void printToasts(Collection<ScannedResourcePack> resourcePacks) {
         var incompatibleResourcePacks = resourcePacks.stream()
                 .filter((pack) -> !pack.shaderPrograms.isEmpty())
@@ -99,6 +114,11 @@ public class ResourcePackScanner {
         }
     }
 
+    /**
+     * Writes to the log file a detailed report of resource packs and their problematic files. The log file will
+     * contain helpful resources about what these problems are and how they can be resolved.
+     * @param scanResults A collection of resource packs and any problematic files they include
+     */
     private static void printCompatibilityReport(Collection<ScannedResourcePack> scanResults) {
         var builder = new StringBuilder();
 
@@ -131,17 +151,35 @@ public class ResourcePackScanner {
         }
     }
 
-    private static void emitProblem(StringBuilder builder, String description, String url, List<String> resources) {
+    /**
+     * Writes a detailed description of a detected resource pack problem to {@param builder}. The description contains
+     * information about the issue and which files are affected.
+     *
+     * @param builder The {@link StringBuilder} to write the formatted information to
+     * @param description A description of the problem in human-readable format
+     * @param url A URL which points to additional resources about the problem (optional)
+     * @param files The list of files within the resource pack which were identified as problematic
+     */
+    private static void emitProblem(StringBuilder builder, String description, @Nullable String url, List<String> files) {
         builder.append("\t- Problem found: ").append("\n");
         builder.append("\t\t- Description:\n\t\t\t").append(description).append("\n");
-        builder.append("\t\t- More information: ").append(url).append("\n");
+
+        if (url != null) {
+            builder.append("\t\t- More information: ").append(url).append("\n");
+        }
+
         builder.append("\t\t- Files: ").append("\n");
 
-        for (var resource : resources) {
-            builder.append("\t\t\t- ").append(resource).append("\n");
+        for (var file : files) {
+            builder.append("\t\t\t- ").append(file).append("\n");
         }
     }
 
+    /**
+     * Scans the contents of the resource pack for known-problematic files, and returns a collection of their paths.
+     * @param resourcePack The resource pack to scan
+     * @return The results of the scan
+     */
     @NotNull
     private static ScannedResourcePack scanResources(PackResources resourcePack) {
         final var ignoredShaders = determineIgnoredShaders(resourcePack);

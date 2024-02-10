@@ -41,7 +41,7 @@ import java.util.Objects;
  * operations. This allows chunk build tasks to see a consistent snapshot of chunk data at the exact moment the task was
  * created.</p>
  *
- * <p>World slices are not safe to use from multiple threads at once, but the data they contain is safe from modification
+ * <p>Level slices are not safe to use from multiple threads at once, but the data they contain is safe from modification
  * by the main client thread.</p>
  *
  * <p>Object pooling should be used to avoid huge allocations as this class contains many large arrays.</p>
@@ -94,8 +94,8 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
     // The starting point from which this slice captures blocks
     private int originBlockX, originBlockY, originBlockZ;
 
-    // The volume that this WorldSlice contains
-    private BoundingBox volume;
+    // The bounding box which this LevelSlice contains
+    private BoundingBox box;
 
     public static ChunkRenderContext prepare(Level level, SectionPos pos, ClonedChunkSectionCache cache) {
         LevelChunk chunk = level.getChunk(pos.getX(), pos.getZ());
@@ -161,7 +161,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
         this.originBlockY = SectionPos.sectionToBlockCoord(context.getOrigin().getY() - NEIGHBOR_CHUNK_RADIUS);
         this.originBlockZ = SectionPos.sectionToBlockCoord(context.getOrigin().getZ() - NEIGHBOR_CHUNK_RADIUS);
 
-        this.volume = context.getVolume();
+        this.box = context.getBox();
 
         for (int x = 0; x < SECTION_ARRAY_LENGTH; x++) {
             for (int y = 0; y < SECTION_ARRAY_LENGTH; y++) {
@@ -202,7 +202,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
         if (sectionPos.equals(context.getOrigin())) {
             container.sodium$unpack(blockArray);
         } else {
-            var bounds = context.getVolume();
+            var bounds = context.getBox();
 
             int minBlockX = Math.max(bounds.minX(), sectionPos.minBlockX());
             int maxBlockX = Math.min(bounds.maxX(), sectionPos.maxBlockX());
@@ -236,7 +236,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
     }
 
     public BlockState getBlockState(int blockX, int blockY, int blockZ) {
-        if (!this.volume.isInside(blockX, blockY, blockZ)) {
+        if (!this.box.isInside(blockX, blockY, blockZ)) {
             return EMPTY_BLOCK_STATE;
         }
 
@@ -267,7 +267,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
 
     @Override
     public int getBrightness(LightLayer type, BlockPos pos) {
-        if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
+        if (!this.box.isInside(pos.getX(), pos.getY(), pos.getZ())) {
             return 0;
         }
 
@@ -287,7 +287,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
 
     @Override
     public int getRawBrightness(BlockPos pos, int ambientDarkness) {
-        if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
+        if (!this.box.isInside(pos.getX(), pos.getY(), pos.getZ())) {
             return 0;
         }
 
@@ -316,7 +316,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
     }
 
     public BlockEntity getBlockEntity(int blockX, int blockY, int blockZ) {
-        if (!this.volume.isInside(blockX, blockY, blockZ)) {
+        if (!this.box.isInside(blockX, blockY, blockZ)) {
             return null;
         }
 
@@ -355,7 +355,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
 
     @Override
     public @Nullable Object getBlockEntityRenderData(BlockPos pos) {
-        if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
+        if (!this.box.isInside(pos.getX(), pos.getY(), pos.getZ())) {
             return null;
         }
 

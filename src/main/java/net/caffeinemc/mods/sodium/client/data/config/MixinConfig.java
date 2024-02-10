@@ -14,11 +14,23 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * <a href="https://github.com/CaffeineMC/sodium-fabric/wiki/Configuration-File">Documentation of these options...</a>
+ * <p>Provides a registry of configuration rules for mixins. These rules can be used to either prevent specific patches
+ * from being applied to the game, or to forcefully enable them.</p>
+ *
+ * <p>The name of each rule comes from the package which the mixin is located in. The rule then applies to all
+ * children of that package.</p>
+ *
+ * <p>NOTE: If a rule is not defined for a package, and a mixin is loaded from that package, it will not be applied. You
+ * must create rules for every mixin that is specified in <pre>sodium.mixins.json</pre>!</p>
+ *
+ * <p>These default values of these rules can be overwritten by the user (via the configuration file), or by other mods
+ * (via the Fabric mod manifest.)</p>
+ *
+ * <p>The rules specified by other mods always take higher priority than those added by the user. If a mixin package is
+ * disabled by a rule, other children of that package can still be re-enabled.</p>
  */
-@SuppressWarnings("CanBeFinal")
 public class MixinConfig {
-    private static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
+    private static final Logger LOGGER = LogManager.getLogger("Sodium-MixinConfig");
 
     private static final String JSON_KEY_SODIUM_OPTIONS = "sodium:options";
 
@@ -103,6 +115,10 @@ public class MixinConfig {
         }
     }
 
+    /**
+     * Reads key-value pairs from {@param props} and applies any defined mixin rules from it.
+     * @param props The {@link Properties} containing key-value pairs in name=bool format.
+     */
     private void readProperties(Properties props) {
         for (Map.Entry<Object, Object> entry : props.entrySet()) {
             String key = (String) entry.getKey();
@@ -130,6 +146,11 @@ public class MixinConfig {
         }
     }
 
+    /**
+     * Searches all currently loaded mods for additional metadata stored in the <pre>fabric.mod.json</pre> file under
+     * the <pre>custom > sodium:options</pre> JSON object. Mixin rules are specified in the same format that the user
+     * configuration file uses, in key-value pairs.
+     */
     private void applyModOverrides() {
         for (ModContainer container : FabricLoader.getInstance().getAllMods()) {
             ModMetadata meta = container.getMetadata();
@@ -149,6 +170,10 @@ public class MixinConfig {
         }
     }
 
+    /**
+     * Applies the mixin rule from another mod to the current configuration. This will write a message to the log file
+     * help other users and developers with debugging.
+     */
     private void applyModOverride(ModMetadata meta, String name, CustomValue value) {
         MixinOption option = this.options.get(name);
 
@@ -209,7 +234,8 @@ public class MixinConfig {
 
     /**
      * Loads the configuration file from the specified location. If it does not exist, a new configuration file will be
-     * created. The file on disk will then be updated to include any new options.
+     * created on disk with the default values, and then loaded.
+     * @throws RuntimeException If the configuration file is invalid or corrupt
      */
     public static MixinConfig load(File file) {
         if (!file.exists()) {
@@ -234,12 +260,18 @@ public class MixinConfig {
         }
 
         MixinConfig config = new MixinConfig();
-        config.readProperties(props);
-        config.applyModOverrides();
+        config.readProperties(props); // apply user settings first
+        config.applyModOverrides(); // then apply mod overrides on top of it
 
         return config;
     }
 
+    /**
+     * Writes the default configuration file to disk. This will overwrite the existing file on disk.
+     *
+     * @param file The file to write the configuration to
+     * @throws IOException If the parent directory is invalid or could not be created, or if the file could not be written
+     */
     private static void writeDefaultConfig(File file) throws IOException {
         File dir = file.getParentFile();
 
@@ -265,10 +297,16 @@ public class MixinConfig {
         return "mixin." + name;
     }
 
+    /**
+     * @return The number of configurable mixin rules
+     */
     public int getOptionCount() {
         return this.options.size();
     }
 
+    /**
+     * @return The number of mixin rule overrides applied (from either the user or other mods)
+     */
     public int getOptionOverrideCount() {
         return (int) this.options.values()
                 .stream()

@@ -8,6 +8,10 @@ import org.lwjgl.system.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+/**
+ * Bindings to the <a href="https://learn.microsoft.com/en-us/windows/win32/api/winver/">winver.h</a> API. This can be
+ * used to query file version information about a PE module on disk.
+ */
 public class Version {
     private static final SharedLibrary LIBRARY = APIUtil.apiCreateLibrary("version");
 
@@ -23,8 +27,15 @@ public class Version {
         PFN_VerQueryValueW = APIUtil.apiGetFunctionAddress(LIBRARY, "VerQueryValueW");
     }
 
-
-    static @Nullable QueryResult query(ByteBuffer pBlock, String subBlock) {
+    /**
+     * Queries a sub-block with the given name from a {@link VersionInfo} instance. See also:
+     * <a href="https://learn.microsoft.com/en-us/windows/win32/api/winver/nf-winver-verqueryvaluew">VerQueryValueW</a>
+     *
+     * @param block The pointer to version info block
+     * @param subBlock The name of the sub-block to query
+     * @return The query result if successful, otherwise null
+     */
+    static @Nullable QueryResult query(ByteBuffer block, String subBlock) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             ByteBuffer pSubBlock = stack.malloc(16, MemoryUtil.memLengthUTF16(subBlock, true));
             MemoryUtil.memUTF16(subBlock, true, pSubBlock);
@@ -32,7 +43,7 @@ public class Version {
             PointerBuffer pBuffer = stack.callocPointer(1);
             IntBuffer pLen = stack.callocInt(1);
 
-            int result = JNI.callPPPPI(MemoryUtil.memAddress(pBlock), MemoryUtil.memAddress(pSubBlock),
+            int result = JNI.callPPPPI(MemoryUtil.memAddress(block), MemoryUtil.memAddress(pSubBlock),
                     MemoryUtil.memAddress(pBuffer), MemoryUtil.memAddress(pLen), Version.PFN_VerQueryValueW);
 
             if (result == 0) {
@@ -43,6 +54,18 @@ public class Version {
         }
     }
 
+    /**
+     * Creates a {@link VersionInfo} for a PE module at the specified path.
+     *
+     * <p>See also: <a href="https://learn.microsoft.com/en-us/windows/win32/api/winver/nf-winver-getfileversioninfow">
+     *     GetFileVersionInfoW</a></p>
+     *
+     * <p>NOTE: The caller must free the resource returned by this function (if not null).</p>
+     *
+     * @param filename The path to the PE module on disk
+     * @throws RuntimeException If a non-success code is returned by GetFileVersionInfoSizeW
+     * @return An instance of {@link VersionInfo}, or null if the PE module is invalid
+     */
     public static @Nullable VersionInfo getModuleFileVersion(String filename) {
         ByteBuffer lptstrFilename = MemoryUtil.memAlignedAlloc(16, MemoryUtil.memLengthUTF16(filename, true));
 

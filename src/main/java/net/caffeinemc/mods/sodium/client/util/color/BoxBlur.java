@@ -3,6 +3,9 @@ package net.caffeinemc.mods.sodium.client.util.color;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.minecraft.util.Mth;
 
+/**
+ * An implementation of the linear box blur algorithm which can be used to blend large color arrays efficiently.
+ */
 public class BoxBlur {
 
     public static void blur(ColorBuffer buf, ColorBuffer tmp, int radius) {

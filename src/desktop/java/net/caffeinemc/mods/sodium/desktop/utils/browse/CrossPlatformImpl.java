@@ -4,14 +4,19 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 
-class CrossPlatformImpl implements BrowseUrlHandler {
+/**
+ * <p>The standard implementation which relies on OpenJDK's {@link Desktop} implementation. For Linux-based platforms,
+ * this may not work correctly since it appears to rely on GNOME-specific functionality.</p>
+ */
+class CrossPlatformImpl implements DesktopBrowseHandler {
     public static boolean isSupported() {
         return Desktop.getDesktop()
                 .isSupported(Desktop.Action.BROWSE);
     }
 
     @Override
-    public void browseTo(String url) throws IOException {
-        Desktop.getDesktop().browse(URI.create(url));
+    public void browseTo(URI uri) throws IOException {
+        Desktop.getDesktop()
+                .browse(uri);
     }
 }

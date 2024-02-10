@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.compatibility.environment.probe;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
@@ -14,12 +15,18 @@ import java.util.List;
 
 import net.minecraft.Util;
 
+/**
+ * Utility class which provides functions for scanning the system's attached graphics adapters.
+ */
 public class GraphicsAdapterProbe {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-GraphicsAdapterProbe");
 
-    private static List<GraphicsAdapterInfo> ADAPTERS;
+    private static @Nullable List<GraphicsAdapterInfo> ADAPTERS;
 
-    public static void findAdapters() {
+    /**
+     * Searches the system for graphics adapters using the best strategy for the given platform.
+     */
+    public static void scanAdapters() {
         LOGGER.info("Searching for graphics cards...");
 
         // We rely on separate detection logic for Linux because Oshi fails to find GPUs without
@@ -36,6 +43,10 @@ public class GraphicsAdapterProbe {
         ADAPTERS = results;
     }
 
+    /**
+     * Scans the system for graphics adapters using a cross-platform library.
+     * @return A list of graphics adapters
+     */
     public static List<GraphicsAdapterInfo> findAdaptersCrossPlatform() {
         var systemInfo = new SystemInfo();
         var hardwareInfo = systemInfo.getHardware();
@@ -56,6 +67,12 @@ public class GraphicsAdapterProbe {
         return results;
     }
 
+    /**
+     * Scans the system for graphics adapters using the sysfs interface on Linux. Unlike the cross-platform
+     * implementation, this will return results for graphics adapters with no display outputs, which can be found on
+     * certain laptops with hybrid graphics.
+     * @return A list of graphics adapters
+     */
     private static List<GraphicsAdapterInfo> findAdaptersLinux() {
         var results = new ArrayList<GraphicsAdapterInfo>();
 
@@ -100,11 +117,17 @@ public class GraphicsAdapterProbe {
         return results;
     }
 
+    /**
+     * @return A collection of graphics adapters which were found during a hardware scan
+     * @throws IllegalStateException If the function is called before {@link GraphicsAdapterProbe#scanAdapters()}
+     */
     public static Collection<GraphicsAdapterInfo> getAdapters() {
-        if (ADAPTERS == null) {
-            throw new RuntimeException("Graphics adapters not probed yet");
+        var adapters = ADAPTERS;
+
+        if (adapters == null) {
+            throw new IllegalStateException("Graphics adapters not probed yet");
         }
 
-        return ADAPTERS;
+        return adapters;
     }
 }

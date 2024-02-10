@@ -1,13 +1,14 @@
 package net.caffeinemc.mods.sodium.desktop;
 
-import net.caffeinemc.mods.sodium.desktop.utils.browse.BrowseUrlHandler;
+import net.caffeinemc.mods.sodium.desktop.utils.browse.DesktopBrowseHandler;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
 
 public class LaunchWarn {
-    private static final String HELP_URL = "https://github.com/CaffeineMC/sodium-fabric/wiki/Installation";
+    private static final URI HELP_URL = URI.create("https://github.com/CaffeineMC/sodium-fabric/wiki/Installation");
 
     private static final String RICH_MESSAGE =
                     "<html>" +
@@ -61,10 +62,10 @@ public class LaunchWarn {
         trySetSystemLookAndFeel();
         trySetSystemFontPreferences();
 
-        BrowseUrlHandler browseUrlHandler = BrowseUrlHandler.createImplementation();
+        DesktopBrowseHandler desktop = DesktopBrowseHandler.createImplementation();
 
-        if (browseUrlHandler != null) {
-            showRichGraphicalDialog(browseUrlHandler);
+        if (desktop != null) {
+            showRichGraphicalDialog(desktop);
         } else {
             showFallbackGraphicalDialog();
         }
@@ -72,7 +73,7 @@ public class LaunchWarn {
         System.exit(0);
     }
 
-    private static void showRichGraphicalDialog(BrowseUrlHandler browseUrlHandler) {
+    private static void showRichGraphicalDialog(DesktopBrowseHandler desktop) {
         int selectedOption = showDialogBox(RICH_MESSAGE, WINDOW_TITLE, JOptionPane.YES_NO_OPTION,
                 JOptionPane.INFORMATION_MESSAGE, new String[] { "Help", "Close" }, JOptionPane.YES_OPTION);
 
@@ -80,7 +81,7 @@ public class LaunchWarn {
             log("Opening URL: " + HELP_URL);
 
             try {
-                browseUrlHandler.browseTo(HELP_URL);
+                desktop.browseTo(HELP_URL);
             } catch (IOException e) {
                 log("Failed to open default web browser!", e);
 

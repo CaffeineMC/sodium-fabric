@@ -27,14 +27,23 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
+/**
+ * An immutable clone of a {@link LevelChunkSection}. This contains a full copy of all data (blocks, biomes, light,
+ * entities) and can be used by other threads to access the world state.
+ */
 public class ClonedChunkSection {
+    // These default arrays are used to avoid unnecessary copies for empty air sections.
     private static final DataLayer DEFAULT_SKY_LIGHT_ARRAY = new DataLayer(15);
     private static final DataLayer DEFAULT_BLOCK_LIGHT_ARRAY = new DataLayer(0);
-    private static final PalettedContainer<BlockState> DEFAULT_STATE_CONTAINER = new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
+    private static final PalettedContainer<BlockState> DEFAULT_STATE_CONTAINER =
+            new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
 
     private final SectionPos pos;
 
+    // Local Block Index -> Block Entity
     private final @Nullable Int2ReferenceMap<BlockEntity> blockEntityMap;
+
+    // Local Block Index -> Block Entity Render Data
     private final @Nullable Int2ReferenceMap<Object> blockEntityRenderDataMap;
 
     private final @Nullable DataLayer[] lightDataArrays;
@@ -45,7 +54,17 @@ public class ClonedChunkSection {
 
     private long lastUsedTimestamp = Long.MAX_VALUE;
 
-    public ClonedChunkSection(Level level, LevelChunk chunk, @Nullable LevelChunkSection section, SectionPos pos) {
+    /**
+     * Creates an immutable copy of the chunk section.
+     *
+     * <p>NOTE: The chunk section's position is provided separately as {@param section} may be null.</p>
+     *
+     * @param pos     The position of the chunk section to be copied from
+     * @param level   The level which the section belongs to
+     * @param chunk   The chunk which the section belongs to
+     * @param section The chunk section to copy from, which may be null
+     */
+    public ClonedChunkSection(SectionPos pos, Level level, LevelChunk chunk, @Nullable LevelChunkSection section) {
         this.pos = pos;
 
         PalettedContainerRO<BlockState> blockData = null;
@@ -111,7 +130,14 @@ public class ClonedChunkSection {
         return container;
     }
 
-    @NotNull
+    /**
+     * Copies the light data for the given chunk section from the level. If the level's dimension does not support
+     * a given light type, the array for that type will be null.
+     *
+     * @param level The level to copy from
+     * @param pos The coordinates of the chunk section to copy from
+     * @return The copied light arrays
+     */
     private static DataLayer[] copyLightData(Level level, SectionPos pos) {
         var arrays = new DataLayer[2];
         arrays[LightLayer.BLOCK.ordinal()] = copyLightArray(level, LightLayer.BLOCK, pos);
@@ -127,6 +153,10 @@ public class ClonedChunkSection {
     /**
      * Copies the light data array for the given light type for this chunk, or returns a default-initialized value if
      * the light array is not loaded.
+     *
+     * @param level The level to copy from
+     * @param pos The coordinates of the chunk section to copy from
+     * @return The copied light array
      */
     @NotNull
     private static DataLayer copyLightArray(Level level, LightLayer type, SectionPos pos) {
@@ -144,10 +174,18 @@ public class ClonedChunkSection {
         return array;
     }
 
+    /**
+     * Copies the references to any block entities located within the chunk. This does not make a deep copy of the
+     * block entities themselves, so it is generally dangerous to access their state.
+     *
+     * @param chunk The chunk to copy entities from
+     * @param sectionPos The coordinates of the chunk section to copy from
+     * @return The copied block entities, or null if there are no entities to copy
+     */
     @Nullable
-    private static Int2ReferenceMap<BlockEntity> copyBlockEntities(LevelChunk chunk, SectionPos chunkCoord) {
-        BoundingBox box = new BoundingBox(chunkCoord.minBlockX(), chunkCoord.minBlockY(), chunkCoord.minBlockZ(),
-                chunkCoord.maxBlockX(), chunkCoord.maxBlockY(), chunkCoord.maxBlockZ());
+    private static Int2ReferenceMap<BlockEntity> copyBlockEntities(LevelChunk chunk, SectionPos sectionPos) {
+        BoundingBox box = new BoundingBox(sectionPos.minBlockX(), sectionPos.minBlockY(), sectionPos.minBlockZ(),
+                sectionPos.maxBlockX(), sectionPos.maxBlockY(), sectionPos.maxBlockZ());
 
         Int2ReferenceOpenHashMap<BlockEntity> blockEntities = null;
 
@@ -172,6 +210,12 @@ public class ClonedChunkSection {
         return blockEntities;
     }
 
+    /**
+     * Copies the references to render attachment data on block entities. This does not make a deep copy of the
+     * render attachment data itself.
+     * @param blockEntities The block entities to copy render attachment data from
+     * @return The copied render attachment references, or null if there is none to copy
+     */
     @Nullable
     private static Int2ReferenceMap<Object> copyBlockEntityRenderData(Int2ReferenceMap<BlockEntity> blockEntities) {
         Int2ReferenceOpenHashMap<Object> blockEntityRenderDataMap = null;
@@ -199,6 +243,9 @@ public class ClonedChunkSection {
         return blockEntityRenderDataMap;
     }
 
+    /**
+     * @return The position of the section which this been cloned
+     */
     public SectionPos getPosition() {
         return this.pos;
     }

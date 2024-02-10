@@ -50,7 +50,7 @@ public class LateDriverScanner {
     }
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/1486
-    // The way which NVIDIA tries to detect the Minecraft process could not be circumvented until fairly recently
+    // The way which NVIDIA tries to detect the Minecraft process could not be circumvented until fairly recently.
     // So we require that an up-to-date graphics driver is installed so that our workarounds can disable the Threaded
     // Optimizations driver hack.
     private static boolean isSupportedNvidiaDriver(GLContextInfo driver) {

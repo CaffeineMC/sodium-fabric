@@ -1,8 +1,11 @@
 package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
 /**
- * "Checks" are used to determine whether the environment we are running within is actually reasonable. Most often,
- * failing checks will crash the game and prompt the user for intervention.
+ * <p>"Checks" are used to determine whether the environment we are running within is actually reasonable. Most often,
+ * failing checks will crash the game and prompt the user for intervention.</p>
+ *
+ * <p>These checks can be disabled by specifying a system property (starting with <pre>sodium.checks.</pre>) to
+ * <pre>false</pre>.</p>
  */
 class Configuration {
     public static final boolean WIN32_RTSS_HOOKS = configureCheck("win32.rtss", true);

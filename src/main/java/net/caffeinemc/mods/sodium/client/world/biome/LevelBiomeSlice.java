@@ -4,16 +4,27 @@ import net.caffeinemc.mods.sodium.client.world.BiomeSeedProvider;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.Holder;
-import net.minecraft.core.QuartPos;
+import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.LinearCongruentialGenerator;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 
+/**
+ * A slice of the level's biome data, with additional lookup tables to speed up queries.
+ */
 public class LevelBiomeSlice {
+    /**
+     * The resource key identifying the default biome of a chunk when it does not contain any biome data.
+     */
+    private static final ResourceKey<Biome> DEFAULT_BIOME_KEY = Biomes.PLAINS;
+
+    /**
+     * The size of the data arrays in each dimension.
+     */
     private static final int SIZE = 3 * 4; // 3 chunks * 4 biomes per chunk
 
     // Arrays are in ZYX order
@@ -24,25 +35,39 @@ public class LevelBiomeSlice {
 
     private long biomeZoomSeed;
 
-    private int blockX, blockY, blockZ;
+    /**
+     * The block position which the slice begins at.
+     */
+    private int originBlockX, originBlockY, originBlockZ;
 
+    /**
+     * Re-calculates the lookup tables used for biome queries. This should be called when the {@link LevelSlice}
+     * is updated with new data.
+     *
+     * @param level The level which contains the zoom seed and registries for biomes
+     * @param context The context which contains cloned biome data from chunks
+     */
     public void update(ClientLevel level, ChunkRenderContext context) {
-        this.blockX = context.getOrigin().minBlockX() - 16;
-        this.blockY = context.getOrigin().minBlockY() - 16;
-        this.blockZ = context.getOrigin().minBlockZ() - 16;
+        this.originBlockX = context.getOrigin().minBlockX() - 16;
+        this.originBlockY = context.getOrigin().minBlockY() - 16;
+        this.originBlockZ = context.getOrigin().minBlockZ() - 16;
 
         this.biomeZoomSeed = BiomeSeedProvider.getBiomeZoomSeed(level);
 
-        this.copyBiomeData(level, context);
+        var registries = level.registryAccess();
+        this.copyBiomeData(registries.registryOrThrow(Registries.BIOME), context);
 
         this.calculateBias();
         this.calculateUniform();
     }
 
-    private void copyBiomeData(Level level, ChunkRenderContext context) {
-        var defaultValue = level.registryAccess()
-                .registryOrThrow(Registries.BIOME)
-                .getHolderOrThrow(Biomes.PLAINS);
+    /**
+     * Copies all biome data from the cloned chunk sections into the slice.
+     * @param registry The registry to look up biome values from
+     * @param context The cloned chunk sections to copy biome data from
+     */
+    private void copyBiomeData(Registry<Biome> registry, ChunkRenderContext context) {
+        var defaultValue = registry.getHolderOrThrow(DEFAULT_BIOME_KEY);
 
         for (int sectionX = 0; sectionX < 3; sectionX++) {
             for (int sectionY = 0; sectionY < 3; sectionY++) {
@@ -53,6 +78,14 @@ public class LevelBiomeSlice {
         }
     }
 
+    /**
+     * Unpacks the biome data for a given chunk section into the slice.
+     * @param context The render context holding cloned chunk sections which will be unpacked from
+     * @param sectionX The x-coordinate of the section's position
+     * @param sectionY The y-coordinate of the section's position
+     * @param sectionZ The z-coordinate of the section's position
+     * @param defaultBiome The default biome to unpack using, if the chunk section has no biome data
+     */
     private void copySectionBiomeData(ChunkRenderContext context, int sectionX, int sectionY, int sectionZ, Holder<Biome> defaultBiome) {
         var section = context.getSections()[LevelSlice.getLocalSectionIndex(sectionX, sectionY, sectionZ)];
         var biomeData = section.getBiomeData();
@@ -76,6 +109,11 @@ public class LevelBiomeSlice {
         }
     }
 
+    /**
+     * Computes the "uniformity" lookup table for each biome cell. A biome cell is considered to be uniform if all
+     * neighboring cells are of the same biome. This allows for an optimization where neighboring biome queries can
+     * be skipped in areas without an edge between different biomes (which is most of the time.)
+     */
     private void calculateUniform() {
         for (int cellX = 2; cellX < 10; cellX++) {
             for (int cellY = 2; cellY < 10; cellY++) {
@@ -86,12 +124,17 @@ public class LevelBiomeSlice {
         }
     }
 
+    /**
+     * Computes the bias vector lookup table for each biome cell. The bias is expensive to calculate, and querying a
+     * biome involves calculating this bias for all other neighboring cells. Preparing the bias values ahead of time
+     * allows for a significant reduction in overhead.
+     */
     private void calculateBias() {
-        int originX = this.blockX >> 2;
-        int originY = this.blockY >> 2;
-        int originZ = this.blockZ >> 2;
+        int originX = this.originBlockX >> 2;
+        int originY = this.originBlockY >> 2;
+        int originZ = this.originBlockZ >> 2;
 
-        long seed = this.biomeZoomSeed;
+        final long seed = this.biomeZoomSeed;
 
         for (int relCellX = 1; relCellX < 11; relCellX++) {
             int cellX = originX + relCellX;
@@ -113,6 +156,16 @@ public class LevelBiomeSlice {
 
     }
 
+    /**
+     * Calculates the bias vector for a given cell, and updates the lookup table for it. This vector is calculated from
+     * a LCG which mixes the cell's coordinates with the voronoi zoom seed.
+     *
+     * @param cellIndex The data array index of the cell being calculated
+     * @param cellX The x-coordinate of the cell
+     * @param cellY The y-coordinate of the cell
+     * @param cellZ The z-coordinate of the cell
+     * @param seed The voronoi zoom seed as provided by {@link BiomeSeedProvider#sodium$getBiomeZoomSeed()}
+     */
     private void calculateBias(int cellIndex, int cellX, int cellY, int cellZ, long seed) {
         seed = LinearCongruentialGenerator.next(seed, cellX);
         seed = LinearCongruentialGenerator.next(seed, cellY);
@@ -125,6 +178,14 @@ public class LevelBiomeSlice {
         this.bias.set(cellIndex, gradX, gradY, gradZ);
     }
 
+    /**
+     * Calculates whether all neighbors of the given cell are have the same biome as itself.
+     *
+     * @param cellX The x-coordinate of the cell
+     * @param cellY The y-coordinate of the cell
+     * @param cellZ The z-coordinate of the cell
+     * @return True if the neighbors are uniform, otherwise false
+     */
     private boolean hasUniformNeighbors(int cellX, int cellY, int cellZ) {
         Biome biome = this.biomes[dataArrayIndex(cellX, cellY, cellZ)].value();
 
@@ -145,20 +206,31 @@ public class LevelBiomeSlice {
         return true;
     }
 
+    /**
+     * Calculates the biome for a given block position. The implementation of this function is intended to return
+     * identical results to {@link net.minecraft.world.level.biome.BiomeManager#getBiome(BlockPos)}.
+     *
+     * @param blockX The x-coordinate of the block position
+     * @param blockY The y-coordinate of the block position
+     * @param blockZ The z-coordinate of the block position
+     * @return The biome for the given block position, or the default if the chunk does not specify biome data
+     */
     public Holder<Biome> getBiome(int blockX, int blockY, int blockZ) {
-        int relBlockX = blockX - this.blockX;
-        int relBlockY = blockY - this.blockY;
-        int relBlockZ = blockZ - this.blockZ;
+        int relBlockX = blockX - this.originBlockX;
+        int relBlockY = blockY - this.originBlockY;
+        int relBlockZ = blockZ - this.originBlockZ;
 
         int centerIndex = dataArrayIndex(
                 QuartPos.fromBlock(relBlockX - 2),
                 QuartPos.fromBlock(relBlockY - 2),
                 QuartPos.fromBlock(relBlockZ - 2));
 
+        // If all neighbors are uniform, then performing the voronoi search is not necessary
         if (this.uniform[centerIndex]) {
             return this.biomes[centerIndex];
         }
 
+        // Slow path!
         return this.getBiomeUsingVoronoi(relBlockX, relBlockY, relBlockZ);
     }
 

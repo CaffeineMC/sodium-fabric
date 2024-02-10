@@ -8,6 +8,10 @@ import org.lwjgl.system.Struct;
 
 import java.nio.ByteBuffer;
 
+/**
+ * <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-msgboxparamsw">
+ *     MSGBOXPARAMSW structure (winuser.h)</a>
+ */
 public class MsgBoxParamSw extends Struct {
     public static final int SIZEOF;
     public static final int ALIGNOF;

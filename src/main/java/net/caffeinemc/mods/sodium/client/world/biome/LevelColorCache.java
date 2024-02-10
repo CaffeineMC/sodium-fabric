@@ -9,20 +9,56 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.biome.Biome;
 
+/**
+ * A slice of the level's color data.
+ *
+ * <p>This implementation varies significantly from Minecraft in the following ways:</p>
+ *
+ * <ul>
+ *     <li>The color values for each {@link ColorResolver} are queried at the same time, so that
+ *     the biome does not need to be fetched multiple times (very expensive).</li>
+ *
+ *     <li>Blending is performed against an entire array of color values at once, reducing the
+ *     time complexity from O(K(R^2)) to O(2(R^2)), where K= the number of queries, and R= the blend radius.</li>
+ * </ul>
+ */
 public class LevelColorCache {
+    /**
+     * The number of blocks around the origin chunk which should also have color data. This is necessary since block
+     * models can extend outside the block cell, and as such, can also extend outside the chunk being rendered.
+     */
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
     private final LevelBiomeSlice biomeData;
 
+    /**
+     * A cached lookup-table of blended color slices for each {@link ColorResolver}.
+     */
     private final Reference2ReferenceOpenHashMap<ColorResolver, Slice[]> slices;
+
+    /**
+     * A timestamp which is incremented each time the {@link LevelBiomeSlice} is changed. This avoids the need to reset
+     * the cached arrays, since querying a cached array will check this timestamp and only reset it if necessary.
+     */
     private long populateStamp;
 
+    /**
+     * The radius (in blocks) to blend colors.
+     */
     private final int blendRadius;
 
+    /**
+     * The temporary buffer used while blending colors.
+     */
     private final ColorBuffer tempColorBuffer;
 
     private int minBlockX, minBlockY, minBlockZ;
     private int maxBlockX, maxBlockY, maxBlockZ;
 
+    /**
+     * The size of the cached lookup table in the horizontal and vertical directions. These are separate since blending
+     * is only done across the horizontal access, and we don't want to allocate memory for vertical slices that will
+     * never be used.
+     */
     private final int sizeXZ, sizeY;
 
     public LevelColorCache(LevelBiomeSlice biomeData, int blendRadius) {

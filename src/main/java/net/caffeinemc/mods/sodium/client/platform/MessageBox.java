@@ -15,13 +15,29 @@ import java.util.Objects;
 public class MessageBox {
     private static final @Nullable MessageBoxImpl IMPL = MessageBoxImpl.chooseImpl();
 
+    /**
+     * <p>Opens a message box using the appropriate platform backend. If no backend is available, this function does
+     * nothing and immediately returns. The message block will prevent interaction with the parent window, if
+     * specified.</p>
+     *
+     * <p>If {@param helpUrl} is specified, the message box will include a "Help" button. Clicking the button will
+     * open the user's default web browser and close the message box.</p>
+     *
+     * <p>NOTE: This function does not return until the message box has been closed by the user.</p>
+     *
+     * @param window The parent window of the message box
+     * @param icon The icon type to be used for the message box
+     * @param title The title of the message box
+     * @param contents The contents of the message box
+     * @param helpUrl The URL to be opened when clicking the "Help" button
+     */
     public static void showMessageBox(@Nullable Window window,
                                       IconType icon, String title,
-                                      String description,
+                                      String contents,
                                       @Nullable String helpUrl)
     {
         if (IMPL != null) {
-            IMPL.showMessageBox(window, icon, title, description, helpUrl);
+            IMPL.showMessageBox(window, icon, title, contents, helpUrl);
         }
     }
 
@@ -37,7 +53,7 @@ public class MessageBox {
 
         void showMessageBox(@Nullable Window window,
                             IconType icon, String title,
-                            String description,
+                            String contents,
                             @Nullable String helpUrl);
     }
 
@@ -45,10 +61,10 @@ public class MessageBox {
         @Override
         public void showMessageBox(@Nullable Window window,
                                    IconType icon, String title,
-                                   String description,
+                                   String contents,
                                    @Nullable String helpUrl) {
             Objects.requireNonNull(title);
-            Objects.requireNonNull(description);
+            Objects.requireNonNull(contents);
             Objects.requireNonNull(icon);
 
             final MsgBoxCallback msgBoxCallback;
@@ -71,8 +87,8 @@ public class MessageBox {
             }
 
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                ByteBuffer lpText = stack.malloc(MemoryUtil.memLengthUTF16(description, true));
-                MemoryUtil.memUTF16(description, true, lpText);
+                ByteBuffer lpText = stack.malloc(MemoryUtil.memLengthUTF16(contents, true));
+                MemoryUtil.memUTF16(contents, true, lpText);
 
                 ByteBuffer lpCaption = stack.malloc(MemoryUtil.memLengthUTF16(title, true));
                 MemoryUtil.memUTF16(title, true, lpCaption);

@@ -24,6 +24,13 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
 
     private final int width, height;
 
+    /**
+     * @param parent The parent screen which will render the prompt
+     * @param text The text to be displayed inside the message box
+     * @param width The maximum width of the inner message box
+     * @param height The maximum height of the inner message box
+     * @param action The callback to be invoked when the user accepts the action
+     */
     public ScreenPrompt(ScreenPromptable parent, List<FormattedText> text, int width, int height, Action action) {
         this.parent = parent;
         this.text = text;
@@ -34,6 +41,9 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
         this.action = action;
     }
 
+    /**
+     * Should be called when the parent screen is re-initialized so that layout tasks can be performed.
+     */
     public void init() {
         var parentDimensions = this.parent.getDimensions();
 
@@ -47,6 +57,7 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
         this.actionButton.setStyle(createButtonStyle());
     }
 
+    @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         var matrices = graphics.pose();
         matrices.pushPose();
@@ -94,6 +105,9 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
         matrices.popPose();
     }
 
+    /**
+     * @return The style used for buttons inside the dialog box.
+     */
     private static FlatButtonWidget.Style createButtonStyle() {
         var style = new FlatButtonWidget.Style();
         style.bgDefault = 0xff2b2b2b;
@@ -106,6 +120,9 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
         return style;
     }
 
+    /**
+     * @return The widgets contained inside this prompt, which should be rendered by the parent screen
+     */
     @NotNull
     public List<AbstractWidget> getWidgets() {
         return List.of(this.actionButton, this.closeButton);
@@ -146,16 +163,26 @@ public class ScreenPrompt implements GuiEventListener, Renderable {
         return this.parent.getPrompt() == this;
     }
 
+    /**
+     * Closes the prompt without performing the action, and removes it from the parent screen.
+     */
     private void close() {
         this.parent.setPrompt(null);
     }
 
+    /**
+     * Performs the action assigned to the prompt, and closes it.
+     */
     private void runAction() {
         this.action.runnable.run();
         this.close();
     }
 
-    public record Action(Component label, Runnable runnable) {
+    public record Action(
+            /* The button label which describes the action. */
+            Component label,
+            /* A callback which is invoked when the user confirms the action. */
+            Runnable runnable) {
 
     }
 }

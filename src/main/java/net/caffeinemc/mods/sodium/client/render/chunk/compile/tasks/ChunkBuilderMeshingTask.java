@@ -161,7 +161,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
         crashReportSection.setDetail("Chunk section", this.render);
         if (this.renderContext != null) {
-            crashReportSection.setDetail("Render context volume", this.renderContext.getVolume());
+            crashReportSection.setDetail("Render context volume", this.renderContext.getBox());
         }
 
         return new ReportedException(report);

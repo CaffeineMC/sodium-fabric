@@ -17,6 +17,8 @@ import java.io.IOException;
 
 public class SodiumClientMod implements ClientModInitializer {
     private static SodiumGameOptions CONFIG;
+
+    @Deprecated
     private static Logger LOGGER;
 
     private static String MOD_VERSION;
@@ -43,6 +45,10 @@ public class SodiumClientMod implements ClientModInitializer {
         }
     }
 
+    /**
+     * @return The global configuration for rendering and other functionality
+     * @throws IllegalStateException If the configuration has not yet been initialized
+     */
     public static SodiumGameOptions options() {
         if (CONFIG == null) {
             throw new IllegalStateException("Config not yet available");
@@ -51,6 +57,14 @@ public class SodiumClientMod implements ClientModInitializer {
         return CONFIG;
     }
 
+    /**
+     * NOTE: This should not be used by new code. Each caller should instead create their own {@link Logger} and store
+     * it within a static field. Doing so provides better context in log files.
+     *
+     * @return The global logger for rendering and other functionality
+     * @throws IllegalStateException If the logger has not yet been initialized
+     */
+    @Deprecated
     public static Logger logger() {
         if (LOGGER == null) {
             throw new IllegalStateException("Logger not yet available");
@@ -75,6 +89,7 @@ public class SodiumClientMod implements ClientModInitializer {
         }
     }
 
+    @Deprecated
     public static void restoreDefaultOptions() {
         CONFIG = SodiumGameOptions.defaults();
 
@@ -85,6 +100,11 @@ public class SodiumClientMod implements ClientModInitializer {
         }
     }
 
+
+    /**
+     * @return The version string of the {@link ModContainer}, as provided by the mod loader
+     * @throws IllegalStateException If the mod has not yet been initialized
+     */
     public static String getVersion() {
         if (MOD_VERSION == null) {
             throw new NullPointerException("Mod version hasn't been populated yet");
@@ -93,6 +113,10 @@ public class SodiumClientMod implements ClientModInitializer {
         return MOD_VERSION;
     }
 
+    /**
+     * Re-calculates the fingerprint, and compares it to the measure hashes on disk. If the fingerprint has changed,
+     * some settings will be reset in the configuration file.
+     */
     private static void updateFingerprint() {
         var current = FingerprintMeasure.create();
 
