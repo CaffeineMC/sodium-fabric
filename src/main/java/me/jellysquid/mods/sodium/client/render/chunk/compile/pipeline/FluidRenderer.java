@@ -1,5 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.color.ColorProvider;
+import me.jellysquid.mods.sodium.client.model.color.ColorProviderRegistry;
+import me.jellysquid.mods.sodium.client.model.color.DefaultColorProviders;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -9,16 +12,13 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.model.color.ColorProviderRegistry;
-import me.jellysquid.mods.sodium.client.model.color.ColorProvider;
-import me.jellysquid.mods.sodium.client.model.color.DefaultColorProviders;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
@@ -41,6 +41,9 @@ import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class FluidRenderer {
+    // The current renderer is set before invoking FluidRenderHandler#renderFluid and cleared afterwards.
+    private static final ThreadLocal<FluidRenderer> CURRENT_RENDERER = new ThreadLocal<>();
+
     // TODO: allow this to be changed by vertex format
     // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
     private static final float EPSILON = 0.001f;
@@ -58,6 +61,15 @@ public class FluidRenderer {
 
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
     private final ColorProviderRegistry colorProviderRegistry;
+
+    // These fields are set before invoking FluidRenderHandler#renderFluid and cleared afterwards.
+    private WorldSlice currentWorld;
+    private FluidState currentFluidState;
+    private BlockPos currentBlockPos;
+    private BlockPos currentOffset;
+    private ChunkModelBuilder currentMeshBuilder;
+    private Material currentMaterial;
+    private FluidRenderHandler currentHandler;
 
     public FluidRenderer(ColorProviderRegistry colorProviderRegistry, LightPipelineProvider lighters) {
         this.quad.setLightFace(Direction.UP);
@@ -100,10 +112,72 @@ public class FluidRenderer {
         return true;
     }
 
-    public void render(WorldSlice world, FluidState fluidState, BlockPos blockPos, BlockPos offset, ChunkBuildBuffers buffers) {
+    public void render(WorldSlice world, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forFluidState(fluidState);
         var meshBuilder = buffers.get(material);
 
+        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getFluid());
+
+        // Match the vanilla FluidRenderer's behavior if the handler is null
+        if (handler == null) {
+            boolean isLava = fluidState.isIn(FluidTags.LAVA);
+            handler = FluidRenderHandlerRegistry.INSTANCE.get(isLava ? Fluids.LAVA : Fluids.WATER);
+        }
+
+        // Invoking FluidRenderHandler#renderFluid can invoke vanilla FluidRenderer#render.
+        //
+        // Sodium cannot let vanilla FluidRenderer#render run (during the invocation of FluidRenderHandler#renderFluid)
+        // for two reasons.
+        // 1. It is the hot path and vanilla FluidRenderer#render is not very fast.
+        // 2. Fabric API's mixins to FluidRenderer#render expect it to be initially called from the chunk rebuild task,
+        // not from inside FluidRenderHandler#renderFluid. Not upholding this assumption will result in all custom
+        // geometry to be buffered twice.
+        //
+        // The default implementation of FluidRenderHandler#renderFluid invokes vanilla FluidRenderer#render, but
+        // Fabric API does not support invoking vanilla FluidRenderer#render from FluidRenderHandler#renderFluid
+        // directly and it does not support calling the default implementation of FluidRenderHandler#renderFluid (super)
+        // more than once. Because of this, the parameters to vanilla FluidRenderer#render will be the same as those
+        // initially passed to FluidRenderHandler#renderFluid, so they can be ignored.
+        //
+        // Due to all the above, Sodium injects into head of vanilla FluidRenderer#render before Fabric API and cancels
+        // the call if it was invoked from inside FluidRenderHandler#renderFluid. The injector ends up calling
+        // renderDefault, which emulates what vanilla FluidRenderer#render does, but is more efficient. To allow
+        // invoking this method from the injector, where there is no local Sodium context, the parameters to
+        // renderDefault are stored in fields and the FluidRenderer itself is stored in a ThreadLocal.
+
+        currentWorld = world;
+        currentFluidState = fluidState;
+        currentBlockPos = blockPos;
+        currentOffset = offset;
+        currentMeshBuilder = meshBuilder;
+        currentMaterial = material;
+        currentHandler = handler;
+        CURRENT_RENDERER.set(this);
+
+        handler.renderFluid(blockPos, world, meshBuilder.asVertexConsumer(material), blockState, fluidState);
+
+        CURRENT_RENDERER.set(null);
+        currentWorld = null;
+        currentFluidState = null;
+        currentBlockPos = null;
+        currentOffset = null;
+        currentMeshBuilder = null;
+        currentMaterial = null;
+        currentHandler = null;
+    }
+
+    public static boolean renderFromVanilla() {
+        FluidRenderer renderer = CURRENT_RENDERER.get();
+
+        if (renderer != null) {
+            renderer.renderDefault(renderer.currentWorld, renderer.currentFluidState, renderer.currentBlockPos, renderer.currentOffset, renderer.currentMeshBuilder, renderer.currentMaterial, renderer.currentHandler);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void renderDefault(WorldSlice world, FluidState fluidState, BlockPos blockPos, BlockPos offset, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler) {
         int posX = blockPos.getX();
         int posY = blockPos.getY();
         int posZ = blockPos.getZ();
@@ -122,12 +196,8 @@ public class FluidRenderer {
             return;
         }
 
-        boolean isWater = fluidState.isIn(FluidTags.WATER);
-
-        final FluidRenderHandler handler = getFluidRenderHandler(fluidState);
-        final ColorProvider<FluidState> colorProvider = this.getColorProvider(fluid, handler);
-
         Sprite[] sprites = handler.getFluidSprites(world, blockPos, fluidState);
+        final ColorProvider<FluidState> colorProvider = this.getColorProvider(fluid, handler);
 
         float fluidHeight = this.fluidHeight(world, fluid, blockPos, Direction.UP);
         float northWestHeight, southWestHeight, southEastHeight, northEastHeight;
@@ -159,7 +229,7 @@ public class FluidRenderer {
 
         final ModelQuadViewMutable quad = this.quad;
 
-        LightMode lightMode = isWater && MinecraftClient.isAmbientOcclusionEnabled() ? LightMode.SMOOTH : LightMode.FLAT;
+        LightMode lightMode = fluidState.isIn(FluidTags.WATER) && MinecraftClient.isAmbientOcclusionEnabled() ? LightMode.SMOOTH : LightMode.FLAT;
         LightPipeline lighter = this.lighters.getLighter(lightMode);
 
         quad.setFlags(0);
@@ -230,9 +300,7 @@ public class FluidRenderer {
             if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.writeQuad(meshBuilder, material, offset, quad,
                         ModelQuadFacing.NEG_Y, true);
-
             }
-
         }
 
         if (!sfDown) {
@@ -251,7 +319,6 @@ public class FluidRenderer {
 
             this.updateQuad(quad, world, blockPos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, material, offset, quad, ModelQuadFacing.NEG_Y, false);
-
         }
 
         quad.setFlags(ModelQuadFlags.IS_PARALLEL | ModelQuadFlags.IS_ALIGNED);
@@ -356,7 +423,6 @@ public class FluidRenderer {
                 if (!isOverlay) {
                     this.writeQuad(meshBuilder, material, offset, quad, facing.getOpposite(), true);
                 }
-
             }
         }
     }
@@ -369,17 +435,6 @@ public class FluidRenderer {
         }
         
         return DefaultColorProviders.adapt(handler);
-    }
-
-    private static FluidRenderHandler getFluidRenderHandler(FluidState fluidState) {
-        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getFluid());
-
-        // Match the vanilla FluidRenderer's behavior if the handler is null
-        if (handler == null) {
-            boolean isLava = fluidState.isIn(FluidTags.LAVA);
-            handler = FluidRenderHandlerRegistry.INSTANCE.get(isLava ? Fluids.LAVA : Fluids.WATER);
-        }
-        return handler;
     }
 
     private void updateQuad(ModelQuadView quad, WorldSlice world, BlockPos pos, LightPipeline lighter, Direction dir, float brightness,
