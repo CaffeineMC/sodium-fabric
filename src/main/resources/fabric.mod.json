@@ -45,10 +45,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "me.jellysquid.mods.sodium.client.SodiumClientMod"
+      "net.caffeinemc.mods.sodium.client.SodiumClientMod"
     ],
     "preLaunch": [
-      "me.jellysquid.mods.sodium.client.SodiumPreLaunch"
+      "net.caffeinemc.mods.sodium.client.SodiumPreLaunch"
     ]
   },
   "custom": {

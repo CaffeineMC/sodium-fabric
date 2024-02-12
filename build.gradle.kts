@@ -19,7 +19,7 @@ plugins {
 base {
     archivesName = "sodium-fabric"
 
-    group = "me.jellysquid.mods"
+    group = "net.caffeinemc.mods"
     version = createVersionString()
 }
 
