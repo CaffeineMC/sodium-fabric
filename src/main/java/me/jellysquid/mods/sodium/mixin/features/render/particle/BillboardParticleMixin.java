@@ -1,8 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ParticleVertex;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
+import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
+import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
+import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.RawUVs;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ParticleVertex;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.Camera;
@@ -18,7 +23,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BillboardParticle.class)
-public abstract class BillboardParticleMixin extends Particle {
+public abstract class BillboardParticleMixin extends Particle implements BillboardExtended {
     @Shadow
     public abstract float getSize(float tickDelta);
 
@@ -36,6 +41,34 @@ public abstract class BillboardParticleMixin extends Particle {
 
     protected BillboardParticleMixin(ClientWorld world, double x, double y, double z) {
         super(world, x, y, z);
+    }
+
+    @Override
+    public void sodium$buildParticleData(
+            UnmanagedBufferBuilder builder,
+            ParticleTextureCache registry,
+            Camera camera, float tickDelta
+    ) {
+        Vec3d vec3d = camera.getPos();
+        RawUVs uvs = new RawUVs(getMinU(), getMinV(), getMaxU(), getMaxV());
+        int textureIndex = registry.getUvIndex(uvs);
+
+        float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
+        float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
+        float z = (float) (MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - vec3d.getZ());
+
+        float size = this.getSize(tickDelta);
+        int light = this.getBrightness(tickDelta);
+
+        int color = ColorABGR.pack(this.red , this.green, this.blue, this.alpha);
+
+        float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            long ptr = stack.nmalloc(BillboardParticleData.STRIDE);
+            BillboardParticleData.put(ptr, x, y, z, color, light, size, angle, textureIndex);
+            builder.push(stack, ptr, BillboardParticleData.STRIDE);
+        }
     }
 
     /**
