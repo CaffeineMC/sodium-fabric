@@ -400,10 +400,9 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
         if (!clicked) {
             this.setFocused(null);
-            return true;
         }
 
-        return clicked;
+        return true;
     }
 
     @Override
