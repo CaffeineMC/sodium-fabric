@@ -8,7 +8,6 @@ import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.world.World;
 
 public class BlockRenderCache {
     private final ArrayLightDataCache lightDataCache;
