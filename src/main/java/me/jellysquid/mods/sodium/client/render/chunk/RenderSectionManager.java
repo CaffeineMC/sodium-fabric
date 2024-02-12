@@ -486,7 +486,7 @@ public class RenderSectionManager {
                     // This doesn't apply to sorting tasks as that would result in the section being
                     // marked as empty just because it was scheduled to be sorted and its dynamic
                     // data has since been removed. In that case simply nothing is done as the
-                    // rebuild that must have happened in the mean time includes new non-dynamic
+                    // rebuild that must have happened in the meantime includes new non-dynamic
                     // index data.
                     var result = ChunkJobResult.successfully(new ChunkBuildOutput(
                             section, frame, NoData.forEmptySection(section.getPosition()),
