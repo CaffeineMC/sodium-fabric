@@ -14,13 +14,13 @@ import org.jetbrains.annotations.NotNull;
 
 public class OcclusionCuller {
     private final Long2ReferenceMap<RenderSection> sections;
-    private final Level world;
+    private final Level level;
 
     private final DoubleBufferedQueue<RenderSection> queue = new DoubleBufferedQueue<>();
 
-    public OcclusionCuller(Long2ReferenceMap<RenderSection> sections, Level world) {
+    public OcclusionCuller(Long2ReferenceMap<RenderSection> sections, Level level) {
         this.sections = sections;
-        this.world = world;
+        this.level = level;
     }
 
     public void findVisible(Visitor visitor,
@@ -195,14 +195,14 @@ public class OcclusionCuller {
     {
         var origin = viewport.getChunkCoord();
 
-        if (origin.getY() < this.world.getMinSection()) {
-            // below the world
+        if (origin.getY() < this.level.getMinSection()) {
+            // below the level
             this.initOutsideWorldHeight(queue, viewport, searchDistance, frame,
-                    this.world.getMinSection(), GraphDirection.DOWN);
-        } else if (origin.getY() >= this.world.getMaxSection()) {
-            // above the world
+                    this.level.getMinSection(), GraphDirection.DOWN);
+        } else if (origin.getY() >= this.level.getMaxSection()) {
+            // above the level
             this.initOutsideWorldHeight(queue, viewport, searchDistance, frame,
-                    this.world.getMaxSection() - 1, GraphDirection.UP);
+                    this.level.getMaxSection() - 1, GraphDirection.UP);
         } else {
             this.initWithinWorld(visitor, queue, viewport, useOcclusionCulling, frame);
         }

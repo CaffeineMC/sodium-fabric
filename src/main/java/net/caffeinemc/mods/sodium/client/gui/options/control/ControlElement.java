@@ -21,7 +21,7 @@ public class ControlElement<T> extends AbstractWidget {
     }
 
     @Override
-    public void render(GuiGraphics drawContext, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         String name = this.option.getName().getString();
         String label;
 
@@ -41,11 +41,11 @@ public class ControlElement<T> extends AbstractWidget {
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
-        this.drawRect(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
-        this.drawString(drawContext, label, this.dim.x() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
+        this.drawRect(graphics, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
+        this.drawString(graphics, label, this.dim.x() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
 
         if (this.isFocused()) {
-            this.drawBorder(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), -1);
+            this.drawBorder(graphics, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), -1);
         }
     }
 
@@ -58,10 +58,10 @@ public class ControlElement<T> extends AbstractWidget {
     }
 
     @Override
-    public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent navigation) {
+    public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event) {
         if (!this.option.isAvailable())
             return null;
-        return super.nextFocusPath(navigation);
+        return super.nextFocusPath(event);
     }
 
     @Override

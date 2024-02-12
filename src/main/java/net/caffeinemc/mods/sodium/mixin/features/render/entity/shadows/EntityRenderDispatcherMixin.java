@@ -18,7 +18,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,7 +36,7 @@ public class EntityRenderDispatcherMixin {
      * @reason Reduce vertex assembly overhead for shadow rendering
      */
     @Inject(method = "renderBlockShadow", at = @At("HEAD"), cancellable = true)
-    private static void renderShadowPartFast(PoseStack.Pose entry, VertexConsumer vertices, ChunkAccess chunk, LevelReader world, BlockPos pos, double x, double y, double z, float radius, float opacity, CallbackInfo ci) {
+    private static void renderShadowPartFast(PoseStack.Pose matrices, VertexConsumer vertices, ChunkAccess chunk, LevelReader level, BlockPos pos, double x, double y, double z, float radius, float opacity, CallbackInfo ci) {
         var writer = VertexConsumerUtils.convertOrLog(vertices);
 
         if (writer == null) {
@@ -47,25 +46,25 @@ public class EntityRenderDispatcherMixin {
         ci.cancel();
 
         BlockPos blockPos = pos.below();
-        BlockState blockState = world.getBlockState(blockPos);
+        BlockState blockState = level.getBlockState(blockPos);
 
-        if (blockState.getRenderShape() == RenderShape.INVISIBLE || !blockState.isCollisionShapeFullBlock(world, blockPos)) {
+        if (blockState.getRenderShape() == RenderShape.INVISIBLE || !blockState.isCollisionShapeFullBlock(level, blockPos)) {
             return;
         }
 
-        var light = world.getMaxLocalRawBrightness(pos);
+        var light = level.getMaxLocalRawBrightness(pos);
 
         if (light <= 3) {
             return;
         }
 
-        VoxelShape voxelShape = blockState.getShape(world, blockPos);
+        VoxelShape voxelShape = blockState.getShape(level, blockPos);
 
         if (voxelShape.isEmpty()) {
             return;
         }
 
-        float brightness = LightTexture.getBrightness(world.dimensionType(), light);
+        float brightness = LightTexture.getBrightness(level.dimensionType(), light);
         float alpha = (float) (((double) opacity - ((y - (double) pos.getY()) / 2.0)) * 0.5 * (double) brightness);
 
         if (alpha >= 0.0F) {
@@ -83,7 +82,7 @@ public class EntityRenderDispatcherMixin {
             float minZ = (float) ((pos.getZ() + box.minZ) - z);
             float maxZ = (float) ((pos.getZ() + box.maxZ) - z);
 
-            renderShadowPart(entry, writer, radius, alpha, minX, maxX, minY, minZ, maxZ);
+            renderShadowPart(matrices, writer, radius, alpha, minX, maxX, minY, minZ, maxZ);
         }
     }
 

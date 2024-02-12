@@ -2,7 +2,6 @@ package net.caffeinemc.mods.sodium.client.world.cloned;
 
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
-import org.jetbrains.annotations.Nullable;
 
 public class ChunkRenderContext {
     private final SectionPos origin;

@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.platform.windows;
 
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public record WindowsDriverStoreVersion(int driverModel, int featureLevel, int major, int minor) {

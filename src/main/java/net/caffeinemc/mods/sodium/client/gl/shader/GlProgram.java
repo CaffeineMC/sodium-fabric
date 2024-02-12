@@ -32,8 +32,8 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
         return this.shaderInterface;
     }
 
-    public static Builder builder(ResourceLocation identifier) {
-        return new Builder(identifier);
+    public static Builder builder(ResourceLocation name) {
+        return new Builder(name);
     }
 
     public void bind() {

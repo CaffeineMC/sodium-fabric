@@ -3,7 +3,6 @@ package net.caffeinemc.mods.sodium.client.compatibility.checks;
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
 import net.minecraft.Util;
-import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import org.jetbrains.annotations.Nullable;

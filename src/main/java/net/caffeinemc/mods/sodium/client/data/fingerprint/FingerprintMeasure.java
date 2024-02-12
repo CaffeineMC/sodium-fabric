@@ -5,13 +5,12 @@ import net.minecraft.client.Minecraft;
 import org.apache.commons.codec.binary.Hex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.UUID;
 
 public record FingerprintMeasure(@NotNull String uuid, @NotNull String path) {
     private static final int SALT_LENGTH = 64;

@@ -1,6 +1,6 @@
 package net.caffeinemc.mods.sodium.mixin.features.textures.animations.tracking;
 
-import net.caffeinemc.mods.sodium.client.render.texture.SpriteContentsExtended;
+import net.caffeinemc.mods.sodium.client.render.texture.SpriteContentsExtension;
 import net.minecraft.client.renderer.texture.SpriteContents;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(SpriteContents.class)
-public abstract class SpriteContentsMixin implements SpriteContentsExtended {
+public abstract class SpriteContentsMixin implements SpriteContentsExtension {
     @Shadow
     @Final
     @Nullable

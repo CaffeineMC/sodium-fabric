@@ -29,7 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public abstract class LightDataAccess {
     private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-    protected BlockAndTintGetter world;
+    protected BlockAndTintGetter level;
 
     public int get(int x, int y, int z, Direction d1, Direction d2) {
         return this.get(x + d1.getStepX() + d2.getStepX(),
@@ -59,14 +59,14 @@ public abstract class LightDataAccess {
 
     protected int compute(int x, int y, int z) {
         BlockPos pos = this.pos.set(x, y, z);
-        BlockAndTintGetter world = this.world;
+        BlockAndTintGetter level = this.level;
 
-        BlockState state = world.getBlockState(pos);
+        BlockState state = level.getBlockState(pos);
 
-        boolean em = state.emissiveRendering(world, pos);
-        boolean op = state.isViewBlocking(world, pos) && state.getLightBlock(world, pos) != 0;
-        boolean fo = state.isSolidRender(world, pos);
-        boolean fc = state.isCollisionShapeFullBlock(world, pos);
+        boolean em = state.emissiveRendering(level, pos);
+        boolean op = state.isViewBlocking(level, pos) && state.getLightBlock(level, pos) != 0;
+        boolean fo = state.isSolidRender(level, pos);
+        boolean fc = state.isCollisionShapeFullBlock(level, pos);
 
         int lu = state.getLightEmission();
 
@@ -77,14 +77,14 @@ public abstract class LightDataAccess {
             bl = 0;
             sl = 0;
         } else {
-            bl = world.getBrightness(LightLayer.BLOCK, pos);
-            sl = world.getBrightness(LightLayer.SKY, pos);
+            bl = level.getBrightness(LightLayer.BLOCK, pos);
+            sl = level.getBrightness(LightLayer.SKY, pos);
         }
 
         // FIX: Do not apply AO from blocks that emit light
         float ao;
         if (lu == 0) {
-            ao = state.getShadeBrightness(world, pos);
+            ao = state.getShadeBrightness(level, pos);
         } else {
             ao = 1.0f;
         }
@@ -184,7 +184,7 @@ public abstract class LightDataAccess {
         }
     }
 
-    public BlockAndTintGetter getWorld() {
-        return this.world;
+    public BlockAndTintGetter getLevel() {
+        return this.level;
     }
 }

@@ -3,7 +3,6 @@ package net.caffeinemc.mods.sodium.client.platform.windows.api;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxParamSw;
 import org.lwjgl.system.APIUtil;
 import org.lwjgl.system.JNI;
-import org.lwjgl.system.Library;
 import org.lwjgl.system.SharedLibrary;
 
 public class User32 {

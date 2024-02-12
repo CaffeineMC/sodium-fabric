@@ -4,13 +4,13 @@ import net.minecraft.client.renderer.RenderType;
 
 public class TerrainRenderPass {
     @Deprecated(forRemoval = true)
-    private final RenderType layer;
+    private final RenderType renderType;
 
     private final boolean useReverseOrder;
     private final boolean fragmentDiscard;
 
-    public TerrainRenderPass(RenderType layer, boolean useReverseOrder, boolean allowFragmentDiscard) {
-        this.layer = layer;
+    public TerrainRenderPass(RenderType renderType, boolean useReverseOrder, boolean allowFragmentDiscard) {
+        this.renderType = renderType;
 
         this.useReverseOrder = useReverseOrder;
         this.fragmentDiscard = allowFragmentDiscard;
@@ -22,12 +22,12 @@ public class TerrainRenderPass {
 
     @Deprecated
     public void startDrawing() {
-        this.layer.setupRenderState();
+        this.renderType.setupRenderState();
     }
 
     @Deprecated
     public void endDrawing() {
-        this.layer.clearRenderState();
+        this.renderType.clearRenderState();
     }
 
     public boolean supportsFragmentDiscard() {

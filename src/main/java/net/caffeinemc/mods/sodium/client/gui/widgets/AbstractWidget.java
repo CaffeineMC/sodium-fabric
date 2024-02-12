@@ -15,6 +15,7 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.sounds.SoundEvents;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractWidget implements Renderable, GuiEventListener, NarratableEntry {
@@ -26,20 +27,20 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
         this.font = Minecraft.getInstance().font;
     }
 
-    protected void drawString(GuiGraphics drawContext, String str, int x, int y, int color) {
-        drawContext.drawString(this.font, str, x, y, color);
+    protected void drawString(GuiGraphics graphics, String text, int x, int y, int color) {
+        graphics.drawString(this.font, text, x, y, color);
     }
 
-    protected void drawString(GuiGraphics drawContext, Component text, int x, int y, int color) {
-        drawContext.drawString(this.font, text, x, y, color);
+    protected void drawString(GuiGraphics graphics, Component text, int x, int y, int color) {
+        graphics.drawString(this.font, text, x, y, color);
     }
 
     public boolean isHovered() {
         return this.hovered;
     }
 
-    protected void drawRect(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int color) {
-        drawContext.fill(x1, y1, x2, y2, color);
+    protected void drawRect(GuiGraphics graphics, int x1, int y1, int x2, int y2, int color) {
+        graphics.fill(x1, y1, x2, y2, color);
     }
 
     protected void playClickSound() {
@@ -51,7 +52,8 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
         return this.font.width(text);
     }
 
-    public NarratableEntry.NarrationPriority narrationPriority() {
+    @Override
+    public NarratableEntry.@NotNull NarrationPriority narrationPriority() {
         if (this.focused) {
             return NarratableEntry.NarrationPriority.FOCUSED;
         }
@@ -71,7 +73,7 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
     }
 
     @Nullable
-    public ComponentPath nextFocusPath(FocusNavigationEvent navigation) {
+    public ComponentPath nextFocusPath(FocusNavigationEvent event) {
         return !this.isFocused() ? ComponentPath.leaf(this) : null;
     }
 
@@ -85,17 +87,19 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
         if (!focused) {
             this.focused = false;
         } else {
-            InputType guiNavigationType = Minecraft.getInstance().getLastInputType();
-            if (guiNavigationType == InputType.KEYBOARD_TAB || guiNavigationType == InputType.KEYBOARD_ARROW) {
+            InputType inputType = Minecraft.getInstance()
+                    .getLastInputType();
+
+            if (inputType == InputType.KEYBOARD_TAB || inputType == InputType.KEYBOARD_ARROW) {
                 this.focused = true;
             }
         }
     }
 
-    protected void drawBorder(GuiGraphics drawContext, int x1, int y1, int x2, int y2, int color) {
-        drawContext.fill(x1, y1, x2, y1 + 1, color);
-        drawContext.fill(x1, y2 - 1, x2, y2, color);
-        drawContext.fill(x1, y1, x1 + 1, y2, color);
-        drawContext.fill(x2 - 1, y1, x2, y2, color);
+    protected void drawBorder(GuiGraphics graphics, int x1, int y1, int x2, int y2, int color) {
+        graphics.fill(x1, y1, x2, y1 + 1, color);
+        graphics.fill(x1, y2 - 1, x2, y2, color);
+        graphics.fill(x1, y1, x1 + 1, y2, color);
+        graphics.fill(x2 - 1, y1, x2, y2, color);
     }
 }

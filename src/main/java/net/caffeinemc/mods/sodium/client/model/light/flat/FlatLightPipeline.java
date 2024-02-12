@@ -48,7 +48,7 @@ public class FlatLightPipeline implements LightPipeline {
         }
 
         Arrays.fill(out.lm, lightmap);
-        Arrays.fill(out.br, this.lightCache.getWorld().getShade(lightFace, shade));
+        Arrays.fill(out.br, this.lightCache.getLevel().getShade(lightFace, shade));
     }
 
     /**
@@ -66,7 +66,7 @@ public class FlatLightPipeline implements LightPipeline {
             return LightTexture.FULL_BRIGHT;
         }
 
-        // Use world light values from the offset pos, but luminance from the origin pos
+        // Use light values from the offset pos, but luminance from the origin pos
         int adjWord = this.lightCache.get(pos, face);
         return LightTexture.pack(Math.max(unpackBL(adjWord), unpackLU(word)), unpackSL(adjWord));
     }

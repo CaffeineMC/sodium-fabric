@@ -15,8 +15,8 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
-import net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkJobCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkJobCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderSortingTask;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
@@ -42,7 +42,7 @@ import net.caffeinemc.mods.sodium.client.render.util.RenderAsserts;
 import net.caffeinemc.mods.sodium.client.render.viewport.CameraTransform;
 import net.caffeinemc.mods.sodium.client.render.viewport.Viewport;
 import net.caffeinemc.mods.sodium.client.util.MathUtil;
-import net.caffeinemc.mods.sodium.client.world.WorldSlice;
+import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.caffeinemc.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import net.minecraft.client.Camera;
@@ -74,7 +74,7 @@ public class RenderSectionManager {
 
     private final ChunkRenderer chunkRenderer;
 
-    private final ClientLevel world;
+    private final ClientLevel level;
 
     private final ReferenceSet<RenderSection> sectionsWithGlobalEntities = new ReferenceOpenHashSet<>();
 
@@ -82,7 +82,7 @@ public class RenderSectionManager {
 
     private final int renderDistance;
 
-    private final SortTriggering ts;
+    private final SortTriggering sortTriggering;
 
     private ChunkJobCollector lastBlockingCollector;
 
@@ -99,23 +99,22 @@ public class RenderSectionManager {
     private @Nullable BlockPos cameraBlockPos;
     private @Nullable Vector3dc cameraPosition;
 
-    public RenderSectionManager(ClientLevel world, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(ClientLevel level, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
-        this.world = world;
-
-        this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
+        this.level = level;
+        this.builder = new ChunkBuilder(level, ChunkMeshFormats.COMPACT);
 
         this.needsGraphUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.ts = new SortTriggering();
+        this.sortTriggering = new SortTriggering();
 
         this.regions = new RenderRegionManager(commandList);
-        this.sectionCache = new ClonedChunkSectionCache(this.world);
+        this.sectionCache = new ClonedChunkSectionCache(this.level);
 
         this.renderLists = SortedRenderLists.empty();
-        this.occlusionCuller = new OcclusionCuller(Long2ReferenceMaps.unmodifiable(this.sectionByPosition), this.world);
+        this.occlusionCuller = new OcclusionCuller(Long2ReferenceMaps.unmodifiable(this.sectionByPosition), this.level);
 
         this.taskLists = new EnumMap<>(ChunkUpdateType.class);
 
@@ -166,8 +165,8 @@ public class RenderSectionManager {
         final boolean useOcclusionCulling;
         BlockPos origin = camera.getBlockPosition();
 
-        if (spectator && this.world.getBlockState(origin)
-                .isSolidRender(this.world, origin))
+        if (spectator && this.level.getBlockState(origin)
+                .isSolidRender(this.level, origin))
         {
             useOcclusionCulling = false;
         } else {
@@ -198,8 +197,8 @@ public class RenderSectionManager {
 
         this.sectionByPosition.put(key, renderSection);
 
-        ChunkAccess chunk = this.world.getChunk(x, z);
-        LevelChunkSection section = chunk.getSections()[this.world.getSectionIndexFromSectionY(y)];
+        ChunkAccess chunk = this.level.getChunk(x, z);
+        LevelChunkSection section = chunk.getSections()[this.level.getSectionIndexFromSectionY(y)];
 
         if (section.hasOnlyAir()) {
             this.updateSectionInfo(renderSection, BuiltSectionInfo.EMPTY);
@@ -221,7 +220,7 @@ public class RenderSectionManager {
         }
 
         if (section.getTranslucentData() != null) {
-            this.ts.removeSection(section.getTranslucentData(), sectionPos);
+            this.sortTriggering.removeSection(section.getTranslucentData(), sectionPos);
         }
 
         RenderRegion region = section.getRegion();
@@ -321,14 +320,14 @@ public class RenderSectionManager {
                 touchedSectionInfo = true;
 
                 if (chunkBuildOutput.translucentData != null) {
-                    this.ts.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition, this::scheduleSort);
+                    this.sortTriggering.integrateTranslucentData(oldData, chunkBuildOutput.translucentData, this.cameraPosition, this::scheduleSort);
 
                     // a rebuild always generates new translucent data which means applyTriggerChanges isn't necessary
                     result.render.setTranslucentData(chunkBuildOutput.translucentData);
                 }
             } else if (result instanceof ChunkSortOutput chunkSortOutput
                     && chunkSortOutput.dynamicData instanceof TopoSortDynamicData data) {
-                this.ts.applyTriggerChanges(data, result.render.getPosition(), this.cameraPosition);
+                this.sortTriggering.applyTriggerChanges(data, result.render.getPosition(), this.cameraPosition);
             }
 
             var job = result.render.getTaskCancellationToken();
@@ -510,7 +509,7 @@ public class RenderSectionManager {
     }
 
     public @Nullable ChunkBuilderMeshingTask createRebuildTask(RenderSection render, int frame) {
-        ChunkRenderContext context = WorldSlice.prepare(this.world, render.getPosition(), this.sectionCache);
+        ChunkRenderContext context = LevelSlice.prepare(this.level, render.getPosition(), this.sectionCache);
 
         if (context == null) {
             return null;
@@ -524,7 +523,7 @@ public class RenderSectionManager {
     }
 
     public void processGFNIMovement(CameraMovement movement) {
-        this.ts.triggerSections(this::scheduleSort, movement);
+        this.sortTriggering.triggerSections(this::scheduleSort, movement);
     }
 
     public void markGraphDirty() {
@@ -546,7 +545,7 @@ public class RenderSectionManager {
             result.deleteFully(); // delete resources for any pending tasks (including those that were cancelled)
         }
 
-        for (var section : sectionByPosition.values()) {
+        for (var section : this.sectionByPosition.values()) {
             section.delete();
         }
 
@@ -711,7 +710,7 @@ public class RenderSectionManager {
                 this.taskLists.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
 
-        this.ts.addDebugStrings(list);
+        this.sortTriggering.addDebugStrings(list);
 
         return list;
     }
@@ -726,13 +725,13 @@ public class RenderSectionManager {
     }
 
     public void onChunkAdded(int x, int z) {
-        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
+        for (int y = this.level.getMinSection(); y < this.level.getMaxSection(); y++) {
             this.onSectionAdded(x, y, z);
         }
     }
 
     public void onChunkRemoved(int x, int z) {
-        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
+        for (int y = this.level.getMinSection(); y < this.level.getMaxSection(); y++) {
             this.onSectionRemoved(x, y, z);
         }
     }

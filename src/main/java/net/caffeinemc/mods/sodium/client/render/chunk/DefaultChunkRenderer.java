@@ -16,7 +16,6 @@ import net.caffeinemc.mods.sodium.client.render.chunk.data.SectionRenderDataUnsa
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
-import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion.DeviceResources;
 import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
@@ -26,7 +25,6 @@ import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAtt
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.render.viewport.CameraTransform;
 import net.caffeinemc.mods.sodium.client.util.BitwiseMath;
-import net.caffeinemc.mods.sodium.client.util.iterator.ByteIterator;
 import org.lwjgl.system.MemoryUtil;
 import java.util.Iterator;
 
@@ -122,7 +120,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             int chunkY = originY + LocalSectionIndex.unpackY(sectionIndex);
             int chunkZ = originZ + LocalSectionIndex.unpackZ(sectionIndex);
 
-            long pMeshData = renderDataStorage.getDataPointer(sectionIndex);
+            var pMeshData = renderDataStorage.getDataPointer(sectionIndex);
+
             int slices;
 
             if (useBlockFaceCulling) {

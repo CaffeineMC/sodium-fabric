@@ -2,7 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.core.model.colors;
 
 import it.unimi.dsi.fastutil.objects.*;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
-import net.caffeinemc.mods.sodium.client.model.color.interop.BlockColorsExtended;
+import net.caffeinemc.mods.sodium.client.model.color.interop.BlockColorsExtension;
 import net.minecraft.client.color.block.BlockColor;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BlockColors.class)
-public class BlockColorsMixin implements BlockColorsExtended {
+public class BlockColorsMixin implements BlockColorsExtension {
     // We're keeping a copy as we need to be able to iterate over the entry pairs, rather than just the values.
     @Unique
     private final Reference2ReferenceMap<Block, BlockColor> blocksToColor = new Reference2ReferenceOpenHashMap<>();

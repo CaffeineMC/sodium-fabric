@@ -15,7 +15,7 @@ public class VertexSerializerFactory {
     public static Bytecode generate(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat, String identifier) {
         var memoryCopies = createMemoryTransferList(srcFormat, dstFormat);
 
-        var name = "me/jellysquid/mods/sodium/client/render/vertex/serializers/generated/VertexSerializer$Impl$" + identifier;
+        var name = "net/caffeinemc/mods/sodium/client/render/vertex/serializers/generated/VertexSerializer$Impl$" + identifier;
 
         ClassWriter classWriter = new ClassWriter(0);
         classWriter.visit(Opcodes.V17, Opcodes.ACC_FINAL | Opcodes.ACC_PUBLIC, name, null,

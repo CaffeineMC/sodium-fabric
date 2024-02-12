@@ -43,11 +43,11 @@ public class ChunkBuilder {
 
     private final ChunkBuildContext localContext;
 
-    public ChunkBuilder(ClientLevel world, ChunkVertexType vertexType) {
+    public ChunkBuilder(ClientLevel level, ChunkVertexType vertexType) {
         int count = getThreadCount();
 
         for (int i = 0; i < count; i++) {
-            ChunkBuildContext context = new ChunkBuildContext(world, vertexType);
+            ChunkBuildContext context = new ChunkBuildContext(level, vertexType);
             WorkerRunnable worker = new WorkerRunnable(context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
@@ -59,7 +59,7 @@ public class ChunkBuilder {
 
         LOGGER.info("Started {} worker threads", this.threads.size());
 
-        this.localContext = new ChunkBuildContext(world, vertexType);
+        this.localContext = new ChunkBuildContext(level, vertexType);
     }
 
     /**

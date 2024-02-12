@@ -171,7 +171,7 @@ public class RenderSection {
     }
 
     /**
-     * Returns the chunk section position which this render refers to in the world.
+     * Returns the chunk section position which this render refers to in the level.
      */
     public SectionPos getPosition() {
         return SectionPos.of(this.chunkX, this.chunkY, this.chunkZ);
@@ -199,7 +199,7 @@ public class RenderSection {
     }
 
     /**
-     * @return The squared distance from the center of this chunk in the world to the center of the block position
+     * @return The squared distance from the center of this chunk in the level to the center of the block position
      * given by {@param pos}
      */
     public float getSquaredDistance(BlockPos pos) {
@@ -207,7 +207,7 @@ public class RenderSection {
     }
 
     /**
-     * @return The squared distance from the center of this chunk in the world to the given position
+     * @return The squared distance from the center of this chunk to the given block position
      */
     public float getSquaredDistance(float x, float y, float z) {
         float xDist = x - this.getCenterX();

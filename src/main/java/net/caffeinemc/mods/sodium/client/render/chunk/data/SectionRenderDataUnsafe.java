@@ -5,7 +5,7 @@ import org.lwjgl.system.MemoryUtil;
 // This code is a terrible hack to get around the fact that we are so incredibly memory bound, and that we
 // have no control over memory layout. The chunk rendering code spends an astronomical amount of time chasing
 // object pointers that are scattered across the heap. Worse yet, because render state is initialized over a long
-// period of time as the world loads, those objects are never even remotely close to one another in heap, so
+// period of time as the level loads, those objects are never even remotely close to one another in heap, so
 // you also have to pay the penalty of a DTLB miss on every other access.
 //
 // Unfortunately, Hotspot *still* produces abysmal machine code for the chunk rendering code paths, since any usage of

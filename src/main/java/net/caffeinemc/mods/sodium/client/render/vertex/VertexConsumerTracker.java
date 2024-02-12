@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import it.unimi.dsi.fastutil.objects.ReferenceSets;
-import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -18,7 +18,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortTy
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.caffeinemc.mods.sodium.client.util.task.CancellationToken;
-import net.caffeinemc.mods.sodium.client.world.WorldSlice;
+import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
@@ -40,7 +40,7 @@ import org.joml.Vector3dc;
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
  * to graphics memory on the main thread.
  *
- * This task takes a slice of the world from the thread it is created on. Since these slices require rather large
+ * This task takes a slice of the level from the thread it is created on. Since these slices require rather large
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
 public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> {
@@ -62,7 +62,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockRenderCache cache = buildContext.cache;
         cache.init(this.renderContext);
 
-        WorldSlice slice = cache.getWorldSlice();
+        LevelSlice slice = cache.getWorldSlice();
 
         int minX = this.render.getOriginX();
         int minY = this.render.getOriginY();
@@ -113,7 +113,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                         FluidState fluidState = blockState.getFluidState();
 
                         if (!fluidState.isEmpty()) {
-                            cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, collector, buffers);
+                            cache.getFluidRenderer().render(slice, blockState, fluidState, blockPos, modelOffset, collector, buffers);
                         }
 
                         if (blockState.hasBlockEntity()) {
@@ -169,7 +169,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         TranslucentData translucentData = null;
         if (collector != null) {
             translucentData = collector.getTranslucentData(
-                render.getTranslucentData(), meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), this);
+                this.render.getTranslucentData(), meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), this);
         }
 
         renderData.setOcclusionData(occluder.resolve());
@@ -177,7 +177,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         return new ChunkBuildOutput(this.render, this.submitTime, translucentData, renderData.build(), meshes);
     }
 
-    private ReportedException fillCrashInfo(CrashReport report, WorldSlice slice, BlockPos pos) {
+    private ReportedException fillCrashInfo(CrashReport report, LevelSlice slice, BlockPos pos) {
         CrashReportCategory crashReportSection = report.addCategory("Block being rendered", 1);
 
         BlockState state = null;

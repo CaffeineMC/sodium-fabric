@@ -13,9 +13,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
-import net.caffeinemc.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder.Vertex;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.minecraft.client.Minecraft;
@@ -64,7 +62,7 @@ public class BlockRenderer {
         Vec3 renderOffset;
         
         if (ctx.state().hasOffsetFunction()) {
-            renderOffset = ctx.state().getOffset(ctx.world(), ctx.pos());
+            renderOffset = ctx.state().getOffset(ctx.slice(), ctx.pos());
         } else {
             renderOffset = Vec3.ZERO;
         }
@@ -92,7 +90,7 @@ public class BlockRenderer {
     }
 
     private boolean isFaceVisible(BlockRenderContext ctx, Direction face) {
-        return this.occlusionCache.shouldDrawSide(ctx.state(), ctx.world(), ctx.pos(), face);
+        return this.occlusionCache.shouldDrawSide(ctx.state(), ctx.slice(), ctx.pos(), face);
     }
 
     private void renderQuadList(BlockRenderContext ctx, Material material, LightPipeline lighter, ColorProvider<BlockState> colorizer, Vec3 offset,
@@ -127,7 +125,7 @@ public class BlockRenderer {
         final int[] vertexColors = this.quadColors;
 
         if (colorProvider != null && quad.hasColor()) {
-            colorProvider.getColors(ctx.world(), ctx.pos(), ctx.state(), quad, vertexColors);
+            colorProvider.getColors(ctx.slice(), ctx.pos(), ctx.state(), quad, vertexColors);
         } else {
             Arrays.fill(vertexColors, 0xFFFFFFFF);
         }

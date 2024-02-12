@@ -5,15 +5,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 
 public class MinecraftOptionsStorage implements OptionStorage<Options> {
-    private final Minecraft client;
+    private final Minecraft minecraft;
 
     public MinecraftOptionsStorage() {
-        this.client = Minecraft.getInstance();
+        this.minecraft = Minecraft.getInstance();
     }
 
     @Override
     public Options getData() {
-        return this.client.options;
+        return this.minecraft.options;
     }
 
     @Override

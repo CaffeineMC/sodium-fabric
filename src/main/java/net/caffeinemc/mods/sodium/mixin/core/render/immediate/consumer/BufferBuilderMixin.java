@@ -1,13 +1,8 @@
 package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
-import net.caffeinemc.mods.sodium.client.render.vertex.buffer.ExtendedBufferBuilder;
-import net.caffeinemc.mods.sodium.client.render.vertex.buffer.SodiumBufferBuilder;
+import net.caffeinemc.mods.sodium.client.render.vertex.buffer.BufferBuilderExtension;
+import net.caffeinemc.mods.sodium.client.render.vertex.buffer.DirectBufferBuilder;
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
-import net.caffeinemc.mods.sodium.api.util.ColorABGR;
-import net.caffeinemc.mods.sodium.api.util.ColorARGB;
-import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
-import net.caffeinemc.mods.sodium.api.vertex.attributes.common.*;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatRegistry;
@@ -16,7 +11,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,7 +22,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
-public abstract class BufferBuilderMixin extends DefaultedVertexConsumer implements VertexBufferWriter, ExtendedBufferBuilder {
+public abstract class BufferBuilderMixin extends DefaultedVertexConsumer implements VertexBufferWriter, BufferBuilderExtension {
     @Shadow
     protected abstract void ensureCapacity(int size);
 
@@ -50,7 +44,7 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer impleme
     @Unique
     private int vertexStride;
 
-    private SodiumBufferBuilder fastDelegate;
+    private DirectBufferBuilder directBufferBuilder;
 
     @Inject(
             method = "switchFormat",
@@ -64,13 +58,13 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer impleme
         this.formatDescription = VertexFormatRegistry.instance()
                 .get(format);
         this.vertexStride = this.formatDescription.stride();
-        this.fastDelegate = this.formatDescription.isSimpleFormat() ? new SodiumBufferBuilder(this) : null;
+        this.directBufferBuilder = this.formatDescription.isSimpleFormat() ? new DirectBufferBuilder(this) : null;
     }
 
     @Inject(method = { "discard", "reset", "begin" }, at = @At("RETURN"))
     private void resetDelegate(CallbackInfo ci) {
-        if (this.fastDelegate != null) {
-            this.fastDelegate.reset();
+        if (this.directBufferBuilder != null) {
+            this.directBufferBuilder.reset();
         }
     }
 
@@ -90,8 +84,8 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer impleme
     }
 
     @Override
-    public SodiumBufferBuilder sodium$getDelegate() {
-        return this.fastDelegate;
+    public DirectBufferBuilder sodium$getDelegate() {
+        return this.directBufferBuilder;
     }
 
     @Override
@@ -107,7 +101,7 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer impleme
     }
 
     @Override
-    public boolean sodium$usingFixedColor() {
+    public boolean sodium$hasDefaultColor() {
         return this.defaultColorSet;
     }
 

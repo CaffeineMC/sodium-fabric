@@ -11,8 +11,9 @@ public enum OptionImpact implements TextProvider {
 
     private final Component text;
 
-    OptionImpact(ChatFormatting color, String text) {
-        this.text = Component.translatable(text).withStyle(color);
+    OptionImpact(ChatFormatting formatting, String text) {
+        this.text = Component.translatable(text)
+                .withStyle(formatting);
     }
 
     @Override

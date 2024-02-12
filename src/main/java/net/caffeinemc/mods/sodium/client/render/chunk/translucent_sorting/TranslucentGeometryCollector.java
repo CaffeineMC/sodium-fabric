@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPBuildFailureException;
@@ -99,7 +100,7 @@ public class TranslucentGeometryCollector {
     static {
         // ensure it fits with the fluid renderer epsilon and that it's a power-of-two
         // fraction
-        var targetEpsilon = FluidRenderer.EPSILON * 2.1f;
+        var targetEpsilon = DefaultFluidRenderer.EPSILON * 2.1f;
         if (QUANTIZE_EPSILON <= targetEpsilon && Integer.bitCount((int) INV_QUANTIZE_EPSILON) == 1) {
             throw new RuntimeException("epsilon is invalid: " + QUANTIZE_EPSILON);
         }

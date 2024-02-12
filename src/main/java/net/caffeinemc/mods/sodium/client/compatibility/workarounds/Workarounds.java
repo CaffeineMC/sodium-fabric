@@ -4,7 +4,6 @@ import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.Graphic
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import net.minecraft.Util;
-import net.minecraft.Util.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

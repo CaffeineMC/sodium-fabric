@@ -17,7 +17,6 @@ public class VertexSorters {
 
         @Override
         protected float getKey(Vector3f position) {
-            // requires euclidean distance, manhattan distance doesn't work
             return this.origin.distanceSquared(position);
         }
     }

@@ -1,15 +1,18 @@
 package net.caffeinemc.mods.sodium.client;
 
-import net.caffeinemc.mods.sodium.client.gui.SodiumGameOptions;
 import net.caffeinemc.mods.sodium.client.data.fingerprint.FingerprintMeasure;
 import net.caffeinemc.mods.sodium.client.data.fingerprint.HashedFingerprint;
+import net.caffeinemc.mods.sodium.client.gui.SodiumGameOptions;
 import net.caffeinemc.mods.sodium.client.gui.console.Console;
 import net.caffeinemc.mods.sodium.client.gui.console.message.MessageLevel;
+import net.caffeinemc.mods.sodium.client.render.frapi.SpriteFinderCache;
 import net.caffeinemc.mods.sodium.client.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.PackType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,8 @@ public class SodiumClientMod implements ClientModInitializer {
         CONFIG = loadConfig();
 
         FlawlessFrames.onClientInitialization();
+
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(SpriteFinderCache.ReloadListener.INSTANCE);
 
         try {
             updateFingerprint();

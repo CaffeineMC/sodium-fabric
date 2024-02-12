@@ -3,7 +3,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.model.light.data.ArrayLightDataCache;
-import net.caffeinemc.mods.sodium.client.world.WorldSlice;
+import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -16,20 +16,20 @@ public class BlockRenderCache {
     private final FluidRenderer fluidRenderer;
 
     private final BlockModelShaper blockModels;
-    private final WorldSlice worldSlice;
+    private final LevelSlice levelSlice;
 
-    public BlockRenderCache(Minecraft client, ClientLevel world) {
-        this.worldSlice = new WorldSlice(world);
-        this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
+    public BlockRenderCache(Minecraft minecraft, ClientLevel level) {
+        this.levelSlice = new LevelSlice(level);
+        this.lightDataCache = new ArrayLightDataCache(this.levelSlice);
 
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightDataCache);
 
-        var colorRegistry = new ColorProviderRegistry(client.getBlockColors());
+        var colorRegistry = new ColorProviderRegistry(minecraft.getBlockColors());
 
         this.blockRenderer = new BlockRenderer(colorRegistry, lightPipelineProvider);
         this.fluidRenderer = new FluidRenderer(colorRegistry, lightPipelineProvider);
 
-        this.blockModels = client.getModelManager().getBlockModelShaper();
+        this.blockModels = minecraft.getModelManager().getBlockModelShaper();
     }
 
     public BlockModelShaper getBlockModels() {
@@ -46,14 +46,14 @@ public class BlockRenderCache {
 
     public void init(ChunkRenderContext context) {
         this.lightDataCache.reset(context.getOrigin());
-        this.worldSlice.copyData(context);
+        this.levelSlice.copyData(context);
     }
 
-    public WorldSlice getWorldSlice() {
-        return this.worldSlice;
+    public LevelSlice getWorldSlice() {
+        return this.levelSlice;
     }
 
     public void cleanup() {
-        this.worldSlice.reset();
+        this.levelSlice.reset();
     }
 }

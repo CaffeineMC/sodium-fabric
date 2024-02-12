@@ -33,7 +33,8 @@
     "@douira",
     "@burgerindividual",
     "@TwistedZero",
-    "@Leo40Git"
+    "@Leo40Git",
+    "@haykam821"
   ],
   "contact": {
     "homepage": "https://github.com/CaffeineMC/sodium-fabric",
@@ -69,8 +70,11 @@
   ],
   "depends": {
     "fabricloader": ">=0.12.0",
-    "fabric-rendering-data-attachment-v1": ">=0.1",
-    "fabric-rendering-fluids-v1": ">=0.1"
+    "fabric-block-view-api-v2": "*",
+    "fabric-renderer-api-v1": "*",
+    "fabric-rendering-data-attachment-v1": "*",
+    "fabric-rendering-fluids-v1": ">=2.0.0",
+    "fabric-resource-loader-v0": "*"
   },
   "breaks": {
     "optifabric": "*",
