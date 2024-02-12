@@ -1,12 +1,15 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 
 public class BakedChunkModelBuilder implements ChunkModelBuilder {
     private final ChunkMeshBufferBuilder[] vertexBuffers;
+    private final ChunkVertexConsumer fallbackVertexConsumer = new ChunkVertexConsumer(this);
 
     private BuiltSectionInfo.Builder renderData;
 
@@ -22,6 +25,12 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
     @Override
     public void addSprite(TextureAtlasSprite sprite) {
         this.renderData.addSprite(sprite);
+    }
+
+    @Override
+    public VertexConsumer asFallbackVertexConsumer(Material material) {
+        fallbackVertexConsumer.setMaterial(material);
+        return fallbackVertexConsumer;
     }
 
     public void destroy() {

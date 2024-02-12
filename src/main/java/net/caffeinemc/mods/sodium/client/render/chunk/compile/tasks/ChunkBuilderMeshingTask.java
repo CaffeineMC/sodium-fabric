@@ -105,7 +105,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                         FluidState fluidState = blockState.getFluidState();
 
                         if (!fluidState.isEmpty()) {
-                            cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers);
+                            cache.getFluidRenderer().render(slice, blockState, fluidState, blockPos, modelOffset, buffers);
                         }
 
                         if (blockState.hasBlockEntity()) {
