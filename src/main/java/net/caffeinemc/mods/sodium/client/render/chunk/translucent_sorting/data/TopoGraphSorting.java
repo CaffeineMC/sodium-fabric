@@ -197,22 +197,25 @@ public class TopoGraphSorting {
         // if enabled, check for visibility and produce a mapping of indices
         TQuad[] quads;
         int[] activeToRealIndex = null;
+
+        // keep track of the number of quads to be processed, this is possibly less than quads.length
+        int quadCount = 0;
+
         if (cameraPos != null) {
             // allocate the working quads and index map at the full size to avoid needing to
             // iterate the quads again after checking visibility
             quads = new TQuad[allQuads.length];
             activeToRealIndex = new int[allQuads.length];
 
-            int activeQuads = 0;
             for (int i = 0; i < allQuads.length; i++) {
                 TQuad quad = allQuads[i];
                 // NOTE: This approximation may introduce wrong sorting if the real and the
                 // quantized normal aren't the same. A quad may be ignored with the quantized
                 // normal, but it's actually visible in camera.
                 if (pointOutsideHalfSpace(quad.getDotProduct(), quad.getQuantizedNormal(), cameraPos)) {
-                    activeToRealIndex[activeQuads] = i;
-                    quads[activeQuads] = quad;
-                    activeQuads++;
+                    activeToRealIndex[quadCount] = i;
+                    quads[quadCount] = quad;
+                    quadCount++;
                 } else {
                     // write the invisible quads right away
                     indexConsumer.accept(i);
@@ -220,14 +223,13 @@ public class TopoGraphSorting {
             }
         } else {
             quads = allQuads;
+            quadCount = allQuads.length;
         }
 
-        return topoGraphSort(indexConsumer, quads, activeToRealIndex, distancesByNormal, cameraPos);
+        return topoGraphSort(indexConsumer, quads, quadCount, activeToRealIndex, distancesByNormal, cameraPos);
     }
 
-    public static boolean topoGraphSort(IntConsumer indexConsumer, TQuad[] quads, int[] activeToRealIndex, Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
-        int quadCount = quads.length;
-
+    public static boolean topoGraphSort(IntConsumer indexConsumer, TQuad[] quads, int quadCount, int[] activeToRealIndex, Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal, Vector3fc cameraPos) {
         // special case for 0 to 2 quads
         if (quadCount == 0) {
             return true;

@@ -428,7 +428,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         }
 
         var indexWriter = new QuadIndexConsumerIntoArray(quadCount);
-        if (!TopoGraphSorting.topoGraphSort(indexWriter, quads, activeToRealIndex, null, null)) {
+        if (!TopoGraphSorting.topoGraphSort(indexWriter, quads, quads.length, activeToRealIndex, null, null)) {
             return null;
         }
 
