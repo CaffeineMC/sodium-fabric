@@ -14,6 +14,7 @@ plugins {
     // is not reachable for some reason, and it makes builds much more reproducible. Observation also shows that it
     // really helps to improve startup times on slow connections.
     id("fabric-loom") version "1.5.7"
+    id("maven-publish")
 }
 
 base {
