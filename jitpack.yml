@@ -1,2 +1,4 @@
 jdk:
   - openjdk17
+before_install:
+  - rm -rf ~/.gradle/caches
