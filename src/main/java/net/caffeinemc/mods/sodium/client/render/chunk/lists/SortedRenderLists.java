@@ -5,6 +5,11 @@ import net.caffeinemc.mods.sodium.client.render.chunk.RenderSection;
 import net.caffeinemc.mods.sodium.client.util.iterator.ReversibleObjectArrayIterator;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
 
+/**
+ * Stores one render list of sections per region, sorted by the order in which
+ * they were discovered in the BFS of the occlusion culler. It also generates
+ * render lists for sections of previously unseen regions.
+ */
 public class SortedRenderLists implements ChunkRenderListIterable {
     private static final SortedRenderLists EMPTY = new SortedRenderLists(ObjectArrayList.of());
 

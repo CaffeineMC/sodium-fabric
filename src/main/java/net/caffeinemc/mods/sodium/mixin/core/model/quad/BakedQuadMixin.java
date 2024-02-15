@@ -48,8 +48,8 @@ public class BakedQuadMixin implements BakedQuadView {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, TextureAtlasSprite sprite, boolean shade, CallbackInfo ci) {
-        this.normal = ModelQuadUtil.calculateNormal(this);
-        this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
+        this.normal = this.calculateNormal();
+        this.normalFace = ModelQuadFacing.fromPackedNormal(this.normal);
 
         this.flags = ModelQuadFlags.getQuadFlags(this, face);
     }
@@ -102,6 +102,11 @@ public class BakedQuadMixin implements BakedQuadView {
     @Override
     public ModelQuadFacing getNormalFace() {
         return this.normalFace;
+    }
+
+    @Override
+    public int getNormal() {
+        return this.normal;
     }
 
     @Override

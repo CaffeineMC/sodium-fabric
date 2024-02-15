@@ -57,7 +57,7 @@ public class ChunkBuildBuffers {
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
      * times to return multiple copies.
      */
-    public BuiltSectionMeshParts createMesh(TerrainRenderPass pass) {
+    public BuiltSectionMeshParts createMesh(TerrainRenderPass pass, boolean forceUnassigned) {
         var builder = this.builders.get(pass);
 
         List<ByteBuffer> vertexBuffers = new ArrayList<>();
@@ -73,9 +73,15 @@ public class ChunkBuildBuffers {
             }
 
             vertexBuffers.add(buffer.slice());
-            vertexRanges[facing.ordinal()] = new VertexRange(vertexCount, buffer.count());
+            if (!forceUnassigned) {
+                vertexRanges[facing.ordinal()] = new VertexRange(vertexCount, buffer.count());
+            }
 
             vertexCount += buffer.count();
+        }
+
+        if (forceUnassigned) {
+            vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(0, vertexCount);
         }
 
         if (vertexCount == 0) {
@@ -89,7 +95,7 @@ public class ChunkBuildBuffers {
             mergedBufferBuilder.put(buffer);
         }
 
-        mergedBufferBuilder.flip();
+        mergedBufferBuilder.flip(); // TODO: necessary?
 
         return new BuiltSectionMeshParts(mergedBuffer, vertexRanges);
     }

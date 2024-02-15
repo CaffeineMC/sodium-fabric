@@ -5,6 +5,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.occlusion.GraphDirection;
 import net.caffeinemc.mods.sodium.client.render.chunk.occlusion.GraphDirectionSet;
 import net.caffeinemc.mods.sodium.client.render.chunk.occlusion.VisibilityEncoding;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.caffeinemc.mods.sodium.client.util.task.CancellationToken;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
@@ -47,16 +48,17 @@ public class RenderSection {
     private BlockEntity @Nullable[] globalBlockEntities;
     private BlockEntity @Nullable[] culledBlockEntities;
     private TextureAtlasSprite @Nullable[] animatedSprites;
-
+    @Nullable
+    private TranslucentData translucentData;
 
     // Pending Update State
     @Nullable
-    private CancellationToken buildCancellationToken = null;
+    private CancellationToken taskCancellationToken = null;
 
     @Nullable
     private ChunkUpdateType pendingUpdateType;
 
-    private int lastBuiltFrame = -1;
+    private int lastUploadFrame = -1;
     private int lastSubmittedFrame = -1;
 
     // Lifetime state
@@ -110,15 +112,32 @@ public class RenderSection {
         return this.adjacentMask;
     }
 
+    public TranslucentData getTranslucentData() {
+        return this.translucentData;
+    }
+
+    public void setTranslucentData(TranslucentData translucentData) {
+        if (translucentData == null) {
+            throw new IllegalArgumentException("new translucentData cannot be null");
+        }
+        if (this.translucentData != null && this.translucentData != translucentData) {
+            this.translucentData.delete();
+        }
+        this.translucentData = translucentData;
+    }
+
     /**
      * Deletes all data attached to this render and drops any pending tasks. This should be used when the render falls
      * out of view or otherwise needs to be destroyed. After the render has been destroyed, the object can no longer
      * be used.
      */
     public void delete() {
-        if (this.buildCancellationToken != null) {
-            this.buildCancellationToken.setCancelled();
-            this.buildCancellationToken = null;
+        if (this.taskCancellationToken != null) {
+            this.taskCancellationToken.setCancelled();
+            this.taskCancellationToken = null;
+        }
+        if (this.translucentData != null) {
+            this.translucentData.delete();
         }
 
         this.clearRenderState();
@@ -311,12 +330,12 @@ public class RenderSection {
         return this.globalBlockEntities;
     }
 
-    public @Nullable CancellationToken getBuildCancellationToken() {
-        return this.buildCancellationToken;
+    public @Nullable CancellationToken getTaskCancellationToken() {
+        return this.taskCancellationToken;
     }
 
-    public void setBuildCancellationToken(@Nullable CancellationToken token) {
-        this.buildCancellationToken = token;
+    public void setTaskCancellationToken(@Nullable CancellationToken token) {
+        this.taskCancellationToken = token;
     }
 
     public @Nullable ChunkUpdateType getPendingUpdate() {
@@ -327,12 +346,18 @@ public class RenderSection {
         this.pendingUpdateType = type;
     }
 
-    public int getLastBuiltFrame() {
-        return this.lastBuiltFrame;
+    public void prepareTrigger(boolean isDirectTrigger) {
+        if (this.translucentData != null) {
+            this.translucentData.prepareTrigger(isDirectTrigger);
+        }
     }
 
-    public void setLastBuiltFrame(int lastBuiltFrame) {
-        this.lastBuiltFrame = lastBuiltFrame;
+    public int getLastUploadFrame() {
+        return this.lastUploadFrame;
+    }
+
+    public void setLastUploadFrame(int lastSortFrame) {
+        this.lastUploadFrame = lastSortFrame;
     }
 
     public int getLastSubmittedFrame() {
