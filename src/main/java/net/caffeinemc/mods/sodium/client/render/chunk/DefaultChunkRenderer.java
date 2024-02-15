@@ -53,9 +53,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                        CameraTransform camera) {
         super.begin(renderPass);
 
-        boolean isTranslucent = renderPass == DefaultTerrainRenderPasses.TRANSLUCENT 
-                && SodiumClientMod.options().performance.getSortBehavior() != SortBehavior.OFF;
-        boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
+        final boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
+        final boolean useIndexedTessellation = isTranslucentRenderPass(renderPass);
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
         shader.setProjectionMatrix(matrices.projection());
@@ -79,11 +78,17 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
+            // When the shared index buffer is being used, we must ensure the storage has been allocated *before*
+            // the tessellation is prepared.
+            if (!useIndexedTessellation) {
+                this.sharedIndexBuffer.ensureCapacity(commandList, this.batch.getIndexBufferSize());
+            }
+
             GlTessellation tessellation;
-            if (isTranslucent) {
+
+            if (useIndexedTessellation) {
                 tessellation = this.prepareIndexedTessellation(commandList, region);
             } else {
-                this.sharedIndexBuffer.ensureCapacity(commandList, this.batch.getIndexBufferSize());
                 tessellation = this.prepareTessellation(commandList, region);
             }
 
@@ -92,6 +97,11 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         }
 
         super.end(renderPass);
+    }
+
+    private static boolean isTranslucentRenderPass(TerrainRenderPass renderPass) {
+        return renderPass == DefaultTerrainRenderPasses.TRANSLUCENT
+                && SodiumClientMod.options().performance.getSortBehavior() != SortBehavior.OFF;
     }
 
     private static void fillCommandBuffer(MultiDrawBatch batch,
@@ -109,6 +119,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             return;
         }
 
+        // The origin of the chunk in world space
         int originX = renderRegion.getChunkX();
         int originY = renderRegion.getChunkY();
         int originZ = renderRegion.getChunkZ();
@@ -116,12 +127,13 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         while (iterator.hasNext()) {
             int sectionIndex = iterator.nextByteAsInt();
 
+            var pMeshData = renderDataStorage.getDataPointer(sectionIndex);
+
             int chunkX = originX + LocalSectionIndex.unpackX(sectionIndex);
             int chunkY = originY + LocalSectionIndex.unpackY(sectionIndex);
             int chunkZ = originZ + LocalSectionIndex.unpackZ(sectionIndex);
 
-            var pMeshData = renderDataStorage.getDataPointer(sectionIndex);
-
+            // The bit field of "visible" geometry sets which should be rendered
             int slices;
 
             if (useBlockFaceCulling) {
@@ -130,11 +142,15 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                 slices = ModelQuadFacing.ALL;
             }
 
+            // Mask off any geometry sets which are empty (contain no geometry)
             slices &= SectionRenderDataUnsafe.getSliceMask(pMeshData);
 
-            if (slices != 0) {
-                addDrawCommands(batch, pMeshData, slices);
+            // If there are no geometry sets to render, don't try to build a draw command buffer for this section
+            if (slices == 0) {
+                continue;
             }
+
+            addDrawCommands(batch, pMeshData, slices);
         }
     }
 
@@ -146,34 +162,66 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
      * draw batch provides pointers to arrays where each of the section's data is
      * stored. The batch's size counts how many commands it contains.
      */
-    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     private static void addDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
+        int elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData);
+
+        // If high bit is set, the indices should be sourced from the arena's index buffer
+        if ((elementOffset & SectionRenderDataUnsafe.BASE_ELEMENT_MSB) != 0) {
+            addIndexedDrawCommands(batch, pMeshData, mask);
+        } else {
+            addNonIndexedDrawCommands(batch, pMeshData, mask);
+        }
+    }
+
+    /**
+     * Generates the draw commands for a chunk's meshes using the shared index buffer.
+     */
+    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
+    private static void addNonIndexedDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
         final var pElementPointer = batch.pElementPointer;
         final var pBaseVertex = batch.pBaseVertex;
         final var pElementCount = batch.pElementCount;
 
         int size = batch.size;
-        int indexDataOffset = SectionRenderDataUnsafe.getIndexOffset(pMeshData);
 
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
             MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
-            var elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
+            MemoryUtil.memPutInt(pElementCount + (size << 2), SectionRenderDataUnsafe.getElementCount(pMeshData, facing));
+            MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0 /* using a shared index buffer */);
+
+            size += (mask >> facing) & 1;
+        }
+
+        batch.size = size;
+    }
+
+    /**
+     * Generates the draw commands for a chunk's meshes, where each mesh has a separate index buffer. This is used
+     * when rendering translucent geometry, as each geometry set needs a sorted index buffer.
+     */
+    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
+    private static void addIndexedDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
+        final var pElementPointer = batch.pElementPointer;
+        final var pBaseVertex = batch.pBaseVertex;
+        final var pElementCount = batch.pElementCount;
+
+        int size = batch.size;
+
+        int elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData)
+                & ~SectionRenderDataUnsafe.BASE_ELEMENT_MSB;
+
+        for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
+            final var elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
+
+            MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
             MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
 
-            // zero check for when we're not rendering any translucent data
-            // TODO: unclear if the offset can naturally be zero sometimes
-            if (indexDataOffset != 0) {
-                // * 4 to convert to bytes (the buffer contains ints)
-                // the section render data storage for the indices stores the offset in indices (also called elements)
-                // the << 3 is * 8 to convert to 8 byte offsets
-                MemoryUtil.memPutAddress(pElementPointer + (size << 3), indexDataOffset << 2);
+            // * 4 to convert to bytes (the buffer contains 32-bit integers)
+            // the section render data storage for the indices stores the offset in indices (also called elements)
+            MemoryUtil.memPutAddress(pElementPointer + (size << 3), elementOffset << 2);
 
-                // adding the number of elements works because the index data has one index per element (which are the indices)
-                indexDataOffset += elementCount;
-            } else {
-                MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
-            }
-
+            // adding the number of elements works because the index data has one index per element (which are the indices)
+            elementOffset += elementCount;
             size += (mask >> facing) & 1;
         }
 
