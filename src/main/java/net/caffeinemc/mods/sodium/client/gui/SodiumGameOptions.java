@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import net.caffeinemc.mods.sodium.client.gui.options.TextProvider;
 import net.caffeinemc.mods.sodium.client.util.FileUtil;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.network.chat.Component;
@@ -44,6 +45,12 @@ public class SodiumGameOptions {
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
         public boolean useNoErrorGLContext = true;
+
+        public boolean sortingEnabled = true;
+
+        public SortBehavior getSortBehavior() {
+            return this.sortingEnabled ? SortBehavior.DYNAMIC_DEFER_NEARBY_ONE_FRAME : SortBehavior.OFF;
+        }
     }
 
     public static class AdvancedSettings {

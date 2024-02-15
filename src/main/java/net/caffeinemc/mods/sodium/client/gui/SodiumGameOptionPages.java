@@ -312,6 +312,17 @@ public class SodiumGameOptionPages {
                         .build())
                 .build());
 
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(Component.translatable("sodium.options.sort_behavior.name"))
+                        .setTooltip(Component.translatable("sodium.options.sort_behavior.tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.performance.sortingEnabled = value, opts -> opts.performance.sortingEnabled)
+                        .setImpact(OptionImpact.LOW)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .build());
+
         return new OptionPage(Component.translatable("sodium.options.pages.performance"), ImmutableList.copyOf(groups));
     }
 

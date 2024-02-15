@@ -1,5 +1,11 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
+
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
+import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
+import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
+import net.caffeinemc.mods.sodium.client.model.color.DefaultColorProviders;
 import net.caffeinemc.mods.sodium.client.model.light.LightMode;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipeline;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
@@ -9,15 +15,13 @@ import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
-import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
-import net.caffeinemc.mods.sodium.client.model.color.DefaultColorProviders;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
-import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.client.Minecraft;
@@ -39,9 +43,10 @@ import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class DefaultFluidRenderer {
-    // TODO: allow this to be changed by vertex format
+    // TODO: allow this to be changed by vertex format, WARNING: make sure TranslucentGeometryCollector knows about EPSILON
     // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
-    private static final float EPSILON = 0.001f;
+    public static final float EPSILON = 0.001f;
+    private static final float ALIGNED_EQUALS_EPSILON = 0.011f;
 
     private final BlockPos.MutableBlockPos scratchPos = new BlockPos.MutableBlockPos();
     private final MutableFloat scratchHeight = new MutableFloat(0);
@@ -98,7 +103,7 @@ public class DefaultFluidRenderer {
         return true;
     }
 
-    public void render(LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler) {
+    public void render(LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler) {
         int posX = blockPos.getX();
         int posY = blockPos.getY();
         int posZ = blockPos.getZ();
@@ -167,13 +172,11 @@ public class DefaultFluidRenderer {
             Vec3 velocity = fluidState.getFlow(level, blockPos);
 
             TextureAtlasSprite sprite;
-            ModelQuadFacing facing;
             float u1, u2, u3, u4;
             float v1, v2, v3, v4;
 
             if (velocity.x == 0.0D && velocity.z == 0.0D) {
                 sprite = sprites[0];
-                facing = ModelQuadFacing.POS_Y;
                 u1 = sprite.getU(0.0f);
                 v1 = sprite.getV(0.0f);
                 u2 = u1;
@@ -184,7 +187,6 @@ public class DefaultFluidRenderer {
                 v4 = v1;
             } else {
                 sprite = sprites[1];
-                facing = ModelQuadFacing.UNASSIGNED;
                 float dir = (float) Mth.atan2(velocity.z, velocity.x) - (1.5707964f);
                 float sin = Mth.sin(dir) * 0.25F;
                 float cos = Mth.cos(dir) * 0.25F;
@@ -218,13 +220,18 @@ public class DefaultFluidRenderer {
             setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
             setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
 
+            // top surface alignedness is calculated with a more relaxed epsilon
+            boolean aligned = isAlignedEquals(northEastHeight, northWestHeight)
+                    && isAlignedEquals(northWestHeight, southEastHeight)
+                    && isAlignedEquals(southEastHeight, southWestHeight)
+                    && isAlignedEquals(southWestHeight, northEastHeight);
+
             this.updateQuad(quad, level, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, material, offset, quad, facing, false);
+            this.writeQuad(meshBuilder, collector, material, offset, quad, aligned ? ModelQuadFacing.POS_Y : ModelQuadFacing.UNASSIGNED, false);
 
             if (fluidState.shouldRenderBackwardUpFace(level, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeQuad(meshBuilder, material, offset, quad,
-                        ModelQuadFacing.NEG_Y, true);
-
+                this.writeQuad(meshBuilder, collector, material, offset, quad,
+                        aligned ? ModelQuadFacing.NEG_Y : ModelQuadFacing.UNASSIGNED, true);
             }
 
         }
@@ -244,8 +251,7 @@ public class DefaultFluidRenderer {
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.updateQuad(quad, level, blockPos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, material, offset, quad, ModelQuadFacing.NEG_Y, false);
-
+            this.writeQuad(meshBuilder, collector, material, offset, quad, ModelQuadFacing.NEG_Y, false);
         }
 
         quad.setFlags(ModelQuadFlags.IS_PARALLEL | ModelQuadFlags.IS_ALIGNED);
@@ -345,14 +351,18 @@ public class DefaultFluidRenderer {
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
                 this.updateQuad(quad, level, blockPos, lighter, dir, br, colorProvider, fluidState);
-                this.writeQuad(meshBuilder, material, offset, quad, facing, false);
+                this.writeQuad(meshBuilder, collector, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
-                    this.writeQuad(meshBuilder, material, offset, quad, facing.getOpposite(), true);
+                    this.writeQuad(meshBuilder, collector, material, offset, quad, facing.getOpposite(), true);
                 }
 
             }
         }
+    }
+
+    private static boolean isAlignedEquals(float a, float b) {
+        return Math.abs(a - b) <= ALIGNED_EQUALS_EPSILON;
     }
 
     private ColorProvider<FluidState> getColorProvider(Fluid fluid, FluidRenderHandler handler) {
@@ -390,7 +400,7 @@ public class DefaultFluidRenderer {
         }
     }
 
-    private void writeQuad(ChunkModelBuilder builder, Material material, BlockPos offset, ModelQuadView quad,
+    private void writeQuad(ChunkModelBuilder builder, TranslucentGeometryCollector collector, Material material, BlockPos offset, ModelQuadView quad,
                            ModelQuadFacing facing, boolean flip) {
         var vertices = this.vertices;
 
@@ -410,6 +420,19 @@ public class DefaultFluidRenderer {
 
         if (sprite != null) {
             builder.addSprite(sprite);
+        }
+
+        if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
+            int normal;
+            if (facing.isAligned()) {
+                normal = facing.getPackedAlignedNormal();
+            } else {
+                normal = quad.calculateNormal();
+            }
+            if (flip) {
+                normal = NormI8.flipPacked(normal);
+            }
+            collector.appendQuad(normal, vertices, facing);
         }
 
         var vertexBuffer = builder.getVertexBuffer(facing);

@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
@@ -9,6 +10,7 @@ import org.joml.Vector3fc;
 
 public class BlockRenderContext {
     private final LevelSlice slice;
+    public final TranslucentGeometryCollector collector;
 
     private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -20,8 +22,9 @@ public class BlockRenderContext {
     private long seed;
 
 
-    public BlockRenderContext(LevelSlice slice) {
+    public BlockRenderContext(LevelSlice slice, TranslucentGeometryCollector collector) {
         this.slice = slice;
+        this.collector = collector;
     }
 
     public void update(BlockPos pos, BlockPos origin, BlockState state, BakedModel model, long seed) {
@@ -32,6 +35,13 @@ public class BlockRenderContext {
         this.model = model;
 
         this.seed = seed;
+    }
+
+    /**
+     * @return The collector for translucent geometry sorting
+     */
+    public TranslucentGeometryCollector collector() {
+        return this.collector;
     }
 
     /**

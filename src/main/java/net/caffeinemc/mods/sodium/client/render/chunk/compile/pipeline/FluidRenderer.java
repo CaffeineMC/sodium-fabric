@@ -6,6 +6,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
@@ -25,7 +26,7 @@ public class FluidRenderer {
         defaultRenderer = new DefaultFluidRenderer(colorProviderRegistry, lighters);
     }
 
-    public void render(LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, ChunkBuildBuffers buffers) {
+    public void render(LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forFluidState(fluidState);
         var meshBuilder = buffers.get(material);
 
@@ -59,7 +60,7 @@ public class FluidRenderer {
         // parameters are bundled into a DefaultRenderContext which is stored in a ThreadLocal.
 
         DefaultRenderContext defaultContext = CURRENT_DEFAULT_CONTEXT.get();
-        defaultContext.setUp(this.defaultRenderer, level, fluidState, blockPos, offset, meshBuilder, material, handler);
+        defaultContext.setUp(this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler);
 
         try {
             handler.renderFluid(blockPos, level, meshBuilder.asFallbackVertexConsumer(material), blockState, fluidState);
@@ -78,16 +79,18 @@ public class FluidRenderer {
         private FluidState fluidState;
         private BlockPos blockPos;
         private BlockPos offset;
+        private TranslucentGeometryCollector collector;
         private ChunkModelBuilder meshBuilder;
         private Material material;
         private FluidRenderHandler handler;
 
-        public void setUp(DefaultFluidRenderer renderer, LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler) {
+        public void setUp(DefaultFluidRenderer renderer, LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler) {
             this.renderer = renderer;
             this.level = level;
             this.fluidState = fluidState;
             this.blockPos = blockPos;
             this.offset = offset;
+            this.collector = collector;
             this.meshBuilder = meshBuilder;
             this.material = material;
             this.handler = handler;
@@ -99,6 +102,7 @@ public class FluidRenderer {
             this.fluidState = null;
             this.blockPos = null;
             this.offset = null;
+            this.collector = null;
             this.meshBuilder = null;
             this.material = null;
             this.handler = null;
@@ -106,7 +110,7 @@ public class FluidRenderer {
 
         public boolean renderIfSetUp() {
             if (this.renderer != null) {
-                this.renderer.render(this.level, this.fluidState, this.blockPos, this.offset, this.meshBuilder, this.material, this.handler);
+                this.renderer.render(this.level, this.fluidState, this.blockPos, this.offset, this.collector, this.meshBuilder, this.material, this.handler);
                 return true;
             }
 

@@ -1,18 +1,32 @@
 package net.caffeinemc.mods.sodium.client.render.chunk;
 
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
+
 public enum ChunkUpdateType {
-    INITIAL_BUILD(128),
-    REBUILD(Integer.MAX_VALUE),
-    IMPORTANT_REBUILD(Integer.MAX_VALUE);
+    SORT(Integer.MAX_VALUE, ChunkBuilder.LOW_EFFORT),
+    INITIAL_BUILD(128, ChunkBuilder.HIGH_EFFORT),
+    REBUILD(Integer.MAX_VALUE, ChunkBuilder.HIGH_EFFORT),
+    IMPORTANT_REBUILD(Integer.MAX_VALUE, ChunkBuilder.HIGH_EFFORT),
+    IMPORTANT_SORT(Integer.MAX_VALUE, ChunkBuilder.LOW_EFFORT);
 
     private final int maximumQueueSize;
+    private final int taskEffort;
 
-    ChunkUpdateType(int maximumQueueSize) {
+    ChunkUpdateType(int maximumQueueSize, int taskEffort) {
         this.maximumQueueSize = maximumQueueSize;
+        this.taskEffort = taskEffort;
     }
 
-    public static boolean canPromote(ChunkUpdateType prev, ChunkUpdateType next) {
-        return prev == null || (prev == REBUILD && next == IMPORTANT_REBUILD);
+    public static ChunkUpdateType getPromotionUpdateType(ChunkUpdateType prev, ChunkUpdateType next) {
+        if (prev == null || prev == SORT || prev == next) {
+            return next;
+        }
+        if (next == IMPORTANT_REBUILD
+                || (prev == IMPORTANT_SORT && next == REBUILD)
+                || (prev == REBUILD && next == IMPORTANT_SORT)) {
+            return IMPORTANT_REBUILD;
+        }
+        return null;
     }
 
     public int getMaximumQueueSize() {
@@ -20,6 +34,10 @@ public enum ChunkUpdateType {
     }
 
     public boolean isImportant() {
-        return this == IMPORTANT_REBUILD;
+        return this == IMPORTANT_REBUILD || this == IMPORTANT_SORT;
+    }
+
+    public int getTaskEffort() {
+        return this.taskEffort;
     }
 }

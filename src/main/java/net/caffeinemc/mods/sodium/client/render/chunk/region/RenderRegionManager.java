@@ -11,10 +11,14 @@ import net.caffeinemc.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import net.caffeinemc.mods.sodium.client.gl.device.CommandList;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.render.chunk.RenderSection;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.OutputWithIndexData;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -48,59 +52,113 @@ public class RenderRegionManager {
         }
     }
 
-    public void uploadMeshes(CommandList commandList, Collection<ChunkBuildOutput> results) {
+    public void uploadResults(CommandList commandList, Collection<BuilderTaskOutput> results) {
         for (var entry : this.createMeshUploadQueues(results)) {
-            this.uploadMeshes(commandList, entry.getKey(), entry.getValue());
+            this.uploadResults(commandList, entry.getKey(), entry.getValue());
         }
     }
 
-    private void uploadMeshes(CommandList commandList, RenderRegion region, Collection<ChunkBuildOutput> results) {
-        var uploads = new ArrayList<PendingSectionUpload>();
+    private void uploadResults(CommandList commandList, RenderRegion region, Collection<BuilderTaskOutput> results) {
+        var uploads = new ArrayList<PendingSectionMeshUpload>();
+        var indexUploads = new ArrayList<PendingSectionIndexBufferUpload>();
 
-        for (ChunkBuildOutput result : results) {
-            for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
-                var storage = region.getStorage(pass);
+        for (BuilderTaskOutput result : results) {
+            int renderSectionIndex = result.render.getSectionIndex();
 
-                if (storage != null) {
-                    storage.removeMeshes(result.render.getSectionIndex());
+            if (result.render.isDisposed()) {
+                throw new IllegalStateException("Render section is disposed");
+            }
+
+            if (result instanceof ChunkBuildOutput chunkBuildOutput) {
+                for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
+                    var storage = region.getStorage(pass);
+
+                    if (storage != null) {
+                        storage.removeVertexData(renderSectionIndex);
+                    }
+
+                    BuiltSectionMeshParts mesh = chunkBuildOutput.getMesh(pass);
+
+                    if (mesh != null) {
+                        uploads.add(new PendingSectionMeshUpload(result.render, mesh, pass,
+                        new PendingUpload(mesh.getVertexData())));
+                    }
+                }
+            }
+
+            if (result instanceof OutputWithIndexData indexDataOutput) {
+                var indexData = indexDataOutput.getTranslucentData();
+                boolean retainIndexData = false;
+                if (indexData != null) {
+                    if (indexData.isReusingUploadedData()) {
+                        retainIndexData = true;
+                    } else {
+                        var buffer = indexData.getBuffer();
+
+                        // TODO: sometimes the buffer is null even when reuse isn't happening. maybe the data on the
+                        // render section is being replaced before it gets here?
+                        if (buffer == null) {
+                            throw new IllegalStateException("Translucent data buffer is null");
+                        }
+
+                        indexUploads.add(new PendingSectionIndexBufferUpload(result.render, indexData,
+                                new PendingUpload(buffer)));
+                    }
                 }
 
-                BuiltSectionMeshParts mesh = result.getMesh(pass);
-
-                if (mesh != null) {
-                    uploads.add(new PendingSectionUpload(result.render, mesh, pass,
-                            new PendingUpload(mesh.getVertexData())));
+                if (!retainIndexData) {
+                    var storage = region.getStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
+                    if (storage != null) {
+                        storage.removeIndexData(renderSectionIndex);
+                    }
                 }
             }
         }
 
         // If we have nothing to upload, abort!
-        if (uploads.isEmpty()) {
+        if (uploads.isEmpty() && indexUploads.isEmpty()) {
             return;
         }
 
         var resources = region.createResources(commandList);
-        var arena = resources.getGeometryArena();
 
-        boolean bufferChanged = arena.upload(commandList, uploads.stream()
-                .map(upload -> upload.vertexUpload));
+        if (!uploads.isEmpty()) {
+            var arena = resources.getGeometryArena();
+            boolean bufferChanged = arena.upload(commandList, uploads.stream()
+                    .map(upload -> upload.vertexUpload));
 
-        // If any of the buffers changed, the tessellation will need to be updated
-        // Once invalidated the tessellation will be re-created on the next attempted use
-        if (bufferChanged) {
-            region.refresh(commandList);
+            // If any of the buffers changed, the tessellation will need to be updated
+            // Once invalidated the tessellation will be re-created on the next attempted use
+            if (bufferChanged) {
+                region.refreshTesselation(commandList);
+            }
+
+            // Collect the upload results
+            for (PendingSectionMeshUpload upload : uploads) {
+                var storage = region.createStorage(upload.pass);
+                storage.setVertexData(upload.section.getSectionIndex(),
+                        upload.vertexUpload.getResult(), upload.meshData.getVertexRanges());
+            }
         }
 
-        // Collect the upload results
-        for (PendingSectionUpload upload : uploads) {
-            var storage = region.createStorage(upload.pass);
-            storage.setMeshes(upload.section.getSectionIndex(),
-                    upload.vertexUpload.getResult(), upload.meshData.getVertexRanges());
+        if (!indexUploads.isEmpty()) {
+            var arena = resources.getIndexArena();
+            boolean bufferChanged = arena.upload(commandList, indexUploads.stream()
+                    .map(upload -> upload.indexBufferUpload));
+
+            if (bufferChanged) {
+                region.refreshIndexedTesselation(commandList);
+            }
+
+            for (PendingSectionIndexBufferUpload upload : indexUploads) {
+                var storage = region.createStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
+                storage.setIndexData(upload.section.getSectionIndex(), upload.indexBufferUpload.getResult());
+            }
         }
     }
 
-    private Reference2ReferenceMap.FastEntrySet<RenderRegion, List<ChunkBuildOutput>> createMeshUploadQueues(Collection<ChunkBuildOutput> results) {
-        var map = new Reference2ReferenceOpenHashMap<RenderRegion, List<ChunkBuildOutput>>();
+    private Reference2ReferenceMap.FastEntrySet<RenderRegion, List<BuilderTaskOutput>> createMeshUploadQueues(Collection<BuilderTaskOutput> results) {
+        var map = new Reference2ReferenceOpenHashMap<RenderRegion, List<BuilderTaskOutput>>();
 
         for (var result : results) {
             var queue = map.computeIfAbsent(result.render.getRegion(), k -> new ArrayList<>());
@@ -145,7 +203,10 @@ public class RenderRegionManager {
         return instance;
     }
 
-    private record PendingSectionUpload(RenderSection section, BuiltSectionMeshParts meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
+    private record PendingSectionMeshUpload(RenderSection section, BuiltSectionMeshParts meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
+    }
+
+    private record PendingSectionIndexBufferUpload(RenderSection section, PresentTranslucentData translucentData, PendingUpload indexBufferUpload) {
     }
 
 

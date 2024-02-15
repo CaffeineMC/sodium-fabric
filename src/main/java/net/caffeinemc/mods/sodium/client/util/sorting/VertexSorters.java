@@ -21,6 +21,9 @@ public class VertexSorters {
         }
     }
 
+    /**
+     * Sorts the keys given by the subclass by descending value.
+     */
     private static abstract class AbstractVertexSorter implements VertexSorting {
         @Override
         public final int[] sort(Vector3f[] positions) {

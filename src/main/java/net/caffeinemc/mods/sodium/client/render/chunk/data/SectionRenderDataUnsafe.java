@@ -14,18 +14,46 @@ import org.lwjgl.system.MemoryUtil;
 //
 // Please never try to write performance critical code in Java. This is what it will do to you. And you will still be
 // three times slower than the most naive solution in literally any other language that LLVM can compile.
+
+// struct SectionRenderData { // 64 bytes
+//   base_element: u32
+//   mask: u32,
+//   ranges: [VertexRange; 7]
+// }
+//
+// struct VertexRange { // 8 bytes
+//   offset: u32,
+//   count: u32
+// }
+
 public class SectionRenderDataUnsafe {
-    private static final long OFFSET_SLICE_MASK = 0;
+    public static final int BASE_ELEMENT_MSB = 1 << 31;
+
+    /**
+     * When the "base element" field is not specified (indicated by setting the MSB to 0), the indices for the geometry set
+     * should be sourced from a monotonic sequence (see {@link net.caffeinemc.mods.sodium.client.render.chunk.SharedQuadIndexBuffer}).
+     *
+     * Otherwise, indices should be sourced from the index buffer for the render region using the specified offset.
+     */
+    private static final long OFFSET_BASE_ELEMENT = 0;
+
+    private static final long OFFSET_SLICE_MASK = 4;
     private static final long OFFSET_SLICE_RANGES = 8;
 
-    private static final long STRIDE = 64;
+    private static final long ALIGNMENT = 64;
+    private static final long STRIDE = 64; // cache-line friendly! :)
 
     public static long allocateHeap(int count) {
-        return MemoryUtil.nmemCalloc(count, STRIDE);
+        final var bytes = STRIDE * count;
+
+        final var ptr = MemoryUtil.nmemAlignedAlloc(ALIGNMENT, bytes);
+        MemoryUtil.memSet(ptr, 0, bytes);
+
+        return ptr;
     }
 
     public static void freeHeap(long pointer) {
-        MemoryUtil.nmemFree(pointer);
+        MemoryUtil.nmemAlignedFree(pointer);
     }
 
     public static void clear(long pointer) {
@@ -42,6 +70,14 @@ public class SectionRenderDataUnsafe {
 
     public static int getSliceMask(long ptr) {
         return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_MASK);
+    }
+
+    public static void setBaseElement(long ptr, int value) {
+        MemoryUtil.memPutInt(ptr + OFFSET_BASE_ELEMENT, value);
+    }
+
+    public static int getBaseElement(long ptr) {
+        return MemoryUtil.memGetInt(ptr + OFFSET_BASE_ELEMENT);
     }
 
     public static void setVertexOffset(long ptr, int facing, int value) {

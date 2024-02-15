@@ -8,6 +8,10 @@ import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
 
 import java.util.*;
 
+/**
+ * The visible chunk collector is passed to the occlusion graph search culler to
+ * collect the visible chunks.
+ */
 public class VisibleChunkCollector implements OcclusionCuller.Visitor {
     private final ObjectArrayList<ChunkRenderList> sortedRenderLists;
     private final EnumMap<ChunkUpdateType, ArrayDeque<RenderSection>> sortedRebuildLists;
@@ -48,7 +52,7 @@ public class VisibleChunkCollector implements OcclusionCuller.Visitor {
     private void addToRebuildLists(RenderSection section) {
         ChunkUpdateType type = section.getPendingUpdate();
 
-        if (type != null && section.getBuildCancellationToken() == null) {
+        if (type != null && section.getTaskCancellationToken() == null) {
             Queue<RenderSection> queue = this.sortedRebuildLists.get(type);
 
             if (queue.size() < type.getMaximumQueueSize()) {
