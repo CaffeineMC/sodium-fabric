@@ -1,0 +1,20 @@
+modLoader = "javafml"
+loaderVersion = "*"
+license = "Lesser GPL License V3"
+
+[[mods]]
+modId = "sodium"
+
+version = "${version}"
+displayName = "Sodium"
+
+logoFile="assets/sodium/icon.png" #optional
+
+authors="JellySquid"
+# A multi-line description for your mod. This has no minimum length, but it *is* required!
+description = '''
+Sodium is a free and open-source optimization mod for Minecraft which improves frame rates and reduces lag spikes.
+'''
+
+[[mixins]]
+config = "sodium.mixins.json"
