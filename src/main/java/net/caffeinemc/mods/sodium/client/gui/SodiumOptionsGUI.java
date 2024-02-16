@@ -57,7 +57,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     private @Nullable ScreenPrompt prompt;
 
     private SodiumOptionsGUI(Screen prevScreen) {
-        super(Text.translatable("sodium.name_renderer.settings"));
+        super(Component.translatable("sodium.name_renderer.settings"));
 
         this.prevScreen = prevScreen;
 
@@ -108,12 +108,12 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     }
 
     private void openDonationPrompt(SodiumGameOptions options) {
-        var donateContents = Text.translatable("sodium.prompt.donate.contents.main",
-                Text.translatable("sodium.prompt.donate.contents.segment.1").withColor(0x27eb92),
-                Text.translatable("sodium.prompt.donate.contents.segment.2").withColor(0xff6e00),
-                Text.translatable("sodium.prompt.donate.contents.segment.3").withColor(0xed49ce));
+        var donateContents = Component.translatable("sodium.prompt.donate.contents.main",
+                Component.translatable("sodium.prompt.donate.contents.segment.1").withColor(0x27eb92),
+                Component.translatable("sodium.prompt.donate.contents.segment.2").withColor(0xff6e00),
+                Component.translatable("sodium.prompt.donate.contents.segment.3").withColor(0xed49ce));
         var prompt = new ScreenPrompt(this, Collections.singletonList(donateContents), 320, 190,
-                new ScreenPrompt.Action(Text.translatable("sodium.prompt.donate.action"), this::openDonationPage));
+                new ScreenPrompt.Action(Component.translatable("sodium.prompt.donate.action"), this::openDonationPage));
         prompt.setFocused(true);
 
         options.notifications.hasSeenDonationPrompt = true;
