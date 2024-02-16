@@ -98,19 +98,19 @@ public class SodiumGameOptions {
         FANCY("sodium.options.weather_quality.fancy"),
         FAST("sodium.options.weather_quality.fast");
 
-        private final Text name;
+        private final Component name;
 
         WeatherQuality(String name) {
-            this.name = Text.translatable(name);
+            this.name = Component.translatable(name);
         }
 
         @Override
-        public Text getLocalizedName() {
+        public Component getLocalizedName() {
             return this.name;
         }
 
-        public boolean isFancy(GraphicsMode graphicsMode) {
-            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
+        public boolean isFancy(GraphicsStatus graphicsMode) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsStatus.FANCY || graphicsMode == GraphicsStatus.FABULOUS));
         }
     }
 
@@ -119,19 +119,19 @@ public class SodiumGameOptions {
         FANCY("sodium.options.leaves_quality.fancy"),
         FAST("sodium.options.leaves_quality.fast");
 
-        private final Text name;
+        private final Component name;
 
         LeavesQuality(String name) {
-            this.name = Text.translatable(name);
+            this.name = Component.translatable(name);
         }
 
         @Override
-        public Text getLocalizedName() {
+        public Component getLocalizedName() {
             return this.name;
         }
 
-        public boolean isFancy(GraphicsMode graphicsMode) {
-            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
+        public boolean isFancy(GraphicsStatus graphicsMode) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsStatus.FANCY || graphicsMode == GraphicsStatus.FABULOUS));
         }
     }
 
