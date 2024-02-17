@@ -1,3 +1,7 @@
+plugins {
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+}
+
 architectury {
     platformSetupLoomIde()
     fabric()
@@ -39,4 +43,29 @@ dependencies {
 
     common(project(":common", "namedElements")) { isTransitive = false }
     shadowCommon(project(":common", "transformProductionFabric")) { isTransitive = false }
+}
+
+tasks.processResources {
+    inputs.property("version", project.version)
+
+    filesMatching("fabric.mod.json") {
+        expand(mapOf("version" to project.version))
+    }
+}
+
+tasks.shadowJar {
+    exclude("architectury.common.json")
+    configurations = listOf(shadowCommon)
+    archiveClassifier.set("dev-shadow")
+}
+
+tasks.remapJar {
+    injectAccessWidener.set(true)
+    inputFile.set(tasks.shadowJar.get().archiveFile)
+    dependsOn(tasks.shadowJar)
+    archiveClassifier.set(null as String?)
+}
+
+tasks.jar {
+    archiveClassifier.set("dev")
 }

@@ -318,7 +318,7 @@ public class DefaultFluidRenderer {
 
                 boolean isOverlay = false;
 
-                if (sprites.length > 2) {
+                if (sprites.length > 2 && sprites[2] != null) {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = level.getBlockState(adjPos);
 

@@ -72,12 +72,4 @@ tasks {
 
         manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
     }
-
-    processResources {
-        inputs.property("version", project.version)
-
-        filesMatching("fabric.mod.json") {
-            expand(mapOf("version" to project.version))
-        }
-    }
 }
