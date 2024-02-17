@@ -8,26 +8,10 @@ architectury {
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
     maven {
         url = uri("https://maven.neoforged.net/releases")
     }
 
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = uri("https://api.modrinth.com/maven")
-            }
-        }
-        filter {
-            includeGroup("maven.modrinth")
-        }
-    }
     mavenLocal()
 }
 
@@ -40,11 +24,9 @@ val NEOFORGE_VERSION: String by rootProject.extra
 base.archivesName.set("sodium-forge")
 
 loom {
-    // use this if you are using the official mojang mappings
-    // and want loom to stop warning you about their license
     silentMojangMappingsLicense()
 
-    accessWidenerPath = file("../common/src/main/resources/sodium.accesswidener")
+    accessWidenerPath = project(":common").loom.accessWidenerPath
 }
 
 configurations {
@@ -55,7 +37,6 @@ configurations {
 
 tasks.shadowJar {
     exclude("fabric.mod.json")
-    exclude("architectury.common.json")
     configurations = listOf(shadowCommon)
     archiveClassifier.set("dev-shadow")
 }
@@ -89,8 +70,6 @@ dependencies {
     shadowCommon(project(":common", "transformProductionNeoForge")) { isTransitive = false }
 }
 
-// this will replace the property "${version}" in your mods.toml
-// with the version you've defined in your gradle.properties
 tasks.processResources {
     filesMatching("META-INF/mods.toml") {
         expand(mapOf("version" to project.version))

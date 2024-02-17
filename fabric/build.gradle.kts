@@ -10,6 +10,7 @@ val developmentFabric: Configuration by configurations.getting
 val MINECRAFT_VERSION: String by rootProject.extra
 val FABRIC_LOADER_VERSION: String by rootProject.extra
 val FABRIC_API_VERSION: String by rootProject.extra
+
 base.archivesName.set("sodium-fabric")
 
 configurations {
