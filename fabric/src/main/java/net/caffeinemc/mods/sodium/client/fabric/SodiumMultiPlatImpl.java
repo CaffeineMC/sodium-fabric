@@ -67,4 +67,8 @@ public class SodiumMultiPlatImpl {
     public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {
         return ctx.model().getQuads(ctx.state(), face, random);
     }
+
+    public static Object getEmptyModelData() {
+        return null;
+    }
 }

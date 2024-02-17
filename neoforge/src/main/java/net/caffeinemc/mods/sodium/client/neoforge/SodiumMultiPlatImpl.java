@@ -44,7 +44,7 @@ public class SodiumMultiPlatImpl {
 
     public static Object getModelData(Object o, BlockPos pos) {
         if ((o instanceof ModelDataManager.Snapshot)) {
-            return ((ModelDataManager.Snapshot) o).getAt(pos);
+            return ((ModelDataManager.Snapshot) o).getAtOrEmpty(pos);
         } else {
             return ModelData.EMPTY;
         }
@@ -72,5 +72,9 @@ public class SodiumMultiPlatImpl {
 
     public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {
         return ctx.model().getQuads(ctx.state(), face, random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), (ModelData) modelData), renderType);
+    }
+
+    public static Object getEmptyModelData() {
+        return ModelData.EMPTY;
     }
 }

@@ -380,15 +380,8 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView {
 
     public Object getModelData(BlockPos pos) {
         if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
-            System.out.println("WHAT");
-            System.out.println(pos);
-            System.out.println("WHAT");
-            return null;
+            return SodiumMultiPlat.getEmptyModelData();
         }
-
-        int relBlockX = pos.getX() - this.originBlockX;
-        int relBlockY = pos.getY() - this.originBlockY;
-        int relBlockZ = pos.getZ() - this.originBlockZ;
 
         return SodiumMultiPlat.getModelData(modelDataSnapshot, pos);
     }

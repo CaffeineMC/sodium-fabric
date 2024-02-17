@@ -72,4 +72,9 @@ public class SodiumMultiPlat {
     public static Object getModelData(Object o, BlockPos pos) {
         throw new AssertionError("Platform specific code meant to be called!");
     }
+
+    @ExpectPlatform
+    public static Object getEmptyModelData() {
+        throw new AssertionError("Platform specific code meant to be called!");
+    }
 }
