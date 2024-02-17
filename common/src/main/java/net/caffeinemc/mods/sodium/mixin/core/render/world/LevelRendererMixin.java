@@ -21,6 +21,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.BlockDestructionProgress;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
@@ -30,6 +31,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.SortedSet;
+import java.util.function.Consumer;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin implements LevelRendererExtension {
@@ -195,10 +197,18 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
         this.renderer.renderBlockEntities(matrices, this.renderBuffers, this.destructionProgress, camera, this.level.tickRateManager().isFrozen() ? 1.0F : tickDelta);
     }
 
+    // Exclusive to NeoForge, allow to fail.
+    @Inject(method = "iterateVisibleBlockEntities", at = @At("HEAD"), cancellable = true, require = 0)
+    public void replaceBlockEntityIteration(Consumer<BlockEntity> blockEntityConsumer, CallbackInfo ci) {
+        ci.cancel();
+
+        this.renderer.iterateVisibleBlockEntities(blockEntityConsumer);
+    }
+
     /**
-     * @reason Replace the debug string
-     * @author JellySquid
-     */
+    * @reason Replace the debug string
+    * @author JellySquid
+    */
     @Overwrite
     public String getSectionStatistics() {
         return this.renderer.getChunksDebugString();
