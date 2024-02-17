@@ -421,6 +421,18 @@ public class SodiumWorldRenderer {
                 }
             }
         }
+
+        for (var renderSection : this.renderSectionManager.getSectionsWithGlobalEntities()) {
+            var blockEntities = renderSection.getGlobalBlockEntities();
+
+            if (blockEntities == null) {
+                continue;
+            }
+
+            for (BlockEntity blockEntity : blockEntities) {
+                blockEntityConsumer.accept(blockEntity);
+            }
+        }
     }
 
     // the volume of a section multiplied by the number of sections to be checked at most
