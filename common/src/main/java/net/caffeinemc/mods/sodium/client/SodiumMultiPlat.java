@@ -9,11 +9,14 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
 
 import java.nio.file.Path;
@@ -31,7 +34,7 @@ public class SodiumMultiPlat {
     }
 
     @ExpectPlatform
-    public static Object getRenderData(BlockEntity value) {
+    public static Object getRenderData(Level level, BoundingBox pos, BlockEntity value) {
         throw new AssertionError("Platform specific code meant to be called!");
     }
 
@@ -61,7 +64,12 @@ public class SodiumMultiPlat {
     }
 
     @ExpectPlatform
-    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType) {
+    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {
+        throw new AssertionError("Platform specific code meant to be called!");
+    }
+
+    @ExpectPlatform
+    public static Object getModelData(Object o, BlockPos pos) {
         throw new AssertionError("Platform specific code meant to be called!");
     }
 }

@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelColorCache;
 import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorSource;
 import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorView;
@@ -90,6 +91,9 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView {
     // (Local Section -> Block Entity Render Data) table.
     private final @Nullable Int2ReferenceMap<Object>[] blockEntityRenderDataArrays;
 
+    // (Local Section -> Model Data) table.
+    private @Nullable Object modelDataSnapshot;
+
     // The starting point from which this slice captures blocks
     private int originBlockX, originBlockY, originBlockZ;
 
@@ -134,7 +138,9 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView {
             }
         }
 
-        return new ChunkRenderContext(pos, sections, box);
+        Object modelData = SodiumMultiPlat.getRenderData(level, box, null);
+
+        return new ChunkRenderContext(pos, sections, box, modelData);
     }
 
     @SuppressWarnings("unchecked")
@@ -161,6 +167,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView {
         this.originBlockZ = SectionPos.sectionToBlockCoord(context.getOrigin().getZ() - NEIGHBOR_CHUNK_RADIUS);
 
         this.volume = context.getVolume();
+        this.modelDataSnapshot = context.getModelData();
 
         for (int x = 0; x < SECTION_ARRAY_LENGTH; x++) {
             for (int y = 0; y < SECTION_ARRAY_LENGTH; y++) {
@@ -350,6 +357,50 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView {
     @Override
     public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
         return this.biomeColors.getColor(source, blockX, blockY, blockZ);
+    }
+
+    //@Override
+    public @Nullable Object getBlockEntityRenderData(BlockPos pos) {
+        if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
+            return null;
+        }
+
+        int relBlockX = pos.getX() - this.originBlockX;
+        int relBlockY = pos.getY() - this.originBlockY;
+        int relBlockZ = pos.getZ() - this.originBlockZ;
+
+        var blockEntityRenderDataMap = this.blockEntityRenderDataArrays[getLocalSectionIndex(relBlockX >> 4, relBlockY >> 4, relBlockZ >> 4)];
+
+        if (blockEntityRenderDataMap == null) {
+            return null;
+        }
+
+        return blockEntityRenderDataMap.get(getLocalBlockIndex(relBlockX & 15, relBlockY & 15, relBlockZ & 15));
+    }
+
+    public Object getModelData(BlockPos pos) {
+        if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
+            System.out.println("WHAT");
+            System.out.println(pos);
+            System.out.println("WHAT");
+            return null;
+        }
+
+        int relBlockX = pos.getX() - this.originBlockX;
+        int relBlockY = pos.getY() - this.originBlockY;
+        int relBlockZ = pos.getZ() - this.originBlockZ;
+
+        return SodiumMultiPlat.getModelData(modelDataSnapshot, pos);
+    }
+
+    //@Override
+    public boolean hasBiomes() {
+        return true;
+    }
+
+    //@Override
+    public Holder<Biome> getBiomeFabric(BlockPos pos) {
+        return this.biomeSlice.getBiome(pos.getX(), pos.getY(), pos.getZ());
     }
 
     public static int getLocalBlockIndex(int blockX, int blockY, int blockZ) {

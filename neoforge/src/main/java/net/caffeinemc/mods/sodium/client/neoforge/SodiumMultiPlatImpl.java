@@ -8,16 +8,20 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
+import net.neoforged.neoforge.client.model.data.ModelDataManager;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -33,8 +37,17 @@ public class SodiumMultiPlatImpl {
         return null;
     }
 
-    public static Object getRenderData(BlockEntity value) {
-        return null;
+    public static Object getRenderData(Level level, BoundingBox pos, BlockEntity value) {
+        return level.getModelDataManager().snapshotSectionRegion(pos.minX() >> 4, pos.minY() >> 4, pos.minZ() >> 4,
+                pos.maxX() >> 4, pos.maxY() >> 4, pos.maxZ() >> 4);
+    }
+
+    public static Object getModelData(Object o, BlockPos pos) {
+        if ((o instanceof ModelDataManager.Snapshot)) {
+            return ((ModelDataManager.Snapshot) o).getAt(pos);
+        } else {
+            return ModelData.EMPTY;
+        }
     }
 
     public static boolean isFlawlessFramesActive() {
@@ -57,7 +70,7 @@ public class SodiumMultiPlatImpl {
         return ctx.model().getRenderTypes(ctx.state(), random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), ModelData.EMPTY));
     }
 
-    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType) {
-        return ctx.model().getQuads(ctx.state(), face, random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), ModelData.EMPTY), renderType);
+    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {
+        return ctx.model().getQuads(ctx.state(), face, random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), (ModelData) modelData), renderType);
     }
 }

@@ -55,8 +55,8 @@ public class BlockRenderer {
     }
 
     public void renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers) {
+        Object modelData = ctx.slice().getModelData(ctx.pos());
         for (RenderType type : SodiumMultiPlat.getMaterials(ctx, random)) {
-            ctx.slice()
             Material material = DefaultMaterials.forRenderLayer(type);
 
             var meshBuilder = buffers.get(material);
@@ -73,14 +73,14 @@ public class BlockRenderer {
             }
 
             for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
-                List<BakedQuad> quads = this.getGeometry(ctx, face, type);
+                List<BakedQuad> quads = this.getGeometry(ctx, face, type, modelData);
 
                 if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
                     this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, quads, face);
                 }
             }
 
-            List<BakedQuad> all = this.getGeometry(ctx, null, type);
+            List<BakedQuad> all = this.getGeometry(ctx, null, type, modelData);
 
             if (!all.isEmpty()) {
                 this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, all, null);
@@ -88,11 +88,11 @@ public class BlockRenderer {
         }
     }
 
-    private List<BakedQuad> getGeometry(BlockRenderContext ctx, Direction face, RenderType renderType) {
+    private List<BakedQuad> getGeometry(BlockRenderContext ctx, Direction face, RenderType renderType, Object modelData) {
         var random = this.random;
         random.setSeed(ctx.seed());
 
-        return SodiumMultiPlat.getQuads(ctx, face, random, renderType);
+        return SodiumMultiPlat.getQuads(ctx, face, random, renderType, modelData);
     }
 
     private boolean isFaceVisible(BlockRenderContext ctx, Direction face) {

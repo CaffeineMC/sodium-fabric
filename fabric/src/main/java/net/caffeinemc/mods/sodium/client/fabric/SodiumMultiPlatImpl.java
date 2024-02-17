@@ -11,10 +11,13 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
 
 import java.nio.file.Path;
@@ -30,8 +33,15 @@ public class SodiumMultiPlatImpl {
         return SpriteFinderCache.forBlockAtlas().find(u, v);
     }
 
-    public static Object getRenderData(BlockEntity value) {
+    public static Object getRenderData(Level level, BoundingBox pos, BlockEntity value) {
+        if (value == null) {
+            return null;
+        }
         return value.getRenderData();
+    }
+
+    public static Object getModelData(Object o, BlockPos pos) {
+        return null;
     }
 
     public static boolean isFlawlessFramesActive() {
@@ -54,7 +64,7 @@ public class SodiumMultiPlatImpl {
         return Collections.singleton(ItemBlockRenderTypes.getChunkRenderType(ctx.state()));
     }
 
-    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType) {
+    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {
         return ctx.model().getQuads(ctx.state(), face, random);
     }
 }

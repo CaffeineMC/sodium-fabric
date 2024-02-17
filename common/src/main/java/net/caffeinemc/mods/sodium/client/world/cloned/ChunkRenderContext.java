@@ -6,13 +6,14 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 public class ChunkRenderContext {
     private final SectionPos origin;
     private final ClonedChunkSection[] sections;
-    private final Object modelDataManager;
     private final BoundingBox volume;
+    private final Object modelData;
 
-    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume) {
+    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume, Object modelData) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
+        this.modelData = modelData;
     }
 
     public ClonedChunkSection[] getSections() {
@@ -25,5 +26,9 @@ public class ChunkRenderContext {
 
     public BoundingBox getVolume() {
         return this.volume;
+    }
+
+    public Object getModelData() {
+        return modelData;
     }
 }

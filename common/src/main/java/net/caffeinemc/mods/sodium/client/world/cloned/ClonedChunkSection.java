@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.world.cloned;
 
+import dev.architectury.injectables.targets.ArchitecturyTarget;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
@@ -49,12 +50,12 @@ public class ClonedChunkSection {
     public ClonedChunkSection(Level level, LevelChunk chunk, @Nullable LevelChunkSection section, SectionPos pos) {
         this.pos = pos;
 
-
         PalettedContainerRO<BlockState> blockData = null;
         PalettedContainerRO<Holder<Biome>> biomeData = null;
 
         Int2ReferenceMap<BlockEntity> blockEntityMap = null;
         Int2ReferenceMap<Object> blockEntityRenderDataMap = null;
+        Object modelDataSnapshot = null;
 
         if (section != null) {
             if (!section.hasOnlyAir()) {
@@ -64,9 +65,8 @@ public class ClonedChunkSection {
                     blockData = constructDebugWorldContainer(pos);
                 }
                 blockEntityMap = copyBlockEntities(chunk, pos);
-
-                if (blockEntityMap != null) {
-                    blockEntityRenderDataMap = copyBlockEntityRenderData(blockEntityMap);
+                if (blockEntityMap != null && ArchitecturyTarget.getCurrentTarget().equals("fabric")) {
+                    blockEntityRenderDataMap = copyBlockEntityRenderData(level, blockEntityMap);
                 }
             }
 
@@ -175,7 +175,7 @@ public class ClonedChunkSection {
     }
 
     @Nullable
-    private static Int2ReferenceMap<Object> copyBlockEntityRenderData(Int2ReferenceMap<BlockEntity> blockEntities) {
+    private static Int2ReferenceMap<Object> copyBlockEntityRenderData(Level level, Int2ReferenceMap<BlockEntity> blockEntities) {
         Int2ReferenceOpenHashMap<Object> blockEntityRenderDataMap = null;
 
         // Retrieve any render data after we have copied all block entities, as this will call into the code of
@@ -183,7 +183,7 @@ public class ClonedChunkSection {
         // were iterating over any data in that chunk.
         // See https://github.com/CaffeineMC/sodium-fabric/issues/942 for more info.
         for (var entry : Int2ReferenceMaps.fastIterable(blockEntities)) {
-            Object data = SodiumMultiPlat.getRenderData(entry.getValue());
+            Object data = SodiumMultiPlat.getRenderData(level, null, entry.getValue());
 
             if (data != null) {
                 if (blockEntityRenderDataMap == null) {
