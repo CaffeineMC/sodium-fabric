@@ -23,6 +23,12 @@ configurations {
     developmentFabric.extendsFrom(common)
 }
 
+loom {
+    silentMojangMappingsLicense()
+
+    accessWidenerPath = project(":common").loom.accessWidenerPath
+}
+
 dependencies {
     modImplementation(group = "net.fabricmc", name = "fabric-loader", version = FABRIC_LOADER_VERSION)
     include(implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0"))

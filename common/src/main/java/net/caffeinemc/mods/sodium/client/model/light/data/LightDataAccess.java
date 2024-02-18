@@ -77,8 +77,14 @@ public abstract class LightDataAccess {
             bl = 0;
             sl = 0;
         } else {
-            bl = level.getBrightness(LightLayer.BLOCK, pos);
-            sl = level.getBrightness(LightLayer.SKY, pos);
+            if (em) {
+                bl = level.getBrightness(LightLayer.BLOCK, pos);
+                sl = level.getBrightness(LightLayer.SKY, pos);
+            } else {
+                int light = LevelRenderer.getLightColor(level, state, pos);
+                bl = LightTexture.block(light);
+                sl = LightTexture.sky(light);
+            }
         }
 
         // FIX: Do not apply AO from blocks that emit light
