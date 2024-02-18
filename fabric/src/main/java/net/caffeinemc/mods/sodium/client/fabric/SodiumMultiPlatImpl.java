@@ -60,7 +60,7 @@ public class SodiumMultiPlatImpl {
         return FabricLoader.getInstance().isDevelopmentEnvironment();
     }
 
-    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource randomSource) {
+    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource random, Object modelData) {
         return Collections.singleton(ItemBlockRenderTypes.getChunkRenderType(ctx.state()));
     }
 

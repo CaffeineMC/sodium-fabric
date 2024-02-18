@@ -66,8 +66,8 @@ public class SodiumMultiPlatImpl {
         return !FMLLoader.isProduction();
     }
 
-    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource random) {
-        return ctx.model().getRenderTypes(ctx.state(), random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), ModelData.EMPTY));
+    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource random, Object modelData) {
+        return ctx.model().getRenderTypes(ctx.state(), random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), (ModelData) modelData));
     }
 
     public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {

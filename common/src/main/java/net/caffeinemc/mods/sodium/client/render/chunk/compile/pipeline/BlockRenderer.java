@@ -56,7 +56,7 @@ public class BlockRenderer {
 
     public void renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers) {
         Object modelData = ctx.slice().getModelData(ctx.pos());
-        for (RenderType type : SodiumMultiPlat.getMaterials(ctx, random)) {
+        for (RenderType type : SodiumMultiPlat.getMaterials(ctx, random, modelData)) {
             Material material = DefaultMaterials.forRenderLayer(type);
 
             var meshBuilder = buffers.get(material);

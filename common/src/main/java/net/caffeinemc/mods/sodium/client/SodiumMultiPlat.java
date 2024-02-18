@@ -59,7 +59,7 @@ public class SodiumMultiPlat {
     }
 
     @ExpectPlatform
-    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource random) {
+    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource random, Object modelData) {
         throw new AssertionError("Platform specific code meant to be called!");
     }
 
