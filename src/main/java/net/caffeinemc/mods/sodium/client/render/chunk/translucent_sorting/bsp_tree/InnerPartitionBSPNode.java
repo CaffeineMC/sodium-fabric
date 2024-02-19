@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_t
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntConsumer;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -45,9 +46,12 @@ import java.util.Arrays;
  * reasonable and common use case (I haven't been able to determine that it is).
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
-    private static final Logger LOGGER = LogManager.getLogger(InnerPartitionBSPNode.class);
-
     private static final int NODE_REUSE_THRESHOLD = 30;
+    private static final int MAX_INTERSECTION_ATTEMPTS = 500;
+    private static final int MAX_PRIMARY_INTERSECTOR_ITEMS = 40;
+    private static final float PRIMARY_INTERSECTOR_THRESHOLD = 0.5f;
+
+    private static final Logger LOGGER = LogManager.getLogger(InnerPartitionBSPNode.class);
 
     final Vector3fc planeNormal;
     final int axis;
@@ -353,31 +357,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     partitions, axis, endsWithPlane);
         }
 
-        // test if there is intersecting geometry to avoid logging an error when it's not necessary. It just uses teh fallback for the rare cases of intersecting geometry.
-        int testsRemaining = 100;
-        for (int quadAIndex = 0; quadAIndex < indexes.size(); quadAIndex++) {
-            var quadA = workspace.quads[indexes.getInt(quadAIndex)];
-
-            for (int quadBIndex = quadAIndex + 1; quadBIndex < indexes.size(); quadBIndex++) {
-                var quadB = workspace.quads[indexes.getInt(quadBIndex)];
-
-                // aligned quads intersect if their bounding boxes intersect
-                if (TQuad.extentsIntersect(quadA, quadB)) {
-                    var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
-                    if (multiLeafNode == null) {
-                        throw new BSPBuildFailureException("Geometry is self-intersecting and can't be statically topo sorted");
-                    }
-                    return multiLeafNode;
-                }
-
-                if (--testsRemaining <= 0) {
-                    break;
-                }
-            }
-
-            if (testsRemaining == 0) {
-                break;
-            }
+        var intersectingHandling = handleIntersecting(workspace, indexes, depth, oldNode);
+        if (intersectingHandling != null) {
+            return intersectingHandling;
         }
 
         // At this point we know the geometry is (probably) not intersecting, and it
@@ -415,6 +397,95 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         public void accept(int value) {
             this.indexes[this.index++] = value;
         }
+    }
+
+    static private BSPNode handleIntersecting(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
+        int testsRemaining = MAX_INTERSECTION_ATTEMPTS;
+
+        boolean failedTopoSort = false;
+        int[] intersectionCounts = null;
+        IntOpenHashSet primaryIntersectorIndexes = null;
+        int primaryIntersectorThreshold = 0;
+        if (indexes.size() <= MAX_PRIMARY_INTERSECTOR_ITEMS) {
+            intersectionCounts = new int[indexes.size()];
+            primaryIntersectorThreshold = Math.max(2, (int) (indexes.size() * PRIMARY_INTERSECTOR_THRESHOLD));
+        }
+
+        for (int i = 0; i < indexes.size(); i++) {
+            var quadA = workspace.quads[indexes.getInt(i)];
+
+            for (int j = i + 1; j < indexes.size(); j++) {
+                var quadB = workspace.quads[indexes.getInt(j)];
+
+                // aligned quads intersect if their bounding boxes intersect
+                if (TQuad.extentsIntersect(quadA, quadB)) {
+                    if (intersectionCounts != null) {
+                        var aCount = ++intersectionCounts[i];
+                        if (aCount >= primaryIntersectorThreshold) {
+                            if (primaryIntersectorIndexes == null) {
+                                primaryIntersectorIndexes = new IntOpenHashSet(2);
+                            }
+                            primaryIntersectorIndexes.add(i);
+                        }
+                        var bCount = ++intersectionCounts[j];
+                        if (bCount >= primaryIntersectorThreshold) {
+                            if (primaryIntersectorIndexes == null) {
+                                primaryIntersectorIndexes = new IntOpenHashSet(2);
+                            }
+                            primaryIntersectorIndexes.add(j);
+                        }
+
+                        // cancel primary intersector search if they all intersect with each other
+                        if (primaryIntersectorIndexes != null && primaryIntersectorIndexes.size() == indexes.size()) {
+                            primaryIntersectorIndexes = null;
+                            intersectionCounts = null;
+                        }
+                    }
+
+                    if (!failedTopoSort) {
+                        var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
+                        if (multiLeafNode == null) {
+                            if (intersectionCounts == null) {
+                                throw new BSPBuildFailureException("Geometry is self-intersecting and can't be statically topo sorted");
+                            }
+                            failedTopoSort = true;
+                        } else {
+                            return multiLeafNode;
+                        }
+                    }
+                }
+
+                if (intersectionCounts == null && failedTopoSort) {
+                    testsRemaining = 0;
+                    break;
+                }
+
+                if (--testsRemaining <= 0) {
+                    break;
+                }
+            }
+
+            if (testsRemaining == 0) {
+                break;
+            }
+        }
+
+        if (primaryIntersectorIndexes == null) {
+            return null;
+        }
+
+        // put the primary intersectors in a separate node that's always rendered last
+        var nonPrimaryIntersectors = new IntArrayList(indexes.size() - primaryIntersectorIndexes.size());
+        var primaryIntersectorQuadIndexes = new IntArrayList(primaryIntersectorIndexes.size());
+        for (int i = 0; i < indexes.size(); i++) {
+            if (primaryIntersectorIndexes.contains(i)) {
+                primaryIntersectorQuadIndexes.add(indexes.getInt(i));
+            } else {
+                nonPrimaryIntersectors.add(indexes.getInt(i));
+            }
+        }
+        return InnerFixedDoubleBSPNode.buildFromParts(workspace, indexes, depth, oldNode,
+                nonPrimaryIntersectors, primaryIntersectorQuadIndexes);
     }
 
     static private BSPNode buildTopoMultiLeafNode(BSPWorkspace workspace, IntArrayList indexes) {
