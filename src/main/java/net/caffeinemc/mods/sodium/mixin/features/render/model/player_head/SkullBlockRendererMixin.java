@@ -1,9 +1,10 @@
-package net.caffeinemc.mods.sodium.mixin.features.render.model.block;
+package net.caffeinemc.mods.sodium.mixin.features.render.model.player_head;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.PropertyMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -17,7 +18,6 @@ import org.spongepowered.asm.mixin.*;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.UUID;
 
 @Mixin(SkullBlockRenderer.class)
 public class SkullBlockRendererMixin {
@@ -32,8 +32,11 @@ public class SkullBlockRendererMixin {
         }
     });
 
+    // Use the PropertyMap as the key instead of the UUID since there can be many skins with the same UUID,
+    // for example, a head with a previous skin and the current one from the same player.
+    // Instead, in the PropertyMap, the skin's URL is stored.
     @Unique
-    private static final Cache<UUID, RenderType> RENDER_TYPE_CACHE = CacheBuilder.newBuilder()
+    private static final Cache<PropertyMap, RenderType> RENDER_TYPE_CACHE = CacheBuilder.newBuilder()
             .expireAfterAccess(Duration.ofMillis(500L)).build();
 
     /**
@@ -44,8 +47,8 @@ public class SkullBlockRendererMixin {
     @Overwrite
     public static RenderType getRenderType(SkullBlock.Type type, @Nullable GameProfile profile) {
         if (type == SkullBlock.Types.PLAYER && profile != null) {
-            UUID profileUuid = profile.getId();
-            RenderType renderType = RENDER_TYPE_CACHE.getIfPresent(profileUuid);
+            PropertyMap profileProperties = profile.getProperties();
+            RenderType renderType = RENDER_TYPE_CACHE.getIfPresent(profileProperties);
             if (renderType != null) {
                 return renderType;
             }
@@ -56,7 +59,7 @@ public class SkullBlockRendererMixin {
 
             // before the skin is loaded a default skin is used, we do not want to cache that
             if (skin != DefaultPlayerSkin.get(profile).texture()) {
-                RENDER_TYPE_CACHE.put(profileUuid, renderType);
+                RENDER_TYPE_CACHE.put(profileProperties, renderType);
             }
 
             return renderType;
