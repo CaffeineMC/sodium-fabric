@@ -60,9 +60,9 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
      * section was sorted for it to be sorted again, if direct distance triggering
      * is used (for close sections).
      */
-    private static final double DIRECT_TRIGGER_DISTANCE = 1;
-    private static final double EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED = Math
-            .pow(DIRECT_TRIGGER_DISTANCE * EARLY_TRIGGER_FACTOR, 2);
+    private static final double TRIGGER_DISTANCE = 1;
+    private static final double EARLY_TRIGGER_DISTANCE_SQUARED = Math
+            .pow(TRIGGER_DISTANCE * EARLY_TRIGGER_FACTOR, 2);
 
     int getDirectTriggerCount() {
         return this.directTriggerSections.size();
@@ -187,10 +187,10 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
 
             this.insertDirectAngleTrigger(data, camera, remainingAngle);
         } else {
-            double remainingDistance = DIRECT_TRIGGER_DISTANCE;
+            double remainingDistance = TRIGGER_DISTANCE;
             double lastTriggerCurrentCameraDistSquared = data.triggerCameraPos.distanceSquared(camera);
 
-            if (lastTriggerCurrentCameraDistSquared >= EARLY_DIRECT_TRIGGER_DISTANCE_SQUARED) {
+            if (lastTriggerCurrentCameraDistSquared >= EARLY_TRIGGER_DISTANCE_SQUARED) {
                 ts.triggerSectionDirect(data.sectionPos);
                 data.triggerCameraPos = camera;
             } else {
@@ -226,7 +226,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
             if (newData.isAngleTriggering(cameraPos)) {
                 this.insertDirectAngleTrigger(newData, cameraPos, TRIGGER_ANGLE);
             } else {
-                this.insertDirectDistanceTrigger(newData, cameraPos, DIRECT_TRIGGER_DISTANCE);
+                this.insertDirectDistanceTrigger(newData, cameraPos, TRIGGER_DISTANCE);
             }
         }
     }
