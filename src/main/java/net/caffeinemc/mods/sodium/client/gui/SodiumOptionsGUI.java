@@ -310,7 +310,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         Collection<OptionFlag> flags = option.getFlags();
 
         for (OptionFlag flag: flags) {
-            if (flag.ordinal() < 1) continue; // ignore irrelevant flags
+            if (flag.ordinal() <= 1) continue; // ignore irrelevant flags
             tooltipDetails.add(Language.getInstance().getVisualOrder(Component.translatable("sodium.options.flags_requirement_string", flag.getLocalizedName()).withStyle(ChatFormatting.GRAY)));
         }
 
