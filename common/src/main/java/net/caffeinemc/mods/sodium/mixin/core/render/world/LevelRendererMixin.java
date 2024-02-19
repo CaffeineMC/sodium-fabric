@@ -46,6 +46,17 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     @Shadow
     @Nullable
     private ClientLevel level;
+
+    @Shadow
+    private int ticks;
+
+    @Shadow
+    @Final
+    private Minecraft minecraft;
+
+    @Shadow
+    private Frustum cullingFrustum;
+
     @Unique
     private SodiumWorldRenderer renderer;
 
@@ -115,6 +126,8 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
         } finally {
             RenderDevice.exitManagedCode();
         }
+
+        SodiumMultiPlat.runChunkLayerEvents(renderLayer, ((LevelRenderer) (Object) this), matrices, matrix, this.ticks, this.minecraft.gameRenderer.getMainCamera(), this.cullingFrustum);
     }
 
     /**
