@@ -1,11 +1,11 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer;
-import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPBuildFailureException;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.*;
@@ -13,8 +13,8 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigge
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
-import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.core.SectionPos;
+import net.minecraft.util.Mth;
 import org.joml.Vector3f;
 
 import java.util.Arrays;
@@ -397,7 +397,7 @@ public class TranslucentGeometryCollector {
         // use the given set of quad count limits to determine if a static topo sort
         // should be attempted
 
-        var attemptLimitIndex = Math.max(Math.min(normalCount, STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1), 2);
+        var attemptLimitIndex = Mth.clamp(normalCount, 2, STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1);
         if (this.quads.length <= STATIC_TOPO_SORT_ATTEMPT_LIMITS[attemptLimitIndex]) {
             return SortType.STATIC_TOPO;
         }
