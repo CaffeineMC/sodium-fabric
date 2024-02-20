@@ -40,9 +40,7 @@ public class SodiumMultiPlatImpl {
     }
 
     public static TextureAtlasSprite findInBlockAtlas(float u, float v) {
-        // TODO
-        //return SpriteFinderCache.forBlockAtlas().find(u, v);
-        return null;
+        return SpriteFinderCache.forBlockAtlas().find(u, v);
     }
 
     public static Object getRenderData(Level level, BoundingBox pos, BlockEntity value) {

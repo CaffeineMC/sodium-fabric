@@ -158,6 +158,10 @@ public class ChunkVertexConsumer implements VertexConsumer {
                 normal = calculateNormal();
             }
 
+            if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
+                collector.appendQuad(normal, vertices, cullFace);
+            }
+
             this.modelBuilder.getVertexBuffer(this.cullFace).push(this.vertices, this.material);
 
             float u = 0;
@@ -172,10 +176,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
 
             if (sprite != null) {
                 this.modelBuilder.addSprite(sprite);
-            }
-
-            if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
-                collector.appendQuad(normal, vertices, cullFace);
             }
 
             this.vertexIndex = 0;
