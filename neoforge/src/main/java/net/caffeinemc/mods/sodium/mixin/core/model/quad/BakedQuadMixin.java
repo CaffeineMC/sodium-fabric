@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Surrogate;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BakedQuad.class)
@@ -44,10 +45,12 @@ public class BakedQuadMixin implements BakedQuadView {
     private int normal;
 
     @Unique
-    private ModelQuadFacing normalFace = ModelQuadFacing.UNASSIGNED;
+    private ModelQuadFacing normalFace = null;
 
-    @Inject(method = "<init>*", at = @At("RETURN"))
-    private void init(int[] vertexData, int colorIndex, Direction face, TextureAtlasSprite sprite, boolean shade, CallbackInfo ci) {
+    @Inject(method = {
+            "<init>([IILnet/minecraft/core/Direction;Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;ZZ)V"
+    }, at = @At("RETURN"))
+    private void init(int[] is, int i, Direction face, TextureAtlasSprite arg2, boolean bl, boolean hasAmbientOcclusion, CallbackInfo ci) {
         this.normal = this.calculateNormal();
         this.normalFace = ModelQuadFacing.fromPackedNormal(this.normal);
 

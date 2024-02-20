@@ -71,7 +71,7 @@ public class FluidRendererImpl extends FluidRenderer {
         defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler);
 
         try {
-            if (!handler.renderFluid(fluidState, level, blockPos, meshBuilder.asFallbackVertexConsumer(material), blockState)) {
+            if (!handler.renderFluid(fluidState, level, blockPos, meshBuilder.asFallbackVertexConsumer(material, collector), blockState)) {
                 defaultContext.renderIfSetUp();
             }
         } finally {
