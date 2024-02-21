@@ -9,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.data.ModelData;
+import net.neoforged.neoforge.client.model.data.MultipartModelData;
 import org.apache.commons.lang3.tuple.Pair;
 import org.spongepowered.asm.mixin.*;
 
@@ -73,7 +74,7 @@ public class MultiPartBakedModelMixin {
 
         for (BakedModel model : models) {
             random.setSeed(seed);
-            quads.addAll(model.getQuads(state, direction, random, modelData, renderType));
+            quads.addAll(model.getQuads(state, direction, random, MultipartModelData.resolve(modelData, model), renderType));
         }
 
         return quads;
