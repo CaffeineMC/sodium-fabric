@@ -3,9 +3,10 @@ package net.caffeinemc.mods.sodium.client.compatibility.workarounds;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
-import net.minecraft.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import oshi.PlatformEnum;
+import oshi.SystemInfo;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,7 +34,7 @@ public class Workarounds {
 
     private static Set<Reference> findNecessaryWorkarounds() {
         var workarounds = EnumSet.noneOf(Reference.class);
-        var operatingSystem = Util.getPlatform();
+        var operatingSystem = SystemInfo.getCurrentPlatform();
 
         var graphicsAdapters = GraphicsAdapterProbe.getAdapters();
 
@@ -41,7 +42,7 @@ public class Workarounds {
             workarounds.add(Reference.NVIDIA_THREADED_OPTIMIZATIONS);
         }
 
-        if (operatingSystem == Util.OS.LINUX) {
+        if (operatingSystem == PlatformEnum.LINUX) {
             var session = System.getenv("XDG_SESSION_TYPE");
 
             if (session == null) {
@@ -58,8 +59,8 @@ public class Workarounds {
         return Collections.unmodifiableSet(workarounds);
     }
 
-    private static boolean isUsingNvidiaGraphicsCard(Util.OS operatingSystem, Collection<GraphicsAdapterInfo> adapters) {
-        return (operatingSystem == Util.OS.WINDOWS || operatingSystem == Util.OS.LINUX) &&
+    private static boolean isUsingNvidiaGraphicsCard(PlatformEnum operatingSystem, Collection<GraphicsAdapterInfo> adapters) {
+        return (operatingSystem == PlatformEnum.WINDOWS || operatingSystem == PlatformEnum.LINUX) &&
                 adapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterVendor.NVIDIA);
     }
 

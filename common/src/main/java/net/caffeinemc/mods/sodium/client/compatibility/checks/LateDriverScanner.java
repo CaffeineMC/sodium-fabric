@@ -3,11 +3,12 @@ package net.caffeinemc.mods.sodium.client.compatibility.checks;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaDriverVersion;
 import net.caffeinemc.mods.sodium.client.gui.console.Console;
 import net.caffeinemc.mods.sodium.client.gui.console.message.MessageLevel;
-import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.GLContextInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import oshi.PlatformEnum;
+import oshi.SystemInfo;
 
 /**
  * Performs OpenGL driver validation after the game creates an OpenGL context. This runs immediately after OpenGL
@@ -56,7 +57,7 @@ public class LateDriverScanner {
     private static boolean isSupportedNvidiaDriver(GLContextInfo driver) {
         // The Linux driver has two separate branches which have overlapping version numbers, despite also having
         // different feature sets. As a result, we can't reliably determine which Linux drivers are broken...
-        if (Util.getPlatform() != Util.OS.WINDOWS) {
+        if (SystemInfo.getCurrentPlatform() != PlatformEnum.WINDOWS) {
             return true;
         }
 

@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.client.compatibility.environment.probe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import oshi.PlatformEnum;
 import oshi.SystemInfo;
 import oshi.util.ExecutingCommand;
 
@@ -11,8 +12,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import net.minecraft.Util;
 
 public class GraphicsAdapterProbe {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-GraphicsAdapterProbe");
@@ -24,7 +23,7 @@ public class GraphicsAdapterProbe {
 
         // We rely on separate detection logic for Linux because Oshi fails to find GPUs without
         // display outputs, and we can also retrieve the driver version for NVIDIA GPUs this way.
-        var results = Util.getPlatform() == Util.OS.LINUX
+        var results = SystemInfo.getCurrentPlatform() == PlatformEnum.LINUX
                 ? findAdaptersLinux()
                 : findAdaptersCrossPlatform();
 

@@ -82,5 +82,7 @@ tasks {
         from("${rootProject.projectDir}/COPYING.LESSER")
 
         manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
+        manifest.attributes["Automatic-Module-Name"] = "net.caffeinemc.mods.sodium.cursed"
+        manifest.attributes["FMLModType"] = "SERVICE"
     }
 }

@@ -2,12 +2,13 @@ package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
-import net.minecraft.Util;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import oshi.PlatformEnum;
+import oshi.SystemInfo;
 
 /**
  * Performs OpenGL driver validation before the game creates an OpenGL context. This runs during the earliest possible
@@ -58,7 +59,7 @@ public class EarlyDriverScanner {
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/899
     private static @Nullable WindowsDriverStoreVersion findBrokenIntelGen7GraphicsDriver() {
-        if (Util.getPlatform() != Util.OS.WINDOWS) {
+        if (SystemInfo.getCurrentPlatform() != PlatformEnum.WINDOWS) {
             return null;
         }
 
