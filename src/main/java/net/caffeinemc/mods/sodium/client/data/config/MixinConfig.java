@@ -66,6 +66,7 @@ public class MixinConfig {
         this.addMixinRule("features.render.model", true);
         this.addMixinRule("features.render.model.block", true);
         this.addMixinRule("features.render.model.item", true);
+        this.addMixinRule("features.render.model.player_head", true);
 
         this.addMixinRule("features.render.particle", true);
 
