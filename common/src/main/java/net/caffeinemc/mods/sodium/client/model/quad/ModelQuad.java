@@ -53,6 +53,11 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
+    public void setNormal(int idx, int normal) {
+        this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX] = normal;
+    }
+
+    @Override
     public void setFlags(int flags) {
         this.flags = flags;
     }
@@ -105,6 +110,16 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public float getTexV(int idx) {
         return Float.intBitsToFloat(this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.TEXTURE_INDEX + 1]);
+    }
+
+    @Override
+    public int getNormal(int idx) {
+        return this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX];
+    }
+
+    @Override
+    public int getLight(int idx) {
+        return this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.LIGHT_INDEX];
     }
 
     @Override

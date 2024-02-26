@@ -44,6 +44,11 @@ public interface ModelQuadViewMutable extends ModelQuadView {
     void setLight(int idx, int light);
 
     /**
+     * Sets the normal vector of the vertex at index {@param idx} to the value {@param normal}
+     */
+    void setNormal(int idx, int normal);
+
+    /**
      * Sets the bit-flag field which contains the {@link ModelQuadFlags} for this quad
      */
     void setFlags(int flags);
