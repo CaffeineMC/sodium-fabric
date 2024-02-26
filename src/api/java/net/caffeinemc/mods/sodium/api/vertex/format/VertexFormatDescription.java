@@ -28,4 +28,9 @@ public interface VertexFormatDescription {
      * start at the byte offset (index * stride).
      */
     int stride();
+
+    /**
+     * Returns whether or not the format is "simple" (has no duplicate elements).
+     */
+    boolean isSimpleFormat();
 }

@@ -9,7 +9,9 @@ out vec4 v_Color;
 out vec2 v_TexCoord;
 
 out float v_MaterialMipBias;
+#ifdef USE_FRAGMENT_DISCARD
 out float v_MaterialAlphaCutoff;
+#endif
 
 #ifdef USE_FOG
 out float v_FragDistance;
@@ -52,5 +54,7 @@ void main() {
     v_TexCoord = _vert_tex_diffuse_coord;
 
     v_MaterialMipBias = _material_mip_bias(_material_params);
+#ifdef USE_FRAGMENT_DISCARD
     v_MaterialAlphaCutoff = _material_alpha_cutoff(_material_params);
+#endif
 }
