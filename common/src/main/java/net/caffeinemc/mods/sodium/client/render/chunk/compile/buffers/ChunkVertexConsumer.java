@@ -150,13 +150,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
         this.vertexIndex++;
 
         if (this.vertexIndex == 4) {
-            int normal = 0;
-
-            if (cullFace.isAligned()) {
-                normal = cullFace.getPackedAlignedNormal();
-            } else {
-                normal = calculateNormal();
-            }
+            int normal = calculateNormal();
 
             if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
                 collector.appendQuad(normal, vertices, cullFace);
