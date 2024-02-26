@@ -12,6 +12,14 @@ import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 
 public class BakedModelEncoder {
+    private static int mergeLighting(int stored, int calculated) {
+        if (stored == 0) return calculated;
+
+        int blockLight = Math.max(stored & 0xFFFF, calculated & 0xFFFF);
+        int skyLight = Math.max((stored >> 16) & 0xFFFF, (calculated >> 16) & 0xFFFF);
+        return blockLight | (skyLight << 16);
+    }
+
     public static void writeQuadVertices(VertexBufferWriter writer, PoseStack.Pose matrices, ModelQuadView quad, int color, int light, int overlay) {
         Matrix3f matNormal = matrices.normal();
         Matrix4f matPosition = matrices.pose();
@@ -20,21 +28,29 @@ public class BakedModelEncoder {
             long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
             long ptr = buffer;
 
-            // The packed transformed normal vector
-            var normal = MatrixHelper.transformNormal(matNormal, quad.getLightFace());
-
             for (int i = 0; i < 4; i++) {
                 // The position vector
                 float x = quad.getX(i);
                 float y = quad.getY(i);
                 float z = quad.getZ(i);
 
+                int newLight = mergeLighting(quad.getLight(i), light);
+
+                // The packed transformed normal vector
+                int normal = quad.getNormal(i);
+
+                if (normal >>> 8 == 0) {
+                    normal = MatrixHelper.transformNormal(matNormal, quad.getLightFace());
+                } else {
+                    normal = MatrixHelper.transformNormal(matNormal, normal);
+                }
+
                 // The transformed position vector
                 float xt = MatrixHelper.transformPositionX(matPosition, x, y, z);
                 float yt = MatrixHelper.transformPositionY(matPosition, x, y, z);
                 float zt = MatrixHelper.transformPositionZ(matPosition, x, y, z);
 
-                ModelVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, light, normal);
+                ModelVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, newLight, normal);
                 ptr += ModelVertex.STRIDE;
             }
 

@@ -75,6 +75,16 @@ public class BakedQuadMixin implements BakedQuadView {
     }
 
     @Override
+    public int getNormal(int idx) {
+        return this.vertices[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX];
+    }
+
+    @Override
+    public int getLight(int idx) {
+        return this.vertices[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.LIGHT_INDEX];
+    }
+
+    @Override
     public TextureAtlasSprite getSprite() {
         return this.sprite;
     }

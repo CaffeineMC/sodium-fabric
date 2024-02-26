@@ -40,6 +40,20 @@ public interface ModelQuadView {
     float getTexV(int idx);
 
     /**
+     * @return The packed normal set for the vertex at index {@param idx}. This may be 0 on Fabric.
+     */
+    default int getNormal(int idx) {
+        return 0;
+    }
+
+    /**
+     * @return The packed light set for the vertex at index {@param idx}. This may be 0 on Fabric.
+     */
+    default int getLight(int idx) {
+        return 0;
+    }
+
+    /**
      * @return The integer bit flags containing the {@link ModelQuadFlags} for this quad
      */
     int getFlags();
