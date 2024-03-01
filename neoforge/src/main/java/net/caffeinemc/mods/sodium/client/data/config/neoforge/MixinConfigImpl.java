@@ -14,8 +14,6 @@ public class MixinConfigImpl extends MixinConfig {
     }
 
     public static MixinConfig create() {
-        LibC.INSTANCE.setenv("__GL_THREADED_OPTIMIZATIONS", "0", 1);
-        Configuration.GLFW_LIBRARY_NAME.set("/usr/lib/libglfw.so");
         return new MixinConfigImpl();
     }
 

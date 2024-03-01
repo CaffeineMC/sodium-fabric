@@ -1,17 +1,26 @@
 package net.caffeinemc.mods.sodium.mixin.features.model;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import net.caffeinemc.mods.sodium.client.SodiumClientMod;
+import net.caffeinemc.mods.sodium.neoforge.mixin.SimpleBakedModelAccessor;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.MultiPartBakedModel;
+import net.minecraft.client.resources.model.SimpleBakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.MultipartModelData;
 import org.apache.commons.lang3.tuple.Pair;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -31,6 +40,14 @@ public class MultiPartBakedModelMixin {
     @Shadow
     @Final
     private List<Pair<Predicate<BlockState>, BakedModel>> selectors;
+
+    @Unique
+    private boolean canSkipRenderTypeCheck;
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void storeClassInfo(List<Pair<Predicate<BlockState>, BakedModel>> list, CallbackInfo ci) {
+        this.canSkipRenderTypeCheck = this.selectors.stream().allMatch(model -> (model.getRight() instanceof SimpleBakedModel simpleModel && ((SimpleBakedModelAccessor) simpleModel).getBlockRenderTypes() == null));
+    }
 
     /**
      * @author JellySquid
@@ -74,9 +91,19 @@ public class MultiPartBakedModelMixin {
 
         for (BakedModel model : models) {
             random.setSeed(seed);
-            quads.addAll(model.getQuads(state, direction, random, MultipartModelData.resolve(modelData, model), renderType));
+
+            if (canSkipRenderTypeCheck || renderType == null || model.getRenderTypes(state, random, modelData).contains(renderType)) {
+                quads.addAll(model.getQuads(state, direction, random, MultipartModelData.resolve(modelData, model), renderType));
+            }
         }
 
         return quads;
+    }
+
+    @Inject(method = "getRenderTypes", at = @At("HEAD"), cancellable = true)
+    private void cancelIfSimpleModel(BlockState state, RandomSource rand, ModelData data, CallbackInfoReturnable<ChunkRenderTypeSet> cir) {
+        if (canSkipRenderTypeCheck) {
+            cir.setReturnValue(ItemBlockRenderTypes.getRenderLayers(state));
+        }
     }
 }

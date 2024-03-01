@@ -1,0 +1,14 @@
+{
+  "package": "net.caffeinemc.mods.sodium.neoforge.mixin",
+  "required": true,
+  "compatibilityLevel": "JAVA_17",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "conformVisibility": true
+  },
+  "client" : [
+    "SimpleBakedModelAccessor"
+  ]
+}

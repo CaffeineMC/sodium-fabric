@@ -18,3 +18,6 @@ Sodium is a free and open-source optimization mod for Minecraft which improves f
 
 [[mixins]]
 config = "sodium.mixins.json"
+
+[[mixins]]
+config = "sodium-forge.mixins.json"
