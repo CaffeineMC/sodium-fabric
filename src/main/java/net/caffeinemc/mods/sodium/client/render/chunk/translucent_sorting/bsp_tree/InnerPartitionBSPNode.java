@@ -503,6 +503,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             return null;
         }
 
+        // no need to add the geometry to the workspace's trigger registry
+        // since it's being sorted statically and the sort order won't change based on the camera position
+
         return new LeafMultiBSPNode(BSPSortState.compressIndexesInPlace(indexWriter.indexes, false));
     }
 }

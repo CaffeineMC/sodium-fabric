@@ -1,10 +1,10 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicTopoData;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.doubles.Double2ObjectRBTreeMap;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering.SectionTriggers;
 import net.minecraft.core.SectionPos;
@@ -22,7 +22,7 @@ import net.minecraft.core.SectionPos;
  * sorts it when a certain angle between the current and last sort position is
  * exceeded (relative to the section center).
  */
-class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
+class DirectTriggers implements SectionTriggers<DynamicTopoData> {
     /**
      * A tree map of the directly triggered sections, indexed by their
      * minimum required camera movement. When the given camera movement is exceeded,
@@ -68,10 +68,10 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
         return this.directTriggerSections.size();
     }
 
-    private class DirectTriggerData {
+    private static class DirectTriggerData {
         final SectionPos sectionPos;
         private Vector3dc sectionCenter;
-        final TopoSortDynamicData dynamicData;
+        final DynamicTopoData dynamicData;
         DirectTriggerData next;
 
         /**
@@ -79,7 +79,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
          */
         Vector3dc triggerCameraPos;
 
-        DirectTriggerData(TopoSortDynamicData dynamicData, SectionPos sectionPos, Vector3dc triggerCameraPos) {
+        DirectTriggerData(DynamicTopoData dynamicData, SectionPos sectionPos, Vector3dc triggerCameraPos) {
             this.dynamicData = dynamicData;
             this.sectionPos = sectionPos;
             this.triggerCameraPos = triggerCameraPos;
@@ -203,7 +203,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
 
     @Override
     public void removeSection(long sectionPos, TranslucentData data) {
-        if (data instanceof TopoSortDynamicData triggerable) {
+        if (data instanceof DynamicTopoData triggerable) {
             var key = triggerable.getDirectTriggerKey();
             if (key != -1) {
                 this.directTriggerSections.remove(key);
@@ -213,7 +213,7 @@ class DirectTriggers implements SectionTriggers<TopoSortDynamicData> {
     }
 
     @Override
-    public void integrateSection(SortTriggering ts, SectionPos sectionPos, TopoSortDynamicData data,
+    public void integrateSection(SortTriggering ts, SectionPos sectionPos, DynamicTopoData data,
             CameraMovement movement) {
         // create data with last camera position
         var cameraPos = movement.start();
