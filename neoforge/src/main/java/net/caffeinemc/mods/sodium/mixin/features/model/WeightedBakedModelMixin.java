@@ -8,7 +8,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.random.WeightedEntry;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.*;
 
@@ -39,6 +41,22 @@ public class WeightedBakedModelMixin {
         }
 
         return Collections.emptyList();
+    }
+
+    /**
+     * @author JellySquid
+     * @reason Avoid excessive object allocations
+     */
+    @Overwrite
+    public ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource rand, @NotNull ModelData data) {
+        WeightedEntry.Wrapper<BakedModel> quad = getAt(this.list, Math.abs((int) rand.nextLong()) % this.totalWeight);
+
+        if (quad != null) {
+            return quad.getData()
+                    .getRenderTypes(state, rand, data);
+        }
+
+        return ChunkRenderTypeSet.none();
     }
 
     @Unique

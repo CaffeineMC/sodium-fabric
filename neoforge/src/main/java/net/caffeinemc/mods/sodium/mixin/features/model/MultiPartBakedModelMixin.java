@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.mixin.features.model;
 
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.neoforge.mixin.SimpleBakedModelAccessor;
@@ -16,6 +17,7 @@ import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.MultipartModelData;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -100,10 +102,55 @@ public class MultiPartBakedModelMixin {
         return quads;
     }
 
-    @Inject(method = "getRenderTypes", at = @At("HEAD"), cancellable = true)
-    private void cancelIfSimpleModel(BlockState state, RandomSource rand, ModelData data, CallbackInfoReturnable<ChunkRenderTypeSet> cir) {
+    private ObjectOpenHashSet<ChunkRenderTypeSet> chunkRenderTypes = new ObjectOpenHashSet<>();
+
+    /**
+     * @author embeddedt, IMS
+     * @reason Optimize render type lookup using existing cache
+     */
+    @Overwrite
+    public ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource random, @NotNull ModelData data) {
         if (canSkipRenderTypeCheck) {
-            cir.setReturnValue(ItemBlockRenderTypes.getRenderLayers(state));
+            return ItemBlockRenderTypes.getRenderLayers(state);
         }
+
+        BakedModel[] models;
+
+        long readStamp = this.lock.readLock();
+        try {
+            models = this.stateCacheFast.get(state);
+        } finally {
+            this.lock.unlockRead(readStamp);
+        }
+
+        if (models == null) {
+            long writeStamp = this.lock.writeLock();
+            try {
+                List<BakedModel> modelList = new ArrayList<>(this.selectors.size());
+
+                for (Pair<Predicate<BlockState>, BakedModel> pair : this.selectors) {
+                    if (pair.getLeft().test(state)) {
+                        modelList.add(pair.getRight());
+                    }
+                }
+
+                models = modelList.toArray(BakedModel[]::new);
+                this.stateCacheFast.put(state, models);
+            } finally {
+                this.lock.unlockWrite(writeStamp);
+            }
+        }
+
+        long seed = random.nextLong();
+
+        chunkRenderTypes.clear();
+
+        for (BakedModel model : models) {
+            random.setSeed(seed);
+
+            chunkRenderTypes.add(model.getRenderTypes(state, random, data));
+        }
+
+        return ChunkRenderTypeSet.union(chunkRenderTypes);
     }
 }

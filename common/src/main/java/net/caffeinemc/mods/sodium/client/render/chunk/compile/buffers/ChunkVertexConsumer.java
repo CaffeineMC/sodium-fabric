@@ -30,7 +30,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
     private int fixedColor = 0xFFFFFFFF;
     private int vertexIndex;
     private int writtenAttributes;
-    private ModelQuadFacing cullFace;
     private TranslucentGeometryCollector collector;
 
     public ChunkVertexConsumer(ChunkModelBuilder modelBuilder) {
@@ -127,10 +126,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
 
     @Override
     public @NotNull VertexConsumer normal(float x, float y, float z) {
-        if (this.vertexIndex == 0) {
-            this.cullFace = ModelQuadFacing.fromNormal(x, y, z);
-        }
-
         this.writtenAttributes |= ATTRIBUTE_NORMAL_BIT;
         return this;
     }
@@ -152,11 +147,13 @@ public class ChunkVertexConsumer implements VertexConsumer {
         if (this.vertexIndex == 4) {
             int normal = calculateNormal();
 
+            ModelQuadFacing cullFace = ModelQuadFacing.fromPackedNormal(normal);
+
             if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
                 collector.appendQuad(normal, vertices, cullFace);
             }
 
-            this.modelBuilder.getVertexBuffer(this.cullFace).push(this.vertices, this.material);
+            this.modelBuilder.getVertexBuffer(cullFace).push(this.vertices, this.material);
 
             float u = 0;
             float v = 0;
