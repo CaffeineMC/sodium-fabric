@@ -16,6 +16,13 @@ description = '''
 Sodium is a free and open-source optimization mod for Minecraft which improves frame rates and reduces lag spikes.
 '''
 
+[[dependencies.sodium]]
+modId="minecraft"
+type="required"
+versionRange="[1.20.4,1.21)"
+ordering="NONE"
+side="CLIENT"
+
 [[mixins]]
 config = "sodium.mixins.json"
 
