@@ -1,10 +1,8 @@
 package net.caffeinemc.mods.sodium.client.data.config.neoforge;
 
-import com.sun.jna.platform.unix.LibC;
 import net.caffeinemc.mods.sodium.client.data.config.MixinConfig;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
-import org.lwjgl.system.Configuration;
 
 import java.util.Map;
 

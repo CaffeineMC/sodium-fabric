@@ -1,6 +1,6 @@
 modLoader = "javafml"
 loaderVersion = "*"
-license = "Lesser GPL License V3"
+license = "LGPL-3.0-only"
 
 [[mods]]
 modId = "sodium"
@@ -8,7 +8,7 @@ modId = "sodium"
 version = "${version}"
 displayName = "Sodium"
 
-logoFile="assets/sodium/icon.png" #optional
+logoFile="sodium-icon.png" #optional
 
 authors="JellySquid"
 # A multi-line description for your mod. This has no minimum length, but it *is* required!

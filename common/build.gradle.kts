@@ -66,10 +66,6 @@ tasks {
         from(api.output.classesDirs)
         from(api.output.resourcesDir)
 
-        val desktop = sourceSets.getByName("desktop")
-        from(desktop.output.classesDirs)
-        from(desktop.output.resourcesDir)
-
         manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
     }
 }

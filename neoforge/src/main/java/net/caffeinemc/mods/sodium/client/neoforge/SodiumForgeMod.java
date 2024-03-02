@@ -1,7 +1,6 @@
 package net.caffeinemc.mods.sodium.client.neoforge;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
-import net.minecraft.server.packs.PackType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;

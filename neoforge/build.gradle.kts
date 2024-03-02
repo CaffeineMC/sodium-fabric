@@ -26,7 +26,7 @@ sourceSets {
             srcDir("src/service/java")
         }
 
-        compileClasspath  += main.compileClasspath
+        compileClasspath += main.compileClasspath
     }
 
     main.apply {
@@ -67,6 +67,7 @@ fullJar.configure {
     into("META-INF") {
         from(sourceSets.getByName("main").output.resourcesDir!!.toPath().resolve("META-INF").resolve("mods.toml").toFile())
     }
+    from(project(":common").sourceSets.getByName("main").output.resourcesDir!!.toPath().resolve("sodium-icon.png").toFile())
     into("META-INF/jarjar") {
         from(tasks.remapJar.get().archiveFile.get())
     }

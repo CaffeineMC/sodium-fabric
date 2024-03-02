@@ -16,14 +16,14 @@
 
 package net.caffeinemc.mods.sodium.client.neoforge;
 
-import java.util.Map;
-import java.util.function.Consumer;
-
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Indexes an atlas sprite to allow fast lookup of Sprites from
@@ -50,6 +50,7 @@ public class BlockSpriteFinder {
     }
 
     private class Node {
+        static final float EPS = 0.00001f;
         final float midU;
         final float midV;
         final float cellRadius;
@@ -63,8 +64,6 @@ public class BlockSpriteFinder {
             this.midV = midV;
             cellRadius = radius;
         }
-
-        static final float EPS = 0.00001f;
 
         void add(TextureAtlasSprite sprite) {
             if (sprite.getU0() < 0 - EPS || sprite.getU1() > 1 + EPS || sprite.getV0() < 0 - EPS || sprite.getV1() > 1 + EPS) {

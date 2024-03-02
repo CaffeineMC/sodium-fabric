@@ -2,7 +2,6 @@ package net.caffeinemc.mods.sodium.mixin.features.model;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.neoforge.mixin.SimpleBakedModelAccessor;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -22,7 +21,6 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -45,6 +43,7 @@ public class MultiPartBakedModelMixin {
 
     @Unique
     private boolean canSkipRenderTypeCheck;
+    private final ObjectOpenHashSet<ChunkRenderTypeSet> chunkRenderTypes = new ObjectOpenHashSet<>();
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void storeClassInfo(List<Pair<Predicate<BlockState>, BakedModel>> list, CallbackInfo ci) {
@@ -101,8 +100,6 @@ public class MultiPartBakedModelMixin {
 
         return quads;
     }
-
-    private ObjectOpenHashSet<ChunkRenderTypeSet> chunkRenderTypes = new ObjectOpenHashSet<>();
 
     /**
      * @author embeddedt, IMS

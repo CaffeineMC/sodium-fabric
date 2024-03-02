@@ -61,6 +61,8 @@ tasks.processResources {
 
 tasks.shadowJar {
     exclude("architectury.common.json")
+    from(project(":common").sourceSets.getByName("desktop").output)
+    manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
     configurations = listOf(shadowCommon)
     archiveClassifier.set("dev-shadow")
 }

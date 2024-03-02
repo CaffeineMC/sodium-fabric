@@ -33,6 +33,14 @@ public class FluidRendererImpl extends FluidRenderer {
         defaultRenderer = new DefaultFluidRenderer(colorProviderRegistry, lighters);
     }
 
+    public static boolean renderFromVanilla() {
+        return CURRENT_DEFAULT_CONTEXT.get().renderIfSetUp();
+    }
+
+    public static FluidRenderer create(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
+        return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
+    }
+
     public void render(LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forFluidState(fluidState);
         var meshBuilder = buffers.get(material);
@@ -77,14 +85,6 @@ public class FluidRendererImpl extends FluidRenderer {
         } finally {
             defaultContext.clear();
         }
-    }
-
-    public static boolean renderFromVanilla() {
-        return CURRENT_DEFAULT_CONTEXT.get().renderIfSetUp();
-    }
-
-    public static FluidRenderer create(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
-        return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
     }
 
     private static class DefaultRenderContext {

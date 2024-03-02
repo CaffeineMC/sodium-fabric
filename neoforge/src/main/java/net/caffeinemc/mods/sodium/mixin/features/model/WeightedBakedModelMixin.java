@@ -11,7 +11,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.*;
 
 import java.util.Collections;
@@ -26,6 +25,25 @@ public class WeightedBakedModelMixin {
     @Shadow
     @Final
     private int totalWeight;
+
+    @Unique
+    private static <T extends WeightedEntry> T getAt(List<T> pool, int totalWeight) {
+        int i = 0;
+        int len = pool.size();
+
+        T weighted;
+
+        do {
+            if (i >= len) {
+                return null;
+            }
+
+            weighted = pool.get(i++);
+            totalWeight -= weighted.getWeight().asInt();
+        } while (totalWeight >= 0);
+
+        return weighted;
+    }
 
     /**
      * @author JellySquid
@@ -57,24 +75,5 @@ public class WeightedBakedModelMixin {
         }
 
         return ChunkRenderTypeSet.none();
-    }
-
-    @Unique
-    private static <T extends WeightedEntry> T getAt(List<T> pool, int totalWeight) {
-        int i = 0;
-        int len = pool.size();
-
-        T weighted;
-
-        do {
-            if (i >= len) {
-                return null;
-            }
-
-            weighted = pool.get(i++);
-            totalWeight -= weighted.getWeight().asInt();
-        } while (totalWeight >= 0);
-
-        return weighted;
     }
 }

@@ -42,7 +42,7 @@
     "issues": "https://github.com/CaffeineMC/sodium-fabric/issues"
   },
   "license": "Polyform-Shield-1.0.0",
-  "icon": "assets/sodium/icon.png",
+  "icon": "sodium-icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
