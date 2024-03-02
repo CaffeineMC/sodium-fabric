@@ -62,6 +62,7 @@ var fullJar = tasks.register<Jar>("fullJar")
 fullJar.configure {
     dependsOn(tasks.remapJar)
     from(sourceSets.getByName("service").output)
+    from(project(":common").sourceSets.getByName("desktop").output)
     manifest.from(tasks.remapJar.get().manifest)
     into("META-INF") {
         from(sourceSets.getByName("main").output.resourcesDir!!.toPath().resolve("META-INF").resolve("mods.toml").toFile())
@@ -74,6 +75,10 @@ fullJar.configure {
 
     manifest.attributes["FMLModType"] = "LIBRARY"
 
+    from("${rootProject.projectDir}/COPYING")
+    from("${rootProject.projectDir}/COPYING.LESSER")
+
+    manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
 }
 
 var runClientJar = tasks.register<Jar>("runClientJar")
@@ -98,6 +103,7 @@ tasks.assemble.configure {
     dependsOn(fullJar)
     dependsOn(runClientJar)
 }
+
 tasks.remapJar {
     injectAccessWidener.set(true)
     inputFile.set(tasks.shadowJar.get().archiveFile)
@@ -114,6 +120,9 @@ tasks.runClient {
 
 tasks.jar {
     archiveClassifier.set("dev")
+
+    from("${rootProject.projectDir}/COPYING")
+    from("${rootProject.projectDir}/COPYING.LESSER")
 }
 
 components.getByName("java") {
@@ -129,22 +138,16 @@ dependencies {
     include(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
     forgeRuntimeLibrary(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
 
-    common(project(":common", "namedElements")) { isTransitive = false }
-    shadowCommon(project(":common", "transformProductionNeoForge")) { isTransitive = false }
+    common(project(":common", "namedElements")) {
+        isTransitive = false
+    }
+    shadowCommon(project(":common", "transformProductionNeoForge")) {
+        isTransitive = false
+    }
 }
 
 tasks.processResources {
     filesMatching("META-INF/mods.toml") {
         expand(mapOf("version" to project.version))
-    }
-}
-
-tasks {
-    jar {
-        from("${rootProject.projectDir}/COPYING")
-        from("${rootProject.projectDir}/COPYING.LESSER")
-
-        manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
-        manifest.attributes["Automatic-Module-Name"] = "net.caffeinemc.mods.sodium.cursed"
     }
 }
