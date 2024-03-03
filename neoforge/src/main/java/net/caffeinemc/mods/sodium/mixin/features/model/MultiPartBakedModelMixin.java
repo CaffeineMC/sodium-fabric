@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.features.model;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import net.caffeinemc.mods.sodium.neoforge.mixin.ChunkRenderTypeSetAccessor;
 import net.caffeinemc.mods.sodium.neoforge.mixin.SimpleBakedModelAccessor;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -23,10 +24,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Predicate;
 
@@ -43,7 +41,6 @@ public class MultiPartBakedModelMixin {
 
     @Unique
     private boolean canSkipRenderTypeCheck;
-    private final ObjectOpenHashSet<ChunkRenderTypeSet> chunkRenderTypes = new ObjectOpenHashSet<>();
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void storeClassInfo(List<Pair<Predicate<BlockState>, BakedModel>> list, CallbackInfo ci) {
@@ -107,6 +104,8 @@ public class MultiPartBakedModelMixin {
      */
     @Overwrite
     public ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource random, @NotNull ModelData data) {
+        long seed = random.nextLong();
+
         if (canSkipRenderTypeCheck) {
             return ItemBlockRenderTypes.getRenderLayers(state);
         }
@@ -138,16 +137,14 @@ public class MultiPartBakedModelMixin {
             }
         }
 
-        long seed = random.nextLong();
-
-        chunkRenderTypes.clear();
+        BitSet bits = new BitSet();
 
         for (BakedModel model : models) {
             random.setSeed(seed);
 
-            chunkRenderTypes.add(model.getRenderTypes(state, random, data));
+            bits.or((((ChunkRenderTypeSetAccessor) (Object) model.getRenderTypes(state, random, data)).getBits()));
         }
 
-        return ChunkRenderTypeSet.union(chunkRenderTypes);
+        return ChunkRenderTypeSetAccessor.create(bits);
     }
 }

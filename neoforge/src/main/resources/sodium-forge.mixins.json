@@ -9,6 +9,7 @@
     "conformVisibility": true
   },
   "client" : [
+    "ChunkRenderTypeSetAccessor",
     "SimpleBakedModelAccessor"
   ]
 }
