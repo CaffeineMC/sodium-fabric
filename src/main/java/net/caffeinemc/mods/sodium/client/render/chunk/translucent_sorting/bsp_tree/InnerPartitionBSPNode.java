@@ -8,6 +8,8 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TopoGraphSorting;
+import net.caffeinemc.mods.sodium.client.util.MathUtil;
+import net.caffeinemc.mods.sodium.client.util.sorting.RadixSort;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector3fc;
@@ -213,7 +215,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     // the start of a quad's extent in this direction
     private static final int INTERVAL_START = 2;
 
-    // end end of a quad's extent in this direction
+    // the end of a quad's extent in this direction
     private static final int INTERVAL_END = 0;
 
     // looking at a quad from the side where it has zero thickness
@@ -235,6 +237,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         for (int axisCount = 0; axisCount < 3; axisCount++) {
             int axis = (axisCount + depth + 1) % 3;
             var oppositeDirection = axis + 3;
+            int alignedFacingBitmap = 0;
+            boolean onlyIntervalSide = true;
 
             // collect all the geometry's start and end points in this direction
             points.clear();
@@ -248,6 +252,26 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 } else {
                     points.add(encodeIntervalPoint(posExtent, quadIndex, INTERVAL_END));
                     points.add(encodeIntervalPoint(negExtent, quadIndex, INTERVAL_START));
+                    onlyIntervalSide = false;
+                }
+
+                alignedFacingBitmap |= 1 << quad.getFacing().ordinal();
+            }
+
+            // simplified SNR heuristic as seen in TranslucentGeometryCollector#sortTypeHeuristic (case D)
+            if (!ModelQuadFacing.bitmapHasUnassigned(alignedFacingBitmap)) {
+                int alignedNormalCount = Integer.bitCount(alignedFacingBitmap);
+                if (alignedNormalCount == 1 || alignedNormalCount == 2 && ModelQuadFacing.bitmapIsOpposingAligned(alignedFacingBitmap)) {
+                    // this can be handled with SNR instead of partitioning,
+                    // instead create a fixed order node that uses SNR sorting
+
+                    // check if the geometry is aligned to the axis
+                    if (onlyIntervalSide) {
+                        // this means the already generated points array can be used
+                        return buildSNRLeafNodeFromPoints(workspace, points);
+                    } else {
+                        return buildSNRLeafNodeFromQuads(workspace, indexes, points);
+                    }
                 }
             }
 
@@ -507,5 +531,64 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         // since it's being sorted statically and the sort order won't change based on the camera position
 
         return new LeafMultiBSPNode(BSPSortState.compressIndexesInPlace(indexWriter.indexes, false));
+    }
+
+    static private BSPNode buildSNRLeafNodeFromQuads(BSPWorkspace workspace, IntArrayList indexes, LongArrayList points) {
+        // in this case the points array is wrong, but its allocation can be reused
+
+        int[] quadIndexes;
+
+        // adapted from SNR sorting code
+        if (RadixSort.useRadixSort(indexes.size())) {
+            final var keys = new int[indexes.size()];
+
+            for (int i = 0; i < indexes.size(); i++) {
+                var quadIndex = indexes.getInt(i);
+                keys[i] = MathUtil.floatToComparableInt(workspace.quads[quadIndex].getDotProduct());
+            }
+
+            quadIndexes = RadixSort.sort(keys);
+        } else {
+            final var sortData = points.elements();
+
+            for (int i = 0; i < indexes.size(); i++) {
+                var quadIndex = indexes.getInt(i);
+                int dotProductComponent = MathUtil.floatToComparableInt(workspace.quads[quadIndex].getDotProduct());
+                sortData[i] = (long) dotProductComponent << 32 | quadIndex;
+            }
+
+            Arrays.sort(sortData, 0, indexes.size());
+
+            quadIndexes = new int[indexes.size()];
+
+            for (int i = 0; i < indexes.size(); i++) {
+                quadIndexes[i] = (int) sortData[i];
+            }
+        }
+
+        return new LeafMultiBSPNode(BSPSortState.compressIndexes(IntArrayList.wrap(quadIndexes), false));
+    }
+
+    static private BSPNode buildSNRLeafNodeFromPoints(BSPWorkspace workspace, LongArrayList points) {
+        // also sort by ascending encoded point but then process as an SNR result
+        Arrays.sort(points.elements(), 0, points.size());
+
+        // since the quads are aligned and are all INTERVAL_SIDE, there's no issues with duplicates.
+        // the length of the array is exactly how many quads there are.
+        int[] quadIndexes = new int[points.size()];
+        int forwards = 0;
+        int backwards = quadIndexes.length - 1;
+        for (int i = 0; i < points.size(); i++) {
+            // based one each quad's facing, order them forwards or backwards,
+            // this means forwards is written from the start and backwards is written from the end
+            var quadIndex = decodeQuadIndex(points.getLong(i));
+            if (workspace.quads[quadIndex].getFacing().getSign() == 1) {
+                quadIndexes[forwards++] = quadIndex;
+            } else {
+                quadIndexes[backwards--] = quadIndex;
+            }
+        }
+
+        return new LeafMultiBSPNode(BSPSortState.compressIndexes(IntArrayList.wrap(quadIndexes), false));
     }
 }

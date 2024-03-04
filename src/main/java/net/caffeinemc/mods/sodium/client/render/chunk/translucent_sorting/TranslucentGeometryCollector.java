@@ -339,9 +339,7 @@ public class TranslucentGeometryCollector {
         }
 
         if (!this.hasUnaligned) {
-            boolean opposingAlignedNormals = this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_X
-                    || this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_Y
-                    || this.alignedFacingBitmap == ModelQuadFacing.OPPOSING_Z;
+            boolean opposingAlignedNormals = ModelQuadFacing.bitmapIsOpposingAligned(this.alignedFacingBitmap);
 
             // special case B
             // if there are just two normals, they are exact opposites of each other and they
