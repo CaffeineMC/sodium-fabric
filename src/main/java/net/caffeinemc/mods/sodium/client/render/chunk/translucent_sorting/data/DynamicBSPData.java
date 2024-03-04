@@ -44,7 +44,7 @@ public class DynamicBSPData extends DynamicData {
 
     public static DynamicBSPData fromMesh(BuiltSectionMeshParts translucentMesh,
                                           CombinedCameraPos cameraPos, TQuad[] quads, SectionPos sectionPos,
-                                          TranslucentData oldData, float[] extents) {
+                                          TranslucentData oldData) {
         BSPNode oldRoot = null;
         int generation = 0;
         boolean prepareNodeReuse = false;
@@ -56,7 +56,7 @@ public class DynamicBSPData extends DynamicData {
             // (times the section has been built)
             prepareNodeReuse = generation >= NODE_REUSE_MIN_GENERATION;
         }
-        var result = BSPNode.buildBSP(quads, sectionPos, oldRoot, prepareNodeReuse, extents);
+        var result = BSPNode.buildBSP(quads, sectionPos, oldRoot, prepareNodeReuse);
 
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
 
