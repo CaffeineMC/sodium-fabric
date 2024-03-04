@@ -447,7 +447,7 @@ public class TranslucentGeometryCollector {
                 }
             }
         }
-        this.quadLists = null; // not needed anymore
+        this.quadLists = null; // they're not needed anymore
 
         this.sortType = filterSortType(sortTypeHeuristic());
         return this.sortType;

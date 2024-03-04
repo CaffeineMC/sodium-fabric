@@ -577,7 +577,7 @@ public class RenderSectionManager {
             var pendingUpdate = ChunkUpdateType.SORT;
             var priorityMode = SodiumClientMod.options().performance.getSortBehavior().getPriorityMode();
             if (priorityMode == PriorityMode.ALL
-                    || priorityMode == PriorityMode.NEARBY && this.shouldPrioritizeTask(section)) {
+                    || priorityMode == PriorityMode.NEARBY && this.shouldPrioritizeTask(section, NEARBY_SORT_DISTANCE)) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_SORT;
             }
             pendingUpdate = ChunkUpdateType.getPromotionUpdateType(section.getPendingUpdate(), pendingUpdate);
@@ -598,7 +598,7 @@ public class RenderSectionManager {
         if (section != null && section.isBuilt()) {
             ChunkUpdateType pendingUpdate;
 
-            if (allowImportantRebuilds() && (important || this.shouldPrioritizeTask(section))) {
+            if (allowImportantRebuilds() && (important || this.shouldPrioritizeTask(section, NEARBY_REBUILD_DISTANCE))) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_REBUILD;
             } else {
                 pendingUpdate = ChunkUpdateType.REBUILD;
@@ -614,9 +614,10 @@ public class RenderSectionManager {
     }
 
     private static final float NEARBY_REBUILD_DISTANCE = Mth.square(16.0f);
+    private static final float NEARBY_SORT_DISTANCE = Mth.square(25.0f);
 
-    private boolean shouldPrioritizeTask(RenderSection section) {
-        return this.cameraPosition != null && section.getSquaredDistance(this.cameraBlockPos) < NEARBY_REBUILD_DISTANCE;
+    private boolean shouldPrioritizeTask(RenderSection section, float distance) {
+        return this.cameraBlockPos != null && section.getSquaredDistance(this.cameraBlockPos) < distance;
     }
 
     private static boolean allowImportantRebuilds() {
