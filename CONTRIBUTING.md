@@ -11,7 +11,7 @@ with some minor changes, as described below.
     - If you are using more than three levels of indentation, you should likely consider restructuring your code.
     - Branches which are only exceptionally or very rarely taken should remain concise. When this is not possible,
       prefer breaking out to a new method (where it makes sense) as this helps the compiler better optimize the code.
-- Use `this` to qualify member and field access, as it avoids some ambiguity in certain contexts.
+- Use `this` to qualify method and field access, as it avoids some ambiguity in certain contexts.
 
 We also provide these code styles as [EditorConfig](https://editorconfig.org/) files, which most Java IDEs will
 automatically detect and make use of.
