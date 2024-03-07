@@ -33,7 +33,8 @@
     "@douira",
     "@burgerindividual",
     "@TwistedZero",
-    "@Leo40Git"
+    "@Leo40Git",
+    "@haykam821"
   ],
   "contact": {
     "homepage": "https://github.com/CaffeineMC/sodium-fabric",
@@ -45,10 +46,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "me.jellysquid.mods.sodium.client.SodiumClientMod"
+      "net.caffeinemc.mods.sodium.client.SodiumClientMod"
     ],
     "preLaunch": [
-      "me.jellysquid.mods.sodium.client.SodiumPreLaunch"
+      "net.caffeinemc.mods.sodium.client.SodiumPreLaunch"
     ]
   },
   "custom": {
@@ -69,8 +70,11 @@
   ],
   "depends": {
     "fabricloader": ">=0.12.0",
-    "fabric-rendering-data-attachment-v1": ">=0.1",
-    "fabric-rendering-fluids-v1": ">=0.1"
+    "fabric-block-view-api-v2": "*",
+    "fabric-renderer-api-v1": "*",
+    "fabric-rendering-data-attachment-v1": "*",
+    "fabric-rendering-fluids-v1": ">=2.0.0",
+    "fabric-resource-loader-v0": "*"
   },
   "breaks": {
     "optifabric": "*",
@@ -94,6 +98,7 @@
     "rayon": "<=1.7.2+1.20.1",
     "reeses-sodium-options": "<1.7.1",
     "sodium-extra": "<0.5.4",
-    "sspb": "<3.2.0"
+    "sspb": "<3.2.0",
+    "supplementaries": "<=1.20-2.7.32"
   }
 }
