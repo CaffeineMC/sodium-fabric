@@ -222,7 +222,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
             // Add each option's control element
             for (Option<?> option : group.getOptions()) {
                 Control<?> control = option.getControl();
-                ControlElement<?> element = control.createElement(new Dim2i(x, y, 200, 18));
+                ControlElement<?> element = control.createElement(new Dim2i(x, y, 206, 18));
 
                 this.addRenderableWidget(element);
 
@@ -353,6 +353,10 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
             client.updateMaxMipLevel(client.options.mipmapLevels().get());
             client.delayTextureReload();
+        }
+
+        if (flags.contains(OptionFlag.REQUIRES_VIDEOMODE_RELOAD)) {
+            client.getWindow().changeFullscreenVideoMode();
         }
 
         if (flags.contains(OptionFlag.REQUIRES_GAME_RESTART)) {
