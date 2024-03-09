@@ -21,7 +21,8 @@ public class UnmanagedBufferBuilder {
 
     public void ensureCapacity(int capacity) {
         if (capacity > this.buffer.capacity()) {
-            ByteBuffer byteBuffer = GlAllocationUtils.resizeByteBuffer(this.buffer, capacity);
+            int newCapacity = (int) Math.ceil(this.buffer.capacity() * 1.5);
+            ByteBuffer byteBuffer = GlAllocationUtils.resizeByteBuffer(this.buffer, Math.max(newCapacity, capacity));
             byteBuffer.rewind();
             this.buffer = byteBuffer;
         }

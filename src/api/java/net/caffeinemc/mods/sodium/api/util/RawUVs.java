@@ -19,6 +19,10 @@ public record RawUVs(float minU, float minV, float maxU, float maxV) {
         MemoryUtil.memPutFloat(ptr + 12, Float.NaN);
     }
 
+    public long key() {
+        return ((long) Float.floatToRawIntBits(minU)) << 32 | Float.floatToRawIntBits(minV);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

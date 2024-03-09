@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.particle.cache;
 
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.caffeinemc.mods.sodium.api.util.RawUVs;
 
@@ -11,7 +12,7 @@ public class ParticleTextureCache {
     private static final int DEFAULT_CAPACITY = 64;
 
     private RawUVs[] rawUVs;
-    private final Object2IntOpenHashMap<RawUVs> uvToIndex = new Object2IntOpenHashMap<>();
+    private final Long2IntOpenHashMap uvToIndex = new Long2IntOpenHashMap();
     private final TextureUsageMonitor usageMonitor = new TextureUsageMonitor();
 
     private final IntArrayFIFOQueue freeIndices = new IntArrayFIFOQueue();
@@ -26,17 +27,22 @@ public class ParticleTextureCache {
     }
 
     public int getUvIndex(RawUVs uvs) {
-        int use = uvToIndex.computeIfAbsent(uvs, key -> {
-            RawUVs uvsKey = (RawUVs) key;
+        long uvKey = uvs.key();
+
+        int use = uvToIndex.computeIfAbsent(uvKey, key -> {
             int index = freeIndices.isEmpty() ? topIndex++ : freeIndices.dequeueInt();
 
             ensureCapacity(index);
-            rawUVs[index] = uvsKey;
+            rawUVs[index] = uvs;
             return index;
         });
 
         usageMonitor.markUsed(use);
         return use;
+    }
+
+    public void markTextureAsUsed(int index) {
+        usageMonitor.markUsed(index);
     }
 
     /**
@@ -51,7 +57,7 @@ public class ParticleTextureCache {
             rawUVs[index] = null;
 
             this.freeIndices.enqueue(index);
-            uvToIndex.removeInt(uvs);
+            uvToIndex.remove(uvs.key());
         }
         return this.rawUVs;
     }

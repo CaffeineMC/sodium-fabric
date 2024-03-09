@@ -24,6 +24,12 @@ import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BillboardParticle.class)
 public abstract class BillboardParticleMixin extends Particle implements BillboardExtended {
+    @Unique
+    private long prevUvKey = 0x7fc000007fc00000L;
+
+    @Unique
+    private int prevTextureIndex = -1;
+
     @Shadow
     public abstract float getSize(float tickDelta);
 
@@ -51,7 +57,18 @@ public abstract class BillboardParticleMixin extends Particle implements Billboa
     ) {
         Vec3d vec3d = camera.getPos();
         RawUVs uvs = new RawUVs(getMinU(), getMinV(), getMaxU(), getMaxV());
-        int textureIndex = registry.getUvIndex(uvs);
+
+        int textureIndex;
+        long uvKey = uvs.key();
+
+        if (prevTextureIndex == -1 || uvKey != prevUvKey) {
+            textureIndex = registry.getUvIndex(uvs);
+            prevTextureIndex = textureIndex;
+            prevUvKey = uvKey;
+        } else {
+            textureIndex = prevTextureIndex;
+            registry.markTextureAsUsed(textureIndex);
+        }
 
         float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
         float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
