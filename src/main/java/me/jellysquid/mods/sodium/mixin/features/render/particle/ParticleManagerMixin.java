@@ -219,7 +219,7 @@ public abstract class ParticleManagerMixin {
         try (CommandList commands = RenderDevice.INSTANCE.createCommandList()) {
             if (this.buffers == null) {
                 this.buffers = new ParticleBuffers(commands);
-                this.dataBufferBuilder = new StagingBufferBuilder(commands, 3 * 16384 * 32);
+                this.dataBufferBuilder = new StagingBufferBuilder(commands, 1024 * 1024 * 16);
             }
 
             particleRenderer.begin();
@@ -248,6 +248,7 @@ public abstract class ParticleManagerMixin {
             }
         } finally {
             prevTexture = null;
+            dataBufferBuilder.flipFrame();
             particleRenderer.end();
             RenderDevice.exitManagedCode();
         }

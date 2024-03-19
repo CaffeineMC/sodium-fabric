@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.arena.staging;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
@@ -14,12 +15,16 @@ public class StagingBufferBuilder {
 
     private final MappedBuffer mappedBuffer;
 
+    private int capacity;
+
     private int start = 0;
     private int pos = 0;
 
-    private int numUploads = 0;
+    private int numFrames = 0;
 
     public StagingBufferBuilder(CommandList commandList, int capacity) {
+        this.capacity = capacity;
+
         GlImmutableBuffer buffer = commandList.createImmutableBuffer(capacity, STORAGE_FLAGS);
         GlBufferMapping map = commandList.mapBuffer(buffer, 0, capacity, MAP_FLAGS);
 
@@ -27,25 +32,33 @@ public class StagingBufferBuilder {
     }
 
     public void push(MemoryStack stack, long ptr, int size) {
+        if (pos + size > this.capacity) {
+            // TODO: Needs a fallback instead of throwing, (even if it is highly unlikely)
+
+            throw new IllegalStateException("Particle data buffer overflowed!\n" +
+                    "Capacity: " + this.capacity);
+        }
+
         this.mappedBuffer.map.write(stack, ptr, size, pos);
         pos += size;
     }
 
     public void endAndUpload(CommandList commandList, GlBuffer dst, long writeOffset) {
         this.flush(commandList, dst, this.start, this.pos - this.start, writeOffset);
+        this.start = this.pos;
+    }
 
-        this.numUploads += 1;
-        if (numUploads >= 3 /* TODO: Replace with render-ahead limit */) {
+    public void flipFrame() {
+        this.numFrames++;
+        if (numFrames >= SodiumClientMod.options().advanced.cpuRenderAheadLimit) {
             this.reset();
         }
-
-        this.start = this.pos;
     }
 
     private void reset() {
         this.start = 0;
         this.pos = 0;
-        this.numUploads = 0;
+        this.numFrames = 0;
     }
 
     private void flush(CommandList commandList, GlBuffer dst, int readOffset, int length, long writeOffset) {

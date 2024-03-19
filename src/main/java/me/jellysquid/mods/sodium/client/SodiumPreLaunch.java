@@ -11,6 +11,5 @@ public class SodiumPreLaunch implements PreLaunchEntrypoint {
         GraphicsAdapterProbe.findAdapters();
         EarlyDriverScanner.scanDrivers();
         Workarounds.init();
-        System.loadLibrary("renderdoc");
     }
 }
