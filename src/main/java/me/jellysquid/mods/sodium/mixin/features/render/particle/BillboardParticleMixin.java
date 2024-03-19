@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
+import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
 import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
@@ -51,7 +52,7 @@ public abstract class BillboardParticleMixin extends Particle implements Billboa
 
     @Override
     public void sodium$buildParticleData(
-            UnmanagedBufferBuilder builder,
+            StagingBufferBuilder builder,
             ParticleTextureCache registry,
             Camera camera, float tickDelta
     ) {

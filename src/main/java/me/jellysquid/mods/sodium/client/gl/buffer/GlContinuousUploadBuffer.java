@@ -9,20 +9,19 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 
 import java.nio.ByteBuffer;
 
-public class GlContinuousUploadBuffer {
+public class GlContinuousUploadBuffer extends GlMutableBuffer {
     private static final GlBufferUsage BUFFER_USAGE = GlBufferUsage.STATIC_DRAW;
     private static final int DEFAULT_INITIAL_CAPACITY = 1024;
 
     private final StagingBuffer stagingBuffer;
-    private final GlMutableBuffer uploadedBuffer;
 
     private int capacity;
 
     public GlContinuousUploadBuffer(CommandList commands, int initialCapacity) {
+        super();
         this.capacity = initialCapacity;
         this.stagingBuffer = createStagingBuffer(commands);
-        this.uploadedBuffer = commands.createMutableBuffer();
-        commands.allocateStorage(uploadedBuffer, this.capacity, BUFFER_USAGE);
+        commands.allocateStorage(this, this.capacity, BUFFER_USAGE);
     }
 
     public GlContinuousUploadBuffer(CommandList commands) {
@@ -31,19 +30,15 @@ public class GlContinuousUploadBuffer {
 
     public void uploadOverwrite(CommandList commandList, ByteBuffer data, int size) {
         ensureCapacity(commandList, size);
-        this.stagingBuffer.enqueueCopy(commandList, data, this.uploadedBuffer, 0);
+        this.stagingBuffer.enqueueCopy(commandList, data, this, 0);
         this.stagingBuffer.flush(commandList);
     }
 
     public void ensureCapacity(CommandList commandList, int capacity) {
         if (capacity > this.capacity) {
             this.capacity = capacity;
-            commandList.allocateStorage(this.uploadedBuffer, capacity, BUFFER_USAGE);
+            commandList.allocateStorage(this, capacity, BUFFER_USAGE);
         }
-    }
-
-    public int getObjectHandle() {
-        return this.uploadedBuffer.handle();
     }
 
     private static StagingBuffer createStagingBuffer(CommandList commandList) {

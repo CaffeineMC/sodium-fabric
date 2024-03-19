@@ -9,14 +9,14 @@ import org.lwjgl.opengl.GL31;
 import java.nio.ByteBuffer;
 
 public class GlBufferTexture {
-    private final GlContinuousUploadBuffer buffer;
+    private final GlBuffer buffer;
 
     private final int glTexHandle;
 
     private final int textureNum;
 
-    public GlBufferTexture(CommandList commandList, int textureNum) {
-        this.buffer = new GlContinuousUploadBuffer(commandList);
+    public GlBufferTexture(GlBuffer buffer, int textureNum) {
+        this.buffer = buffer;
         this.glTexHandle = GlStateManager._genTexture();
         this.textureNum = textureNum;
     }
@@ -25,13 +25,9 @@ public class GlBufferTexture {
         return textureNum;
     }
 
-    public void putData(CommandList commandList, ByteBuffer data, int size) {
-        this.buffer.uploadOverwrite(commandList, data, size);
-    }
-
     public void bind() {
         GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, this.glTexHandle);
-        GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL31.GL_R32UI, this.buffer.getObjectHandle());
+        GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL31.GL_R32UI, this.buffer.handle());
         RenderSystem.setShaderTexture(this.textureNum, this.glTexHandle);
     }
 }

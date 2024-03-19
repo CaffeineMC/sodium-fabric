@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.particle.specialcases;
 
+import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
 import me.jellysquid.mods.sodium.mixin.features.render.particle.BillboardParticleMixin;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
@@ -19,7 +20,7 @@ public abstract class DustColorTransitionParticleMixin extends BillboardParticle
     }
 
     @Override
-    public void sodium$buildParticleData(UnmanagedBufferBuilder builder, ParticleTextureCache registry, Camera camera, float tickDelta) {
+    public void sodium$buildParticleData(StagingBufferBuilder builder, ParticleTextureCache registry, Camera camera, float tickDelta) {
         this.updateColor(tickDelta);
         super.sodium$buildParticleData(builder, registry, camera, tickDelta);
     }

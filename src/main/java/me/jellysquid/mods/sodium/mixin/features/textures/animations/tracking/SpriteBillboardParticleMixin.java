@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.textures.animations.tracking;
 
+import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
 import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
@@ -44,7 +45,7 @@ public abstract class SpriteBillboardParticleMixin extends BillboardParticleMixi
     }
 
     @Override
-    public void sodium$buildParticleData(UnmanagedBufferBuilder builder, ParticleTextureCache registry, Camera camera, float tickDelta) {
+    public void sodium$buildParticleData(StagingBufferBuilder builder, ParticleTextureCache registry, Camera camera, float tickDelta) {
         if (this.shouldTickSprite) {
             SpriteUtil.markSpriteActive(this.sprite);
         }

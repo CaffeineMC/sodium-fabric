@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -17,6 +18,10 @@ public class GlBufferMapping {
 
     public void write(ByteBuffer data, int writeOffset) {
         MemoryUtil.memCopy(MemoryUtil.memAddress(data), MemoryUtil.memAddress(this.map, writeOffset), data.remaining());
+    }
+
+    public void write(MemoryStack ignoredStack, long ptr, int size, int writeOffset) {
+        MemoryUtil.memCopy(ptr, MemoryUtil.memAddress(this.map, writeOffset), size);
     }
 
     public GlBuffer getBufferObject() {

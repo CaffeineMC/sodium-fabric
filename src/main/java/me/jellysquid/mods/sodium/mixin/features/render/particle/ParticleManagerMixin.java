@@ -7,6 +7,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
+import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBufferBuilder;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
@@ -102,7 +103,7 @@ public abstract class ParticleManagerMixin {
     private int glVertexArray;
 
     @Unique
-    private UnmanagedBufferBuilder dataBufferBuilder;
+    private StagingBufferBuilder dataBufferBuilder = null;
 
     @Unique
     private UnmanagedBufferBuilder cacheBufferBuilder;
@@ -116,7 +117,7 @@ public abstract class ParticleManagerMixin {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void postInit(ClientWorld world, TextureManager textureManager, CallbackInfo ci) {
         this.glVertexArray = GlStateManager._glGenVertexArrays();
-        this.dataBufferBuilder = new UnmanagedBufferBuilder(1);
+        // 2 * 16384 * 32
         this.cacheBufferBuilder = new UnmanagedBufferBuilder(1);
         this.renderView = new ParticleRenderView(world);
     }
@@ -218,6 +219,7 @@ public abstract class ParticleManagerMixin {
         try (CommandList commands = RenderDevice.INSTANCE.createCommandList()) {
             if (this.buffers == null) {
                 this.buffers = new ParticleBuffers(commands);
+                this.dataBufferBuilder = new StagingBufferBuilder(commands, 3 * 16384 * 32);
             }
 
             particleRenderer.begin();
@@ -315,10 +317,9 @@ public abstract class ParticleManagerMixin {
             cacheBufferBuilder.push(stack, buffer, size);
         }
 
-        UnmanagedBufferBuilder.Built data = dataBufferBuilder.end();
         UnmanagedBufferBuilder.Built cache = cacheBufferBuilder.end();
 
-        this.buffers.uploadParticleData(commands, data, cache);
+        this.buffers.uploadParticleData(commands, dataBufferBuilder, cache);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.particle.specialcases;
 
+import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
 import me.jellysquid.mods.sodium.mixin.features.render.particle.BillboardParticleMixin;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
@@ -15,7 +16,7 @@ public abstract class FlashParticleMixin extends BillboardParticleMixin {
     }
 
     @Override
-    public void sodium$buildParticleData(UnmanagedBufferBuilder builder, ParticleTextureCache registry, Camera camera, float tickDelta) {
+    public void sodium$buildParticleData(StagingBufferBuilder builder, ParticleTextureCache registry, Camera camera, float tickDelta) {
         this.setAlpha(0.6F - ((float)this.age + tickDelta - 1.0F) * 0.25F * 0.5F);
         super.sodium$buildParticleData(builder, registry, camera, tickDelta);
     }
