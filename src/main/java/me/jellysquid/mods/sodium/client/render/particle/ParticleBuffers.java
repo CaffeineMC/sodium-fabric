@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.particle;
 
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBufferBuilder;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTexture;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlContinuousUploadBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
@@ -16,6 +17,8 @@ public class ParticleBuffers {
 
     public ParticleBuffers(CommandList commandList) {
         this.particleData = commandList.createMutableBuffer();
+        commandList.allocateStorage(particleData, 3 * 16384 * 32, GlBufferUsage.STATIC_DRAW);
+
         this.textureCache = new GlContinuousUploadBuffer(commandList);
 
         this.particleDataTex = new GlBufferTexture(particleData, 3);
