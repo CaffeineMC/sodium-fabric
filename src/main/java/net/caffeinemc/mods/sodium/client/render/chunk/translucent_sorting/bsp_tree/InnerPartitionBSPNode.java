@@ -548,6 +548,10 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             }
 
             quadIndexes = RadixSort.sort(keys);
+
+            for (int i = 0; i < indexes.size(); i++) {
+                quadIndexes[i] = indexes.getInt(quadIndexes[i]);
+            }
         } else {
             final var sortData = points.elements();
 
