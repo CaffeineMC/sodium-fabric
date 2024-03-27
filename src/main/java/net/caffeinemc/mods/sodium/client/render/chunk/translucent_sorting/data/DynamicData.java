@@ -1,19 +1,17 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import org.joml.Vector3dc;
-
 import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
-import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.core.SectionPos;
+import org.joml.Vector3dc;
 
 public abstract class DynamicData extends MixedDirectionData {
     private GeometryPlanes geometryPlanes;
     private final Vector3dc initialCameraPos;
 
-    DynamicData(SectionPos sectionPos, NativeBuffer buffer, VertexRange range, GeometryPlanes geometryPlanes, Vector3dc initialCameraPos) {
-        super(sectionPos, buffer, range);
+    DynamicData(SectionPos sectionPos, VertexRange range, int quadCount, GeometryPlanes geometryPlanes, Vector3dc initialCameraPos) {
+        super(sectionPos, range, quadCount);
         this.geometryPlanes = geometryPlanes;
         this.initialCameraPos = initialCameraPos;
     }
@@ -23,16 +21,11 @@ public abstract class DynamicData extends MixedDirectionData {
         return SortType.DYNAMIC;
     }
 
-    @Override
-    public boolean retainAfterUpload() {
-        return true;
-    }
-
     public GeometryPlanes getGeometryPlanes() {
         return this.geometryPlanes;
     }
 
-    public void clearGeometryPlanes() {
+    public void discardGeometryPlanes() {
         this.geometryPlanes = null;
     }
 

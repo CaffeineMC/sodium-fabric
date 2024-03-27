@@ -227,11 +227,11 @@ class BSPSortState {
 
     private static int decompressWithOffset(int[] indexes, int fixedIndexOffset, IntConsumer consumer) {
         // read compression header
-        int header1 = indexes[0];
-        int widthIndex = (header1 >> 27) & 0b1111;
-        int currentValue = header1 & 0b11111111111111111 + fixedIndexOffset;
-        int valueCount = ((header1 >> 17) & 0b1111111111) + 1;
-        int baseDelta = indexes[1];
+        int header = indexes[0];
+        int widthIndex = (header >> 27) & 0b1111;
+        int currentValue = header & 0b11111111111111111 + fixedIndexOffset;
+        int valueCount = ((header >> 17) & 0b1111111111) + 1;
+        int baseDelta = indexes[1]; // second piece of the header
 
         // handle special case of width index 0, this means there's no delta data
         if (widthIndex == CONSTANT_DELTA_WIDTH_INDEX) {

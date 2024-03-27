@@ -2,11 +2,14 @@ package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_t
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntConsumer;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TopoGraphSorting;
+import net.caffeinemc.mods.sodium.client.util.MathUtil;
+import net.caffeinemc.mods.sodium.client.util.sorting.RadixSort;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector3fc;
@@ -45,9 +48,12 @@ import java.util.Arrays;
  * reasonable and common use case (I haven't been able to determine that it is).
  */
 abstract class InnerPartitionBSPNode extends BSPNode {
-    private static final Logger LOGGER = LogManager.getLogger(InnerPartitionBSPNode.class);
-
     private static final int NODE_REUSE_THRESHOLD = 30;
+    private static final int MAX_INTERSECTION_ATTEMPTS = 500;
+    private static final int MAX_PRIMARY_INTERSECTOR_ITEMS = 40;
+    private static final float PRIMARY_INTERSECTOR_THRESHOLD = 0.5f;
+
+    private static final Logger LOGGER = LogManager.getLogger(InnerPartitionBSPNode.class);
 
     final Vector3fc planeNormal;
     final int axis;
@@ -209,7 +215,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     // the start of a quad's extent in this direction
     private static final int INTERVAL_START = 2;
 
-    // end end of a quad's extent in this direction
+    // the end of a quad's extent in this direction
     private static final int INTERVAL_END = 0;
 
     // looking at a quad from the side where it has zero thickness
@@ -231,6 +237,8 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         for (int axisCount = 0; axisCount < 3; axisCount++) {
             int axis = (axisCount + depth + 1) % 3;
             var oppositeDirection = axis + 3;
+            int alignedFacingBitmap = 0;
+            boolean onlyIntervalSide = true;
 
             // collect all the geometry's start and end points in this direction
             points.clear();
@@ -244,6 +252,26 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                 } else {
                     points.add(encodeIntervalPoint(posExtent, quadIndex, INTERVAL_END));
                     points.add(encodeIntervalPoint(negExtent, quadIndex, INTERVAL_START));
+                    onlyIntervalSide = false;
+                }
+
+                alignedFacingBitmap |= 1 << quad.getFacing().ordinal();
+            }
+
+            // simplified SNR heuristic as seen in TranslucentGeometryCollector#sortTypeHeuristic (case D)
+            if (!ModelQuadFacing.bitmapHasUnassigned(alignedFacingBitmap)) {
+                int alignedNormalCount = Integer.bitCount(alignedFacingBitmap);
+                if (alignedNormalCount == 1 || alignedNormalCount == 2 && ModelQuadFacing.bitmapIsOpposingAligned(alignedFacingBitmap)) {
+                    // this can be handled with SNR instead of partitioning,
+                    // instead create a fixed order node that uses SNR sorting
+
+                    // check if the geometry is aligned to the axis
+                    if (onlyIntervalSide) {
+                        // this means the already generated points array can be used
+                        return buildSNRLeafNodeFromPoints(workspace, points);
+                    } else {
+                        return buildSNRLeafNodeFromQuads(workspace, indexes, points);
+                    }
                 }
             }
 
@@ -353,31 +381,9 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                     partitions, axis, endsWithPlane);
         }
 
-        // test if there is intersecting geometry to avoid logging an error when it's not necessary. It just uses teh fallback for the rare cases of intersecting geometry.
-        int testsRemaining = 100;
-        for (int quadAIndex = 0; quadAIndex < indexes.size(); quadAIndex++) {
-            var quadA = workspace.quads[indexes.getInt(quadAIndex)];
-
-            for (int quadBIndex = quadAIndex + 1; quadBIndex < indexes.size(); quadBIndex++) {
-                var quadB = workspace.quads[indexes.getInt(quadBIndex)];
-
-                // aligned quads intersect if their bounding boxes intersect
-                if (TQuad.extentsIntersect(quadA, quadB)) {
-                    var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
-                    if (multiLeafNode == null) {
-                        throw new BSPBuildFailureException("Geometry is self-intersecting and can't be statically topo sorted");
-                    }
-                    return multiLeafNode;
-                }
-
-                if (--testsRemaining <= 0) {
-                    break;
-                }
-            }
-
-            if (testsRemaining == 0) {
-                break;
-            }
+        var intersectingHandling = handleIntersecting(workspace, indexes, depth, oldNode);
+        if (intersectingHandling != null) {
+            return intersectingHandling;
         }
 
         // At this point we know the geometry is (probably) not intersecting, and it
@@ -417,6 +423,95 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         }
     }
 
+    static private BSPNode handleIntersecting(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
+        int testsRemaining = MAX_INTERSECTION_ATTEMPTS;
+
+        boolean failedTopoSort = false;
+        int[] intersectionCounts = null;
+        IntOpenHashSet primaryIntersectorIndexes = null;
+        int primaryIntersectorThreshold = 0;
+        if (indexes.size() <= MAX_PRIMARY_INTERSECTOR_ITEMS) {
+            intersectionCounts = new int[indexes.size()];
+            primaryIntersectorThreshold = Math.max(2, (int) (indexes.size() * PRIMARY_INTERSECTOR_THRESHOLD));
+        }
+
+        for (int i = 0; i < indexes.size(); i++) {
+            var quadA = workspace.quads[indexes.getInt(i)];
+
+            for (int j = i + 1; j < indexes.size(); j++) {
+                var quadB = workspace.quads[indexes.getInt(j)];
+
+                // aligned quads intersect if their bounding boxes intersect
+                if (TQuad.extentsIntersect(quadA, quadB)) {
+                    if (intersectionCounts != null) {
+                        var aCount = ++intersectionCounts[i];
+                        if (aCount >= primaryIntersectorThreshold) {
+                            if (primaryIntersectorIndexes == null) {
+                                primaryIntersectorIndexes = new IntOpenHashSet(2);
+                            }
+                            primaryIntersectorIndexes.add(i);
+                        }
+                        var bCount = ++intersectionCounts[j];
+                        if (bCount >= primaryIntersectorThreshold) {
+                            if (primaryIntersectorIndexes == null) {
+                                primaryIntersectorIndexes = new IntOpenHashSet(2);
+                            }
+                            primaryIntersectorIndexes.add(j);
+                        }
+
+                        // cancel primary intersector search if they all intersect with each other
+                        if (primaryIntersectorIndexes != null && primaryIntersectorIndexes.size() == indexes.size()) {
+                            primaryIntersectorIndexes = null;
+                            intersectionCounts = null;
+                        }
+                    }
+
+                    if (!failedTopoSort) {
+                        var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
+                        if (multiLeafNode == null) {
+                            if (intersectionCounts == null) {
+                                throw new BSPBuildFailureException("Geometry is self-intersecting and can't be statically topo sorted");
+                            }
+                            failedTopoSort = true;
+                        } else {
+                            return multiLeafNode;
+                        }
+                    }
+                }
+
+                if (intersectionCounts == null && failedTopoSort) {
+                    testsRemaining = 0;
+                    break;
+                }
+
+                if (--testsRemaining <= 0) {
+                    break;
+                }
+            }
+
+            if (testsRemaining == 0) {
+                break;
+            }
+        }
+
+        if (primaryIntersectorIndexes == null) {
+            return null;
+        }
+
+        // put the primary intersectors in a separate node that's always rendered last
+        var nonPrimaryIntersectors = new IntArrayList(indexes.size() - primaryIntersectorIndexes.size());
+        var primaryIntersectorQuadIndexes = new IntArrayList(primaryIntersectorIndexes.size());
+        for (int i = 0; i < indexes.size(); i++) {
+            if (primaryIntersectorIndexes.contains(i)) {
+                primaryIntersectorQuadIndexes.add(indexes.getInt(i));
+            } else {
+                nonPrimaryIntersectors.add(indexes.getInt(i));
+            }
+        }
+        return InnerFixedDoubleBSPNode.buildFromParts(workspace, indexes, depth, oldNode,
+                nonPrimaryIntersectors, primaryIntersectorQuadIndexes);
+    }
+
     static private BSPNode buildTopoMultiLeafNode(BSPWorkspace workspace, IntArrayList indexes) {
         var quadCount = indexes.size();
         var quads = new TQuad[quadCount];
@@ -432,6 +527,72 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             return null;
         }
 
+        // no need to add the geometry to the workspace's trigger registry
+        // since it's being sorted statically and the sort order won't change based on the camera position
+
         return new LeafMultiBSPNode(BSPSortState.compressIndexesInPlace(indexWriter.indexes, false));
+    }
+
+    static private BSPNode buildSNRLeafNodeFromQuads(BSPWorkspace workspace, IntArrayList indexes, LongArrayList points) {
+        // in this case the points array is wrong, but its allocation can be reused
+
+        int[] quadIndexes;
+
+        // adapted from SNR sorting code
+        if (RadixSort.useRadixSort(indexes.size())) {
+            final var keys = new int[indexes.size()];
+
+            for (int i = 0; i < indexes.size(); i++) {
+                var quadIndex = indexes.getInt(i);
+                keys[i] = MathUtil.floatToComparableInt(workspace.quads[quadIndex].getDotProduct());
+            }
+
+            quadIndexes = RadixSort.sort(keys);
+
+            for (int i = 0; i < indexes.size(); i++) {
+                quadIndexes[i] = indexes.getInt(quadIndexes[i]);
+            }
+        } else {
+            final var sortData = points.elements();
+
+            for (int i = 0; i < indexes.size(); i++) {
+                var quadIndex = indexes.getInt(i);
+                int dotProductComponent = MathUtil.floatToComparableInt(workspace.quads[quadIndex].getDotProduct());
+                sortData[i] = (long) dotProductComponent << 32 | quadIndex;
+            }
+
+            Arrays.sort(sortData, 0, indexes.size());
+
+            quadIndexes = new int[indexes.size()];
+
+            for (int i = 0; i < indexes.size(); i++) {
+                quadIndexes[i] = (int) sortData[i];
+            }
+        }
+
+        return new LeafMultiBSPNode(BSPSortState.compressIndexes(IntArrayList.wrap(quadIndexes), false));
+    }
+
+    static private BSPNode buildSNRLeafNodeFromPoints(BSPWorkspace workspace, LongArrayList points) {
+        // also sort by ascending encoded point but then process as an SNR result
+        Arrays.sort(points.elements(), 0, points.size());
+
+        // since the quads are aligned and are all INTERVAL_SIDE, there's no issues with duplicates.
+        // the length of the array is exactly how many quads there are.
+        int[] quadIndexes = new int[points.size()];
+        int forwards = 0;
+        int backwards = quadIndexes.length - 1;
+        for (int i = 0; i < points.size(); i++) {
+            // based one each quad's facing, order them forwards or backwards,
+            // this means forwards is written from the start and backwards is written from the end
+            var quadIndex = decodeQuadIndex(points.getLong(i));
+            if (workspace.quads[quadIndex].getFacing().getSign() == 1) {
+                quadIndexes[forwards++] = quadIndex;
+            } else {
+                quadIndexes[backwards--] = quadIndex;
+            }
+        }
+
+        return new LeafMultiBSPNode(BSPSortState.compressIndexes(IntArrayList.wrap(quadIndexes), false));
     }
 }

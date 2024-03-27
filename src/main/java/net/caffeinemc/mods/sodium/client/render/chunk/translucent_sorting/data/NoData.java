@@ -20,7 +20,7 @@ public class NoData extends TranslucentData {
 
     @Override
     public SortType getSortType() {
-        return reason;
+        return this.reason;
     }
 
     public static NoData forEmptySection(SectionPos sectionPos) {

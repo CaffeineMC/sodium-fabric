@@ -43,6 +43,7 @@ public enum ModelQuadFacing {
     public static final int OPPOSING_X = 1 << ModelQuadFacing.POS_X.ordinal() | 1 << ModelQuadFacing.NEG_X.ordinal();
     public static final int OPPOSING_Y = 1 << ModelQuadFacing.POS_Y.ordinal() | 1 << ModelQuadFacing.NEG_Y.ordinal();
     public static final int OPPOSING_Z = 1 << ModelQuadFacing.POS_Z.ordinal() | 1 << ModelQuadFacing.NEG_Z.ordinal();
+    public static final int UNASSIGNED_MASK = 1 << ModelQuadFacing.UNASSIGNED.ordinal();
 
     public static ModelQuadFacing fromDirection(Direction dir) {
         return switch (dir) {
@@ -119,5 +120,13 @@ public enum ModelQuadFacing {
 
     public static ModelQuadFacing fromPackedNormal(int normal) {
         return fromNormal(NormI8.unpackX(normal), NormI8.unpackY(normal), NormI8.unpackZ(normal));
+    }
+
+    public static boolean bitmapIsOpposingAligned(int bitmap) {
+        return bitmap == OPPOSING_X || bitmap == OPPOSING_Y || bitmap == OPPOSING_Z;
+    }
+
+    public static boolean bitmapHasUnassigned(int bitmap) {
+        return (bitmap & UNASSIGNED_MASK) != 0;
     }
 }

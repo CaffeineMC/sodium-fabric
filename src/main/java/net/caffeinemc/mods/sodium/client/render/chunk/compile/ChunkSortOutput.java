@@ -1,25 +1,57 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile;
 
 import net.caffeinemc.mods.sodium.client.render.chunk.RenderSection;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicTopoData;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.SortData;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.Sorter;
+import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 
-public class ChunkSortOutput extends BuilderTaskOutput implements OutputWithIndexData {
-    public final DynamicData dynamicData;
+public class ChunkSortOutput extends BuilderTaskOutput implements SortData {
+    private NativeBuffer indexBuffer;
+    private boolean reuseUploadedIndexData;
+    private DynamicTopoData.DynamicTopoSorter topoSorter;
 
-    public ChunkSortOutput(RenderSection render, int buildTime, DynamicData dynamicData) {
+    public ChunkSortOutput(RenderSection render, int buildTime) {
         super(render, buildTime);
+    }
 
-        this.dynamicData = dynamicData;
+    public ChunkSortOutput(RenderSection render, int buildTime, Sorter data) {
+        this(render, buildTime);
+        this.copyResultFrom(data);
+    }
+
+    public void copyResultFrom(Sorter sorter) {
+        this.indexBuffer = sorter.getIndexBuffer();
+        this.reuseUploadedIndexData = false;
+        if (sorter instanceof DynamicTopoData.DynamicTopoSorter topoSorterInstance) {
+            this.topoSorter = topoSorterInstance;
+        }
+    }
+
+    public void markAsReusingUploadedData() {
+        this.reuseUploadedIndexData = true;
     }
 
     @Override
-    public PresentTranslucentData getTranslucentData() {
-        return this.dynamicData;
+    public NativeBuffer getIndexBuffer() {
+        return this.indexBuffer;
     }
 
-    // doesn't implement deletion because the task doesn't allocate any new buffers.
-    // the buffers used belong to the section and are deleted when it is deleted.
-    // buffers created during section building are deleted at section deletion or
-    // when the rebuild is cancelled.
+    @Override
+    public boolean isReusingUploadedIndexData() {
+        return this.reuseUploadedIndexData;
+    }
+
+    public DynamicTopoData.DynamicTopoSorter getTopoSorter() {
+        return this.topoSorter;
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+
+        if (this.indexBuffer != null) {
+            this.indexBuffer.free();
+        }
+    }
 }

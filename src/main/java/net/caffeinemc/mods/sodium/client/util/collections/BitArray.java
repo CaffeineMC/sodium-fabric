@@ -2,6 +2,10 @@ package net.caffeinemc.mods.sodium.client.util.collections;
 
 import java.util.Arrays;
 
+/**
+ * Originally authored here: https://github.com/CaffeineMC/sodium-fabric/blob/ddfb9f21a54bfb30aa876678204371e94d8001db/src/main/java/net/caffeinemc/sodium/util/collections/BitArray.java
+ * @author burgerindividual
+ */
 public class BitArray {
     private static final int ADDRESS_BITS_PER_WORD = 6;
     private static final int BITS_PER_WORD = 1 << ADDRESS_BITS_PER_WORD;

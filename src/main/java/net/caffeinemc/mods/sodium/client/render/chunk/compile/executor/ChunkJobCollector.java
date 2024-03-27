@@ -39,7 +39,7 @@ public class ChunkJobCollector {
     }
 
     public void awaitCompletion(ChunkBuilder builder) {
-        if (this.submitted.size() == 0) {
+        if (this.submitted.isEmpty()) {
             return;
         }
 

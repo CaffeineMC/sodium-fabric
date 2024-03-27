@@ -3,15 +3,15 @@ package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigg
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
 import org.joml.Vector3dc;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicData;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TopoSortDynamicData;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.DynamicTopoData;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.minecraft.core.SectionPos;
 
@@ -72,10 +72,10 @@ public class SortTriggering {
      * Triggers the sections that the given camera movement crosses face planes of.
      * 
      * @param triggerSectionCallback called for each section that is triggered
-     * @param movement the camera movement to trigger for
+     * @param movement               the camera movement to trigger for
      */
     public void triggerSections(BiConsumer<Long, Boolean> triggerSectionCallback, CameraMovement movement) {
-        triggeredNormals.clear();
+        this.triggeredNormals.clear();
         this.triggerSectionCallback = triggerSectionCallback;
         var oldGfniTriggerCount = this.gfniTriggerCount;
         var oldDirectTriggerCount = this.directTriggerCount;
@@ -123,7 +123,7 @@ public class SortTriggering {
     private void triggerSectionCatchup(long sectionPos, boolean isDirectTrigger) {
         // catchup triggering might be disabled
         if (this.triggerSectionCallback != null) {
-            // do prepare triggere here since it can't be done through the render section as
+            // do prepareTrigger here since it can't be done through the render section as
             // it hasn't been put there yet or it contains an old data object
             this.catchupData.prepareTrigger(isDirectTrigger);
 
@@ -132,19 +132,25 @@ public class SortTriggering {
         }
     }
 
-    public void applyTriggerChanges(TopoSortDynamicData data, SectionPos pos, Vector3dc cameraPos) {
-        if (data.getAndFlushTurnGFNITriggerOff()) {
+    public void applyTriggerChanges(DynamicTopoData data, DynamicTopoData.DynamicTopoSorter topoSorter, SectionPos pos, Vector3dc cameraPos) {
+        if (!data.isMatchingSorter(topoSorter)) {
+            return;
+        }
+
+        if (data.checkAndApplyGFNITriggerOff(topoSorter)) {
             this.gfni.removeSection(pos.asLong(), data);
         }
-        if (data.getAndFlushTurnDirectTriggerOn()) {
+        if (data.checkAndApplyDirectTriggerOn(topoSorter)) {
             // use dummy camera movement since there's no risk of the camera moving between
             // the section being scheduled and integrated (there's no building going on
             // here)
             this.direct.integrateSection(this, pos, data, new CameraMovement(cameraPos, cameraPos));
         }
-        if (data.getAndFlushTurnDirectTriggerOff()) {
+        if (data.checkAndApplyDirectTriggerOff(topoSorter)) {
             this.direct.removeSection(pos.asLong(), data);
         }
+
+        data.applyTopoSortFailureCounterChange(topoSorter);
     }
 
     private void decrementSortTypeCounter(TranslucentData oldData) {
@@ -179,7 +185,7 @@ public class SortTriggering {
      * method may also remove the section if it has become irrelevant.
      */
     public void integrateTranslucentData(TranslucentData oldData, TranslucentData newData, Vector3dc cameraPos,
-            BiConsumer<Long, Boolean> triggerSectionCallback) {
+                                         BiConsumer<Long, Boolean> triggerSectionCallback) {
         if (oldData == newData) {
             return;
         }
@@ -195,21 +201,17 @@ public class SortTriggering {
             this.catchupData = dynamicData;
             var movement = new CameraMovement(dynamicData.getInitialCameraPos(), cameraPos);
 
-            if (dynamicData instanceof TopoSortDynamicData topoSortData) {
+            if (dynamicData instanceof DynamicTopoData topoSortData) {
                 if (topoSortData.GFNITriggerEnabled()) {
                     this.gfni.integrateSection(this, pos, topoSortData, movement);
                 } else {
                     // remove the trigger data since this section is never going to get gfni
                     // triggering (there's no option to add sections to GFNI later currently)
-                    topoSortData.clearGeometryPlanes();
+                    topoSortData.discardGeometryPlanes();
                 }
                 if (topoSortData.directTriggerEnabled()) {
                     this.direct.integrateSection(this, pos, topoSortData, movement);
                 }
-
-                // clear trigger changes on data change because the current state of trigger
-                // types was just applied
-                topoSortData.clearTriggerChanges();
             } else {
                 this.gfni.integrateSection(this, pos, dynamicData, movement);
             }

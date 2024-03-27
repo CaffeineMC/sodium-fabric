@@ -8,13 +8,13 @@ import net.minecraft.core.SectionPos;
 public abstract class MixedDirectionData extends PresentTranslucentData {
     private final VertexRange[] ranges = new VertexRange[ModelQuadFacing.COUNT];
 
-    MixedDirectionData(SectionPos sectionPos, NativeBuffer buffer, VertexRange range) {
-        super(sectionPos, buffer);
+    MixedDirectionData(SectionPos sectionPos, VertexRange range, int quadCount) {
+        super(sectionPos, quadCount);
         this.ranges[ModelQuadFacing.UNASSIGNED.ordinal()] = range;
     }
 
     @Override
     public VertexRange[] getVertexRanges() {
-        return ranges;
+        return this.ranges;
     }
 }

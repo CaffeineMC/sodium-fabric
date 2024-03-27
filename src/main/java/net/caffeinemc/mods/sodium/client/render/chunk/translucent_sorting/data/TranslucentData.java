@@ -28,17 +28,6 @@ public abstract class TranslucentData {
 
     public abstract SortType getSortType();
 
-    public boolean retainAfterUpload() {
-        return false;
-    }
-
-    public void delete() {
-    }
-
-    public void sortOnTrigger(Vector3fc cameraPos) {
-        // no-op for other translucent data than dynamic
-    }
-
     /**
      * Prepares the translucent data for triggering of the given type. This is run
      * on the main thread before a sort task is scheduled.

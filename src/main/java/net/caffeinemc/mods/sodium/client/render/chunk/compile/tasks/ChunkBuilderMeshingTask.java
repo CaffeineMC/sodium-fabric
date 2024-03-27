@@ -16,6 +16,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
 import net.caffeinemc.mods.sodium.client.util.task.CancellationToken;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
@@ -166,15 +167,29 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             return null;
         }
 
-        TranslucentData translucentData = null;
-        if (collector != null) {
-            translucentData = collector.getTranslucentData(
-                this.render.getTranslucentData(), meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), this);
-        }
-
         renderData.setOcclusionData(occluder.resolve());
 
-        return new ChunkBuildOutput(this.render, this.submitTime, translucentData, renderData.build(), meshes);
+        boolean reuseUploadedData = false;
+        TranslucentData translucentData = null;
+        if (collector != null) {
+            var oldData = this.render.getTranslucentData();
+            translucentData = collector.getTranslucentData(
+                    oldData, meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), this);
+            reuseUploadedData = translucentData == oldData;
+        }
+
+        var output = new ChunkBuildOutput(this.render, this.submitTime, translucentData, renderData.build(), meshes);
+        if (collector != null) {
+            if (reuseUploadedData) {
+                output.markAsReusingUploadedData();
+            } else if (translucentData instanceof PresentTranslucentData present) {
+                var sorter = present.getSorter();
+                sorter.writeIndexBuffer(this, true);
+                output.copyResultFrom(sorter);
+            }
+        }
+
+        return output;
     }
 
     private ReportedException fillCrashInfo(CrashReport report, LevelSlice slice, BlockPos pos) {

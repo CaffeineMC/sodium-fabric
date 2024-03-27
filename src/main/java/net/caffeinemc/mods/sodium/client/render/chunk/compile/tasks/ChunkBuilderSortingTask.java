@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.tasks;
 
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.Sorter;
 import org.joml.Vector3dc;
 
 import net.caffeinemc.mods.sodium.client.render.chunk.RenderSection;
@@ -10,12 +11,11 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.D
 import net.caffeinemc.mods.sodium.client.util.task.CancellationToken;
 
 public class ChunkBuilderSortingTask extends ChunkBuilderTask<ChunkSortOutput> {
-    private final DynamicData dynamicData;
+    private final Sorter sorter;
 
-    public ChunkBuilderSortingTask(RenderSection render, int frame, Vector3dc absoluteCameraPos,
-            DynamicData dynamicData) {
+    public ChunkBuilderSortingTask(RenderSection render, int frame, Vector3dc absoluteCameraPos, Sorter sorter) {
         super(render, frame, absoluteCameraPos);
-        this.dynamicData = dynamicData;
+        this.sorter = sorter;
     }
 
     @Override
@@ -23,13 +23,13 @@ public class ChunkBuilderSortingTask extends ChunkBuilderTask<ChunkSortOutput> {
         if (cancellationToken.isCancelled()) {
             return null;
         }
-        this.render.getTranslucentData().sortOnTrigger(this.cameraPos);
-        return new ChunkSortOutput(this.render, this.submitTime, this.dynamicData);
+        this.sorter.writeIndexBuffer(this, false);
+        return new ChunkSortOutput(this.render, this.submitTime, this.sorter);
     }
 
     public static ChunkBuilderSortingTask createTask(RenderSection render, int frame, Vector3dc absoluteCameraPos) {
         if (render.getTranslucentData() instanceof DynamicData dynamicData) {
-            return new ChunkBuilderSortingTask(render, frame, absoluteCameraPos, dynamicData);
+            return new ChunkBuilderSortingTask(render, frame, absoluteCameraPos, dynamicData.getSorter());
         }
         return null;
     }

@@ -37,8 +37,4 @@ class BSPWorkspace {
     void addAlignedPartitionPlane(int axis, float distance) {
         result.addDoubleSidedPlane(this.sectionPos, axis, distance);
     }
-
-    GeometryPlanes getGeometryPlanes() {
-        return result;
-    }
 }
