@@ -1,9 +1,9 @@
 object Constants {
     // https://fabricmc.net/develop/
-    const val MINECRAFT_VERSION: String = "1.20.4"
-    const val YARN_VERSION: String = "1.20.4+build.3"
-    const val FABRIC_LOADER_VERSION: String = "0.15.6"
-    const val FABRIC_API_VERSION: String = "0.95.3+1.20.4"
+    const val MINECRAFT_VERSION: String = "24w14a"
+    const val YARN_VERSION: String = "24w14a+build.2"
+    const val FABRIC_LOADER_VERSION: String = "0.15.9"
+    const val FABRIC_API_VERSION: String = "0.96.14+1.20.5"
 
     // https://semver.org/
     const val MOD_VERSION: String = "0.5.8"
@@ -14,7 +14,7 @@ plugins {
     // This prevents a lot of issues where the build script can fail randomly because the Fabric Maven server
     // is not reachable for some reason, and it makes builds much more reproducible. Observation also shows that it
     // really helps to improve startup times on slow connections.
-    id("fabric-loom") version "1.5.7"
+    id("fabric-loom") version "1.6.5"
 }
 
 base {
@@ -27,14 +27,15 @@ base {
 loom {
     mixin {
         defaultRefmapName = "sodium.refmap.json"
+        useLegacyMixinAp = false
     }
 
     accessWidenerPath = file("src/main/resources/sodium.accesswidener")
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 sourceSets {

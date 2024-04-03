@@ -31,7 +31,7 @@ public class WeightedBakedModelMixin {
         Weighted.Present<BakedModel> quad = getAt(this.models, Math.abs((int) random.nextLong()) % this.totalWeight);
 
         if (quad != null) {
-            return quad.getData()
+            return quad.data()
                     .getQuads(state, face, random);
         }
 

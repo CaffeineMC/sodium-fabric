@@ -64,10 +64,8 @@ public class GlyphRendererMixin {
 
         float x1 = x + this.minX;
         float x2 = x + this.maxX;
-        float y1 = this.minY - 3.0F;
-        float y2 = this.maxY - 3.0F;
-        float h1 = y + y1;
-        float h2 = y + y2;
+        float y1 = y + this.minY;
+        float y2 = y + this.maxY;
         float w1 = italic ? 1.0F - 0.25F * y1 : 0.0F;
         float w2 = italic ? 1.0F - 0.25F * y2 : 0.0F;
 
@@ -77,16 +75,16 @@ public class GlyphRendererMixin {
             long buffer = stack.nmalloc(4 * GlyphVertex.STRIDE);
             long ptr = buffer;
 
-            write(ptr, matrix, x1 + w1, h1, 0.0F, color, this.minU, this.minV, light);
+            write(ptr, matrix, x1 + w1, y1, 0.0F, color, this.minU, this.minV, light);
             ptr += GlyphVertex.STRIDE;
 
-            write(ptr, matrix, x1 + w2, h2, 0.0F, color, this.minU, this.maxV, light);
+            write(ptr, matrix, x1 + w2, y2, 0.0F, color, this.minU, this.maxV, light);
             ptr += GlyphVertex.STRIDE;
 
-            write(ptr, matrix, x2 + w2, h2, 0.0F, color, this.maxU, this.maxV, light);
+            write(ptr, matrix, x2 + w2, y2, 0.0F, color, this.maxU, this.maxV, light);
             ptr += GlyphVertex.STRIDE;
 
-            write(ptr, matrix, x2 + w1, h1, 0.0F, color, this.maxU, this.minV, light);
+            write(ptr, matrix, x2 + w1, y1, 0.0F, color, this.maxU, this.minV, light);
             ptr += GlyphVertex.STRIDE;
 
             writer.push(stack, buffer, 4, GlyphVertex.FORMAT);

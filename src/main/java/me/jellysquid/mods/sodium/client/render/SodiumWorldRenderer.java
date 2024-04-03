@@ -219,9 +219,7 @@ public class SodiumWorldRenderer {
     /**
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        ChunkRenderMatrices matrices = ChunkRenderMatrices.from(matrixStack);
-
+    public void drawChunkLayer(RenderLayer renderLayer, ChunkRenderMatrices matrices, double x, double y, double z) {
         if (renderLayer == RenderLayer.getSolid()) {
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, x, y, z);
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, x, y, z);
@@ -360,7 +358,7 @@ public class SodiumWorldRenderer {
 
                 MatrixStack.Entry entry = matrices.peek();
                 VertexConsumer transformer = new OverlayVertexConsumer(bufferBuilder,
-                        entry.getPositionMatrix(), entry.getNormalMatrix(), 1.0f);
+                        entry, 1.0f);
 
                 consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.union(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
             }
