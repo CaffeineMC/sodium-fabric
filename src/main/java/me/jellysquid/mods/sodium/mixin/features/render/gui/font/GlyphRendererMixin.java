@@ -66,8 +66,8 @@ public class GlyphRendererMixin {
         float x2 = x + this.maxX;
         float y1 = y + this.minY;
         float y2 = y + this.maxY;
-        float w1 = italic ? 1.0F - 0.25F * y1 : 0.0F;
-        float w2 = italic ? 1.0F - 0.25F * y2 : 0.0F;
+        float w1 = italic ? 1.0F - 0.25F * this.minY : 0.0F;
+        float w2 = italic ? 1.0F - 0.25F * this.maxY : 0.0F;
 
         int color = ColorABGR.pack(red, green, blue, alpha);
 

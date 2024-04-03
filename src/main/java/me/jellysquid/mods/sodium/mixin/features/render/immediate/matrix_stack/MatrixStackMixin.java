@@ -38,6 +38,8 @@ public abstract class MatrixStackMixin {
             entry = new MatrixStack.Entry(new Matrix4f(prev.getPositionMatrix()), new Matrix3f(prev.getNormalMatrix()));
         }
 
+        entry.canSkipNormalization = prev.canSkipNormalization;
+
         this.stack.addLast(entry);
     }
 
