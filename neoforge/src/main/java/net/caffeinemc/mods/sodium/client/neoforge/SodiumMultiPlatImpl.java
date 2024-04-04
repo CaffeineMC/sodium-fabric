@@ -87,4 +87,8 @@ public class SodiumMultiPlatImpl {
     public static boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, Direction facing) {
         return selfState.supportsExternalFaceHiding() && (otherState.hidesNeighborFace(level, selfPos, selfState, DirectionUtil.getOpposite(facing)));
     }
+
+    public static int getLightEmission(BlockState state, BlockAndTintGetter level, BlockPos pos) {
+        return state.getLightEmission(level, pos);
+    }
 }

@@ -169,7 +169,8 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
     protected void prepareAoInfo(boolean modelAo) {
         this.useAmbientOcclusion = Minecraft.useFancyGraphics();
-        this.defaultLightMode = this.useAmbientOcclusion && modelAo && this.state.getLightEmission() == 0 ? LightMode.SMOOTH : LightMode.FLAT;
+        // Ignore the incorrect IDEA warning here.
+        this.defaultLightMode = this.useAmbientOcclusion && modelAo && SodiumMultiPlat.getLightEmission(state, level, pos) == 0 ? LightMode.SMOOTH : LightMode.FLAT;
     }
 
     // TODO: normal-based (enhanced) AO for smooth lighting pipeline

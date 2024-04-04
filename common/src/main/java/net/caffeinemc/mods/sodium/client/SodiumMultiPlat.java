@@ -94,4 +94,9 @@ public class SodiumMultiPlat {
     public static boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, Direction facing) {
         throw new AssertionError("Platform specific code meant to be called!");
     }
+
+    @ExpectPlatform
+    public static int getLightEmission(BlockState state, BlockAndTintGetter level, BlockPos pos) {
+        throw new AssertionError("Platform specific code meant to be called!");
+    }
 }
