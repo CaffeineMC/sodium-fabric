@@ -11,6 +11,9 @@ repositories {
     maven {
         url = uri("https://maven.neoforged.net/releases")
     }
+    maven {
+        url = uri("https://maven.fabricmc.net/")
+    }
 
     mavenLocal()
 }
@@ -147,6 +150,7 @@ dependencies {
     include(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
     forgeRuntimeLibrary(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
 
+    modCompileOnly("net.fabricmc.fabric-api:fabric-renderer-api-v1:3.2.9+1172e897d7")
     common(project(":common", "namedElements")) {
         isTransitive = false
     }
