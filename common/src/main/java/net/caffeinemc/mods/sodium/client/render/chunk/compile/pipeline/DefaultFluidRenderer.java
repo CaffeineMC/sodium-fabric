@@ -22,6 +22,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMa
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.client.Minecraft;
@@ -323,7 +324,7 @@ public class DefaultFluidRenderer {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = level.getBlockState(adjPos);
 
-                    if (SodiumMultiPlat.isBlockTransparent(adjBlock, level, adjPos, fluidState)) {
+                    if (SodiumPlatformHelpers.INSTANCE.isBlockTransparent(adjBlock, level, adjPos, fluidState)) {
                         sprite = sprites[2];
                         isOverlay = true;
                     }

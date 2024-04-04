@@ -1,28 +1,21 @@
+import org.gradle.plugins.ide.idea.model.IdeaModule
+
 plugins {
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("idea")
+    id("maven-publish")
+    id("net.neoforged.gradle.userdev") version "7.0.81"
+    id("java-library")
 }
 
-architectury {
-    platformSetupLoomIde()
-    neoForge()
-}
+val MINECRAFT_VERSION: String by rootProject.extra
+val NEOFORGE_VERSION: String by rootProject.extra
 
-repositories {
-    maven {
-        url = uri("https://maven.neoforged.net/releases")
-    }
-    maven {
-        url = uri("https://maven.fabricmc.net/")
-    }
-
-    mavenLocal()
+base {
+    archivesName = "sodium-neoforge-${MINECRAFT_VERSION}"
 }
-val developmentNeoForge: Configuration by configurations.getting
-val architecturyTransformerRuntimeClasspath: Configuration by configurations.getting
 
 sourceSets {
     val service = create("service")
-    val shade = create("shade")
     val main = getByName("main")
 
     service.apply {
@@ -33,134 +26,108 @@ sourceSets {
         compileClasspath += main.compileClasspath
     }
 
-    shade.apply {
-        compileClasspath += main.compileClasspath
-    }
-
     main.apply {
-        runtimeClasspath -= output
-        runtimeClasspath += shade.output
+        //runtimeClasspath -= output
     }
 }
 
-val common: Configuration by configurations.creating
-val shadowCommon: Configuration by configurations.creating
-
-val MINECRAFT_VERSION: String by rootProject.extra
-val NEOFORGE_VERSION: String by rootProject.extra
-base.archivesName.set("sodium-forge")
-
-loom {
-    silentMojangMappingsLicense()
-
-    accessWidenerPath = project(":common").loom.accessWidenerPath
+// Automatically enable neoforge AccessTransformers if the file exists
+// This location is hardcoded in FML and can not be changed.
+// https://github.com/neoforged/FancyModLoader/blob/a952595eaaddd571fbc53f43847680b00894e0c1/loader/src/main/java/net/neoforged/fml/loading/moddiscovery/ModFile.java#L118
+if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
+    minecraft.accessTransformers.file("src/main/resources/META-INF/accesstransformer.cfg")
 }
 
-configurations {
-    compileOnly.configure { extendsFrom(common) }
-}
-
-tasks.shadowJar {
-    exclude("fabric.mod.json")
-    configurations = listOf(shadowCommon)
-    archiveClassifier.set("dev-shadow")
-}
-
-var fullJar = tasks.register<Jar>("fullJar")
-
-fullJar.configure {
-    dependsOn(tasks.remapJar)
+val fullJar: Jar by tasks.creating(Jar::class) {
     from(sourceSets.getByName("service").output)
     from(project(":common").sourceSets.getByName("desktop").output)
-    manifest.from(tasks.remapJar.get().manifest)
+    // Despite not being part of jarjar metadata, the mod jar must be located in this directory
+    // in order to be deobfuscated by FG in userdev environments
+    into("META-INF/jarjar/") {
+        from(tasks.jar)
+    }
+    manifest {
+        from(tasks.jar.get().manifest)
+    }
+
     into("META-INF") {
-        from(sourceSets.getByName("main").output.resourcesDir!!.toPath().resolve("META-INF").resolve("mods.toml").toFile())
+       // from(projectDir.resolve("src").resolve("main").resolve("resources").resolve("META-INF").resolve("mods.toml"))
     }
-    from(project(":common").sourceSets.getByName("main").output.resourcesDir!!.toPath().resolve("sodium-icon.png").toFile())
-    into("META-INF/jarjar") {
-        from(tasks.remapJar.get().archiveFile.get())
-    }
-
-    archiveClassifier = ""
-
-    manifest.attributes["FMLModType"] = "LIBRARY"
-
-    from("${rootProject.projectDir}/COPYING")
-    from("${rootProject.projectDir}/COPYING.LESSER")
 
     manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
-}
-
-var runClientJar = tasks.register<Jar>("runClientJar")
-
-runClientJar.configure {
-    dependsOn(tasks.shadowJar)
-    from(sourceSets.getByName("service").output)
-    manifest.from(tasks.shadowJar.get().manifest)
-    into("META-INF") {
-        from(sourceSets.getByName("main").output.resourcesDir!!.toPath().resolve("META-INF").resolve("mods.toml").toFile())
-    }
-
-    into("META-INF/jarjar") {
-        from(tasks.shadowJar.get().archiveFile.get())
-    }
-    destinationDirectory.set(projectDir.resolve("build").resolve("devlibs"))
-    archiveClassifier = "devJar"
-
     manifest.attributes["FMLModType"] = "LIBRARY"
+
 }
 
-tasks.assemble.configure {
-    dependsOn(fullJar)
-    dependsOn(runClientJar)
-}
+runs {
+    configureEach {
+        modSource(project.sourceSets.main.get())
+    }
 
-tasks.remapJar {
-    injectAccessWidener.set(true)
-    inputFile.set(tasks.shadowJar.get().archiveFile)
-    dependsOn(tasks.shadowJar)
-    archiveClassifier.set(null as String?)
-    atAccessWideners.add("sodium.accesswidener")
-    archiveClassifier.set("modonly")
-    destinationDirectory.set(projectDir.resolve("build").resolve("devlibs"))
-}
+    create("client") {
+        workingDirectory(project.file("run"))
+        dependencies {
+            runtime("com.lodborg:interval-tree:1.0.0")
 
-tasks.runClient {
-    classpath += files(runClientJar)
-}
-
-tasks.jar {
-    archiveClassifier.set("dev")
-    from(sourceSets.getByName("shade").output)
-
-    from("${rootProject.projectDir}/COPYING")
-    from("${rootProject.projectDir}/COPYING.LESSER")
-}
-
-components.getByName("java") {
-    this as AdhocComponentWithVariants
-    this.withVariantsFromConfiguration(project.configurations["shadowRuntimeElements"]) {
-        skip()
+        }
+        //displayName = "Client"
+        //setProperty("mixin.env.remapRefMap", "true")
+        //setProperty("mixin.env.refMapRemappingFile", "${projectDir}/build/createSrgToMcp/output.srg")
+        //mods {
+        //    create("modRun") {
+        //        source(sourceSets.main.get())
+        //        source(project(":common").sourceSets.main.get())
+        //    }
+        //}
     }
 }
+
+sourceSets.main.get().resources { srcDir("src/generated/resources") }
 
 dependencies {
-    neoForge("net.neoforged:neoforge:${NEOFORGE_VERSION}")
-
-    include(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
-    forgeRuntimeLibrary(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
-
-    modCompileOnly("net.fabricmc.fabric-api:fabric-renderer-api-v1:3.2.9+1172e897d7")
-    common(project(":common", "namedElements")) {
-        isTransitive = false
-    }
-    shadowCommon(project(":common", "transformProductionNeoForge")) {
-        isTransitive = false
-    }
+    implementation("net.neoforged:neoforge:${NEOFORGE_VERSION}")
+    compileOnly(project(":common"))
+    implementation(files("fabric_renderer_api_v1-3.2.1.jar"))
+    implementation(files("fabric_api_base-0.4.31.jar"))
+    implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
 }
 
-tasks.processResources {
-    filesMatching("META-INF/mods.toml") {
-        expand(mapOf("version" to project.version))
+// NeoGradle implementations the game, but we don"t want to add our common code to the game"s code
+val notNeoTask: (Task) -> Boolean = { it : Task -> !it.name.startsWith("neo") && !it.name.startsWith("compileService") }
+
+tasks.jar {
+    archiveClassifier = "mod"
+}
+
+tasks.build {
+    dependsOn(fullJar)
+}
+
+tasks.withType<JavaCompile>().matching(notNeoTask).configureEach {
+    source(project(":common").sourceSets.main.get().allSource)
+    source(project(":common").sourceSets.getByName("api").allSource)
+}
+
+tasks.withType<Javadoc>().matching(notNeoTask).configureEach {
+    source(project(":common").sourceSets.main.get().allJava)
+    source(project(":common").sourceSets.getByName("api").allJava)
+}
+
+tasks.withType<ProcessResources>().matching(notNeoTask).configureEach {
+    from(project(":common").sourceSets.main.get().resources)
+    from(project(":common").sourceSets.getByName("api").resources)
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+publishing {
+    publications {
+       // mavenJava(MavenPublication) {
+       //     artifactId base.archivesName.get()
+       //     from components.java
+       // }
+    }
+    repositories {
+        maven(
+                "file://"+System.getenv("local_maven"))
     }
 }

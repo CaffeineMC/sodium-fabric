@@ -1,15 +1,9 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("java")
+    id("idea")
+    id("fabric-loom") version "1.6.5"
+    id("maven-publish")
 }
-
-architectury {
-    platformSetupLoomIde()
-    fabric()
-}
-
-val common: Configuration by configurations.creating
-val shadowCommon: Configuration by configurations.creating
-val developmentFabric: Configuration by configurations.getting
 
 val MINECRAFT_VERSION: String by rootProject.extra
 val FABRIC_LOADER_VERSION: String by rootProject.extra
@@ -17,19 +11,16 @@ val FABRIC_API_VERSION: String by rootProject.extra
 
 base.archivesName.set("sodium-fabric")
 
-configurations {
-    compileOnly.configure { extendsFrom(common) }
-    runtimeOnly.configure { extendsFrom(common) }
-    developmentFabric.extendsFrom(common)
-}
+val commonMain = project(":common").sourceSets.main.get()
+val commonApi = project(":common").sourceSets.getByName("api")
 
 loom {
-    silentMojangMappingsLicense()
-
-    accessWidenerPath = project(":common").loom.accessWidenerPath
+     accessWidenerPath = project(":common").loom.accessWidenerPath
 }
 
 dependencies {
+    "minecraft"(group = "com.mojang", name = "minecraft", version = MINECRAFT_VERSION)
+    "mappings"(loom.officialMojangMappings())
     modImplementation(group = "net.fabricmc", name = "fabric-loader", version = FABRIC_LOADER_VERSION)
     include(implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0"))
 
@@ -47,33 +38,28 @@ dependencies {
     addEmbeddedFabricModule("fabric-rendering-fluids-v1")
     addEmbeddedFabricModule("fabric-resource-loader-v0")
 
-    common(project(":common", "namedElements")) { isTransitive = false }
-    shadowCommon(project(":common", "transformProductionFabric")) { isTransitive = false }
+    implementation(project(":common", "namedElements")) { isTransitive = false }
 }
 
 tasks.processResources {
+    duplicatesStrategy = DuplicatesStrategy.WARN
+
     inputs.property("version", project.version)
+    from(project(":common").tasks.getByName("processResources"))
 
     filesMatching("fabric.mod.json") {
         expand(mapOf("version" to project.version))
     }
 }
 
-tasks.shadowJar {
-    exclude("architectury.common.json")
-    from(project(":common").sourceSets.getByName("desktop").output)
-    manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
-    configurations = listOf(shadowCommon)
-    archiveClassifier.set("dev-shadow")
-}
-
 tasks.remapJar {
-    injectAccessWidener.set(true)
-    inputFile.set(tasks.shadowJar.get().archiveFile)
-    dependsOn(tasks.shadowJar)
     archiveClassifier.set(null as String?)
 }
 
 tasks.jar {
+    duplicatesStrategy = DuplicatesStrategy.WARN
+
     archiveClassifier.set("dev")
+    from(commonMain.output)
+    from(commonApi.output)
 }

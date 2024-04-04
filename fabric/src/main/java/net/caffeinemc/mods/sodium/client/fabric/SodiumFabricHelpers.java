@@ -1,0 +1,122 @@
+package net.caffeinemc.mods.sodium.client.fabric;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
+import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.Camera;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.material.FluidState;
+import org.joml.Matrix4f;
+
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+
+public class SodiumFabricHelpers implements SodiumPlatformHelpers {
+    @Override
+    public boolean isBlockTransparent(BlockState block, BlockAndTintGetter level, BlockPos pos, FluidState fluidState) {
+        return FluidRenderHandlerRegistry.INSTANCE.isBlockTransparent(block.getBlock());
+    }
+
+    @Override
+    public Path getGameDir() {
+        return FabricLoader.getInstance().getGameDir();
+    }
+
+    @Override
+    public Path getConfigDir() {
+        return FabricLoader.getInstance().getConfigDir();
+    }
+
+    @Override
+    public Object getRenderData(Level level, BoundingBox pos, BlockEntity value) {
+        if (value == null) {
+            return null;
+        }
+        return value.getRenderData();
+    }
+
+    @Override
+    public boolean isDevelopmentEnvironment() {
+        return FabricLoader.getInstance().isDevelopmentEnvironment();
+    }
+
+    @Override
+    public boolean isFlawlessFramesActive() {
+        return FlawlessFrames.isActive();
+    }
+
+    @Override
+    public Iterable<RenderType> getMaterials(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, RandomSource random, Object modelData) {
+        return Collections.singleton(ItemBlockRenderTypes.getChunkRenderType(state));
+    }
+
+    @Override
+    public List<BakedQuad> getQuads(BlockAndTintGetter level, BlockPos pos, BakedModel model, BlockState state, Direction face, RandomSource random, RenderType renderType, Object modelData) {
+        return List.of();
+    }
+
+    @Override
+    public Object getModelData(Object o, BlockPos pos) {
+        return null;
+    }
+
+    @Override
+    public Object getEmptyModelData() {
+        return null;
+    }
+
+    @Override
+    public boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, Direction facing) {
+        return false;
+    }
+
+    @Override
+    public int getLightEmission(BlockState state, BlockAndTintGetter level, BlockPos pos) {
+        return state.getLightEmission();
+    }
+
+    @Override
+    public boolean shouldCopyRenderData() {
+        return true;
+    }
+
+    @Override
+    public boolean renderFluidFromVanilla() {
+        return FluidRendererImpl.renderFromVanilla();
+    }
+
+    @Override
+    public void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, PoseStack matrices, Matrix4f matrix, int ticks, Camera mainCamera, Frustum cullingFrustum) {
+
+    }
+
+    @Override
+    public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
+        return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
+    }
+
+    @Override
+    public TextureAtlasSprite findInBlockAtlas(float u, float v) {
+        return SpriteFinderCache.forBlockAtlas().find(u, v);
+    }
+}

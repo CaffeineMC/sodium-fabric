@@ -23,6 +23,7 @@ import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.EncodingFormat;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
@@ -213,7 +214,7 @@ public class ItemRenderContext extends AbstractRenderContext {
 
     private void bufferQuad(MutableQuadViewImpl quad, VertexConsumer vertexConsumer) {
         QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, matNormal);
-        SpriteUtil.markSpriteActive(SodiumMultiPlat.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
+        SpriteUtil.markSpriteActive(SodiumPlatformHelpers.INSTANCE.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
     }
 
     /**

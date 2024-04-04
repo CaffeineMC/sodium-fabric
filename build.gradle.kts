@@ -1,12 +1,5 @@
-import net.fabricmc.loom.api.LoomGradleExtensionAPI
 
 plugins {
-    // Unlike most projects, we choose to pin the specific version of Loom.
-    // This prevents a lot of issues where the build script can fail randomly because the Fabric Maven server
-    // is not reachable for some reason, and it makes builds much more reproducible. Observation also shows that it
-    // really helps to improve startup times on slow connections.
-    id("architectury-plugin") version "3.4.151"
-    id("dev.architectury.loom") version "1.5.388" apply false
 }
 
 val MINECRAFT_VERSION by extra { "1.20.4" }
@@ -19,23 +12,7 @@ val MOD_VERSION by extra { "0.6.0" }
 
 allprojects {
     apply(plugin = "java")
-    apply(plugin = "architectury-plugin")
     apply(plugin = "maven-publish")
-}
-
-subprojects {
-    apply(plugin = "dev.architectury.loom")
-
-    val loom = project.extensions.getByName<LoomGradleExtensionAPI>("loom")
-
-    dependencies {
-        "minecraft"(group = "com.mojang", name = "minecraft", version = MINECRAFT_VERSION)
-        "mappings"(loom.officialMojangMappings())
-    }
-}
-
-architectury {
-    minecraft = MINECRAFT_VERSION
 }
 
 tasks.withType<JavaCompile> {
@@ -44,7 +21,6 @@ tasks.withType<JavaCompile> {
 
 allprojects {
     apply(plugin = "java")
-    apply(plugin = "architectury-plugin")
     apply(plugin = "maven-publish")
 
     fun createVersionString(): String {

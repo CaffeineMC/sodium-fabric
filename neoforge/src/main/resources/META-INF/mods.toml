@@ -5,7 +5,7 @@ license = "LGPL-3.0-only"
 [[mods]]
 modId = "sodium"
 
-version = "${version}"
+version = "1.0"
 displayName = "Sodium"
 
 logoFile="sodium-icon.png" #optional

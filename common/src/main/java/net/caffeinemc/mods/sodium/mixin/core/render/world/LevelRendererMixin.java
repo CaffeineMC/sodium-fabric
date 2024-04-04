@@ -6,6 +6,7 @@ import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer;
 import net.caffeinemc.mods.sodium.client.render.viewport.ViewportProvider;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.world.LevelRendererExtension;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -127,7 +128,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
             RenderDevice.exitManagedCode();
         }
 
-        SodiumMultiPlat.runChunkLayerEvents(renderLayer, ((LevelRenderer) (Object) this), matrices, matrix, this.ticks, this.minecraft.gameRenderer.getMainCamera(), this.cullingFrustum);
+        SodiumPlatformHelpers.INSTANCE.runChunkLayerEvents(renderLayer, ((LevelRenderer) (Object) this), matrices, matrix, this.ticks, this.minecraft.gameRenderer.getMainCamera(), this.cullingFrustum);
     }
 
     /**
@@ -138,7 +139,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     private void setupRender(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
 
         var viewport = ((ViewportProvider) frustum).sodium$createViewport();
-        var updateChunksImmediately = SodiumMultiPlat.isFlawlessFramesActive();
+        var updateChunksImmediately = SodiumPlatformHelpers.INSTANCE.isFlawlessFramesActive();
 
         RenderDevice.enterManagedCode();
 
@@ -211,6 +212,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     }
 
     // Exclusive to NeoForge, allow to fail.
+    @SuppressWarnings("all")
     @Inject(method = "iterateVisibleBlockEntities", at = @At("HEAD"), cancellable = true, require = 0)
     public void replaceBlockEntityIteration(Consumer<BlockEntity> blockEntityConsumer, CallbackInfo ci) {
         ci.cancel();

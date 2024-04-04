@@ -13,14 +13,13 @@ import java.io.IOException;
 
 public class SodiumClientMod {
     private static SodiumGameOptions CONFIG;
-    private static Logger LOGGER;
+    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium");
 
     private static String MOD_VERSION;
 
     public static void onInitialization(String version) {
         MOD_VERSION = version;
 
-        LOGGER = LoggerFactory.getLogger("Sodium");
         CONFIG = loadConfig();
 
         try {

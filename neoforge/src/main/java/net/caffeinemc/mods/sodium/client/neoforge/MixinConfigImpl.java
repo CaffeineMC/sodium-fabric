@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.client.data.config.neoforge;
+package net.caffeinemc.mods.sodium.client.neoforge;
 
 import net.caffeinemc.mods.sodium.client.data.config.MixinConfig;
 import net.neoforged.fml.loading.FMLLoader;

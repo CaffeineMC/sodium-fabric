@@ -17,6 +17,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexE
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.frapi.render.AbstractBlockRenderContext;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
@@ -170,6 +171,6 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ChunkMeshBufferBuilder vertexBuffer = modelBuilder.getVertexBuffer(normalFace);
         vertexBuffer.push(vertices, material);
 
-        modelBuilder.addSprite(SodiumMultiPlat.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
+        modelBuilder.addSprite(SodiumPlatformHelpers.INSTANCE.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
     }
 }

@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenCustomHashMap;
 import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -45,7 +46,7 @@ public class BlockOcclusionCache {
         // Blocks can define special behavior to control whether faces are rendered.
         // This is mostly used by transparent blocks (Leaves, Glass, etc.) to not render interior faces between blocks
         // of the same type.
-        if (selfState.skipRendering(otherState, facing) || SodiumMultiPlat.shouldSkipRender(view, selfState, otherState, selfPos, facing)) {
+        if (selfState.skipRendering(otherState, facing) || SodiumPlatformHelpers.INSTANCE.shouldSkipRender(view, selfState, otherState, selfPos, facing)) {
             return false;
         }
 

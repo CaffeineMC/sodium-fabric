@@ -1,10 +1,10 @@
 package net.caffeinemc.mods.sodium.client.world.cloned;
 
-import dev.architectury.injectables.targets.ArchitecturyTarget;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.world.PalettedContainerROExtension;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.core.BlockPos;
@@ -65,7 +65,7 @@ public class ClonedChunkSection {
                     blockData = constructDebugWorldContainer(pos);
                 }
                 blockEntityMap = copyBlockEntities(chunk, pos);
-                if (blockEntityMap != null && ArchitecturyTarget.getCurrentTarget().equals("fabric")) {
+                if (blockEntityMap != null && SodiumPlatformHelpers.INSTANCE.shouldCopyRenderData()) {
                     blockEntityRenderDataMap = copyBlockEntityRenderData(level, blockEntityMap);
                 }
             }
@@ -183,7 +183,7 @@ public class ClonedChunkSection {
         // were iterating over any data in that chunk.
         // See https://github.com/CaffeineMC/sodium-fabric/issues/942 for more info.
         for (var entry : Int2ReferenceMaps.fastIterable(blockEntities)) {
-            Object data = SodiumMultiPlat.getRenderData(level, null, entry.getValue());
+            Object data = SodiumPlatformHelpers.INSTANCE.getRenderData(level, null, entry.getValue());
 
             if (data != null) {
                 if (blockEntityRenderDataMap == null) {

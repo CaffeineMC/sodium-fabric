@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.client.model.light.data;
 
 import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.BlockPos;
@@ -69,7 +70,7 @@ public abstract class LightDataAccess {
         boolean fo = state.isSolidRender(level, pos);
         boolean fc = state.isCollisionShapeFullBlock(level, pos);
 
-        int lu = SodiumMultiPlat.getLightEmission(state, level, pos);
+        int lu = SodiumPlatformHelpers.INSTANCE.getLightEmission(state, level, pos);
 
         // OPTIMIZE: Do not calculate light data if the block is full and opaque and does not emit light.
         int bl;
