@@ -11,8 +11,10 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
@@ -66,12 +68,12 @@ public class SodiumMultiPlatImpl {
         return FabricLoader.getInstance().isDevelopmentEnvironment();
     }
 
-    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource random, Object modelData) {
-        return Collections.singleton(ItemBlockRenderTypes.getChunkRenderType(ctx.state()));
+    public static Iterable<RenderType> getMaterials(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, RandomSource random, Object modelData) {
+        return Collections.singleton(ItemBlockRenderTypes.getChunkRenderType(state));
     }
 
-    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {
-        return ctx.model().getQuads(ctx.state(), face, random);
+    public static List<BakedQuad> getQuads(BlockAndTintGetter level, BlockPos pos, BakedModel model, BlockState state, Direction face, RandomSource random, RenderType renderType, Object modelData) {
+        return model.getQuads(state, face, random);
     }
 
     public static Object getEmptyModelData() {

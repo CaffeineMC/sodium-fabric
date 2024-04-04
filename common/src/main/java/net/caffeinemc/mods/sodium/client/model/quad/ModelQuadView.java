@@ -45,6 +45,11 @@ public interface ModelQuadView {
     int getNormal(int idx);
 
     /**
+     * @return The computed normal.
+     */
+    int getNormal();
+
+    /**
      * @return The packed light set for the vertex at index {@param idx}.
      */
     int getLight(int idx);

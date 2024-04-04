@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -67,12 +68,12 @@ public class SodiumMultiPlatImpl {
         return !FMLLoader.isProduction();
     }
 
-    public static Iterable<RenderType> getMaterials(BlockRenderContext ctx, RandomSource random, Object modelData) {
-        return ctx.model().getRenderTypes(ctx.state(), random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), (ModelData) modelData));
+    public static Iterable<RenderType> getMaterials(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, RandomSource random, Object modelData) {
+        return model.getRenderTypes(state, random, model.getModelData(level, pos, state, (ModelData) modelData));
     }
 
-    public static List<BakedQuad> getQuads(BlockRenderContext ctx, Direction face, RandomSource random, RenderType renderType, Object modelData) {
-        return ctx.model().getQuads(ctx.state(), face, random, ctx.model().getModelData(ctx.slice(), ctx.pos(), ctx.state(), (ModelData) modelData), renderType);
+    public static List<BakedQuad> getQuads(BlockAndTintGetter level, BlockPos pos, BakedModel model, BlockState state, Direction face, RandomSource random, RenderType renderType, Object modelData) {
+        return model.getQuads(state, face, random, model.getModelData(level, pos, state, (ModelData) modelData), renderType);
     }
 
     public static Object getEmptyModelData() {

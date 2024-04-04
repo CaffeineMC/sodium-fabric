@@ -19,6 +19,7 @@ val architecturyTransformerRuntimeClasspath: Configuration by configurations.get
 
 sourceSets {
     val service = create("service")
+    val shade = create("shade")
     val main = getByName("main")
 
     service.apply {
@@ -29,8 +30,13 @@ sourceSets {
         compileClasspath += main.compileClasspath
     }
 
+    shade.apply {
+        compileClasspath += main.compileClasspath
+    }
+
     main.apply {
         runtimeClasspath -= output
+        runtimeClasspath += shade.output
     }
 }
 
@@ -91,6 +97,7 @@ runClientJar.configure {
     into("META-INF") {
         from(sourceSets.getByName("main").output.resourcesDir!!.toPath().resolve("META-INF").resolve("mods.toml").toFile())
     }
+
     into("META-INF/jarjar") {
         from(tasks.shadowJar.get().archiveFile.get())
     }
@@ -121,6 +128,7 @@ tasks.runClient {
 
 tasks.jar {
     archiveClassifier.set("dev")
+    from(sourceSets.getByName("shade").output)
 
     from("${rootProject.projectDir}/COPYING")
     from("${rootProject.projectDir}/COPYING.LESSER")

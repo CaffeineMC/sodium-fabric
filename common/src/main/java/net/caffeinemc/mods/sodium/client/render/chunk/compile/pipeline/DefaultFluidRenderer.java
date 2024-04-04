@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
 
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
@@ -370,7 +371,7 @@ public class DefaultFluidRenderer {
         // multiply the per-vertex color against the combined brightness
         // the combined brightness is the per-vertex brightness multiplied by the block's brightness
         for (int i = 0; i < 4; i++) {
-            this.quadColors[i] = ColorABGR.withAlpha(this.quadColors[i], light.br[i] * brightness);
+            this.quadColors[i] = ColorARGB.toABGR(this.quadColors[i], light.br[i] * brightness);
         }
     }
 

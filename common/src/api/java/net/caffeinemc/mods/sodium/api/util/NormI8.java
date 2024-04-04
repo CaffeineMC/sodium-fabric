@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.api.util;
 
 import net.minecraft.util.Mth;
+import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 /**
@@ -113,5 +114,9 @@ public class NormI8 {
         byte normBZ = (byte) (normB >> Z_COMPONENT_OFFSET);
 
         return normAX == -normBX && normAY == -normBY && normAZ == -normBZ;
+    }
+
+    public static Vector3f unpack(int i, Vector3f output) {
+        return output.set(unpackX(i), unpackY(i), unpackZ(i));
     }
 }
