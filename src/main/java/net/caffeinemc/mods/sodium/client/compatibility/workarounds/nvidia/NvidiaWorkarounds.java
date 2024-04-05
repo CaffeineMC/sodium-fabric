@@ -2,8 +2,8 @@ package net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia;
 
 import net.caffeinemc.mods.sodium.client.platform.unix.Libc;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Kernel32;
-import net.minecraft.Util;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsCommandLine;
+import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,8 +14,8 @@ public class NvidiaWorkarounds {
         LOGGER.warn("Applying workaround: Prevent the NVIDIA OpenGL driver from using broken optimizations (NVIDIA_THREADED_OPTIMIZATIONS)");
 
         try {
-            switch (Util.getPlatform()) {
-                case WINDOWS -> {
+            switch (OsUtils.getOs()) {
+                case WIN -> {
                     // The NVIDIA drivers rely on parsing the command line arguments to detect Minecraft. If we destroy those,
                     // then it shouldn't be able to detect us anymore.
                     WindowsCommandLine.setCommandLine("net.caffeinemc.sodium");
@@ -39,8 +39,8 @@ public class NvidiaWorkarounds {
     }
 
     public static void uninstall() {
-        switch (Util.getPlatform()) {
-            case WINDOWS -> {
+        switch (OsUtils.getOs()) {
+            case WIN -> {
                 WindowsCommandLine.resetCommandLine();
             }
             case LINUX -> { }

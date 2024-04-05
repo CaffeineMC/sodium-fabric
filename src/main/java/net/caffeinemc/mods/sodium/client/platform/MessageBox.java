@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.client.platform;
 
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxParamSw;
+import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import net.minecraft.Util;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxCallback;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.User32;
@@ -27,7 +28,7 @@ public class MessageBox {
 
     private interface MessageBoxImpl {
         static @Nullable MessageBoxImpl chooseImpl() {
-            if (Util.getPlatform() == Util.OS.WINDOWS) {
+            if (OsUtils.getOs() == OsUtils.OperatingSystem.WIN) {
                 return new WindowsMessageBoxImpl();
             }
 
