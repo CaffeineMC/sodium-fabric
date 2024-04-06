@@ -78,8 +78,5 @@ repositories.
 
 ## 📜 License
 
-Except where otherwise stated, the files in this repository are licensed under [Polyform Shield 1.0.0](LICENSE), a
-visible source license.
-
-Pull requests are welcomed! When submitting changes to this repository, it is assumed that you are licensing your
-contribution under the aforementioned terms, unless you state otherwise.
+Except where otherwise stated, the content of this repository is provided under the [Polyform Shield 1.0.0](LICENSE.md)
+license by [JellySquid](https://jellysquid.me).
