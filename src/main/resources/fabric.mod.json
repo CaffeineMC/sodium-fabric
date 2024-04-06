@@ -3,7 +3,7 @@
   "id": "sodium",
   "version": "${version}",
   "name": "Sodium",
-  "description": "Sodium is a free and open-source optimization mod for Minecraft which improves frame rates and reduces lag spikes.",
+  "description": "Sodium is a powerful rendering engine for Minecraft which greatly improves frame rates and micro-stutter, while fixing many graphical issues",
   "authors": [
     {
       "name": "@jellysquid3",
@@ -41,7 +41,7 @@
     "sources": "https://github.com/CaffeineMC/sodium-fabric",
     "issues": "https://github.com/CaffeineMC/sodium-fabric/issues"
   },
-  "license": "LGPL-3.0-only",
+  "license": "Polyform-Shield-1.0.0",
   "icon": "assets/sodium/icon.png",
   "environment": "client",
   "entrypoints": {
