@@ -4,11 +4,22 @@ architectury {
 
 val MINECRAFT_VERSION: String by rootProject.extra
 val FABRIC_LOADER_VERSION: String by rootProject.extra
+val FABRIC_API_VERSION: String by rootProject.extra
 
 dependencies {
     // We depend on Fabric Loader here for Mixin.
     modImplementation("net.fabricmc:fabric-loader:${FABRIC_LOADER_VERSION}")
-    modCompileOnly("net.fabricmc.fabric-api:fabric-renderer-api-v1:3.2.9+1172e897d7")
+
+    fun addDependentFabricModule(name: String) {
+        val module = fabricApi.module(name, FABRIC_API_VERSION)
+        modCompileOnly(module)
+    }
+
+    addDependentFabricModule("fabric-api-base")
+    addDependentFabricModule("fabric-block-view-api-v2")
+    addDependentFabricModule("fabric-renderer-api-v1")
+    addDependentFabricModule("fabric-rendering-data-attachment-v1")
+
     implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
 }
 

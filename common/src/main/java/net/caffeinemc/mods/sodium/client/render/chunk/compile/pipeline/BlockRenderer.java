@@ -23,6 +23,7 @@ import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -81,7 +82,11 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         this.prepareCulling(true);
         this.prepareAoInfo(model.useAmbientOcclusion());
 
+        type = ItemBlockRenderTypes.getChunkRenderType(state);
+
         ((FabricBakedModel) model).emitBlockQuads(this.level, state, pos, this.randomSupplier, this);
+
+        type = null;
     }
 
     /**

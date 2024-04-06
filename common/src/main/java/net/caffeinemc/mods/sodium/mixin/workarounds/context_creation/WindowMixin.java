@@ -2,6 +2,9 @@ package net.caffeinemc.mods.sodium.mixin.workarounds.context_creation;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.mojang.blaze3d.platform.DisplayData;
+import com.mojang.blaze3d.platform.ScreenManager;
+import com.mojang.blaze3d.platform.WindowEventHandler;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.ModuleScanner;
 import com.mojang.blaze3d.platform.Window;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.LateDriverScanner;
@@ -22,10 +25,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 
 @Mixin(Window.class)
@@ -54,26 +53,9 @@ public class WindowMixin {
         }
     }
 
-    @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/neoforged/fml/loading/ImmediateWindowHandler;setupMinecraftWindow(Ljava/util/function/IntSupplier;Ljava/util/function/IntSupplier;Ljava/util/function/Supplier;Ljava/util/function/LongSupplier;)J"), require = 0)
-    private long wrapGlfwCreateWindowForge(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor, Operation<Long> op) {
-        final boolean applyNvidiaWorkarounds = Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS);
-
-        if (applyNvidiaWorkarounds) {
-            NvidiaWorkarounds.install();
-        }
-
-        try {
-            return op.call(width, height, title, monitor);
-        } finally {
-            if (applyNvidiaWorkarounds) {
-                NvidiaWorkarounds.uninstall();
-            }
-        }
-    }
-
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;"))
-    private GLCapabilities postWindowCreated() {
-        GLCapabilities capabilities = GL.createCapabilities();
+    @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;"))
+    private GLCapabilities postWindowCreated(Operation<GLCapabilities> original) {
+        GLCapabilities capabilities = original.call();
 
         // Capture the current WGL context so that we can detect it being replaced later.
         if (Util.getPlatform() == Util.OS.WINDOWS) {
