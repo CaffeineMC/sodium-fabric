@@ -11,7 +11,7 @@ public class BiomeColorMaps {
     private static final int DEFAULT_COLOR = 0xffff00ff;
 
     public static int getGrassColor(int index) {
-        if (index == INVALID_INDEX) {
+        if (index == INVALID_INDEX || index >= GrassColor.pixels.length) {
             return DEFAULT_COLOR;
         }
 
@@ -19,7 +19,7 @@ public class BiomeColorMaps {
     }
 
     public static int getFoliageColor(int index) {
-        if (index == INVALID_INDEX) {
+        if (index == INVALID_INDEX || index >= FoliageColor.pixels.length) {
             return DEFAULT_COLOR;
         }
 

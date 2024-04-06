@@ -2,8 +2,8 @@
 
 # Sodium (for Fabric)
 
-Sodium is a free and open-source optimization mod for the Minecraft client which improves frame rates and reduces
-micro-stutter  while fixing many graphical issues in Minecraft.
+Sodium is a powerful rendering engine and optimization mod for the Minecraft client which improves frame rates and reduces
+micro-stutter, while fixing many graphical issues in Minecraft.
 
 ### 📥 Installation
 
@@ -78,8 +78,8 @@ repositories.
 
 ## 📜 License
 
-Except where otherwise stated, the files in this repository are provided under the terms of the GNU LGPLv3, a free and
-open-source license. For more information, please see the [license file](COPYING.LESSER).
+Except where otherwise stated, the files in this repository are licensed under [Polyform Shield 1.0.0](LICENSE), a
+visible source license.
 
-When submitting pull requests to this repository, it is assumed that you are licensing your contribution under the
-GNU LGPLv3, unless you state otherwise.
+Pull requests are welcomed! When submitting changes to this repository, it is assumed that you are licensing your
+contribution under the aforementioned terms, unless you state otherwise.
