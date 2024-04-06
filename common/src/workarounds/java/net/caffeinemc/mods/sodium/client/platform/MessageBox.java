@@ -1,7 +1,6 @@
 package net.caffeinemc.mods.sodium.client.platform;
 
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxParamSw;
-import net.minecraft.Util;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxCallback;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.User32;
 import org.jetbrains.annotations.Nullable;
@@ -9,6 +8,12 @@ import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import com.mojang.blaze3d.platform.Window;
+import oshi.PlatformEnum;
+import oshi.SystemInfo;
+
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -27,7 +32,7 @@ public class MessageBox {
 
     private interface MessageBoxImpl {
         static @Nullable MessageBoxImpl chooseImpl() {
-            if (Util.getPlatform() == Util.OS.WINDOWS) {
+            if (SystemInfo.getCurrentPlatform() == PlatformEnum.WINDOWS) {
                 return new WindowsMessageBoxImpl();
             }
 
@@ -55,8 +60,11 @@ public class MessageBox {
 
             if (helpUrl != null) {
                 msgBoxCallback = MsgBoxCallback.create(lpHelpInfo -> {
-                    Util.getPlatform()
-                            .openUri(helpUrl);
+                    try {
+                        Desktop.getDesktop().browse(URI.create(helpUrl));
+                    } catch (IOException e) {
+                        System.out.println("Failed to open! Giving up.");
+                    }
                 });
             } else {
                 msgBoxCallback = null;

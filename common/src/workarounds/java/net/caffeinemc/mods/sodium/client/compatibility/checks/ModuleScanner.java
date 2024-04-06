@@ -1,13 +1,15 @@
 package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
 import com.mojang.blaze3d.platform.Window;
+import com.sun.jna.platform.win32.Kernel32Util;
+import com.sun.jna.platform.win32.Tlhelp32;
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Kernel32;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.version.Version;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.NativeModuleLister;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import oshi.PlatformEnum;
+import oshi.SystemInfo;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,22 +27,25 @@ public class ModuleScanner {
     private static final String[] RTSS_HOOKS_MODULE_NAMES = { "RTSSHooks64.dll", "RTSSHooks.dll" };
 
     public static void checkModules() {
-        List<NativeModuleLister.NativeModuleInfo> modules;
+        if (SystemInfo.getCurrentPlatform() != PlatformEnum.WINDOWS) return;
+
+        List<Tlhelp32.MODULEENTRY32W> list;
 
         try {
-            modules = NativeModuleLister.listModules();
+            int i = com.sun.jna.platform.win32.Kernel32.INSTANCE.GetCurrentProcessId();
+            list = Kernel32Util.getModules(i);
         } catch (Throwable t) {
             LOGGER.warn("Failed to scan the currently loaded modules", t);
             return;
         }
 
-        if (modules.isEmpty()) {
+        if (list.isEmpty()) {
             // Platforms other than Windows will not return anything.
             return;
         }
 
         // RivaTuner hooks the wglCreateContext function, and leaves itself behind as a loaded module
-        if (Configuration.WIN32_RTSS_HOOKS && isModuleLoaded(modules, RTSS_HOOKS_MODULE_NAMES)) {
+        if (Configuration.WIN32_RTSS_HOOKS && isModuleLoaded(list, RTSS_HOOKS_MODULE_NAMES)) {
             checkRTSSModules();
         }
     }
@@ -63,8 +68,7 @@ public class ModuleScanner {
         }
 
         if (version == null || !isRTSSCompatible(version)) {
-            Window window = Minecraft.getInstance().getWindow();
-            MessageBox.showMessageBox(window, MessageBox.IconType.ERROR, "Sodium Renderer",
+            MessageBox.showMessageBox(null, MessageBox.IconType.ERROR, "Sodium Renderer",
                     "You appear to be using an older version of RivaTuner Statistics Server (RTSS) which is not compatible with Sodium. " +
                             "You must either update to a newer version (7.3.4 and later) or close the RivaTuner Statistics Server application.\n\n" +
                             "For more information on how to solve this problem, click the 'Help' button.",
@@ -158,10 +162,10 @@ public class ModuleScanner {
         return fileVersion;
     }
 
-    private static boolean isModuleLoaded(List<NativeModuleLister.NativeModuleInfo> modules, String[] names) {
+    private static boolean isModuleLoaded(List<Tlhelp32.MODULEENTRY32W> modules, String[] names) {
         for (var name : names) {
             for (var module : modules) {
-                if (module.name.equalsIgnoreCase(name)) {
+                if (module.szModule().equalsIgnoreCase(name)) {
                     return true;
                 }
             }

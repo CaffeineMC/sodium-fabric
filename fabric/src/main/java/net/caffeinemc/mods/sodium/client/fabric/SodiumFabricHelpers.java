@@ -72,7 +72,7 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
 
     @Override
     public List<BakedQuad> getQuads(BlockAndTintGetter level, BlockPos pos, BakedModel model, BlockState state, Direction face, RandomSource random, RenderType renderType, Object modelData) {
-        return List.of();
+        return model.getQuads(state, face, random);
     }
 
     @Override
@@ -118,5 +118,10 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
     public TextureAtlasSprite findInBlockAtlas(float u, float v) {
         return SpriteFinderCache.forBlockAtlas().find(u, v);
+    }
+
+    @Override
+    public boolean isEarlyLoadingScreenActive() {
+        return false;
     }
 }

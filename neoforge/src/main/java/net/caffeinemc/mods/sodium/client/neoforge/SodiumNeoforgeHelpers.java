@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
+import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.ClientHooks;
@@ -123,5 +124,10 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public TextureAtlasSprite findInBlockAtlas(float u, float v) {
         return SpriteFinderCache.forBlockAtlas().find(u, v);
+    }
+
+    @Override
+    public boolean isEarlyLoadingScreenActive() {
+        return FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL);
     }
 }

@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.client.compatibility.checks;
+package net.caffeinemc.mods.sodium.client.checks;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;

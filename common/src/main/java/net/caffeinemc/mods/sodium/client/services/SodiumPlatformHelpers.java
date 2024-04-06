@@ -62,4 +62,6 @@ public interface SodiumPlatformHelpers {
     FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider);
 
     TextureAtlasSprite findInBlockAtlas(float texU, float texV);
+
+    boolean isEarlyLoadingScreenActive();
 }

@@ -10,6 +10,7 @@ import com.mojang.blaze3d.platform.Window;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.LateDriverScanner;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaWorkarounds;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.minecraft.Util;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
@@ -53,9 +54,26 @@ public class WindowMixin {
         }
     }
 
-    @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;"))
-    private GLCapabilities postWindowCreated(Operation<GLCapabilities> original) {
-        GLCapabilities capabilities = original.call();
+    @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/neoforged/fml/loading/ImmediateWindowHandler;setupMinecraftWindow(Ljava/util/function/IntSupplier;Ljava/util/function/IntSupplier;Ljava/util/function/Supplier;Ljava/util/function/LongSupplier;)J"), require = 0)
+    private long wrapGlfwCreateWindowForge(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor, Operation<Long> op) {
+        final boolean applyNvidiaWorkarounds = Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS);
+
+        if (applyNvidiaWorkarounds && !SodiumPlatformHelpers.INSTANCE.isEarlyLoadingScreenActive()) {
+            NvidiaWorkarounds.install();
+        }
+
+        try {
+            return op.call(width, height, title, monitor);
+        } finally {
+            if (applyNvidiaWorkarounds) {
+                NvidiaWorkarounds.uninstall();
+            }
+        }
+    }
+
+    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;"))
+    private GLCapabilities postWindowCreated() {
+        GLCapabilities capabilities = GL.createCapabilities();
 
         // Capture the current WGL context so that we can detect it being replaced later.
         if (Util.getPlatform() == Util.OS.WINDOWS) {

@@ -1,8 +1,8 @@
 package net.caffeinemc.mods.sodium.client.gui.screen;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
-import net.caffeinemc.mods.sodium.client.gui.console.Console;
-import net.caffeinemc.mods.sodium.client.gui.console.message.MessageLevel;
+import net.caffeinemc.mods.sodium.client.console.Console;
+import net.caffeinemc.mods.sodium.client.console.message.MessageLevel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -54,7 +54,7 @@ public class ConfigCorruptedScreen extends Screen {
         int buttonY = this.height - SCREEN_PADDING - BUTTON_HEIGHT;
 
         this.addRenderableWidget(Button.builder(Component.literal("Continue"), (btn) -> {
-            Console.instance().logMessage(MessageLevel.INFO, Component.translatable("sodium.console.config_file_was_reset"), 3.0);
+            Console.instance().logMessage(MessageLevel.INFO, "sodium.console.config_file_was_reset", true, 3.0);
 
             SodiumClientMod.restoreDefaultOptions();
             Minecraft.getInstance().setScreen(this.nextScreen.apply(this.prevScreen));

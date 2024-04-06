@@ -13,6 +13,14 @@ base.archivesName.set("sodium-fabric")
 
 val commonMain = project(":common").sourceSets.main.get()
 val commonApi = project(":common").sourceSets.getByName("api")
+val commonWorkarounds = project(":common").sourceSets.getByName("workarounds")
+
+sourceSets {
+    main {
+        compileClasspath += commonWorkarounds.output
+        runtimeClasspath += commonWorkarounds.output
+    }
+}
 
 loom {
      accessWidenerPath = project(":common").loom.accessWidenerPath
@@ -62,4 +70,5 @@ tasks.jar {
     archiveClassifier.set("dev")
     from(commonMain.output)
     from(commonApi.output)
+    from(commonWorkarounds.output)
 }

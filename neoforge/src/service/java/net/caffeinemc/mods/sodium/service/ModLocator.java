@@ -18,7 +18,7 @@ public class ModLocator extends AbstractJarFileModLocator {
         URL jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation();
         try {
             Path path = Path.of(jarLocation.toURI()).resolve("META-INF").resolve("jarjar");
-            return Files.walk(path).filter(p -> p.getFileName().toString().startsWith("sodium") || p.getFileName().toString().equalsIgnoreCase("jarjar"));
+            return Files.walk(path).filter(p -> p.getFileName().toString().startsWith("sodium") || p.getFileName().toString().startsWith("interval-tree") || p.getFileName().toString().equalsIgnoreCase("jarjar"));
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
         }

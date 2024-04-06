@@ -2,7 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.core;
 
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
-import net.caffeinemc.mods.sodium.client.compatibility.checks.ResourcePackScanner;
+import net.caffeinemc.mods.sodium.client.checks.ResourcePackScanner;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;

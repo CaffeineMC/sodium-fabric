@@ -1,7 +1,7 @@
-package net.caffeinemc.mods.sodium.client.compatibility.checks;
+package net.caffeinemc.mods.sodium.client.checks;
 
-import net.caffeinemc.mods.sodium.client.gui.console.Console;
-import net.caffeinemc.mods.sodium.client.gui.console.message.MessageLevel;
+import net.caffeinemc.mods.sodium.client.console.Console;
+import net.caffeinemc.mods.sodium.client.console.message.MessageLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -75,27 +75,27 @@ public class ResourcePackScanner {
         boolean shown = false;
 
         if (!incompatibleResourcePacks.isEmpty()) {
-            showConsoleMessage(Component.translatable("sodium.console.core_shaders_error"), MessageLevel.SEVERE);
+            showConsoleMessage("sodium.console.core_shaders_error", true, MessageLevel.SEVERE);
 
             for (var entry : incompatibleResourcePacks) {
-                showConsoleMessage(Component.literal(getResourcePackName(entry.resourcePack)), MessageLevel.SEVERE);
+                showConsoleMessage(getResourcePackName(entry.resourcePack), false, MessageLevel.SEVERE);
             }
 
             shown = true;
         }
 
         if (!likelyIncompatibleResourcePacks.isEmpty()) {
-            showConsoleMessage(Component.translatable("sodium.console.core_shaders_warn"), MessageLevel.WARN);
+            showConsoleMessage("sodium.console.core_shaders_warn", true, MessageLevel.WARN);
 
             for (var entry : likelyIncompatibleResourcePacks) {
-                showConsoleMessage(Component.literal(getResourcePackName(entry.resourcePack)), MessageLevel.WARN);
+                showConsoleMessage(getResourcePackName(entry.resourcePack), false, MessageLevel.WARN);
             }
 
             shown = true;
         }
 
         if (shown) {
-            showConsoleMessage(Component.translatable("sodium.console.core_shaders_info"), MessageLevel.INFO);
+            showConsoleMessage("sodium.console.core_shaders_info", true, MessageLevel.INFO);
         }
     }
 
@@ -208,8 +208,8 @@ public class ResourcePackScanner {
         return ignoredShaders;
     }
 
-    private static void showConsoleMessage(MutableComponent message, MessageLevel messageLevel) {
-        Console.instance().logMessage(messageLevel, message, 12.5);
+    private static void showConsoleMessage(String message, boolean translatable, MessageLevel messageLevel) {
+        Console.instance().logMessage(messageLevel, message, translatable, 12.5);
     }
 
     private record ScannedResourcePack(PackResources resourcePack,
