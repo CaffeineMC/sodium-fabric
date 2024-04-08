@@ -51,6 +51,9 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
         @Override
         public void emitDirectly() {
+            if (type == null) {
+                throw new IllegalStateException("No render type is set but an FRAPI object was asked to render!");
+            }
             renderQuad(this);
         }
     };
@@ -215,6 +218,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
             final Direction cullFace = ModelHelper.faceFromIndex(i);
 
             RandomSource random = this.randomSupplier.get();
+            RenderType prevType = type;
             for (RenderType type : types) {
                 this.type = type;
                 if (noTransform) {
@@ -243,7 +247,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
                         this.renderQuad(editorQuad);
                     }
                 }
-                this.type = null;
+                this.type = prevType;
             }
         }
 

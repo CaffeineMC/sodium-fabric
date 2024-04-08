@@ -112,7 +112,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         if (blendMode == BlendMode.DEFAULT) {
             material = DefaultMaterials.forRenderLayer(type);
         } else {
-            material = DefaultMaterials.forRenderLayer(blendMode.blockRenderLayer);
+            material = DefaultMaterials.forRenderLayer(blendMode.blockRenderLayer == null ? type : blendMode.blockRenderLayer);
         }
 
         ChunkModelBuilder builder = this.buffers.get(material);
