@@ -125,6 +125,10 @@ public class CloudRenderer {
 
         RenderSystem.enableDepthTest();
 
+        if (MinecraftClient.isFabulousGraphicsOrBetter()) {
+            MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer().beginWrite(false);
+        }
+
         this.vertexBuffer.bind();
 
         boolean insideClouds = cameraY < cloudHeight + 4.5f && cameraY > cloudHeight - 0.5f;
@@ -173,6 +177,10 @@ public class CloudRenderer {
 
         RenderSystem.setShaderFogEnd(previousEnd);
         RenderSystem.setShaderFogStart(previousStart);
+
+        if (MinecraftClient.isFabulousGraphicsOrBetter()) {
+            MinecraftClient.getInstance().getFramebuffer().beginWrite(false);
+        }
     }
 
     private void applyFogModifiers(ClientWorld world, BackgroundRenderer.FogData fogData, ClientPlayerEntity player, int cloudDistance, float tickDelta) {
