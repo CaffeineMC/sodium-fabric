@@ -204,7 +204,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
         Object modelData = null;
         if (slice != null) {
-            modelData = slice.getModelData(pos);
+            modelData = SodiumPlatformHelpers.INSTANCE.getProperModelData(model, state, pos, slice, slice.getModelData(pos));
         }
 
         Iterable<RenderType> types = SodiumPlatformHelpers.INSTANCE.getMaterials(level, model, state, pos, random, modelData);

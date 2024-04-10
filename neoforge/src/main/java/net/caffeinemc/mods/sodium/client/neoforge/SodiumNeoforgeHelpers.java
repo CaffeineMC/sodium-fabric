@@ -7,6 +7,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRend
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.neoforge.FluidRendererImpl;
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
+import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
@@ -69,7 +70,7 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
 
     @Override
     public Iterable<RenderType> getMaterials(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, RandomSource random, Object modelData) {
-        return model.getRenderTypes(state, random, model.getModelData(level, pos, state, (ModelData) modelData));
+        return model.getRenderTypes(state, random, (ModelData) modelData);
     }
 
     @Override
@@ -129,5 +130,10 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public boolean isEarlyLoadingScreenActive() {
         return FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL);
+    }
+
+    @Override
+    public Object getProperModelData(BakedModel model, BlockState state, BlockPos pos, LevelSlice slice, Object modelData) {
+        return model.getModelData(slice, pos, state, (ModelData) modelData);
     }
 }
