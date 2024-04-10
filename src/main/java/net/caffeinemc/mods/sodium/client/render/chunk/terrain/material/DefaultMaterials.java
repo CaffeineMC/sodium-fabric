@@ -26,9 +26,9 @@ public class DefaultMaterials {
             return SOLID;
         } else if (layer == RenderType.cutout()) {
             return CUTOUT;
-        } else if (layer == RenderType.cutoutMipped() || layer == RenderType.tripwire()) {
+        } else if (layer == RenderType.cutoutMipped()) {
             return CUTOUT_MIPPED;
-        } else if (layer == RenderType.translucent()) {
+        } else if (layer == RenderType.translucent() || layer == RenderType.tripwire()) {
             return TRANSLUCENT;
         }
 
