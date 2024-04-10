@@ -74,7 +74,7 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
 
     @Override
     public List<BakedQuad> getQuads(BlockAndTintGetter level, BlockPos pos, BakedModel model, BlockState state, Direction face, RandomSource random, RenderType renderType, Object modelData) {
-        return model.getQuads(state, face, random, model.getModelData(level, pos, state, (ModelData) modelData), renderType);
+        return model.getQuads(state, face, random, (ModelData) modelData, renderType);
     }
 
     @Override
