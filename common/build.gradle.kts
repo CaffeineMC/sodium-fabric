@@ -3,7 +3,7 @@ import net.fabricmc.loom.task.AbstractRemapJarTask
 plugins {
     id("java")
     id("idea")
-    id("fabric-loom") version "1.6.5"
+    id("fabric-loom") version "1.6.6"
 }
 
 val MINECRAFT_VERSION: String by rootProject.extra
@@ -31,9 +31,9 @@ dependencies {
     implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
 }
 
-        tasks.withType<AbstractRemapJarTask>().forEach {
-            it.targetNamespace = "named"
-        }
+tasks.withType<AbstractRemapJarTask>().forEach {
+    it.targetNamespace = "named"
+}
 
 sourceSets {
     val main = getByName("main")
@@ -91,8 +91,7 @@ tasks {
     }
 
     jar {
-        from("${rootProject.projectDir}/COPYING")
-        from("${rootProject.projectDir}/COPYING.LESSER")
+        from(rootDir.resolve("LICENSE.md"))
 
         val api = sourceSets.getByName("api")
         from(api.output.classesDirs)
