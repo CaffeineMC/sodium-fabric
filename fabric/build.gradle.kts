@@ -82,6 +82,10 @@ tasks {
             expand(mapOf("version" to project.version))
         }
     }
+
+    jar {
+        from(rootDir.resolve("LICENSE.md"))
+    }
 }
 
 publishing {

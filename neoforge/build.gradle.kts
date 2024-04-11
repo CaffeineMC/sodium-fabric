@@ -4,6 +4,7 @@ plugins {
     id("net.neoforged.gradle.userdev") version "7.0.81"
     id("java-library")
 }
+
 base {
     archivesName = "sodium-neoforge-1.20.4"
 }
@@ -11,9 +12,6 @@ base {
 val MINECRAFT_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
 
-// Automatically enable neoforge AccessTransformers if the file exists
-// This location is hardcoded in FML and can not be changed.
-// https://github.com/neoforged/FancyModLoader/blob/a952595eaaddd571fbc53f43847680b00894e0c1/loader/src/main/java/net/neoforged/fml/loading/moddiscovery/ModFile.java#L118
 if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
     minecraft.accessTransformers {
         file("src/main/resources/META-INF/accesstransformer.cfg")
@@ -63,8 +61,7 @@ val fullJar: Jar by tasks.creating(Jar::class) {
     from(sourceSets.getByName("service").output)
     from(project(":common").sourceSets.getByName("desktop").output)
     from(project(":common").sourceSets.getByName("workarounds").output)
-    // Despite not being part of jarjar metadata, the mod jar must be located in this directory
-    // in order to be deobfuscated by FG in userdev environments
+
     into("META-INF/jarjar/") {
         from(tasks.jarJar.get().archiveFile)
     }
@@ -74,6 +71,8 @@ val fullJar: Jar by tasks.creating(Jar::class) {
 
         from(projectDir.resolve("src").resolve("main").resolve("resources").resolve("META-INF").resolve("mods.toml"))
     }
+
+    from(rootDir.resolve("LICENSE.md"))
 
     filesMatching("mods.toml") {
         expand(mapOf("version" to MOD_VERSION))
@@ -89,6 +88,8 @@ tasks.build {
 }
 
 tasks.jar {
+    from(rootDir.resolve("LICENSE.md"))
+
     archiveClassifier = "modonly"
 }
 
@@ -121,12 +122,12 @@ dependencies {
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
     implementation("net.caffeinemc:fabric_block_view_api_v2:1.0.1")
     jarJar("net.caffeinemc:fabric_block_view_api_v2:[1.0.1, 1.0.2)")
-
 }
 
 tasks.jarJar {
     archiveClassifier = "jarJar"
 }
+
 // NeoGradle compiles the game, but we don't want to add our common code to the game's code
 val notNeoTask: (Task) -> Boolean = { it: Task -> !it.name.startsWith("neo") && !it.name.startsWith("compileService") }
 
