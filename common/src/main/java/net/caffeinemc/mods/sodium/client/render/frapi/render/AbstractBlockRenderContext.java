@@ -172,7 +172,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     }
 
     protected void prepareAoInfo(boolean modelAo) {
-        this.useAmbientOcclusion = Minecraft.useFancyGraphics();
+        this.useAmbientOcclusion = Minecraft.useAmbientOcclusion();
         // Ignore the incorrect IDEA warning here.
         this.defaultLightMode = this.useAmbientOcclusion && modelAo && SodiumPlatformHelpers.INSTANCE.getLightEmission(state, level, pos) == 0 ? LightMode.SMOOTH : LightMode.FLAT;
     }
