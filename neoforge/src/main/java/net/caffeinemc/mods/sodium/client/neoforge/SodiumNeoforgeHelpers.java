@@ -3,6 +3,8 @@ package net.caffeinemc.mods.sodium.client.neoforge;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.neoforge.iecompat.ImmersiveEngineeringCompat;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.neoforge.FluidRendererImpl;
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
@@ -17,6 +19,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
@@ -135,5 +138,15 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public Object getProperModelData(BakedModel model, BlockState state, BlockPos pos, LevelSlice slice, Object modelData) {
         return model.getModelData(slice, pos, state, (ModelData) modelData);
+    }
+
+    @Override
+    public void renderConnectionsInSection(ChunkBuildBuffers buffers, LevelSlice worldSlice, SectionPos position) {
+        ImmersiveEngineeringCompat.renderConnectionsInSection(buffers, worldSlice, position);
+    }
+
+    @Override
+    public boolean shouldRenderIE(SectionPos position) {
+        return ImmersiveEngineeringCompat.isLoaded && ImmersiveEngineeringCompat.sectionNeedsRendering(position);
     }
 }

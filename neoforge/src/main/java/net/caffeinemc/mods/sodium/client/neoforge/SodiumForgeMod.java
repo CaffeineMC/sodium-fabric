@@ -2,6 +2,8 @@ package net.caffeinemc.mods.sodium.client.neoforge;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
+import net.caffeinemc.mods.sodium.client.neoforge.iecompat.ImmersiveEngineeringCompat;
+import net.caffeinemc.mods.sodium.client.neoforge.iecompat.SodiumConnectionRenderer;
 import net.caffeinemc.mods.sodium.client.render.frapi.SodiumRenderer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.neoforged.bus.api.IEventBus;
@@ -22,5 +24,8 @@ public class SodiumForgeMod {
 
     public void onResourceReload(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener(SpriteFinderCache.ReloadListener.INSTANCE);
+        if (ImmersiveEngineeringCompat.isLoaded) {
+            event.registerReloadListener(new SodiumConnectionRenderer());
+        }
     }
 }

@@ -53,6 +53,18 @@ repositories {
             includeGroup("net.caffeinemc")
         }
     }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = uri("https://api.modrinth.com/maven")
+            }
+        }
+        //forRepositories(fg.repository) // Only add this if you're using ForgeGradle, otherwise remove this line
+        filter {
+            includeGroup("maven.modrinth")
+        }
+    }
 }
 
 val fullJar: Jar by tasks.creating(Jar::class) {
@@ -102,6 +114,8 @@ runs {
             runtime("com.lodborg:interval-tree:1.0.0")
             runtime(project(":common").sourceSets.getByName("workarounds").output)
         }
+        //environmentVariable("LD_PRELOAD", "/usr/lib/librenderdoc.so")
+        environmentVariable("__GL_THREADED_OPTIMIZATIONS", "0")
     }
 
     create("data") {
@@ -122,6 +136,8 @@ dependencies {
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
     implementation("net.caffeinemc:fabric_block_view_api_v2:1.0.1")
     jarJar("net.caffeinemc:fabric_block_view_api_v2:[1.0.1, 1.0.2)")
+
+    compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
 }
 
 tasks.jarJar {

@@ -18,6 +18,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBe
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.util.task.CancellationToken;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -137,6 +138,12 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         } catch (Exception ex) {
             // Create a new crash report for other exceptions (e.g. thrown in getQuads)
             throw fillCrashInfo(CrashReport.forThrowable(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
+        }
+
+        if (SodiumPlatformHelpers.INSTANCE.shouldRenderIE(render.getPosition())) {
+            SodiumPlatformHelpers.INSTANCE.renderConnectionsInSection(
+                    buildContext.buffers, buildContext.cache.getWorldSlice(), render.getPosition()
+            );
         }
 
         blockRenderer.release();
