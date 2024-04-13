@@ -114,8 +114,6 @@ runs {
             runtime("com.lodborg:interval-tree:1.0.0")
             runtime(project(":common").sourceSets.getByName("workarounds").output)
         }
-        //environmentVariable("LD_PRELOAD", "/usr/lib/librenderdoc.so")
-        environmentVariable("__GL_THREADED_OPTIMIZATIONS", "0")
     }
 
     create("data") {
