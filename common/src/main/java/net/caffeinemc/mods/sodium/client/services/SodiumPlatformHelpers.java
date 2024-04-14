@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.client.services;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
@@ -28,6 +29,7 @@ import org.joml.Matrix4f;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
 
 public interface SodiumPlatformHelpers {
     public static SodiumPlatformHelpers INSTANCE = Services.load(SodiumPlatformHelpers.class);
@@ -73,4 +75,8 @@ public interface SodiumPlatformHelpers {
     void renderConnectionsInSection(ChunkBuildBuffers buffers, LevelSlice worldSlice, SectionPos position);
 
     boolean shouldRenderIE(SectionPos position);
+
+    void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice);
+
+    List<?> getExtraRenderers(Level level, BlockPos origin);
 }

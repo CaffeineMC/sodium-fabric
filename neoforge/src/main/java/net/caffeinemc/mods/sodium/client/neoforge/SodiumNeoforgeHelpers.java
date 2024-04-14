@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.client.neoforge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.neoforge.iecompat.ImmersiveEngineeringCompat;
@@ -32,12 +33,14 @@ import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.ClientHooks;
+import net.neoforged.neoforge.client.event.AddSectionGeometryEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelDataManager;
 import org.joml.Matrix4f;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
 
 public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
@@ -148,5 +151,21 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public boolean shouldRenderIE(SectionPos position) {
         return ImmersiveEngineeringCompat.isLoaded && ImmersiveEngineeringCompat.sectionNeedsRendering(position);
+    }
+
+    @Override
+    public List<?> getExtraRenderers(Level level, BlockPos origin) {
+        return ClientHooks.gatherAdditionalRenderers(origin, level);
+    }
+
+    private static final ThreadLocal<PoseStack> emptyStack = ThreadLocal.withInitial(PoseStack::new);
+
+    @Override
+    public void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice) {
+        AddSectionGeometryEvent.SectionRenderingContext context = new AddSectionGeometryEvent.SectionRenderingContext(typeToConsumer, slice, emptyStack.get());
+        for (int i = 0, renderersSize = renderers.size(); i < renderersSize; i++) {
+            AddSectionGeometryEvent.AdditionalSectionRenderer renderer = (AddSectionGeometryEvent.AdditionalSectionRenderer) renderers.get(i);
+            renderer.render(context);
+        }
     }
 }

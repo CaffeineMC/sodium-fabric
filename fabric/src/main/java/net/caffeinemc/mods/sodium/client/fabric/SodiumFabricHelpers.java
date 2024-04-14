@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.client.fabric;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
@@ -33,6 +34,7 @@ import org.joml.Matrix4f;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
@@ -141,5 +143,15 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
     public boolean shouldRenderIE(SectionPos position) {
         return false;
+    }
+
+    @Override
+    public void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice) {
+        // Fabric has no concept of additional chunk renderers; everything is handled through FRAPI.
+    }
+
+    @Override
+    public List<?> getExtraRenderers(Level level, BlockPos origin) {
+        return List.of();
     }
 }

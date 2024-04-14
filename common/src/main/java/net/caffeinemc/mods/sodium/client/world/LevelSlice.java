@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -141,8 +142,9 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
         }
 
         Object modelData = SodiumPlatformHelpers.INSTANCE.getRenderData(level, box, null);
+        List<?> renderers = SodiumPlatformHelpers.INSTANCE.getExtraRenderers(level, pos.origin());
 
-        return new ChunkRenderContext(pos, sections, box, modelData);
+        return new ChunkRenderContext(pos, sections, box, modelData, renderers);
     }
 
     @SuppressWarnings("unchecked")
