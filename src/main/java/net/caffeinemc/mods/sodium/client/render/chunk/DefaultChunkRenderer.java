@@ -193,6 +193,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                     MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
                     MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
                     size++;
+                    elementCount = 0;
                 }
             } else {
                 elementCount += SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
@@ -231,6 +232,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                 if (lastMaskBit == 1) {
                     MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
                     size++;
+                    elementCount = 0;
                 }
             } else {
                 elementCount += SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
