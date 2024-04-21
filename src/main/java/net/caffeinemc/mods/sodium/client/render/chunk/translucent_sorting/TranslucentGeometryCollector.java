@@ -12,7 +12,6 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.*
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import org.joml.Vector3f;
@@ -277,6 +276,7 @@ public class TranslucentGeometryCollector {
      * unused and doesn't make sense to give.
      */
     private static final int[] STATIC_TOPO_SORT_ATTEMPT_LIMITS = new int[] { -1, -1, 250, 100, 50, 30 };
+    public static final int STATIC_TOPO_UNKNOWN_FALLBACK_LIMIT = STATIC_TOPO_SORT_ATTEMPT_LIMITS[STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1];
 
     /**
      * Determines the sort type for the collected geometry from the section. It

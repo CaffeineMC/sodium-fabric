@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree;
 
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntConsumer;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -7,14 +8,14 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TopoGraphSorting;
 import net.caffeinemc.mods.sodium.client.util.MathUtil;
 import net.caffeinemc.mods.sodium.client.util.sorting.RadixSort;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.joml.Vector3fc;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Performs aligned BSP partitioning of many nodes and constructs appropriate
@@ -50,10 +51,7 @@ import java.util.Arrays;
 abstract class InnerPartitionBSPNode extends BSPNode {
     private static final int NODE_REUSE_THRESHOLD = 30;
     private static final int MAX_INTERSECTION_ATTEMPTS = 500;
-    private static final int MAX_PRIMARY_INTERSECTOR_ITEMS = 40;
     private static final float PRIMARY_INTERSECTOR_THRESHOLD = 0.5f;
-
-    private static final Logger LOGGER = LogManager.getLogger(InnerPartitionBSPNode.class);
 
     final Vector3fc planeNormal;
     final int axis;
@@ -386,27 +384,104 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             return intersectingHandling;
         }
 
-        // At this point we know the geometry is (probably) not intersecting, and it
-        // can't be partitioned along an aligned axis. This means that either the
-        // geometry is unpartitionable with free cuts (partitions that don't fragment
-        // geometry) or it required unaligned partitioning. Unaligned partitioning is a
-        // hard problem and solving it here isn't really necessary. Fully aligned
-        // unpartitonable constructions exist but not in normal Minecraft and are also
-        // not likely in any other normal scenario.
-
-        // Throwing this exception will cause the entire section to be either topo
-        // sorted or the distance sorting fallback to be used.
-        // TODO: investigate BSP build failures if they happen, then remove this logging
-        LOGGER.warn(
-                "BSP build failure at {}. Please report this to douira for evaluation alongside with some way of reproducing the geometry in this section. (coordinates, and world file or seed)",
-                workspace.sectionPos);
-
-        // unpartitionable non-intersecting geometry is warned about, but then we attempt to topo sort it anyway
+        // attempt topo sorting on the geometry if intersection handling failed
         var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
         if (multiLeafNode == null) {
             throw new BSPBuildFailureException("No partition found but not intersecting and can't be statically topo sorted");
         }
         return multiLeafNode;
+    }
+
+    static private BSPNode handleIntersecting(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
+        Int2IntOpenHashMap intersectionCounts = null;
+        IntOpenHashSet primaryIntersectorIndexes = null;
+        int primaryIntersectorThreshold = Math.max(2, (int) (indexes.size() * PRIMARY_INTERSECTOR_THRESHOLD));
+
+        int i = -1;
+        int j = 0;
+        final int quadCount = indexes.size();
+        int stepSize = Math.max(1, (quadCount * (quadCount - 1) / 2) / MAX_INTERSECTION_ATTEMPTS);
+        int variance = 0;
+
+        // if doing random stepping, subtract some and calculate the variance to apply
+        Random random = null;
+        if (stepSize > 1) {
+            int half = stepSize / 2;
+            stepSize = Math.max(1, stepSize - half);
+            variance = stepSize;
+            random = new Random();
+        }
+
+        while (true) {
+            // pick indexes in serial fashion without repeating pairs (i < j always holds)
+            i += stepSize;
+            if (variance > 0) {
+                i += random.nextInt(variance);
+            }
+
+            // step i and j until they're valid indexes with i < j
+            while (i >= j) {
+                i -= j;
+                j++;
+            }
+
+            // stop if we're out of indexes
+            if (j >= indexes.size()) {
+                break;
+            }
+
+            var quadA = workspace.quads[indexes.getInt(i)];
+            var quadB = workspace.quads[indexes.getInt(j)];
+
+            // aligned quads intersect if their bounding boxes intersect
+            if (TQuad.extentsIntersect(quadA, quadB)) {
+                if (intersectionCounts == null) {
+                    intersectionCounts = new Int2IntOpenHashMap();
+                }
+
+                int aCount = intersectionCounts.get(i) + 1;
+                intersectionCounts.put(i, aCount);
+                int bCount = intersectionCounts.get(j) + 1;
+                intersectionCounts.put(j, bCount);
+
+                if (aCount >= primaryIntersectorThreshold) {
+                    if (primaryIntersectorIndexes == null) {
+                        primaryIntersectorIndexes = new IntOpenHashSet(2);
+                    }
+                    primaryIntersectorIndexes.add(i);
+                }
+                if (bCount >= primaryIntersectorThreshold) {
+                    if (primaryIntersectorIndexes == null) {
+                        primaryIntersectorIndexes = new IntOpenHashSet(2);
+                    }
+                    primaryIntersectorIndexes.add(j);
+                }
+
+                // cancel primary intersector search if they all intersect with each other
+                if (primaryIntersectorIndexes != null && primaryIntersectorIndexes.size() == indexes.size()) {
+                    // return multi leaf node as this is impossible to sort
+                    return new LeafMultiBSPNode(BSPSortState.compressIndexes(indexes));
+                }
+            }
+        }
+
+        if (primaryIntersectorIndexes != null) {
+            // put the primary intersectors in a separate node that's always rendered last
+            var nonPrimaryIntersectors = new IntArrayList(indexes.size() - primaryIntersectorIndexes.size());
+            var primaryIntersectorQuadIndexes = new IntArrayList(primaryIntersectorIndexes.size());
+            for (int k = 0; k < indexes.size(); k++) {
+                if (primaryIntersectorIndexes.contains(k)) {
+                    primaryIntersectorQuadIndexes.add(indexes.getInt(k));
+                } else {
+                    nonPrimaryIntersectors.add(indexes.getInt(k));
+                }
+            }
+            return InnerFixedDoubleBSPNode.buildFromParts(workspace, indexes, depth, oldNode,
+                    nonPrimaryIntersectors, primaryIntersectorQuadIndexes);
+        }
+
+        // this means we didn't manage to find primary intersectors
+        return null;
     }
 
     private static class QuadIndexConsumerIntoArray implements IntConsumer {
@@ -423,97 +498,13 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         }
     }
 
-    static private BSPNode handleIntersecting(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
-        int testsRemaining = MAX_INTERSECTION_ATTEMPTS;
+    static private BSPNode buildTopoMultiLeafNode(BSPWorkspace workspace, IntArrayList indexes) {
+        var quadCount = indexes.size();
 
-        boolean failedTopoSort = false;
-        int[] intersectionCounts = null;
-        IntOpenHashSet primaryIntersectorIndexes = null;
-        int primaryIntersectorThreshold = 0;
-        if (indexes.size() <= MAX_PRIMARY_INTERSECTOR_ITEMS) {
-            intersectionCounts = new int[indexes.size()];
-            primaryIntersectorThreshold = Math.max(2, (int) (indexes.size() * PRIMARY_INTERSECTOR_THRESHOLD));
-        }
-
-        for (int i = 0; i < indexes.size(); i++) {
-            var quadA = workspace.quads[indexes.getInt(i)];
-
-            for (int j = i + 1; j < indexes.size(); j++) {
-                var quadB = workspace.quads[indexes.getInt(j)];
-
-                // aligned quads intersect if their bounding boxes intersect
-                if (TQuad.extentsIntersect(quadA, quadB)) {
-                    if (intersectionCounts != null) {
-                        var aCount = ++intersectionCounts[i];
-                        if (aCount >= primaryIntersectorThreshold) {
-                            if (primaryIntersectorIndexes == null) {
-                                primaryIntersectorIndexes = new IntOpenHashSet(2);
-                            }
-                            primaryIntersectorIndexes.add(i);
-                        }
-                        var bCount = ++intersectionCounts[j];
-                        if (bCount >= primaryIntersectorThreshold) {
-                            if (primaryIntersectorIndexes == null) {
-                                primaryIntersectorIndexes = new IntOpenHashSet(2);
-                            }
-                            primaryIntersectorIndexes.add(j);
-                        }
-
-                        // cancel primary intersector search if they all intersect with each other
-                        if (primaryIntersectorIndexes != null && primaryIntersectorIndexes.size() == indexes.size()) {
-                            primaryIntersectorIndexes = null;
-                            intersectionCounts = null;
-                        }
-                    }
-
-                    if (!failedTopoSort) {
-                        var multiLeafNode = buildTopoMultiLeafNode(workspace, indexes);
-                        if (multiLeafNode == null) {
-                            if (intersectionCounts == null) {
-                                throw new BSPBuildFailureException("Geometry is self-intersecting and can't be statically topo sorted");
-                            }
-                            failedTopoSort = true;
-                        } else {
-                            return multiLeafNode;
-                        }
-                    }
-                }
-
-                if (intersectionCounts == null && failedTopoSort) {
-                    testsRemaining = 0;
-                    break;
-                }
-
-                if (--testsRemaining <= 0) {
-                    break;
-                }
-            }
-
-            if (testsRemaining == 0) {
-                break;
-            }
-        }
-
-        if (primaryIntersectorIndexes == null) {
+        if (quadCount > TranslucentGeometryCollector.STATIC_TOPO_UNKNOWN_FALLBACK_LIMIT) {
             return null;
         }
 
-        // put the primary intersectors in a separate node that's always rendered last
-        var nonPrimaryIntersectors = new IntArrayList(indexes.size() - primaryIntersectorIndexes.size());
-        var primaryIntersectorQuadIndexes = new IntArrayList(primaryIntersectorIndexes.size());
-        for (int i = 0; i < indexes.size(); i++) {
-            if (primaryIntersectorIndexes.contains(i)) {
-                primaryIntersectorQuadIndexes.add(indexes.getInt(i));
-            } else {
-                nonPrimaryIntersectors.add(indexes.getInt(i));
-            }
-        }
-        return InnerFixedDoubleBSPNode.buildFromParts(workspace, indexes, depth, oldNode,
-                nonPrimaryIntersectors, primaryIntersectorQuadIndexes);
-    }
-
-    static private BSPNode buildTopoMultiLeafNode(BSPWorkspace workspace, IntArrayList indexes) {
-        var quadCount = indexes.size();
         var quads = new TQuad[quadCount];
         var activeToRealIndex = new int[quadCount];
         for (int i = 0; i < indexes.size(); i++) {
