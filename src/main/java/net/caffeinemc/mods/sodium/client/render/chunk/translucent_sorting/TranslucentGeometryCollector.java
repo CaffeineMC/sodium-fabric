@@ -315,6 +315,10 @@ public class TranslucentGeometryCollector {
      * @return the required sort type to ensure this section always looks correct
      */
     private SortType sortTypeHeuristic() {
+        if (this.quads.length == 0) {
+            return SortType.NONE;
+        }
+
         SortBehavior sortBehavior = SodiumClientMod.options().performance.getSortBehavior();
         if (sortBehavior.getSortMode() == SortBehavior.SortMode.NONE) {
             return SortType.NONE;
