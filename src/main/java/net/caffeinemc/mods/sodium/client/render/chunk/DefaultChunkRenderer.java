@@ -183,20 +183,20 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         final var pElementCount = batch.pElementCount;
 
         int size = batch.size;
-        int elementCount = 0;
+        int groupElementCount = 0;
         int lastMaskBit = 0;
 
         for (int facing = ModelQuadFacing.COUNT - 1; facing >= -1; facing--) {
             final int maskBit = (mask >> facing) & 1;
             if (maskBit == 0) {
                 if (lastMaskBit == 1) {
-                    MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
+                    MemoryUtil.memPutInt(pElementCount + (size << 2), groupElementCount);
                     MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
                     size++;
-                    elementCount = 0;
+                    groupElementCount = 0;
                 }
             } else {
-                elementCount += SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
+                groupElementCount += SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
                 MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
             }
 
@@ -217,35 +217,23 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         final var pElementCount = batch.pElementCount;
 
         int size = batch.size;
-        int elementCount = 0;
-        int lastMaskBit = 0;
 
-        // with this trick it uses the work of doing the prefix sum on the vertex counts
-        // for the element counts by doing the conversion
-        int elementOffset = (SectionRenderDataUnsafe.getBaseElement(pMeshData)
-                & ~SectionRenderDataUnsafe.BASE_ELEMENT_MSB)
-                - (SectionRenderDataUnsafe.getVertexOffset(pMeshData, 0) / 2 * 3);
+        int elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData)
+                & ~SectionRenderDataUnsafe.BASE_ELEMENT_MSB;
 
-        for (int facing = ModelQuadFacing.COUNT - 1; facing >= -1; facing--) {
-            final int maskBit = (mask >> facing) & 1;
-            if (maskBit == 0) {
-                if (lastMaskBit == 1) {
-                    MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
-                    size++;
-                    elementCount = 0;
-                }
-            } else {
-                elementCount += SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
-                final int vertexOffset = SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing);
-                MemoryUtil.memPutInt(pBaseVertex + (size << 2), vertexOffset);
+        for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
+            final var elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
 
-                // convert vertex offset into element offset.
-                // * 4 to convert to bytes (the buffer contains 32-bit integers)
-                // the section render data storage for the indices stores the offset in indices (also called elements)
-                MemoryUtil.memPutAddress(pElementPointer + (size << 3), (elementOffset + vertexOffset + vertexOffset / 2) << 2);
-            }
+            MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
+            MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
 
-            lastMaskBit = maskBit;
+            // * 4 to convert to bytes (the buffer contains 32-bit integers)
+            // the section render data storage for the indices stores the offset in indices (also called elements)
+            MemoryUtil.memPutAddress(pElementPointer + (size << 3), elementOffset << 2);
+
+            // adding the number of elements works because the index data has one index per element (which are the indices)
+            elementOffset += elementCount;
+            size += (mask >> facing) & 1;
         }
 
         batch.size = size;
