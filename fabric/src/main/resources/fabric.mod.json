@@ -46,10 +46,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "net.caffeinemc.mods.sodium.client.fabric.SodiumFabricMod"
+      "net.caffeinemc.mods.sodium.fabric.SodiumFabricMod"
     ],
     "preLaunch": [
-      "net.caffeinemc.mods.sodium.client.fabric.SodiumPreLaunch"
+      "net.caffeinemc.mods.sodium.fabric.SodiumPreLaunch"
     ]
   },
   "custom": {

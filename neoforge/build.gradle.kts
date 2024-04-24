@@ -5,12 +5,13 @@ plugins {
     id("java-library")
 }
 
-base {
-    archivesName = "sodium-neoforge-1.20.4"
-}
-
 val MINECRAFT_VERSION: String by rootProject.extra
+val NEOFORGE_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
+
+base {
+    archivesName = "sodium-neoforge-${MINECRAFT_VERSION}"
+}
 
 if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
     minecraft.accessTransformers {
@@ -122,7 +123,7 @@ runs {
 }
 
 dependencies {
-    implementation("net.neoforged:neoforge:20.4.219")
+    implementation("net.neoforged:neoforge:${NEOFORGE_VERSION}")
     compileOnly(project(":common"))
     implementation("net.caffeinemc:fabric_api_base:0.4.32")
     jarJar("net.caffeinemc:fabric_api_base:[0.4.32,0.4.33)")

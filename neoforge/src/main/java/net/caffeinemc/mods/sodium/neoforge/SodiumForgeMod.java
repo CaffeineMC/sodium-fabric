@@ -1,10 +1,11 @@
-package net.caffeinemc.mods.sodium.client.neoforge;
+package net.caffeinemc.mods.sodium.neoforge;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
-import net.caffeinemc.mods.sodium.client.neoforge.iecompat.ImmersiveEngineeringCompat;
-import net.caffeinemc.mods.sodium.client.neoforge.iecompat.SodiumConnectionRenderer;
+import net.caffeinemc.mods.sodium.neoforge.iecompat.ImmersiveEngineeringCompat;
+import net.caffeinemc.mods.sodium.neoforge.iecompat.SodiumConnectionRenderer;
 import net.caffeinemc.mods.sodium.client.render.frapi.SodiumRenderer;
+import net.caffeinemc.mods.sodium.neoforge.render.SpriteFinderCache;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
