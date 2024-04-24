@@ -90,7 +90,7 @@ public class ItemRendererMixin {
             int color = 0xFFFFFFFF;
 
             if (colorProvider != null && quad.hasColor()) {
-                color = ColorARGB.toABGR((colorProvider.getColor(itemStack, quad.getColorIndex())), 255);
+                color = ColorARGB.toABGR(colorProvider.getColor(itemStack, quad.getColorIndex()));
             }
 
             BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
