@@ -38,6 +38,8 @@ public abstract class PoseStackMixin {
             entry = new PoseStack.Pose(new Matrix4f(prev.pose()), new Matrix3f(prev.normal()));
         }
 
+        entry.trustedNormals = prev.trustedNormals;
+
         this.poseStack.addLast(entry);
     }
 

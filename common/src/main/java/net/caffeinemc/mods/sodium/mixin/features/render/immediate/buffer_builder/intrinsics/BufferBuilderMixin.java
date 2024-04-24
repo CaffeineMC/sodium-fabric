@@ -19,9 +19,9 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer {
     private boolean fastFormat;
 
     @Override
-    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float r, float g, float b, int light, int overlay) {
+    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float r, float g, float b, float a, int light, int overlay) {
         if (!this.fastFormat) {
-            super.putBulkData(matrices, bakedQuad, r, g, b, light, overlay);
+            super.putBulkData(matrices, bakedQuad, r, g, b, a, light, overlay);
 
             SpriteUtil.markSpriteActive(bakedQuad.getSprite());
 
@@ -40,16 +40,16 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer {
 
         ModelQuadView quad = (ModelQuadView) bakedQuad;
 
-        int color = ColorABGR.pack(r, g, b, 1.0F);
+        int color = ColorABGR.pack(r, g, b, a);
         BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
 
         SpriteUtil.markSpriteActive(quad.getSprite());
     }
 
     @Override
-    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float[] brightnessTable, float r, float g, float b, int[] light, int overlay, boolean colorize) {
+    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float[] brightnessTable, float r, float g, float b, float a, int[] light, int overlay, boolean colorize) {
         if (!this.fastFormat) {
-            super.putBulkData(matrices, bakedQuad, brightnessTable, r, g, b, light, overlay, colorize);
+            super.putBulkData(matrices, bakedQuad, brightnessTable, r, g, b, a, light, overlay, colorize);
 
             SpriteUtil.markSpriteActive(bakedQuad.getSprite());
 
@@ -68,7 +68,7 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer {
 
         ModelQuadView quad = (ModelQuadView) bakedQuad;
 
-        BakedModelEncoder.writeQuadVertices(writer, matrices, quad, r, g, b, brightnessTable, colorize, light, overlay);
+        BakedModelEncoder.writeQuadVertices(writer, matrices, quad, r, g, b, a, brightnessTable, colorize, light, overlay);
 
         SpriteUtil.markSpriteActive(quad.getSprite());
     }

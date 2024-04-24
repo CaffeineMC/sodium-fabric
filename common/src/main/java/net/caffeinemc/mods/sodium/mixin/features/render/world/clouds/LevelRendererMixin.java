@@ -31,15 +31,19 @@ public class LevelRendererMixin {
      * @author jellysquid3
      * @reason Optimize cloud rendering
      */
-    @Inject(method = "renderClouds", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;disableCull()V"), cancellable = true)
-    public void renderClouds(PoseStack matrices, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z, CallbackInfo ci) {
+    @Inject(method = "renderClouds", at = @At(value = "HEAD"), cancellable = true)
+    public void renderClouds(PoseStack poseStack, Matrix4f matrix4f, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z, CallbackInfo ci) {
         ci.cancel();
 
         if (this.cloudRenderer == null) {
             this.cloudRenderer = new CloudRenderer(this.minecraft.getResourceManager());
         }
 
-        this.cloudRenderer.render(this.level, this.minecraft.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
+        poseStack.pushPose();
+        poseStack.mulPose(matrix4f);
+
+        this.cloudRenderer.render(this.level, this.minecraft.player, poseStack, projectionMatrix, this.ticks, tickDelta, x, y, z);
+        poseStack.popPose();
     }
 
     @Inject(method = "onResourceManagerReload(Lnet/minecraft/server/packs/resources/ResourceManager;)V", at = @At("RETURN"))

@@ -10,9 +10,14 @@ val MINECRAFT_VERSION: String by rootProject.extra
 val FABRIC_LOADER_VERSION: String by rootProject.extra
 val FABRIC_API_VERSION: String by rootProject.extra
 
+// This trick hides common tasks in the IDEA list.
+tasks.forEach {
+    it.group = null
+}
+
 dependencies {
-    "minecraft"(group = "com.mojang", name = "minecraft", version = MINECRAFT_VERSION)
-    "mappings"(loom.officialMojangMappings())
+    minecraft(group = "com.mojang", name = "minecraft", version = MINECRAFT_VERSION)
+    mappings(loom.officialMojangMappings())
     compileOnly("io.github.llamalad7:mixinextras-common:0.3.5")
     annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5")
     compileOnly("net.fabricmc:sponge-mixin:0.13.2+mixin.0.8.5")

@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.frapi.render;
 
-import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.model.light.LightMode;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipeline;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
@@ -204,7 +203,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
         Object modelData = null;
         if (slice != null) {
-            modelData = SodiumPlatformHelpers.INSTANCE.getProperModelData(model, state, pos, slice, slice.getModelData(pos));
+            modelData = SodiumPlatformHelpers.INSTANCE.getProperModelData(model, state, pos, slice, slice.getPlatformModelData(pos));
         }
 
         Iterable<RenderType> types = SodiumPlatformHelpers.INSTANCE.getMaterials(level, model, state, pos, random, modelData);

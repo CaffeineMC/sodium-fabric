@@ -11,6 +11,7 @@
   },
   "client" : [
     "ChunkRenderTypeSetAccessor",
+    "LevelSliceMixin",
     "SimpleBakedModelAccessor"
   ]
 }

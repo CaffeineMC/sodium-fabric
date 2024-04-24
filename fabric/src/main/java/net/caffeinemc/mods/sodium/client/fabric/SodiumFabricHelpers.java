@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.fabric;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
@@ -111,7 +110,7 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     }
 
     @Override
-    public void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, PoseStack matrices, Matrix4f matrix, int ticks, Camera mainCamera, Frustum cullingFrustum) {
+    public void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, Matrix4f modelMatrix, Matrix4f projectionMatrix, int ticks, Camera mainCamera, Frustum cullingFrustum) {
 
     }
 

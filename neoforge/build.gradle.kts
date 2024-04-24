@@ -1,12 +1,12 @@
 plugins {
     id("idea")
     id("maven-publish")
-    id("net.neoforged.gradle.userdev") version "7.0.81"
+    id("net.neoforged.gradle.userdev") version "7.0.105"
     id("java-library")
 }
 
 base {
-    archivesName = "sodium-neoforge-1.20.4"
+    archivesName = "sodium-neoforge-1.20.5"
 }
 
 val MINECRAFT_VERSION: String by rootProject.extra
@@ -50,7 +50,7 @@ repositories {
             }
         }
         filter {
-            includeGroup("net.caffeinemc")
+            includeGroup("net.caffeinemc.new2")
         }
     }
     exclusiveContent {
@@ -122,18 +122,18 @@ runs {
 }
 
 dependencies {
-    implementation("net.neoforged:neoforge:20.4.219")
+    implementation("net.neoforged:neoforge:20.5.0-beta")
     compileOnly(project(":common"))
-    implementation("net.caffeinemc:fabric_api_base:0.4.32")
-    jarJar("net.caffeinemc:fabric_api_base:[0.4.32,0.4.33)")
-    implementation("net.caffeinemc:fabric_renderer_api_v1:3.2.1")
-    jarJar("net.caffeinemc:fabric_renderer_api_v1:[3.2.1, 3.2.2)")
-    implementation("net.caffeinemc:fabric_rendering_data_attachment_v1:0.3.37")
-    jarJar("net.caffeinemc:fabric_rendering_data_attachment_v1:[0.3.37,0.3.38)")
+    implementation("net.caffeinemc.new2:fabric_api_base:0.4.31")
+    jarJar("net.caffeinemc.new2:fabric_api_base:[0.4.31,0.4.33)")
+    implementation("net.caffeinemc.new2:fabric_renderer_api_v1:3.2.1")
+    jarJar("net.caffeinemc.new2:fabric_renderer_api_v1:[3.2.1, 3.2.2)")
+    implementation("net.caffeinemc.new2:fabric_rendering_data_attachment_v1:0.3.37")
+    jarJar("net.caffeinemc.new2:fabric_rendering_data_attachment_v1:[0.3.37,0.3.38)")
     implementation("com.lodborg:interval-tree:1.0.0")
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
-    implementation("net.caffeinemc:fabric_block_view_api_v2:1.0.1")
-    jarJar("net.caffeinemc:fabric_block_view_api_v2:[1.0.1, 1.0.2)")
+    implementation("net.caffeinemc.new2:fabric_block_view_api_v2:1.0.1")
+    jarJar("net.caffeinemc.new2:fabric_block_view_api_v2:[1.0.1, 1.0.2)")
 
     compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
 }
@@ -159,7 +159,7 @@ tasks.withType<ProcessResources>().matching(notNeoTask).configureEach {
     from(project(":common").sourceSets.main.get().resources)
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 publishing {
     publications {

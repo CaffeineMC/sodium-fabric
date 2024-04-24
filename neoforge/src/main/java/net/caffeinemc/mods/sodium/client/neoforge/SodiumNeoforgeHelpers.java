@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.client.neoforge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import it.unimi.dsi.fastutil.longs.Long2ObjectFunction;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.neoforge.iecompat.ImmersiveEngineeringCompat;
@@ -35,7 +36,6 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.ClientHooks;
 import net.neoforged.neoforge.client.event.AddSectionGeometryEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.client.model.data.ModelDataManager;
 import org.joml.Matrix4f;
 
 import java.nio.file.Path;
@@ -86,8 +86,8 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
 
     @Override
     public Object getModelData(Object o, BlockPos pos) {
-        if ((o instanceof ModelDataManager.Snapshot)) {
-            return ((ModelDataManager.Snapshot) o).getAtOrEmpty(pos);
+        if ((o instanceof Long2ObjectFunction<?>)) {
+            return ((Long2ObjectFunction<ModelData>) o).apply(pos.asLong());
         } else {
             return ModelData.EMPTY;
         }
@@ -119,8 +119,8 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     }
 
     @Override
-    public void runChunkLayerEvents(RenderType renderType, LevelRenderer levelRenderer, PoseStack poseStack, Matrix4f projectionMatrix, int renderTick, Camera camera, Frustum frustum) {
-        ClientHooks.dispatchRenderStage(renderType, levelRenderer, poseStack, projectionMatrix, renderTick, camera, frustum);
+    public void runChunkLayerEvents(RenderType renderType, LevelRenderer levelRenderer, Matrix4f modelMatrix, Matrix4f projectionMatrix, int renderTick, Camera camera, Frustum frustum) {
+        ClientHooks.dispatchRenderStage(renderType, levelRenderer, modelMatrix, projectionMatrix, renderTick, camera, frustum);
     }
 
     @Override

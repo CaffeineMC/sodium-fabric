@@ -41,7 +41,7 @@ public class BakedModelEncoder {
                 int normal = quad.getNormal(i);
 
                 if (normal >>> 8 == 0) {
-                    normal = MatrixHelper.transformNormal(matNormal, quad.getLightFace());
+                    normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getLightFace());
                 } else {
                     normal = MatrixHelper.transformNormal(matNormal, normal);
                 }
@@ -59,7 +59,7 @@ public class BakedModelEncoder {
         }
     }
 
-    public static void writeQuadVertices(VertexBufferWriter writer, PoseStack.Pose matrices, ModelQuadView quad, float r, float g, float b, float[] brightnessTable, boolean colorize, int[] light, int overlay) {
+    public static void writeQuadVertices(VertexBufferWriter writer, PoseStack.Pose matrices, ModelQuadView quad, float r, float g, float b, float a, float[] brightnessTable, boolean colorize, int[] light, int overlay) {
         Matrix3f matNormal = matrices.normal();
         Matrix4f matPosition = matrices.pose();
 
@@ -68,7 +68,7 @@ public class BakedModelEncoder {
             long ptr = buffer;
 
             // The packed transformed normal vector
-            var normal = MatrixHelper.transformNormal(matNormal, quad.getLightFace());
+            var normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getLightFace());
 
             for (int i = 0; i < 4; i++) {
                 // The position vector
@@ -103,7 +103,7 @@ public class BakedModelEncoder {
                     fB = brightness * b;
                 }
 
-                int color = ColorABGR.pack(fR, fG, fB, 1.0F);
+                int color = ColorABGR.pack(fR, fG, fB, a);
 
                 ModelVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, light[i], normal);
                 ptr += ModelVertex.STRIDE;
