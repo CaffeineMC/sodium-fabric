@@ -50,8 +50,8 @@ public class TQuad {
         return extents[facing.ordinal()] * facing.getSign();
     }
 
-    static TQuad fromAligned(ModelQuadFacing facing, float[] extents) {
-        return new TQuad(facing, extents, null, ModelQuadFacing.PACKED_ALIGNED_NORMALS[facing.ordinal()]);
+    static TQuad fromAligned(ModelQuadFacing facing, float[] extents, Vector3fc center) {
+        return new TQuad(facing, extents, center, ModelQuadFacing.PACKED_ALIGNED_NORMALS[facing.ordinal()]);
     }
 
     static TQuad fromUnaligned(ModelQuadFacing facing, float[] extents, Vector3fc center, int packedNormal) {
@@ -74,6 +74,8 @@ public class TQuad {
             this.facing = ModelQuadFacing.fromNormal(this.quantizedNormal.x(), this.quantizedNormal.y(), this.quantizedNormal.z());
             if (this.facing.isAligned()) {
                 this.dotProduct = getAlignedDotProduct(this.facing, this.extents);
+            } else {
+                this.dotProduct = this.getCenter().dot(this.quantizedNormal);
             }
         }
 
