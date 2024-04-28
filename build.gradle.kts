@@ -89,8 +89,7 @@ tasks {
     }
 
     jar {
-        from("${rootProject.projectDir}/COPYING")
-        from("${rootProject.projectDir}/COPYING.LESSER")
+        from("${rootProject.projectDir}/LICENSE.md")
 
         val api = sourceSets.getByName("api")
         from(api.output.classesDirs)
