@@ -14,10 +14,6 @@ import net.caffeinemc.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBu
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
  * passes. This makes a best-effort attempt to pick a suitable size for each scratch buffer, but will never try to
@@ -57,42 +53,71 @@ public class ChunkBuildBuffers {
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
      * times to return multiple copies.
      */
-    public BuiltSectionMeshParts createMesh(TerrainRenderPass pass, boolean forceUnassigned) {
+    public BuiltSectionMeshParts createMesh(TerrainRenderPass pass, int visibleSlices, boolean forceUnassigned, boolean sliceReordering) {
         var builder = this.builders.get(pass);
 
-        List<ByteBuffer> vertexBuffers = new ArrayList<>();
         VertexRange[] vertexRanges = new VertexRange[ModelQuadFacing.COUNT];
-
         int vertexCount = 0;
 
+        // get the total vertex count to initialize the buffer
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-            var buffer = builder.getVertexBuffer(facing);
-
-            if (buffer.isEmpty()) {
-                continue;
-            }
-
-            vertexBuffers.add(buffer.slice());
-            if (!forceUnassigned) {
-                vertexRanges[facing.ordinal()] = new VertexRange(vertexCount, buffer.count());
-            }
-
-            vertexCount += buffer.count();
+            vertexCount += builder.getVertexBuffer(facing).count();
         }
 
         if (vertexCount == 0) {
             return null;
         }
 
-        if (forceUnassigned) {
-            vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(0, vertexCount);
-        }
-
         var mergedBuffer = new NativeBuffer(vertexCount * this.vertexType.getVertexFormat().getStride());
         var mergedBufferBuilder = mergedBuffer.getDirectBuffer();
 
-        for (var buffer : vertexBuffers) {
-            mergedBufferBuilder.put(buffer);
+        if (sliceReordering) {
+            // sliceReordering implies !forceUnassigned
+
+            // write all currently visible slices first, and then the rest.
+            // start with unassigned as it will never become invisible
+            var unassignedBuffer = builder.getVertexBuffer(ModelQuadFacing.UNASSIGNED);
+            int vertexRangeCount = 0;
+            vertexRanges[vertexRangeCount++] = new VertexRange(unassignedBuffer.count(), ModelQuadFacing.UNASSIGNED.ordinal());
+            if (!unassignedBuffer.isEmpty()) {
+                mergedBufferBuilder.put(unassignedBuffer.slice());
+            }
+
+            // write all visible and then invisible slices
+            for (var step = 0; step < 2; step++) {
+                for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+                    var facingIndex = facing.ordinal();
+                    if (facing == ModelQuadFacing.UNASSIGNED || ((visibleSlices >> facingIndex) & 1) == step) {
+                        continue;
+                    }
+
+                    var buffer = builder.getVertexBuffer(facing);
+
+                    // generate empty ranges to prevent SectionRenderData storage from making up indexes for null ranges
+                    vertexRanges[vertexRangeCount++] = new VertexRange(buffer.count(), facingIndex);
+
+                    if (!buffer.isEmpty()) {
+                        mergedBufferBuilder.put(buffer.slice());
+                    }
+                }
+            }
+        } else {
+            // forceUnassigned implies !sliceReordering
+
+            if (forceUnassigned) {
+                vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(vertexCount, ModelQuadFacing.UNASSIGNED.ordinal());
+            }
+
+            for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+                var buffer = builder.getVertexBuffer(facing);
+                if (!buffer.isEmpty()) {
+                    if (!forceUnassigned) {
+                        var facingIndex = facing.ordinal();
+                        vertexRanges[facingIndex] = new VertexRange(buffer.count(), facingIndex);
+                    }
+                    mergedBufferBuilder.put(buffer.slice());
+                }
+            }
         }
 
         return new BuiltSectionMeshParts(mergedBuffer, vertexRanges);

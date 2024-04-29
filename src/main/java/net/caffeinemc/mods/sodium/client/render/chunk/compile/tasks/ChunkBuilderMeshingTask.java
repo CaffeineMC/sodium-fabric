@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.tasks;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
+import net.caffeinemc.mods.sodium.client.render.chunk.DefaultChunkRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.RenderSection;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+
 import java.util.Map;
 
 import org.joml.Vector3dc;
@@ -40,7 +42,7 @@ import org.joml.Vector3dc;
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
  * to graphics memory on the main thread.
- *
+ * <p>
  * This task takes a slice of the level from the thread it is created on. Since these slices require rather large
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
@@ -102,13 +104,13 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
                         if (blockState.getRenderShape() == RenderShape.MODEL) {
                             BakedModel model = cache.getBlockModels()
-                                .getBlockModel(blockState);
+                                    .getBlockModel(blockState);
 
                             long seed = blockState.getSeed(blockPos);
 
                             context.update(blockPos, modelOffset, blockState, model, seed);
                             cache.getBlockRenderer()
-                                .renderModel(context, buffers);
+                                    .renderModel(context, buffers);
                         }
 
                         FluidState fluidState = blockState.getFluidState();
@@ -149,12 +151,15 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         }
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
+        var visibleSlices = DefaultChunkRenderer.getVisibleFaces(
+                (int) this.absoluteCameraPos.x(), (int) this.absoluteCameraPos.y(), (int) this.absoluteCameraPos.z(),
+                this.render.getChunkX(), this.render.getChunkY(), this.render.getChunkZ());
 
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             // consolidate all translucent geometry into UNASSIGNED so that it's rendered
             // all together if it needs to share an index buffer between the directions
             boolean isTranslucent = pass == DefaultTerrainRenderPasses.TRANSLUCENT;
-            BuiltSectionMeshParts mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDirectionMixing);
+            BuiltSectionMeshParts mesh = buffers.createMesh(pass, visibleSlices, isTranslucent && sortType.needsDirectionMixing, !isTranslucent);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);
@@ -198,7 +203,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockState state = null;
         try {
             state = slice.getBlockState(pos);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         CrashReportCategory.populateBlockDetails(crashReportSection, slice, pos, state);
 
         crashReportSection.setDetail("Chunk section", this.render);

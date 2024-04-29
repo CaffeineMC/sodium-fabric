@@ -61,21 +61,23 @@ public class SectionRenderDataStorage {
         int sliceMask = 0;
         int vertexOffset = allocation.getOffset();
 
-        for (int facingIndex = 0; facingIndex < ModelQuadFacing.COUNT; facingIndex++) {
-            VertexRange vertexRange = ranges[facingIndex];
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+            VertexRange vertexRange = ranges[i];
             int vertexCount;
+            int facing = -1;
 
             if (vertexRange != null) {
                 vertexCount = vertexRange.vertexCount();
+                facing = vertexRange.facing();
             } else {
                 vertexCount = 0;
             }
 
-            SectionRenderDataUnsafe.setVertexOffset(pMeshData, facingIndex, vertexOffset);
-            SectionRenderDataUnsafe.setElementCount(pMeshData, facingIndex, (vertexCount >> 2) * 6);
+            SectionRenderDataUnsafe.setVertexOffset(pMeshData, i, vertexOffset);
+            SectionRenderDataUnsafe.setElementCountAndFacing(pMeshData, i, (vertexCount >> 2) * 6, facing);
 
             if (vertexCount > 0) {
-                sliceMask |= 1 << facingIndex;
+                sliceMask |= 1 << facing;
             }
 
             vertexOffset += vertexCount;
@@ -168,10 +170,10 @@ public class SectionRenderDataStorage {
         var offset = allocation.getOffset();
         var data = this.getDataPointer(sectionIndex);
 
-        for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-            SectionRenderDataUnsafe.setVertexOffset(data, facing, offset);
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+            SectionRenderDataUnsafe.setVertexOffset(data, i, offset);
 
-            var count = SectionRenderDataUnsafe.getElementCount(data, facing);
+            var count = SectionRenderDataUnsafe.getElementCount(data, i);
             offset += (count / 6) * 4; // convert elements back into vertices
         }
     }

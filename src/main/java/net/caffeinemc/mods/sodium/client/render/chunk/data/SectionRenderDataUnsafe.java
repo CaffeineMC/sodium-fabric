@@ -23,7 +23,8 @@ import org.lwjgl.system.MemoryUtil;
 //
 // struct VertexRange { // 8 bytes
 //   offset: u32,
-//   count: u32
+//   facing: u3,
+//   count: u29
 // }
 
 public class SectionRenderDataUnsafe {
@@ -88,11 +89,23 @@ public class SectionRenderDataUnsafe {
         return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (facing * 8L) + 0L);
     }
 
-    public static void setElementCount(long ptr, int facing, int value) {
-        MemoryUtil.memPutInt(ptr + OFFSET_SLICE_RANGES + (facing * 8L) + 4L, value);
+    public static void setElementCountAndFacing(long ptr, int index, int count, int facing) {
+        MemoryUtil.memPutInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L, count | (facing << 29));
     }
 
-    public static int getElementCount(long ptr, int facing) {
-        return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (facing * 8L) + 4L);
+    public static int getElementCountAndFacing(long ptr, int index) {
+        return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L);
+    }
+
+    public static int getElementCount(long ptr, int index) {
+        return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L) & 0x1FFFFFFF;
+    }
+
+    public static int getElementCount(int value) {
+        return value & 0x1FFFFFFF;
+    }
+
+    public static int getFacing(int value) {
+        return value >>> 29;
     }
 }
