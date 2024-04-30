@@ -10,6 +10,7 @@ base {
 }
 
 val MINECRAFT_VERSION: String by rootProject.extra
+val NEOFORGE_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
 
 if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
@@ -122,7 +123,7 @@ runs {
 }
 
 dependencies {
-    implementation("net.neoforged:neoforge:20.5.0-beta")
+    implementation("net.neoforged:neoforge:${NEOFORGE_VERSION}")
     compileOnly(project(":common"))
     implementation("net.caffeinemc.new2:fabric_api_base:0.4.31")
     jarJar("net.caffeinemc.new2:fabric_api_base:[0.4.31,0.4.33)")
