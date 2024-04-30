@@ -12,10 +12,10 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.*
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.SortTriggering;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import java.util.Arrays;
 
@@ -25,7 +25,7 @@ import java.util.Arrays;
  * determines the best sort type for the section and constructs various types of
  * translucent data objects that then perform sorting and get registered with
  * GFNI for triggering.
- * 
+ * <p>
  * An instance of this class is created for each meshing task. It goes through
  * three stages:
  * 1. During meshing, it collects the geometry and calculates some metrics on the
@@ -41,10 +41,10 @@ import java.util.Arrays;
  * allocates memory for the index data and performs the first (and for static
  * sort types, only) sort.
  * - The data object is put into the {@link ChunkBuildOutput}.
- * 
+ * <p>
  * When dynamic sorting is enabled, trigger information from {@link DynamicData}
- * object is integrated into {@link SortTriggering} when the task result is
- * received by the main thread.
+ * object is integrated into {@link SortTriggering} when main thread receives the
+ * task result.
  */
 public class TranslucentGeometryCollector {
 
@@ -184,6 +184,14 @@ public class TranslucentGeometryCollector {
             this.quadLists[direction] = quadList;
         }
 
+        Vector3fc center = null;
+        if (!facing.isAligned() || uniqueQuads != 4) {
+            var centerX = xSum / uniqueQuads;
+            var centerY = ySum / uniqueQuads;
+            var centerZ = zSum / uniqueQuads;
+            center = new Vector3f(centerX, centerY, centerZ);
+        }
+
         if (facing.isAligned()) {
             // only update global extents if there are no unaligned quads since this is only
             // used for the convex box test which doesn't work with unaligned quads anyway
@@ -196,7 +204,7 @@ public class TranslucentGeometryCollector {
                 this.extents[5] = Math.min(this.extents[5], negZExtent);
             }
 
-            var quad = TQuad.fromAligned(facing, extents);
+            var quad = TQuad.fromAligned(facing, extents, center);
             quadList.add(quad);
 
             var extreme = this.alignedExtremes[direction];
@@ -216,11 +224,6 @@ public class TranslucentGeometryCollector {
             }
         } else {
             this.hasUnaligned = true;
-
-            var centerX = xSum / uniqueQuads;
-            var centerY = ySum / uniqueQuads;
-            var centerZ = zSum / uniqueQuads;
-            var center = new Vector3f(centerX, centerY, centerZ);
 
             var quad = TQuad.fromUnaligned(facing, extents, center, packedNormal);
             quadList.add(quad);
@@ -252,7 +255,7 @@ public class TranslucentGeometryCollector {
     /**
      * Filters the given sort type to fit within the selected sorting mode. If it
      * doesn't match, then it's set to the NONE sort type.
-     * 
+     *
      * @param sortType the sort type to filter
      */
     private static SortType filterSortType(SortType sortType) {
@@ -277,22 +280,23 @@ public class TranslucentGeometryCollector {
      * unused and doesn't make sense to give.
      */
     private static final int[] STATIC_TOPO_SORT_ATTEMPT_LIMITS = new int[] { -1, -1, 250, 100, 50, 30 };
+    public static final int STATIC_TOPO_UNKNOWN_FALLBACK_LIMIT = STATIC_TOPO_SORT_ATTEMPT_LIMITS[STATIC_TOPO_SORT_ATTEMPT_LIMITS.length - 1];
 
     /**
      * Determines the sort type for the collected geometry from the section. It
      * determines a sort type, which is either no sorting, a static sort or a
      * dynamic sort (section in GFNI only in this case).
-     *
+     * <p>
      * See the section on special cases for an explanation of the special sorting
      * cases: <a href="https://hackmd.io/@douira100/sodium-sl-gfni#Special-Sorting-Cases">...</a>
-     *
+     * <p>
      * A: If there are no or only one normal, this builder can be considered
      * practically empty.
-     *
+     * <p>
      * B: If there are two face planes with opposing normals at the same distance,
      * then
      * they can't be seen through each other and this section can be ignored.
-     *
+     * <p>
      * C: If the translucent faces are on the surface of the convex hull of all
      * translucent faces in the section and face outwards, then there is no way to
      * see one through another. Since convex hulls are hard, a simpler case only
@@ -302,19 +306,23 @@ public class TranslucentGeometryCollector {
      * distances line up with the bounding box allows the exclusion of some
      * sections containing a single convex translucent cuboid (of which not all
      * faces need to exist).
-     *
+     * <p>
      * D: If there are only two normals which are opposites of
      * each other, then a special fixed sort order is always a correct sort order.
      * This ordering sorts the two sets of face planes by their ascending
      * normal-relative distance. The ordering between the two normals is irrelevant
      * as they can't be seen through each other anyway.
-     *
+     * <p>
      * More heuristics can be performed here to conservatively determine if this
      * section could possibly have more than one translucent sort order.
      *
      * @return the required sort type to ensure this section always looks correct
      */
     private SortType sortTypeHeuristic() {
+        if (this.quads.length == 0) {
+            return SortType.NONE;
+        }
+
         SortBehavior sortBehavior = SodiumClientMod.options().performance.getSortBehavior();
         if (sortBehavior.getSortMode() == SortBehavior.SortMode.NONE) {
             return SortType.NONE;
@@ -454,7 +462,7 @@ public class TranslucentGeometryCollector {
     }
 
     private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, CombinedCameraPos cameraPos,
-            TranslucentData oldData) {
+                                                   TranslucentData oldData) {
         if (this.sortType == SortType.NONE) {
             return AnyOrderData.fromMesh(translucentMesh, this.quads, this.sectionPos);
         }
