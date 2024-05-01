@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.client.fabric;
+package net.caffeinemc.mods.sodium.fabric;
 
 import net.caffeinemc.mods.sodium.client.compatibility.checks.EarlyDriverScanner;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;

@@ -13,6 +13,10 @@ val MINECRAFT_VERSION: String by rootProject.extra
 val NEOFORGE_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
 
+base {
+    archivesName = "sodium-neoforge-${MINECRAFT_VERSION}"
+}
+
 if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
     minecraft.accessTransformers {
         file("src/main/resources/META-INF/accesstransformer.cfg")

@@ -11,9 +11,9 @@ displayName = "Sodium"
 logoFile="sodium-icon.png" #optional
 
 authors="JellySquid"
-# A multi-line description for your mod. This has no minimum length, but it *is* required!
+
 description = '''
-Sodium is a free and open-source optimization mod for Minecraft which improves frame rates and reduces lag spikes.
+Sodium is a powerful rendering engine for Minecraft which improves frame rates and reduces lag spikes.
 '''
 
 provides = ["indium"]

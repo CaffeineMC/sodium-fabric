@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.client.fabric;
+package net.caffeinemc.mods.sodium.fabric.render;
 
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;

@@ -1,18 +1,18 @@
-package net.caffeinemc.mods.sodium.client.neoforge;
+package net.caffeinemc.mods.sodium.fabric;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import it.unimi.dsi.fastutil.longs.Long2ObjectFunction;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
-import net.caffeinemc.mods.sodium.client.neoforge.iecompat.ImmersiveEngineeringCompat;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
-import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.neoforge.FluidRendererImpl;
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
-import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
+import net.caffeinemc.mods.sodium.fabric.render.FluidRendererImpl;
+import net.caffeinemc.mods.sodium.fabric.render.SpriteFinderCache;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Camera;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -30,97 +30,90 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
-import net.neoforged.fml.loading.FMLConfig;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.client.ClientHooks;
-import net.neoforged.neoforge.client.event.AddSectionGeometryEvent;
-import net.neoforged.neoforge.client.model.data.ModelData;
 import org.joml.Matrix4f;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
+public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
     public boolean isBlockTransparent(BlockState block, BlockAndTintGetter level, BlockPos pos, FluidState fluidState) {
-        return block.shouldDisplayFluidOverlay(level, pos, fluidState);
+        return FluidRenderHandlerRegistry.INSTANCE.isBlockTransparent(block.getBlock());
     }
 
     @Override
     public Path getGameDir() {
-        return FMLPaths.GAMEDIR.get();
+        return FabricLoader.getInstance().getGameDir();
     }
 
     @Override
     public Path getConfigDir() {
-        return FMLPaths.CONFIGDIR.get();
+        return FabricLoader.getInstance().getConfigDir();
     }
 
     @Override
     public Object getRenderData(Level level, BoundingBox pos, BlockEntity value) {
-        return level.getModelDataManager().snapshotSectionRegion(pos.minX() >> 4, pos.minY() >> 4, pos.minZ() >> 4,
-                pos.maxX() >> 4, pos.maxY() >> 4, pos.maxZ() >> 4);
+        if (value == null) {
+            return null;
+        }
+        return value.getRenderData();
     }
 
     @Override
     public boolean isDevelopmentEnvironment() {
-        return !FMLLoader.isProduction();
+        return FabricLoader.getInstance().isDevelopmentEnvironment();
     }
 
     @Override
     public boolean isFlawlessFramesActive() {
-        return false;
+        return FlawlessFrames.isActive();
     }
 
     @Override
     public Iterable<RenderType> getMaterials(BlockAndTintGetter level, BakedModel model, BlockState state, BlockPos pos, RandomSource random, Object modelData) {
-        return model.getRenderTypes(state, random, (ModelData) modelData);
+        return Collections.singleton(ItemBlockRenderTypes.getChunkRenderType(state));
     }
 
     @Override
     public List<BakedQuad> getQuads(BlockAndTintGetter level, BlockPos pos, BakedModel model, BlockState state, Direction face, RandomSource random, RenderType renderType, Object modelData) {
-        return model.getQuads(state, face, random, (ModelData) modelData, renderType);
+        return model.getQuads(state, face, random);
     }
 
     @Override
     public Object getModelData(Object o, BlockPos pos) {
-        if ((o instanceof Long2ObjectFunction<?>)) {
-            return ((Long2ObjectFunction<ModelData>) o).apply(pos.asLong());
-        } else {
-            return ModelData.EMPTY;
-        }
+        return null;
     }
 
     @Override
     public Object getEmptyModelData() {
-        return ModelData.EMPTY;
+        return null;
     }
 
     @Override
     public boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, Direction facing) {
-        return selfState.supportsExternalFaceHiding() && (otherState.hidesNeighborFace(level, selfPos, selfState, DirectionUtil.getOpposite(facing)));
+        return false;
     }
 
     @Override
     public int getLightEmission(BlockState state, BlockAndTintGetter level, BlockPos pos) {
-        return state.getLightEmission(level, pos);
+        return state.getLightEmission();
     }
 
     @Override
     public boolean shouldCopyRenderData() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean renderFluidFromVanilla() {
-        return false;
+        return FluidRendererImpl.renderFromVanilla();
     }
 
     @Override
-    public void runChunkLayerEvents(RenderType renderType, LevelRenderer levelRenderer, Matrix4f modelMatrix, Matrix4f projectionMatrix, int renderTick, Camera camera, Frustum frustum) {
-        ClientHooks.dispatchRenderStage(renderType, levelRenderer, modelMatrix, projectionMatrix, renderTick, camera, frustum);
+    public void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, Matrix4f modelMatrix, Matrix4f projectionMatrix, int ticks, Camera mainCamera, Frustum cullingFrustum) {
+
     }
 
     @Override
@@ -135,37 +128,31 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
 
     @Override
     public boolean isEarlyLoadingScreenActive() {
-        return FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL);
+        return false;
     }
 
     @Override
     public Object getProperModelData(BakedModel model, BlockState state, BlockPos pos, LevelSlice slice, Object modelData) {
-        return model.getModelData(slice, pos, state, (ModelData) modelData);
+        return modelData;
     }
 
     @Override
     public void renderConnectionsInSection(ChunkBuildBuffers buffers, LevelSlice worldSlice, SectionPos position) {
-        ImmersiveEngineeringCompat.renderConnectionsInSection(buffers, worldSlice, position);
+
     }
 
     @Override
     public boolean shouldRenderIE(SectionPos position) {
-        return ImmersiveEngineeringCompat.isLoaded && ImmersiveEngineeringCompat.sectionNeedsRendering(position);
+        return false;
+    }
+
+    @Override
+    public void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice) {
+        // Fabric has no concept of additional chunk renderers; everything is handled through FRAPI.
     }
 
     @Override
     public List<?> getExtraRenderers(Level level, BlockPos origin) {
-        return ClientHooks.gatherAdditionalRenderers(origin, level);
-    }
-
-    private static final ThreadLocal<PoseStack> emptyStack = ThreadLocal.withInitial(PoseStack::new);
-
-    @Override
-    public void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice) {
-        AddSectionGeometryEvent.SectionRenderingContext context = new AddSectionGeometryEvent.SectionRenderingContext(typeToConsumer, slice, emptyStack.get());
-        for (int i = 0, renderersSize = renderers.size(); i < renderersSize; i++) {
-            AddSectionGeometryEvent.AdditionalSectionRenderer renderer = (AddSectionGeometryEvent.AdditionalSectionRenderer) renderers.get(i);
-            renderer.render(context);
-        }
+        return List.of();
     }
 }

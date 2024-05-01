@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.client.neoforge.iecompat;
+package net.caffeinemc.mods.sodium.neoforge.iecompat;
 
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;

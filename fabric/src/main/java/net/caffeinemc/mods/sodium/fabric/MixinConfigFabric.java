@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.client.fabric;
+package net.caffeinemc.mods.sodium.fabric;
 
 import net.caffeinemc.mods.sodium.client.data.config.MixinConfig;
 import net.fabricmc.loader.api.FabricLoader;
