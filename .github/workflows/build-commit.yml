@@ -34,7 +34,9 @@ jobs:
       - name: Build artifacts
         run: ./gradlew build
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: sodium-artifacts-${{ steps.ref.outputs.branch }}
-          path: build/libs/*.jar
+          path: |
+            neoforge/build/libs/*.jar
+            fabric/build/libs/*.jar
