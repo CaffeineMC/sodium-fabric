@@ -12,10 +12,10 @@ public class CompactChunkVertex implements ChunkVertexType {
     public static final int STRIDE = 20;
 
     public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(ChunkMeshAttribute.class, STRIDE)
-            .addElement(ChunkMeshAttribute.POSITION_HI, 0, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
-            .addElement(ChunkMeshAttribute.POSITION_LO, 4, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+            .addElement(ChunkMeshAttribute.POSITION_HI, 0, GlVertexAttributeFormat.UNSIGNED_2_10_10_10_REV, 4, false, false)
+            .addElement(ChunkMeshAttribute.POSITION_LO, 4, GlVertexAttributeFormat.UNSIGNED_2_10_10_10_REV, 4, false, false)
             .addElement(ChunkMeshAttribute.COLOR, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
-            .addElement(ChunkMeshAttribute.TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false, true)
+            .addElement(ChunkMeshAttribute.TEXTURE, 12, GlVertexAttributeFormat.SHORT, 2, false, false)
             .addElement(ChunkMeshAttribute.LIGHT_MATERIAL_INDEX, 16, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, false, true)
             .build();
 
@@ -102,9 +102,13 @@ public class CompactChunkVertex implements ChunkVertexType {
         // This makes it possible to use much smaller epsilons for avoiding texture bleed, since the epsilon is no
         // longer encoded into the vertex data (instead, we only store the sign.)
         int bias = (x < center) ? 1 : -1;
-        int quantized = floorInt(x * TEXTURE_MAX_VALUE) + bias;
+        int quantized = (floorInt(x * TEXTURE_MAX_VALUE) + bias) & 0x7FFF;
 
-        return (quantized & 0x7FFF) | (sign(bias) << 15);
+        if (bias < 0) {
+            quantized = -quantized;
+        }
+
+        return quantized;
     }
 
     private static int encodeLight(int light) {
@@ -118,12 +122,6 @@ public class CompactChunkVertex implements ChunkVertexType {
         return ((light & 0xFFFF) << 0) |
                 ((material & 0xFF) << 16) |
                 ((section & 0xFF) << 24);
-    }
-
-    private static int sign(int x) {
-        // Shift the sign-bit to the least significant bit's position
-        // (0) if positive, (1) if negative
-        return (x >>> 31);
     }
 
     private static int floorInt(float x) {
