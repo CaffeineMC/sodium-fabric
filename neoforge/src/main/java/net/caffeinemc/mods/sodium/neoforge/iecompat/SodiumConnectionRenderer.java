@@ -18,6 +18,7 @@ import blusunrize.immersiveengineering.api.wires.WireCollisionData.ConnectionSeg
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import cpw.mods.util.Lazy;
 import malte0811.modelsplitter.model.UVCoords;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -51,7 +52,7 @@ public class SodiumConnectionRenderer implements ResourceManagerReloadListener
     private static final LoadingCache<SectionKey, List<RenderedSegment>> SEGMENT_CACHE = CacheBuilder.newBuilder()
             .expireAfterAccess(120, TimeUnit.SECONDS)
             .build(CacheLoader.from(SodiumConnectionRenderer::renderSectionForCache));
-    private static final ResettableLazy<TextureAtlasSprite> WIRE_TEXTURE = new ResettableLazy<>(
+    private static Lazy<TextureAtlasSprite> WIRE_TEXTURE = Lazy.of(
             () -> Minecraft.getInstance().getModelManager()
                     .getAtlas(InventoryMenu.BLOCK_ATLAS)
                     .getSprite(ImmersiveEngineering.rl("block/wire"))
@@ -60,7 +61,11 @@ public class SodiumConnectionRenderer implements ResourceManagerReloadListener
     @Override
     public void onResourceManagerReload(@Nonnull ResourceManager pResourceManager)
     {
-        WIRE_TEXTURE.reset();
+        WIRE_TEXTURE = Lazy.of(
+                () -> Minecraft.getInstance().getModelManager()
+                        .getAtlas(InventoryMenu.BLOCK_ATLAS)
+                        .getSprite(ImmersiveEngineering.rl("block/wire"))
+        );
         resetCache();
     }
 

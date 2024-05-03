@@ -86,12 +86,12 @@ val fullJar: Jar by tasks.creating(Jar::class) {
     into("META-INF") {
         from(projectDir.resolve("src").resolve("main").resolve("resources").resolve("sodium-icon.png"))
 
-        from(projectDir.resolve("src").resolve("main").resolve("resources").resolve("META-INF").resolve("mods.toml"))
+        from(projectDir.resolve("src").resolve("main").resolve("resources").resolve("META-INF").resolve("neoforge.mods.toml"))
     }
 
     from(rootDir.resolve("LICENSE.md"))
 
-    filesMatching("mods.toml") {
+    filesMatching("neoforge.mods.toml") {
         expand(mapOf("version" to MOD_VERSION))
     }
 
