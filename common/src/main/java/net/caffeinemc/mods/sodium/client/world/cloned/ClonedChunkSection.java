@@ -40,6 +40,7 @@ public class ClonedChunkSection {
     private final @Nullable Int2ReferenceMap<Object> blockEntityRenderDataMap;
 
     private final @Nullable DataLayer[] lightDataArrays;
+    private final @Nullable Object auxLightManager;
 
     private final @Nullable PalettedContainerRO<BlockState> blockData;
 
@@ -55,7 +56,7 @@ public class ClonedChunkSection {
 
         Int2ReferenceMap<BlockEntity> blockEntityMap = null;
         Int2ReferenceMap<Object> blockEntityRenderDataMap = null;
-        Object modelDataSnapshot = null;
+        auxLightManager = SodiumPlatformHelpers.INSTANCE.getLightManager(chunk, pos);
 
         if (section != null) {
             if (!section.hasOnlyAir()) {
@@ -231,5 +232,9 @@ public class ClonedChunkSection {
 
     public void setLastUsedTimestamp(long timestamp) {
         this.lastUsedTimestamp = timestamp;
+    }
+
+    public Object getAuxLightManager() {
+        return auxLightManager;
     }
 }

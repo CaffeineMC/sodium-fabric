@@ -85,6 +85,9 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
     // (Local Section -> Block States) table.
     private final BlockState[][] blockArrays;
 
+    // (Local Section -> Light Manager) table.
+    private final Object[] auxLightManager;
+
     // (Local Section -> Light Arrays) table.
     private final @Nullable DataLayer[][] lightArrays;
 
@@ -156,6 +159,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
 
         this.blockEntityArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
         this.blockEntityRenderDataArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
+        this.auxLightManager = new Object[SECTION_ARRAY_SIZE];
 
         this.biomeSlice = new LevelBiomeSlice();
         this.biomeColors = new LevelColorCache(this.biomeSlice, Minecraft.getInstance().options.biomeBlendRadius().get());
@@ -196,6 +200,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
         this.lightArrays[sectionIndex][LightLayer.SKY.ordinal()] = section.getLightArray(LightLayer.SKY);
 
         this.blockEntityArrays[sectionIndex] = section.getBlockEntityMap();
+        this.auxLightManager[sectionIndex] = section.getAuxLightManager();
         this.blockEntityRenderDataArrays[sectionIndex] = section.getBlockEntityRenderDataMap();
     }
 
@@ -236,6 +241,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
             Arrays.fill(this.lightArrays[sectionIndex], null);
 
             this.blockEntityArrays[sectionIndex] = null;
+            this.auxLightManager[sectionIndex] = null;
             this.blockEntityRenderDataArrays[sectionIndex] = null;
         }
     }

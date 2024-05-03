@@ -25,9 +25,11 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
 import net.neoforged.fml.loading.FMLConfig;
@@ -157,6 +159,11 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public List<?> getExtraRenderers(Level level, BlockPos origin) {
         return ClientHooks.gatherAdditionalRenderers(origin, level);
+    }
+
+    @Override
+    public Object getLightManager(LevelChunk chunk, SectionPos pos) {
+        return chunk.getAuxLightManager(pos.origin());
     }
 
     private static final ThreadLocal<PoseStack> emptyStack = ThreadLocal.withInitial(PoseStack::new);
