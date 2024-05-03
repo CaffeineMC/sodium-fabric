@@ -43,7 +43,6 @@
     "features.model.MultiPartBakedModelMixin",
     "features.model.WeightedBakedModelMixin",
     "features.options.overlays.GuiMixin",
-    "features.options.render_layers.LeavesBlockMixin",
     "features.options.render_layers.ItemBlockRenderTypesMixin",
     "features.options.weather.LevelRendererMixin",
     "features.render.entity.CubeMixin",
