@@ -19,9 +19,11 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
 import org.joml.Matrix4f;
@@ -78,4 +80,6 @@ public interface SodiumPlatformHelpers {
     void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice);
 
     List<?> getExtraRenderers(Level level, BlockPos origin);
+
+    Object getLightManager(LevelChunk chunk, SectionPos pos);
 }
