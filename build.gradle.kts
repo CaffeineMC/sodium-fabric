@@ -17,7 +17,7 @@ plugins {
 }
 
 base {
-    archivesName = "sodium-fabric"
+    archivesName = "Masti-fabric"
 
     group = "net.caffeinemc.mods"
     version = createVersionString()
@@ -25,10 +25,10 @@ base {
 
 loom {
     mixin {
-        defaultRefmapName = "sodium.refmap.json"
+        defaultRefmapName = "Masti.refmap.json"
     }
 
-    accessWidenerPath = file("src/main/resources/sodium.accesswidener")
+    accessWidenerPath = file("src/main/resources/Masti.accesswidener")
 }
 
 java {
