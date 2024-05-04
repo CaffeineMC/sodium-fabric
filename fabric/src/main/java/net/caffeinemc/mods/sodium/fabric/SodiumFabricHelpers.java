@@ -28,6 +28,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.material.FluidState;
 import org.joml.Matrix4f;
@@ -154,5 +155,10 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
     public List<?> getExtraRenderers(Level level, BlockPos origin) {
         return List.of();
+    }
+
+    @Override
+    public Object getLightManager(LevelChunk chunk, SectionPos pos) {
+        return null;
     }
 }

@@ -29,11 +29,6 @@ public abstract class LevelSliceMixin implements BlockAndTintGetter {
     @Shadow
     private int originBlockX, originBlockY, originBlockZ;
 
-    @Override
-    public @Nullable ModelDataManager getModelDataManager() {
-        return (ModelDataManager.Snapshot) modelDataSnapshot;
-    }
-
     @Shadow
     public Object getPlatformModelData(BlockPos pos) {
         return null;
