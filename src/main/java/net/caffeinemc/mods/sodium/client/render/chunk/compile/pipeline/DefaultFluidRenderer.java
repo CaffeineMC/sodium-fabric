@@ -75,7 +75,7 @@ public class DefaultFluidRenderer {
         if (blockState.getFluidState().getType().isSame(fluid)) {
             return true;
         }
-        return blockState.isFaceSturdy(world, adjPos, dir.getOpposite(), SupportType.FULL);
+        return blockState.canOcclude() && blockState.isFaceSturdy(world, adjPos, dir.getOpposite(), SupportType.FULL);
     }
 
     private boolean isSideExposed(BlockAndTintGetter world, int x, int y, int z, Direction dir, float height) {
