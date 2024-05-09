@@ -12,6 +12,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.Transl
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TopoGraphSorting;
 import net.caffeinemc.mods.sodium.client.util.MathUtil;
 import net.caffeinemc.mods.sodium.client.util.sorting.RadixSort;
+import net.minecraft.util.Mth;
 import org.joml.Vector3fc;
 
 import java.util.Arrays;
@@ -51,7 +52,6 @@ import java.util.Random;
 abstract class InnerPartitionBSPNode extends BSPNode {
     private static final int NODE_REUSE_THRESHOLD = 30;
     private static final int MAX_INTERSECTION_ATTEMPTS = 500;
-    private static final float PRIMARY_INTERSECTOR_THRESHOLD = 0.5f;
 
     final Vector3fc planeNormal;
     final int axis;
@@ -395,7 +395,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
     static private BSPNode handleIntersecting(BSPWorkspace workspace, IntArrayList indexes, int depth, BSPNode oldNode) {
         Int2IntOpenHashMap intersectionCounts = null;
         IntOpenHashSet primaryIntersectorIndexes = null;
-        int primaryIntersectorThreshold = Math.max(2, (int) (indexes.size() * PRIMARY_INTERSECTOR_THRESHOLD));
+        int primaryIntersectorThreshold = Mth.clamp(indexes.size() / 2, 2, 4);
 
         int i = -1;
         int j = 0;
