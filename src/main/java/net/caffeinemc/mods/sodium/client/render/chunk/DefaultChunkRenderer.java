@@ -60,7 +60,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         shader.setProjectionMatrix(matrices.projection());
         shader.setModelViewMatrix(matrices.modelView());
 
-        Iterator<ChunkRenderList> iterator = renderLists.iterator(renderPass.isReverseOrder());
+        Iterator<ChunkRenderList> iterator = renderLists.iterator(renderPass.isTranslucent());
 
         while (iterator.hasNext()) {
             ChunkRenderList renderList = iterator.next();
@@ -113,7 +113,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                                           boolean useBlockFaceCulling) {
         batch.clear();
 
-        var iterator = renderList.sectionsWithGeometryIterator(pass.isReverseOrder());
+        var iterator = renderList.sectionsWithGeometryIterator(pass.isTranslucent());
 
         if (iterator == null) {
             return;

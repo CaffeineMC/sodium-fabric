@@ -422,7 +422,7 @@ public class DefaultFluidRenderer {
             builder.addSprite(sprite);
         }
 
-        if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
+        if (material.isTranslucent() && collector != null) {
             int normal;
             if (facing.isAligned()) {
                 normal = facing.getPackedAlignedNormal();

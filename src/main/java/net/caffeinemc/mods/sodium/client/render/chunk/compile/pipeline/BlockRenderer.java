@@ -162,7 +162,7 @@ public class BlockRenderer {
             out.light = light.lm[srcIndex];
         }
 
-        if (material == DefaultMaterials.TRANSLUCENT && ctx.collector != null) {
+        if (material.isTranslucent() && ctx.collector != null) {
             ctx.collector.appendQuad(quad.getNormal(), vertices, normalFace);
         }
 

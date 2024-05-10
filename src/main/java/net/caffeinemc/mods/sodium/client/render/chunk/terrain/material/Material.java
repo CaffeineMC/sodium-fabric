@@ -22,4 +22,8 @@ public class Material {
     public int bits() {
         return this.packed;
     }
+
+    public boolean isTranslucent() {
+        return this.pass.isTranslucent();
+    }
 }
