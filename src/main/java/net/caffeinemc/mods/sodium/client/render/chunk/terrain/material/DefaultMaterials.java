@@ -12,6 +12,7 @@ public class DefaultMaterials {
     public static final Material CUTOUT = new Material(DefaultTerrainRenderPasses.CUTOUT, AlphaCutoffParameter.ONE_TENTH, false);
     public static final Material CUTOUT_MIPPED = new Material(DefaultTerrainRenderPasses.CUTOUT, AlphaCutoffParameter.ONE_TENTH, true);
     public static final Material TRANSLUCENT = new Material(DefaultTerrainRenderPasses.TRANSLUCENT, AlphaCutoffParameter.ZERO, true);
+    public static final Material TRIPWIRE = new Material(DefaultTerrainRenderPasses.TRANSLUCENT, AlphaCutoffParameter.ONE_TENTH, true);
 
     public static Material forBlockState(BlockState state) {
         return forRenderLayer(ItemBlockRenderTypes.getChunkRenderType(state));
@@ -26,8 +27,10 @@ public class DefaultMaterials {
             return SOLID;
         } else if (layer == RenderType.cutout()) {
             return CUTOUT;
-        } else if (layer == RenderType.cutoutMipped() || layer == RenderType.tripwire()) {
+        } else if (layer == RenderType.cutoutMipped()) {
             return CUTOUT_MIPPED;
+        } else if (layer == RenderType.tripwire()) {
+            return TRIPWIRE;
         } else if (layer == RenderType.translucent()) {
             return TRANSLUCENT;
         }
