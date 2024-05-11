@@ -22,6 +22,7 @@ import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -105,11 +106,11 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
      * @author JellySquid
      */
     @Overwrite
-    private void renderSectionLayer(RenderType renderLayer, PoseStack matrices, double x, double y, double z, Matrix4f matrix) {
+    private void renderSectionLayer(RenderType renderLayer, double x, double y, double z, Matrix4f frustrumMatrix, Matrix4f projectionMatrix) {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
+            this.renderer.drawChunkLayer(renderLayer, projectionMatrix, frustrumMatrix, x, y, z);
         } finally {
             RenderDevice.exitManagedCode();
         }
@@ -191,7 +192,15 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     }
 
     @Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;globalBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
-    private void onRenderBlockEntities(PoseStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f positionMatrix, CallbackInfo ci) {
+    private void onRenderBlockEntities(float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f projectionMatrix, Matrix4f frustrumMatrix, CallbackInfo ci) {
+        //float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci
+        PoseStack matrices = new PoseStack();
+        Matrix3f normalMatrix = new Matrix3f(projectionMatrix.m00(), projectionMatrix.m01(), projectionMatrix.m02(),
+                projectionMatrix.m10(), projectionMatrix.m11(), projectionMatrix.m12(),
+                projectionMatrix.m20(), projectionMatrix.m21(), projectionMatrix.m22());
+        PoseStack.Pose matrices_pose = new PoseStack.Pose(projectionMatrix, normalMatrix);
+        matrices.pushPose();
+
         this.renderer.renderBlockEntities(matrices, this.renderBuffers, this.destructionProgress, camera, this.level.tickRateManager().isFrozen() ? 1.0F : tickDelta);
     }
 

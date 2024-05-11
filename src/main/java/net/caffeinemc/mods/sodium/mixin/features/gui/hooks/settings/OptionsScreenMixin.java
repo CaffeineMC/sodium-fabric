@@ -1,7 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin.features.gui.hooks.settings;
 
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
-import net.minecraft.client.gui.screens.OptionsScreen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Dynamic;

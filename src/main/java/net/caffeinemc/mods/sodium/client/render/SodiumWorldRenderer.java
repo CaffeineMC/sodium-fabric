@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.SortedSet;
 
+import org.joml.Matrix4f;
 import org.joml.Vector3d;
 
 /**
@@ -239,8 +240,8 @@ public class SodiumWorldRenderer {
     /**
      * Performs a render pass for the given {@link RenderType} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z) {
-        ChunkRenderMatrices matrices = ChunkRenderMatrices.from(matrixStack);
+    public void drawChunkLayer(RenderType renderLayer, Matrix4f projectionMatrix, Matrix4f frustrumMatrix, double x, double y, double z) {
+        ChunkRenderMatrices matrices = ChunkRenderMatrices.from_new(projectionMatrix, frustrumMatrix);
 
         if (renderLayer == RenderType.solid()) {
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, x, y, z);
@@ -380,7 +381,7 @@ public class SodiumWorldRenderer {
 
                 PoseStack.Pose entry = matrices.last();
                 VertexConsumer transformer = new SheetedDecalTextureGenerator(bufferBuilder,
-                        entry.pose(), entry.normal(), 1.0f);
+                        entry, 1.0f);
 
                 consumer = (layer) -> layer.affectsCrumbling() ? VertexMultiConsumer.create(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
             }

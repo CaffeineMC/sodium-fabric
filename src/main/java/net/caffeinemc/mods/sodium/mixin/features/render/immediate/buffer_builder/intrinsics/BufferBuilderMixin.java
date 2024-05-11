@@ -19,9 +19,9 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer {
     private boolean fastFormat;
 
     @Override
-    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float r, float g, float b, int light, int overlay) {
+    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float r, float g, float b, float alpha, int light, int overlay) {
         if (!this.fastFormat) {
-            super.putBulkData(matrices, bakedQuad, r, g, b, light, overlay);
+            super.putBulkData(matrices, bakedQuad, r, g, b, alpha, light, overlay);
 
             SpriteUtil.markSpriteActive(bakedQuad.getSprite());
 
@@ -47,9 +47,9 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer {
     }
 
     @Override
-    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float[] brightnessTable, float r, float g, float b, int[] light, int overlay, boolean colorize) {
+    public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float[] brightnessTable, float r, float g, float b, float alpha, int[] light, int overlay, boolean colorize) {
         if (!this.fastFormat) {
-            super.putBulkData(matrices, bakedQuad, brightnessTable, r, g, b, light, overlay, colorize);
+            super.putBulkData(matrices, bakedQuad, brightnessTable, r, g, b, alpha, light, overlay, colorize);
 
             SpriteUtil.markSpriteActive(bakedQuad.getSprite());
 

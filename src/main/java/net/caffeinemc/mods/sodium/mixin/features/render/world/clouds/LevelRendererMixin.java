@@ -32,7 +32,7 @@ public class LevelRendererMixin {
      * @reason Optimize cloud rendering
      */
     @Overwrite
-    public void renderClouds(PoseStack matrices, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
+    public void renderClouds(PoseStack matrices, Matrix4f projectionMatrix, Matrix4f frustrumMatrix, float tickDelta, double x, double y, double z) {
         if (this.cloudRenderer == null) {
             this.cloudRenderer = new CloudRenderer(this.minecraft.getResourceManager());
         }
