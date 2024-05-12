@@ -32,12 +32,17 @@ public class LevelRendererMixin {
      * @reason Optimize cloud rendering
      */
     @Overwrite
-    public void renderClouds(PoseStack matrices, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
+    public void renderClouds(PoseStack poseStack, Matrix4f modelMatrix, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
         if (this.cloudRenderer == null) {
             this.cloudRenderer = new CloudRenderer(this.minecraft.getResourceManager());
         }
 
-        this.cloudRenderer.render(this.level, this.minecraft.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
+        poseStack.pushPose();
+        poseStack.mulPose(modelMatrix);
+
+        this.cloudRenderer.render(this.level, this.minecraft.player, poseStack, projectionMatrix, this.ticks, tickDelta, x, y, z);
+
+        poseStack.popPose();
     }
 
     @Inject(method = "onResourceManagerReload(Lnet/minecraft/server/packs/resources/ResourceManager;)V", at = @At("RETURN"))
