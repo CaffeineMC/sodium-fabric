@@ -43,6 +43,7 @@
     "features.model.MultiPartBakedModelMixin",
     "features.model.WeightedBakedModelMixin",
     "features.options.overlays.GuiMixin",
+    "features.options.render_layers.LeavesBlockMixin",
     "features.options.render_layers.ItemBlockRenderTypesMixin",
     "features.options.weather.LevelRendererMixin",
     "features.render.entity.CubeMixin",
@@ -84,7 +85,6 @@
     "features.textures.mipmaps.MipmapGeneratorMixin",
     "features.textures.mipmaps.SpriteContentsMixin",
     "features.world.biome.BiomeMixin",
-    "features.world.storage.ClientChunkCacheMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.event_loop.RenderSystemMixin"
   ]

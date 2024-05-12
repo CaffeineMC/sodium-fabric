@@ -6,18 +6,18 @@ public class TerrainRenderPass {
     @Deprecated(forRemoval = true)
     private final RenderType renderType;
 
-    private final boolean useReverseOrder;
+    private final boolean isTranslucent;
     private final boolean fragmentDiscard;
 
-    public TerrainRenderPass(RenderType renderType, boolean useReverseOrder, boolean allowFragmentDiscard) {
+    public TerrainRenderPass(RenderType renderType, boolean isTranslucent, boolean allowFragmentDiscard) {
         this.renderType = renderType;
 
-        this.useReverseOrder = useReverseOrder;
+        this.isTranslucent = isTranslucent;
         this.fragmentDiscard = allowFragmentDiscard;
     }
 
-    public boolean isReverseOrder() {
-        return this.useReverseOrder;
+    public boolean isTranslucent() {
+        return this.isTranslucent;
     }
 
     @Deprecated
