@@ -1,6 +1,6 @@
 <component name="InspectionProjectProfileManager">
     <profile version="1.0">
-        <option name="myName" value="Default"/>
+        <option name="myName" value="CaffeineMC/Sodium"/>
         <inspection_tool class="CStyleArrayDeclaration" enabled="true" level="ERROR" enabled_by_default="true"/>
         <inspection_tool class="EqualsCalledOnEnumConstant" enabled="true" level="WARNING" enabled_by_default="true"/>
         <inspection_tool class="FallthruInSwitchStatement" enabled="true" level="WARNING" enabled_by_default="true"/>

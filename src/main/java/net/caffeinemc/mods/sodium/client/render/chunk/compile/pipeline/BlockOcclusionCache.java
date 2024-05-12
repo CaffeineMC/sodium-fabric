@@ -3,9 +3,12 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenCustomHashMap;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -48,8 +51,11 @@ public class BlockOcclusionCache {
             return false;
         }
 
-        // If the other block is transparent, then it is unable to hide any geometry.
-        if (!otherState.canOcclude()) {
+        // If the other block is not using a solid block model, then it is unable to hide any geometry. This check
+        // differs from the one that Minecraft normally uses (checking whether the block state is marked as being
+        // able to occlude other blocks), and instead uses heuristics about the block model and render type to determine
+        // whether the block model is able to occlude block faces.
+        if (isTransparentBlockModel(otherState)) {
             return true;
         }
 
@@ -76,6 +82,20 @@ public class BlockOcclusionCache {
 
         // No other simplifications apply, so we need to perform a full shape comparison, which is very slow
         return this.lookup(selfShape, otherShape);
+    }
+
+    private static boolean isTransparentBlockModel(BlockState otherState) {
+        // Only blocks which are using block models will be baked into the chunk mesh. If the adjacent block
+        // is not using a block model, then we can't eliminate this block's face because the other block's geometry
+        // would not be statically known.
+        if (otherState.getRenderShape() != RenderShape.MODEL) {
+            return true;
+        }
+
+        // Since all transparent blocks must already be marked as not being able to occlude other blocks, this should
+        // not cause any issues. However, it fixes a problem where Leaves (which change their render type in
+        // fast graphics mode) cannot occlude the geometry of other blocks.
+        return ItemBlockRenderTypes.getChunkRenderType(otherState) != RenderType.solid();
     }
 
     private boolean lookup(VoxelShape self, VoxelShape other) {

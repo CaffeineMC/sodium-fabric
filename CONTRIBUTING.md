@@ -1,5 +1,10 @@
 ## Contribution Guidelines
 
+When submitting a pull request, you are granting [JellySquid](https://jellysquid.me) the right to license
+your contributions under the [Polyform Shield License (Version 1.0.0)](LICENSE.md).
+
+If you have any questions about these terms, please [get in contact with us](https://caffeinemc.net/discord).
+
 ### Code Style
 
 When contributing source code to the project, ensure that you make consistent use of our code style guidelines. These
