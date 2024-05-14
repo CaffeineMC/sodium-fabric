@@ -16,22 +16,25 @@ uint _draw_id;
 // The material bits for the primitive
 uint _material_params;
 
-#ifdef USE_VERTEX_COMPRESSION
-const float POSITION_MAX_COORD   = 1 << 20;
-const float TEXTURE_MAX_COORD    = 1 << 15;
-const float LIGHT_MAX_COORD      = 1 << 8;
+const int POSITION_BITS         = 20;
+const int TEXTURE_BITS          = 15;
+const int LIGHT_BITS            = 8;
 
-const float VERTEX_SCALE = 32.0 / POSITION_MAX_COORD;
-const float VERTEX_OFFSET = -8.0;
+const float POSITION_MAX_COORD  = 1 << POSITION_BITS;
+const float TEXTURE_MAX_COORD   = 1 << TEXTURE_BITS;
+const float LIGHT_MAX_COORD     = 1 << LIGHT_BITS;
 
-// The amount of inset the texture coordinates from the edges of the texture, to avoid texture bleeding
-const float TEXTURE_BIAS_VALUE = (1.0 - (1.0 / 64.0)) / TEXTURE_MAX_COORD;
+const float MODEL_SCALE        = 32.0 / POSITION_MAX_COORD;
+const float MODEL_TRANSLATION  = -8.0;
 
-in vec3 a_PositionHi;       // 3x Unsigned 10-bit integer
-in vec3 a_PositionLo;       // ...
-in vec4 a_Color;            // 4x Unsigned 8-bit integer (normalized)
-in vec2 a_TexCoord;         // 2x Signed 16-bit integer
-in uvec4 a_LightAndData;    // 4x Unsigned 8-bit integer
+const float TEXTURE_FUZZ_AMOUNT = 1.0 / 64.0;
+const float TEXTURE_GROW_FACTOR = (1.0 - TEXTURE_FUZZ_AMOUNT) / TEXTURE_MAX_COORD;
+
+in vec3 a_PositionHi;           // 3x Unsigned 10-bit integer
+in vec3 a_PositionLo;           // ...
+in vec4 a_Color;                // 4x Unsigned 8-bit integer (normalized)
+in uvec2 a_TexCoord;            // 2x Signed 16-bit integer
+in uvec4 a_LightAndData;        // 4x Unsigned 8-bit integer
 
 vec3 _decode_position(vec3 hi, vec3 lo) {
     // The 2.10.10.10 vertex formats do not support being interpreted as integer data within the shader.
@@ -40,22 +43,23 @@ vec3 _decode_position(vec3 hi, vec3 lo) {
     // throughput for Fp32 mul/add and Int32 shl/or operations.
 
     vec3 interleaved = (hi * (1 << 10)) + lo; // (hi << 10) | lo
-    vec3 normalized = (interleaved * VERTEX_SCALE) + VERTEX_OFFSET;
+    vec3 normalized = (interleaved * MODEL_SCALE) + MODEL_TRANSLATION;
 
     return normalized;
 }
 
-vec2 _decode_texcoord(vec2 value) {
-    // Magnitude is within range (0, 32768)
-    // Sign bit encodes bias direction
-    vec2 texcoord = abs(value) / TEXTURE_MAX_COORD;
-    vec2 bias = sign(value) * TEXTURE_BIAS_VALUE;
+vec2 _decode_texcoord(uvec2 value) {
+    // Normalize the texture coordinate, shifting out the LSB which stores the bias value.
+    vec2 coord = vec2(value >> 1) / TEXTURE_MAX_COORD;
 
-    return texcoord - bias;
+    // Using the LSB, identify the sign of the bias (-1.0 or +1.0)
+    vec2 bias = mix(vec2(-TEXTURE_GROW_FACTOR), vec2(+TEXTURE_GROW_FACTOR), bvec2(value & 1u));
+
+    return coord + bias;
 }
 
 vec2 _decode_light(uvec2 value) {
-    return vec2(value) / LIGHT_MAX_COORD;
+    return vec2(value) * (1.0 / LIGHT_MAX_COORD);
 }
 
 void _vert_init() {
@@ -68,7 +72,3 @@ void _vert_init() {
     _material_params = a_LightAndData[2];
     _draw_id = a_LightAndData[3];
 }
-
-#else
-#error "Vertex compression must be enabled"
-#endif

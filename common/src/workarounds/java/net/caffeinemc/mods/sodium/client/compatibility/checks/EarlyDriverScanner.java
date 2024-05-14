@@ -4,6 +4,7 @@ import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
+import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class EarlyDriverScanner {
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/899
     private static @Nullable WindowsDriverStoreVersion findBrokenIntelGen7GraphicsDriver() {
-        if (SystemInfo.getCurrentPlatform() != PlatformEnum.WINDOWS) {
+        if (OsUtils.getOs() != OsUtils.OperatingSystem.WIN) {
             return null;
         }
 

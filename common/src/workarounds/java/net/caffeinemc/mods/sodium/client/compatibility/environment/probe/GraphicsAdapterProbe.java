@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.compatibility.environment.probe;
 
+import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.PlatformEnum;
@@ -23,7 +24,7 @@ public class GraphicsAdapterProbe {
 
         // We rely on separate detection logic for Linux because Oshi fails to find GPUs without
         // display outputs, and we can also retrieve the driver version for NVIDIA GPUs this way.
-        var results = SystemInfo.getCurrentPlatform() == PlatformEnum.LINUX
+        var results = OsUtils.getOs() == OsUtils.OperatingSystem.LINUX
                 ? findAdaptersLinux()
                 : findAdaptersCrossPlatform();
 

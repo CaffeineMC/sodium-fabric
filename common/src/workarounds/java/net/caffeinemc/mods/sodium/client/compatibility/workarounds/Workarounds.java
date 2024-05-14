@@ -3,10 +3,9 @@ package net.caffeinemc.mods.sodium.client.compatibility.workarounds;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
+import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import oshi.PlatformEnum;
-import oshi.SystemInfo;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,7 +33,7 @@ public class Workarounds {
 
     private static Set<Reference> findNecessaryWorkarounds() {
         var workarounds = EnumSet.noneOf(Reference.class);
-        var operatingSystem = SystemInfo.getCurrentPlatform();
+        var operatingSystem = OsUtils.getOs();
 
         var graphicsAdapters = GraphicsAdapterProbe.getAdapters();
 
@@ -42,7 +41,7 @@ public class Workarounds {
             workarounds.add(Reference.NVIDIA_THREADED_OPTIMIZATIONS);
         }
 
-        if (operatingSystem == PlatformEnum.LINUX) {
+        if (operatingSystem == OsUtils.OperatingSystem.LINUX) {
             var session = System.getenv("XDG_SESSION_TYPE");
 
             if (session == null) {
@@ -59,8 +58,8 @@ public class Workarounds {
         return Collections.unmodifiableSet(workarounds);
     }
 
-    private static boolean isUsingNvidiaGraphicsCard(PlatformEnum operatingSystem, Collection<GraphicsAdapterInfo> adapters) {
-        return (operatingSystem == PlatformEnum.WINDOWS || operatingSystem == PlatformEnum.LINUX) &&
+    private static boolean isUsingNvidiaGraphicsCard(OsUtils.OperatingSystem operatingSystem, Collection<GraphicsAdapterInfo> adapters) {
+        return (operatingSystem == OsUtils.OperatingSystem.WIN || operatingSystem == OsUtils.OperatingSystem.LINUX) &&
                 adapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterVendor.NVIDIA);
     }
 

@@ -36,14 +36,14 @@ public interface VertexConsumerMixin {
      * @author JellySquid
      */
     @Overwrite
-    default VertexConsumer normal(PoseStack.Pose entry, float x, float y, float z) {
-        Matrix3f matrix = entry.normal();
+    default VertexConsumer normal(PoseStack.Pose pose, float x, float y, float z) {
+        Matrix3f matrix = pose.normal();
 
         float xt = MatrixHelper.transformNormalX(matrix, x, y, z);
         float yt = MatrixHelper.transformNormalY(matrix, x, y, z);
         float zt = MatrixHelper.transformNormalZ(matrix, x, y, z);
 
-        if (!entry.trustedNormals) {
+        if (!pose.trustedNormals) {
             float scalar = Math.invsqrt(Math.fma(xt, xt, Math.fma(yt, yt, zt * zt)));
 
             xt *= scalar;
