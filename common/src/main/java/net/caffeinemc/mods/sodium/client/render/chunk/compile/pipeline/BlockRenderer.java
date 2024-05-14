@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
-import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightMode;
@@ -165,7 +164,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ModelQuadFacing normalFace = quad.normalFace();
 
         if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
-            collector.appendQuad(quad.getNormal(), vertices, normalFace);
+            collector.appendQuad(quad.getFaceNormal(), vertices, normalFace);
         }
 
         ChunkMeshBufferBuilder vertexBuffer = modelBuilder.getVertexBuffer(normalFace);

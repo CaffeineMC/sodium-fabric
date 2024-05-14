@@ -44,6 +44,7 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
 
     private VertexConsumer vertexConsumer;
     private Matrix4f matPosition;
+    private boolean trustedNormals;
     private Matrix3f matNormal;
     private int overlay;
 
@@ -62,6 +63,7 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
 
         this.vertexConsumer = buffer;
         this.matPosition = poseStack.last().pose();
+        this.trustedNormals = poseStack.last().trustedNormals;
         this.matNormal = poseStack.last().normal();
         this.overlay = overlay;
 
@@ -117,7 +119,7 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
     }
 
     private void bufferQuad(MutableQuadViewImpl quad) {
-        QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, matNormal);
+        QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
         SpriteUtil.markSpriteActive(SodiumPlatformHelpers.INSTANCE.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
     }
 }

@@ -75,7 +75,7 @@ public class BakedQuadMixin implements BakedQuadView {
     }
 
     @Override
-    public int getNormal(int idx) {
+    public int getVertexNormal(int idx) {
         return this.vertices[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX];
     }
 
@@ -115,7 +115,7 @@ public class BakedQuadMixin implements BakedQuadView {
     }
 
     @Override
-    public int getNormal() {
+    public int getFaceNormal() {
         return this.normal;
     }
 

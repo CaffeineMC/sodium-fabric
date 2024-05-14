@@ -313,12 +313,12 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
     }
 
     @Override
-    public int getNormal(int idx) {
+    public int getVertexNormal(int idx) {
         return normalIndex(idx);
     }
 
     @Override
-    public int getNormal() {
+    public int getFaceNormal() {
         return packedFaceNormal();
     }
 

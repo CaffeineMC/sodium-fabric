@@ -113,13 +113,13 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public int getNormal(int idx) {
+    public int getVertexNormal(int idx) {
         return this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX];
     }
 
     @Override
-    public int getNormal() {
-        return getNormal(0);
+    public int getFaceNormal() {
+        return getVertexNormal(0);
     }
 
     @Override

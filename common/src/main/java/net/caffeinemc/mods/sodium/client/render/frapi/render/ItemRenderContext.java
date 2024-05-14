@@ -84,6 +84,7 @@ public class ItemRenderContext extends AbstractRenderContext {
     private ItemDisplayContext transformMode;
     private PoseStack poseStack;
     private Matrix4f matPosition;
+    private boolean trustedNormals;
     private Matrix3f matNormal;
     private MultiBufferSource bufferSource;
     private int lightmap;
@@ -131,6 +132,7 @@ public class ItemRenderContext extends AbstractRenderContext {
         this.transformMode = transformMode;
         this.poseStack = poseStack;
         matPosition = poseStack.last().pose();
+        trustedNormals = poseStack.last().trustedNormals;
         matNormal = poseStack.last().normal();
         this.bufferSource = bufferSource;
         this.lightmap = lightmap;
@@ -213,7 +215,7 @@ public class ItemRenderContext extends AbstractRenderContext {
     }
 
     private void bufferQuad(MutableQuadViewImpl quad, VertexConsumer vertexConsumer) {
-        QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, matNormal);
+        QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
         SpriteUtil.markSpriteActive(SodiumPlatformHelpers.INSTANCE.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
     }
 

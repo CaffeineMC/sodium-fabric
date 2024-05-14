@@ -42,12 +42,12 @@ public interface ModelQuadView {
     /**
      * @return The packed normal set for the vertex at index {@param idx}.
      */
-    int getNormal(int idx);
+    int getVertexNormal(int idx);
 
     /**
      * @return The computed normal.
      */
-    int getNormal();
+    int getFaceNormal();
 
     /**
      * @return The packed light set for the vertex at index {@param idx}.
@@ -115,5 +115,16 @@ public interface ModelQuadView {
         }
 
         return NormI8.pack(normX, normY, normZ);
+    }
+
+    /**
+     * Returns the most accurate normal value for this vertex.
+     * @param i The vertex index.
+     * @return the per-vertex normal if it is set, otherwise the face normal.
+     */
+    default int getAccurateNormal(int i) {
+        int normal = getVertexNormal(i);
+
+        return normal == 0 ? getFaceNormal() : normal;
     }
 }

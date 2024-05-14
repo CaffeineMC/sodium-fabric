@@ -38,13 +38,7 @@ public class BakedModelEncoder {
                 int newLight = mergeLighting(quad.getLight(i), light);
 
                 // The packed transformed normal vector
-                int normal = quad.getNormal(i);
-
-                if (normal >>> 8 == 0) {
-                    normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getLightFace());
-                } else {
-                    normal = MatrixHelper.transformNormal(matNormal, normal);
-                }
+                int normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getAccurateNormal(i));
 
                 // The transformed position vector
                 float xt = MatrixHelper.transformPositionX(matPosition, x, y, z);
@@ -67,9 +61,6 @@ public class BakedModelEncoder {
             long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
             long ptr = buffer;
 
-            // The packed transformed normal vector
-            var normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getLightFace());
-
             for (int i = 0; i < 4; i++) {
                 // The position vector
                 float x = quad.getX(i);
@@ -84,6 +75,8 @@ public class BakedModelEncoder {
                 float fR;
                 float fG;
                 float fB;
+
+                var normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getAccurateNormal(i));
 
                 float brightness = brightnessTable[i];
 

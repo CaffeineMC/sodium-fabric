@@ -18,7 +18,6 @@ package net.caffeinemc.mods.sodium.client.render.frapi.mesh;
 
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.quad.BakedQuadView;
-import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.frapi.SodiumRenderer;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.TextureHelper;
@@ -248,8 +247,8 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements QuadEm
 
         // Copy geometry cached inside the quad
         BakedQuadView bakedView = (BakedQuadView) quad;
-        NormI8.unpack(bakedView.getNormal(), faceNormal);
-        data[baseIndex + HEADER_FACE_NORMAL] = bakedView.getNormal();
+        NormI8.unpack(bakedView.getFaceNormal(), faceNormal);
+        data[baseIndex + HEADER_FACE_NORMAL] = bakedView.getFaceNormal();
         int headerBits = EncodingFormat.lightFace(data[baseIndex + HEADER_BITS], bakedView.getLightFace());
         headerBits = EncodingFormat.normalFace(headerBits, bakedView.getNormalFace());
         data[baseIndex + HEADER_BITS] = EncodingFormat.geometryFlags(headerBits, bakedView.getFlags());
