@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.client.util;
+package net.caffeinemc.mods.sodium.client.compatibility.environment;
 
 import org.apache.commons.lang3.SystemUtils;
 

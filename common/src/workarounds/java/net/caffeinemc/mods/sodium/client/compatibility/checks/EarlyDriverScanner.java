@@ -1,10 +1,10 @@
 package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
-import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

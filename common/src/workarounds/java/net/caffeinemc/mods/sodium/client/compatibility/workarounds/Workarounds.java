@@ -1,9 +1,9 @@
 package net.caffeinemc.mods.sodium.client.compatibility.workarounds;
 
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
-import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

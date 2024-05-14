@@ -1,9 +1,9 @@
 package net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia;
 
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.platform.unix.Libc;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Kernel32;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsCommandLine;
-import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

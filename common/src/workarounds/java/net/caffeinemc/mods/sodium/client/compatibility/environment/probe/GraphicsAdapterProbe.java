@@ -1,6 +1,6 @@
 package net.caffeinemc.mods.sodium.client.compatibility.environment.probe;
 
-import net.caffeinemc.mods.sodium.client.util.OsUtils;
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.PlatformEnum;
