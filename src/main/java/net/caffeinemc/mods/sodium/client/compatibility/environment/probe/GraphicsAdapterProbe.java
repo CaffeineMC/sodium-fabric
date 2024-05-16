@@ -1,14 +1,8 @@
 package net.caffeinemc.mods.sodium.client.compatibility.environment.probe;
 
 import com.google.common.base.Charsets;
-import com.sun.jna.Function;
-import com.sun.jna.NativeLibrary;
-import com.sun.jna.Pointer;
-import com.sun.jna.ptr.ByReference;
 import net.caffeinemc.mods.sodium.client.util.OsUtils;
-import org.lwjgl.system.JNI;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
@@ -22,6 +16,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static org.lwjgl.system.APIUtil.apiGetFunctionAddress;
 
 public class GraphicsAdapterProbe {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-GraphicsAdapterProbe");
@@ -84,12 +80,12 @@ public class GraphicsAdapterProbe {
     }
 
     public static List<GraphicsAdapterInfo> findAdaptersWindowsD3DKMT() {
-        NativeLibrary gdi32 = NativeLibrary.getInstance("gdi32.dll");
-        long D3DKMTQueryAdapterInfo = Pointer.nativeValue(gdi32.getFunction("D3DKMTQueryAdapterInfo"));
-        long D3DKMTCloseAdapter     = Pointer.nativeValue(gdi32.getFunction("D3DKMTCloseAdapter"));
+        SharedLibrary gdi32 = Library.loadNative(GraphicsAdapterProbe.class, "org.lwjgl", "gdi32");
+        long D3DKMTQueryAdapterInfo = apiGetFunctionAddress(gdi32, "D3DKMTQueryAdapterInfo");
+        long D3DKMTCloseAdapter     = apiGetFunctionAddress(gdi32, "D3DKMTCloseAdapter");
         long D3DKMTEnumAdapters2    = -1;
         try {
-            D3DKMTEnumAdapters2 = Pointer.nativeValue(gdi32.getFunction("D3DKMTEnumAdapters2"));
+            D3DKMTEnumAdapters2 = apiGetFunctionAddress(gdi32, "D3DKMTEnumAdapters2");
         } catch (UnsatisfiedLinkError e) {
             //Could not load D3DKMTEnumAdapters2 meaning < windows 8, fallback to cross-platform
             gdi32.close();
