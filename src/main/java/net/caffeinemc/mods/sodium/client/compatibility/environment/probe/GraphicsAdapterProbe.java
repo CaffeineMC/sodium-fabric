@@ -1,12 +1,22 @@
 package net.caffeinemc.mods.sodium.client.compatibility.environment.probe;
 
+import com.google.common.base.Charsets;
+import com.sun.jna.Function;
+import com.sun.jna.NativeLibrary;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.ByReference;
 import net.caffeinemc.mods.sodium.client.util.OsUtils;
+import org.lwjgl.system.JNI;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
 import oshi.util.ExecutingCommand;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -23,9 +33,11 @@ public class GraphicsAdapterProbe {
 
         // We rely on separate detection logic for Linux because Oshi fails to find GPUs without
         // display outputs, and we can also retrieve the driver version for NVIDIA GPUs this way.
-        var results = OsUtils.getOs() == OsUtils.OperatingSystem.LINUX
-                ? findAdaptersLinux()
-                : findAdaptersCrossPlatform();
+        var results = switch (OsUtils.getOs()) {
+            case LINUX -> findAdaptersLinux();
+            case WIN -> findAdaptersWindowsD3DKMT();
+            default -> findAdaptersCrossPlatform();
+        };
 
         if (results.isEmpty()) {
             LOGGER.warn("No graphics cards were found. Either you have no hardware devices supporting 3D acceleration, or " +
@@ -53,6 +65,99 @@ public class GraphicsAdapterProbe {
         }
 
         return results;
+    }
+
+
+    private static void queryAdapterInfo(long fptr, int handle, int type, ByteBuffer result) {
+        try (var stack = MemoryStack.stackPush()) {
+            var D3DKMT_QUERYADAPTERINFO = stack.calloc(0x18).order(ByteOrder.nativeOrder());
+            D3DKMT_QUERYADAPTERINFO.putInt(0, handle);
+            D3DKMT_QUERYADAPTERINFO.putInt(4, type);
+            D3DKMT_QUERYADAPTERINFO.putLong(8, MemoryUtil.memAddress(result));
+            D3DKMT_QUERYADAPTERINFO.putInt(16, result.remaining());
+
+            int retStatus = JNI.callPI(MemoryUtil.memAddress0(D3DKMT_QUERYADAPTERINFO), fptr);
+            if (retStatus != 0) {
+                throw new RuntimeException("D3DKMTQueryAdapterInfo status code: " + retStatus);
+            }
+        }
+    }
+
+    public static List<GraphicsAdapterInfo> findAdaptersWindowsD3DKMT() {
+        NativeLibrary gdi32 = NativeLibrary.getInstance("gdi32.dll");
+        long D3DKMTQueryAdapterInfo = Pointer.nativeValue(gdi32.getFunction("D3DKMTQueryAdapterInfo"));
+        long D3DKMTCloseAdapter     = Pointer.nativeValue(gdi32.getFunction("D3DKMTCloseAdapter"));
+        long D3DKMTEnumAdapters2    = -1;
+        try {
+            D3DKMTEnumAdapters2 = Pointer.nativeValue(gdi32.getFunction("D3DKMTEnumAdapters2"));
+        } catch (UnsatisfiedLinkError e) {
+            //Could not load D3DKMTEnumAdapters2 meaning < windows 8, fallback to cross-platform
+            gdi32.close();
+            LOGGER.warn("Unable to find D3DKMTEnumAdapters2. running windows 7 or earlier, using fallback probe");
+            return findAdaptersCrossPlatform();
+        }
+
+        List<GraphicsAdapterInfo> adapterList = new ArrayList<>();
+        try (var stack = MemoryStack.stackPush()) {
+            //D3DKMT_ENUMADAPTERS2
+            // 4 bytes - uint - NumAdapters
+            // 4 bytes - pad/alignment
+            // 8 bytes - pointer - D3DKMT_ADAPTERINFO *pAdapters
+            var D3DKMT_ENUMADAPTERS2 = stack.calloc(16).order(ByteOrder.nativeOrder());
+
+            int retStatus = JNI.callPI(MemoryUtil.memAddress0(D3DKMT_ENUMADAPTERS2), D3DKMTEnumAdapters2);
+            if (retStatus != 0) {
+                throw new RuntimeException("D3DKMTEnumAdapters2 status code: " + retStatus);
+            }
+            int adapters  = D3DKMT_ENUMADAPTERS2.getInt(0);
+            var D3DKMT_ADAPTERINFO_array = MemoryUtil.memCalloc(adapters, 0x14).order(ByteOrder.nativeOrder());
+            try {
+                D3DKMT_ENUMADAPTERS2.putLong(8, MemoryUtil.memAddress(D3DKMT_ADAPTERINFO_array));
+                retStatus = JNI.callPI(MemoryUtil.memAddress0(D3DKMT_ENUMADAPTERS2), D3DKMTEnumAdapters2);
+                if (retStatus != 0) {
+                    throw new RuntimeException("D3DKMTEnumAdapters2 status code: " + retStatus);
+                }
+                //Have an array of adapter info so we can query it
+                adapters = D3DKMT_ENUMADAPTERS2.getInt(0);
+                //System.err.println("Found " + adapters + " adapters");
+                for (int i = 0; i < adapters; i++) {
+                    int handle = D3DKMT_ADAPTERINFO_array.getInt(0x14*i);
+                    try (var stack2 = MemoryStack.stackPush()) {
+                        try {
+                            var description = stack2.calloc(4096 * 2).order(ByteOrder.nativeOrder());
+                            queryAdapterInfo(D3DKMTQueryAdapterInfo, handle, 65, description);//KMTQAITYPE_DRIVER_DESCRIPTION
+
+                            var nameB = new byte[4096 * 2];
+                            description.get(0, nameB);
+                            var name = new String(nameB, Charsets.UTF_16LE);
+                            name = name.substring(0, name.indexOf(0));
+
+                            var version = stack2.calloc(8).order(ByteOrder.nativeOrder());
+                            queryAdapterInfo(D3DKMTQueryAdapterInfo, handle, 18, version);//KMTQAITYPE_UMD_DRIVER_VERSION
+                            int A = Short.toUnsignedInt(version.getShort(6));
+                            int B = Short.toUnsignedInt(version.getShort(4));
+                            int C = Short.toUnsignedInt(version.getShort(2));
+                            int D = Short.toUnsignedInt(version.getShort(0));
+
+                            //System.err.println("Description: " + name + " version: " + A + "." + B + "." + C + "." + D);
+
+                            var info = new GraphicsAdapterInfo(GraphicsAdapterVendor.identifyVendorFromString(name),
+                                    name, A + "." + B + "." + C + "." + D);
+                            adapterList.add(info);
+                            LOGGER.info("Found graphics card: {}", info);
+                        } finally {
+                            retStatus = JNI.callPI(stack2.nint(handle), D3DKMTCloseAdapter);
+                            if (retStatus != 0) {
+                                throw new RuntimeException("D3DKMTCloseAdapter status code: " + retStatus);
+                            }
+                        }
+                    }
+                }
+            } finally {
+                MemoryUtil.memFree(D3DKMT_ADAPTERINFO_array);
+            }
+        }
+        return adapterList;
     }
 
     private static List<GraphicsAdapterInfo> findAdaptersLinux() {
