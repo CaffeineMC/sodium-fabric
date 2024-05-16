@@ -104,51 +104,47 @@ public class GraphicsAdapterProbe {
                 throw new RuntimeException("D3DKMTEnumAdapters2 status code: " + retStatus);
             }
             int adapters  = D3DKMT_ENUMADAPTERS2.getInt(0);
-            var D3DKMT_ADAPTERINFO_array = MemoryUtil.memCalloc(adapters, 0x14).order(ByteOrder.nativeOrder());
-            try {
-                D3DKMT_ENUMADAPTERS2.putLong(8, MemoryUtil.memAddress(D3DKMT_ADAPTERINFO_array));
-                retStatus = JNI.callPI(MemoryUtil.memAddress0(D3DKMT_ENUMADAPTERS2), D3DKMTEnumAdapters2);
-                if (retStatus != 0) {
-                    throw new RuntimeException("D3DKMTEnumAdapters2 status code: " + retStatus);
-                }
-                //Have an array of adapter info so we can query it
-                adapters = D3DKMT_ENUMADAPTERS2.getInt(0);
-                //System.err.println("Found " + adapters + " adapters");
-                for (int i = 0; i < adapters; i++) {
-                    int handle = D3DKMT_ADAPTERINFO_array.getInt(0x14*i);
-                    try (var stack2 = MemoryStack.stackPush()) {
-                        try {
-                            var description = stack2.calloc(4096 * 2).order(ByteOrder.nativeOrder());
-                            queryAdapterInfo(D3DKMTQueryAdapterInfo, handle, 65, description);//KMTQAITYPE_DRIVER_DESCRIPTION
+            var D3DKMT_ADAPTERINFO_array = stack.calloc(8, adapters * 0x14).order(ByteOrder.nativeOrder());
+            D3DKMT_ENUMADAPTERS2.putLong(8, MemoryUtil.memAddress(D3DKMT_ADAPTERINFO_array));
+            retStatus = JNI.callPI(MemoryUtil.memAddress0(D3DKMT_ENUMADAPTERS2), D3DKMTEnumAdapters2);
+            if (retStatus != 0) {
+                throw new RuntimeException("D3DKMTEnumAdapters2 status code: " + retStatus);
+            }
+            //Have an array of adapter info so we can query it
+            adapters = D3DKMT_ENUMADAPTERS2.getInt(0);
+            //System.err.println("Found " + adapters + " adapters");
+            for (int i = 0; i < adapters; i++) {
+                int handle = D3DKMT_ADAPTERINFO_array.getInt(0x14*i);
+                try (var stack2 = MemoryStack.stackPush()) {
+                    try {
+                        var description = stack2.calloc(8, 4096 * 2).order(ByteOrder.nativeOrder());
+                        queryAdapterInfo(D3DKMTQueryAdapterInfo, handle, 65, description);//KMTQAITYPE_DRIVER_DESCRIPTION
 
-                            var nameB = new byte[4096 * 2];
-                            description.get(0, nameB);
-                            var name = new String(nameB, Charsets.UTF_16LE);
-                            name = name.substring(0, name.indexOf(0));
+                        var nameB = new byte[4096 * 2];
+                        description.get(0, nameB);
+                        var name = new String(nameB, Charsets.UTF_16LE);
+                        name = name.substring(0, name.indexOf(0));
 
-                            var version = stack2.calloc(8).order(ByteOrder.nativeOrder());
-                            queryAdapterInfo(D3DKMTQueryAdapterInfo, handle, 18, version);//KMTQAITYPE_UMD_DRIVER_VERSION
-                            int A = Short.toUnsignedInt(version.getShort(6));
-                            int B = Short.toUnsignedInt(version.getShort(4));
-                            int C = Short.toUnsignedInt(version.getShort(2));
-                            int D = Short.toUnsignedInt(version.getShort(0));
+                        var version = stack2.calloc(8, 8).order(ByteOrder.nativeOrder());
+                        queryAdapterInfo(D3DKMTQueryAdapterInfo, handle, 18, version);//KMTQAITYPE_UMD_DRIVER_VERSION
+                        int A = Short.toUnsignedInt(version.getShort(6));
+                        int B = Short.toUnsignedInt(version.getShort(4));
+                        int C = Short.toUnsignedInt(version.getShort(2));
+                        int D = Short.toUnsignedInt(version.getShort(0));
 
-                            //System.err.println("Description: " + name + " version: " + A + "." + B + "." + C + "." + D);
+                        //System.err.println("Description: " + name + " version: " + A + "." + B + "." + C + "." + D);
 
-                            var info = new GraphicsAdapterInfo(GraphicsAdapterVendor.identifyVendorFromString(name),
-                                    name, A + "." + B + "." + C + "." + D);
-                            adapterList.add(info);
-                            LOGGER.info("Found graphics card: {}", info);
-                        } finally {
-                            retStatus = JNI.callPI(stack2.nint(handle), D3DKMTCloseAdapter);
-                            if (retStatus != 0) {
-                                throw new RuntimeException("D3DKMTCloseAdapter status code: " + retStatus);
-                            }
+                        var info = new GraphicsAdapterInfo(GraphicsAdapterVendor.identifyVendorFromString(name),
+                                name, A + "." + B + "." + C + "." + D);
+                        adapterList.add(info);
+                        LOGGER.info("Found graphics card: {}", info);
+                    } finally {
+                        retStatus = JNI.callPI(stack2.nint(handle), D3DKMTCloseAdapter);
+                        if (retStatus != 0) {
+                            throw new RuntimeException("D3DKMTCloseAdapter status code: " + retStatus);
                         }
                     }
                 }
-            } finally {
-                MemoryUtil.memFree(D3DKMT_ADAPTERINFO_array);
             }
         }
         return adapterList;
