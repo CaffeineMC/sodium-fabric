@@ -80,15 +80,13 @@ public class GraphicsAdapterProbe {
     }
 
     public static List<GraphicsAdapterInfo> findAdaptersWindowsD3DKMT() {
+        //(Its ok to leave open as it is only used once and used by other things)
         SharedLibrary gdi32 = Library.loadNative(GraphicsAdapterProbe.class, "org.lwjgl", "gdi32");
         long D3DKMTQueryAdapterInfo = apiGetFunctionAddress(gdi32, "D3DKMTQueryAdapterInfo");
         long D3DKMTCloseAdapter     = apiGetFunctionAddress(gdi32, "D3DKMTCloseAdapter");
-        long D3DKMTEnumAdapters2    = -1;
-        try {
-            D3DKMTEnumAdapters2 = apiGetFunctionAddress(gdi32, "D3DKMTEnumAdapters2");
-        } catch (UnsatisfiedLinkError e) {
+        long D3DKMTEnumAdapters2    = apiGetFunctionAddress(gdi32, "D3DKMTEnumAdapters2");
+        if (D3DKMTQueryAdapterInfo == 0 || D3DKMTCloseAdapter == 0 || D3DKMTEnumAdapters2 == 0) {
             //Could not load D3DKMTEnumAdapters2 meaning < windows 8, fallback to cross-platform
-            gdi32.close();
             LOGGER.warn("Unable to find D3DKMTEnumAdapters2. running windows 7 or earlier, using fallback probe");
             return findAdaptersCrossPlatform();
         }
