@@ -24,9 +24,7 @@ public enum GraphicsAdapterVendor {
         return UNKNOWN;
     }
 
-    public static GraphicsAdapterVendor fromIcdName(String path) {
-        var name = FilenameUtils.removeExtension(FilenameUtils.getName(path));
-
+    public static GraphicsAdapterVendor fromIcdName(String name) {
         if (name.matches("ig(7|8|9|11|xelp|xehp)icd(32|64)")) {
             return INTEL;
         }
