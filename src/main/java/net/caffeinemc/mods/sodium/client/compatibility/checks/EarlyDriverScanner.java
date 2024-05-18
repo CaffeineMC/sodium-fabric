@@ -1,10 +1,11 @@
 package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
+import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
-import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
-import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
-import net.caffeinemc.mods.sodium.client.util.OsUtils;
+import net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMT;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,11 +25,14 @@ public class EarlyDriverScanner {
 
     private static final String INTEL_GEN7_DRIVER_MESSAGE = """
             The game failed to start because the currently installed Intel Graphics Driver is not compatible.
-                                        
+            
             Installed version: ###CURRENT_DRIVER###
-            Required version: 15.33.53.5161 (or newer)
-                                        
-            You must update your graphics card driver in order to continue.""";
+            Required version: 10.18.10.5161 (or newer)
+            
+            You must update your graphics card driver in order to continue!
+            
+            Click the 'Help' button for more information on how you can do this.
+            """;
 
     private static final String INTEL_GEN7_DRIVER_HELP_URL = "https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility#windows-intel-gen7";
 
@@ -39,7 +43,7 @@ public class EarlyDriverScanner {
             if (installedVersion != null) {
                 showUnsupportedDriverMessageBox(
                         INTEL_GEN7_DRIVER_MESSAGE
-                                .replace("###CURRENT_DRIVER###", installedVersion.getFriendlyString()),
+                                .replace("###CURRENT_DRIVER###", installedVersion.toString()),
                         INTEL_GEN7_DRIVER_HELP_URL);
             }
         }
@@ -56,24 +60,26 @@ public class EarlyDriverScanner {
         System.exit(1 /* failure code */);
     }
 
+    private static final String[] INTEL_GEN_7_GRAPHICS_DRIVER_NAMES = new String[] { "ig7icd64.dll", "ig7icd32.dll" };
+
     // https://github.com/CaffeineMC/sodium-fabric/issues/899
     private static @Nullable WindowsDriverStoreVersion findBrokenIntelGen7GraphicsDriver() {
-        if (OsUtils.getOs() != OsUtils.OperatingSystem.WIN) {
-            return null;
-        }
-
         for (var adapter : GraphicsAdapterProbe.getAdapters()) {
-            if (adapter.vendor() != GraphicsAdapterVendor.INTEL) {
-                continue;
-            }
+            if (adapter instanceof D3DKMT.WDDMAdapterInfo d3dkmtAdapter) {
+                var driverName = d3dkmtAdapter.openglIcdName();
+                var driverVersion = d3dkmtAdapter.openglIcdVersion();
 
-            try {
-                var version = WindowsDriverStoreVersion.parse(adapter.version());
-
-                if (version.driverModel() == 10 && version.featureLevel() == 18 && version.major() == 10) {
-                    return version;
+                if (driverName == null || driverVersion == null) {
+                    continue;
                 }
-            } catch (WindowsDriverStoreVersion.ParseException ignored) { }
+
+                if (ArrayUtils.contains(INTEL_GEN_7_GRAPHICS_DRIVER_NAMES, FilenameUtils.getName(driverName))) {
+                    // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
+                    if (driverVersion.major() == 10 && driverVersion.minor() < 5161) {
+                        return driverVersion;
+                    }
+                }
+            }
         }
 
         return null;

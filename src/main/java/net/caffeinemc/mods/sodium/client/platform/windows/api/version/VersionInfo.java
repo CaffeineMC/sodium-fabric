@@ -28,6 +28,16 @@ public class VersionInfo implements Closeable {
         return MemoryUtil.memUTF16(result.address());
     }
 
+    public @Nullable VersionFixedFileInfoStruct queryFixedFileInfo() {
+        var result = Version.query(this.pBlock, "\\");
+
+        if (result == null) {
+            return null;
+        }
+
+        return VersionFixedFileInfoStruct.from(result.address());
+    }
+
     public @Nullable LanguageCodePage queryEnglishTranslation() {
         var result = Version.query(this.pBlock, "\\VarFileInfo\\Translation");
 
