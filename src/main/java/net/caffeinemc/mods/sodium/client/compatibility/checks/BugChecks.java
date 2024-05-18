@@ -4,9 +4,10 @@ package net.caffeinemc.mods.sodium.client.compatibility.checks;
  * "Checks" are used to determine whether the environment we are running within is actually reasonable. Most often,
  * failing checks will crash the game and prompt the user for intervention.
  */
-class Configuration {
-    public static final boolean WIN32_RTSS_HOOKS = configureCheck("win32.rtss", true);
-    public static final boolean WIN32_DRIVER_INTEL_GEN7 = configureCheck("win32.intelGen7", true);
+class BugChecks {
+    public static final boolean ISSUE_899 = configureCheck("issue899", true);
+    public static final boolean ISSUE_1486 = configureCheck("issue1486", true);
+    public static final boolean ISSUE_2048 = configureCheck("issue2048", true);
 
     private static boolean configureCheck(String name, boolean defaultValue) {
         var propertyValue = System.getProperty(getPropertyKey(name), null);
