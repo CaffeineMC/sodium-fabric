@@ -4,8 +4,9 @@ import com.mojang.blaze3d.platform.DisplayData;
 import com.mojang.blaze3d.platform.ScreenManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.platform.WindowEventHandler;
-import net.caffeinemc.mods.sodium.client.compatibility.checks.LateDriverScanner;
+import net.caffeinemc.mods.sodium.client.compatibility.checks.PostLaunchChecks;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.ModuleScanner;
+import net.caffeinemc.mods.sodium.client.compatibility.environment.GLContextInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaWorkarounds;
 import net.minecraft.Util;
@@ -51,6 +52,16 @@ public class WindowMixin {
 
     @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;", shift = At.Shift.AFTER))
     private void postContextReady(WindowEventHandler eventHandler, ScreenManager monitorTracker, DisplayData settings, String videoMode, String title, CallbackInfo ci) {
+        GLContextInfo driver = GLContextInfo.create();
+
+        if (driver == null) {
+            LOGGER.warn("Could not retrieve identifying strings for OpenGL implementation");
+        } else {
+            LOGGER.info("OpenGL Vendor: {}", driver.vendor());
+            LOGGER.info("OpenGL Renderer: {}", driver.renderer());
+            LOGGER.info("OpenGL Version: {}", driver.version());
+        }
+
         // Capture the current WGL context so that we can detect it being replaced later.
         if (Util.getPlatform() == Util.OS.WINDOWS) {
             this.wglPrevContext = WGL.wglGetCurrentContext();
@@ -58,7 +69,7 @@ public class WindowMixin {
             this.wglPrevContext = MemoryUtil.NULL;
         }
 
-        LateDriverScanner.onContextInitialized();
+        PostLaunchChecks.onContextInitialized();
         ModuleScanner.checkModules();
     }
 
