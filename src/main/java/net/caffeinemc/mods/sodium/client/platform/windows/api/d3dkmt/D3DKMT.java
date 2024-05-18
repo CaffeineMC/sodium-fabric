@@ -3,9 +3,10 @@ package net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt;
 import com.sun.jna.platform.win32.VersionHelpers;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
-import net.caffeinemc.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
+import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Gdi32;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.version.Version;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
@@ -86,13 +87,13 @@ public class D3DKMT {
         String adapterName = queryFriendlyName(adapter);
 
         @Nullable String driverFileName = queryDriverFileName(adapter);
-        @Nullable WindowsDriverStoreVersion driverVersion = null;
+        @Nullable WindowsFileVersion driverVersion = null;
 
         GraphicsAdapterVendor driverVendor = GraphicsAdapterVendor.UNKNOWN;
 
         if (driverFileName != null) {
             driverVersion = queryDriverVersion(driverFileName);
-            driverVendor = GraphicsAdapterVendor.fromIcdName(driverFileName);
+            driverVendor = GraphicsAdapterVendor.fromIcdName(getOpenGlIcdName(driverFileName));
         }
 
         return new WDDMAdapterInfo(driverVendor, adapterName, adapterType, driverFileName, driverVersion);
@@ -122,7 +123,7 @@ public class D3DKMT {
         }
     }
 
-    private static @Nullable WindowsDriverStoreVersion queryDriverVersion(String file) {
+    private static @Nullable WindowsFileVersion queryDriverVersion(String file) {
         var version = Version.getModuleFileVersion(file);
 
         if (version == null) {
@@ -135,7 +136,7 @@ public class D3DKMT {
             return null;
         }
 
-        return WindowsDriverStoreVersion.fromFileVersion(fileVersion);
+        return WindowsFileVersion.fromFileVersion(fileVersion);
     }
 
     private static @NotNull String queryFriendlyName(int adapter) {
@@ -191,13 +192,21 @@ public class D3DKMT {
             @NotNull GraphicsAdapterVendor vendor,
             @NotNull String name,
             int adapterType,
-            String openglIcdName,
-            WindowsDriverStoreVersion openglIcdVersion
+            String openglIcdFilePath,
+            WindowsFileVersion openglIcdVersion
     ) implements GraphicsAdapterInfo {
+        public String getOpenGlIcdName() {
+            return D3DKMT.getOpenGlIcdName(this.name);
+        }
+
         @Override
         public String toString() {
-            return "AdapterInfo{vendor=%s, description='%s', adapterType=0x%08X, openglIcdName='%s', openglIcdVersion=%s}"
-                    .formatted(this.vendor, this.name, this.adapterType, this.openglIcdName, this.openglIcdVersion);
+            return "AdapterInfo{vendor=%s, description='%s', adapterType=0x%08X, openglIcdFilePath='%s', openglIcdVersion=%s}"
+                    .formatted(this.vendor, this.name, this.adapterType, this.openglIcdFilePath, this.openglIcdVersion);
         }
+    }
+
+    private static String getOpenGlIcdName(String path) {
+        return FilenameUtils.removeExtension(FilenameUtils.getName(path));
     }
 }

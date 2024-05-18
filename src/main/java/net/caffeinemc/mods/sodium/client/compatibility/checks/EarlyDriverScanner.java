@@ -2,10 +2,9 @@ package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
-import net.caffeinemc.mods.sodium.client.platform.windows.WindowsDriverStoreVersion;
+import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMT;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +19,7 @@ public class EarlyDriverScanner {
     private static final String CONSOLE_MESSAGE_TEMPLATE = """ 
             ###ERROR_DESCRIPTION###
             
-            For more information, please see: ###HELP_URL###
-            """;
+            For more information, please see: ###HELP_URL###""";
 
     private static final String INTEL_GEN7_DRIVER_MESSAGE = """
             The game failed to start because the currently installed Intel Graphics Driver is not compatible.
@@ -29,10 +27,7 @@ public class EarlyDriverScanner {
             Installed version: ###CURRENT_DRIVER###
             Required version: 10.18.10.5161 (or newer)
             
-            You must update your graphics card driver in order to continue!
-            
-            Click the 'Help' button for more information on how you can do this.
-            """;
+            You must update your graphics card driver in order to continue.""";
 
     private static final String INTEL_GEN7_DRIVER_HELP_URL = "https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility#windows-intel-gen7";
 
@@ -60,22 +55,19 @@ public class EarlyDriverScanner {
         System.exit(1 /* failure code */);
     }
 
-    private static final String[] INTEL_GEN_7_GRAPHICS_DRIVER_NAMES = new String[] { "ig7icd64.dll", "ig7icd32.dll" };
-
     // https://github.com/CaffeineMC/sodium-fabric/issues/899
-    private static @Nullable WindowsDriverStoreVersion findBrokenIntelGen7GraphicsDriver() {
+    private static @Nullable WindowsFileVersion findBrokenIntelGen7GraphicsDriver() {
         for (var adapter : GraphicsAdapterProbe.getAdapters()) {
-            if (adapter instanceof D3DKMT.WDDMAdapterInfo d3dkmtAdapter) {
-                var driverName = d3dkmtAdapter.openglIcdName();
-                var driverVersion = d3dkmtAdapter.openglIcdVersion();
+            if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
+                var driverName = wddmAdapterInfo.getOpenGlIcdName();
+                var driverVersion = wddmAdapterInfo.openglIcdVersion();
 
-                if (driverName == null || driverVersion == null) {
-                    continue;
-                }
-
-                if (ArrayUtils.contains(INTEL_GEN_7_GRAPHICS_DRIVER_NAMES, FilenameUtils.getName(driverName))) {
+                // Intel OpenGL ICD for Generation 7 GPUs
+                if (driverName.matches("ig7icd(32|64)")) {
                     // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
-                    if (driverVersion.major() == 10 && driverVersion.minor() < 5161) {
+                    // Anything which matches the 15.33 driver scheme (WDDM x.y.10.w) should be checked
+                    // Drivers before build 5161 are assumed to have bugs with synchronization primitives
+                    if (driverVersion.z() == 10 && driverVersion.w() < 5161) {
                         return driverVersion;
                     }
                 }
