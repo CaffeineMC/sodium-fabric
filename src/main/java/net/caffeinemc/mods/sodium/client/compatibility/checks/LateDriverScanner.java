@@ -60,6 +60,7 @@ public class LateDriverScanner {
             return true;
         }
 
+        // TODO: Use the D3DKMT adapter information instead
         var version = NvidiaDriverVersion.tryParse(driver);
 
         if (version != null) {
