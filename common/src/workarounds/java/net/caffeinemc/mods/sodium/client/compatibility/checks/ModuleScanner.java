@@ -1,12 +1,15 @@
 package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.platform.Window;
+import com.sun.jna.Platform;
+import com.sun.jna.platform.win32.Kernel32Util;
+import com.sun.jna.platform.win32.Tlhelp32;
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Kernel32;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.version.Version;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.NativeModuleLister;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -28,10 +32,10 @@ public class ModuleScanner {
     private static final String[] RTSS_HOOKS_MODULE_NAMES = { "RTSSHooks64.dll", "RTSSHooks.dll" };
 
     public static void checkModules() {
-        List<NativeModuleLister.NativeModuleInfo> modules;
+        List<String> modules;
 
         try {
-            modules = NativeModuleLister.listModules();
+            modules = listModules();
         } catch (Throwable t) {
             LOGGER.warn("Failed to scan the currently loaded modules", t);
             return;
@@ -45,6 +49,22 @@ public class ModuleScanner {
         // RivaTuner hooks the wglCreateContext function, and leaves itself behind as a loaded module
         if (BugChecks.ISSUE_2048 && isModuleLoaded(modules, RTSS_HOOKS_MODULE_NAMES)) {
             checkRTSSModules();
+        }
+    }
+
+    private static List<String> listModules() {
+        if (!Platform.isWindows()) {
+            return ImmutableList.of();
+        } else {
+            int i = com.sun.jna.platform.win32.Kernel32.INSTANCE.GetCurrentProcessId();
+            ImmutableList.Builder<String> builder = ImmutableList.builder();
+
+            for(Tlhelp32.MODULEENTRY32W mODULEENTRY32W : Kernel32Util.getModules(i)) {
+                String string = mODULEENTRY32W.szModule();
+                builder.add(string);
+            }
+
+            return builder.build();
         }
     }
 
@@ -140,10 +160,10 @@ public class ModuleScanner {
         return WindowsFileVersion.fromFileVersion(fileVersion);
     }
 
-    private static boolean isModuleLoaded(List<NativeModuleLister.NativeModuleInfo> modules, String[] names) {
+    private static boolean isModuleLoaded(List<String> modules, String[] names) {
         for (var name : names) {
             for (var module : modules) {
-                if (module.name.equalsIgnoreCase(name)) {
+                if (module.equalsIgnoreCase(name)) {
                     return true;
                 }
             }
