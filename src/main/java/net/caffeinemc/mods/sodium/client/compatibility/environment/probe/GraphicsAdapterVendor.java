@@ -25,7 +25,14 @@ public enum GraphicsAdapterVendor {
     }
 
     public static GraphicsAdapterVendor fromIcdName(String name) {
-        if (name.matches("ig(7|8|9|11|xelp|xehp)icd(32|64)")) {
+        // Intel Gen 4, 5, 6    - ig4icd
+        // Intel Gen 7          - ig7icd
+        // Intel Gen 7.5        - ig75icd
+        // Intel Gen 8          - ig8icd
+        // Intel Gen 9, 9.5     - ig9icd
+        // Intel Gen 11         - ig11icd
+        // Intel Gen 12         - igxelpicd (Xe-LP; integrated) and igxehpicd (Xe-LP; dedicated)
+        if (name.matches("ig(4|7|75|8|9|11|xelp|xehp)icd(32|64)")) {
             return INTEL;
         }
 
