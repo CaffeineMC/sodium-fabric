@@ -1,0 +1,6 @@
+{
+  "parent": "block/leaves",
+  "textures": {
+    "all": "block/waterlogged/flowering_azalea_leaves"
+  }
+}

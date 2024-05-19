@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "waterlogged=true": {
+      "model": "minecraft:block/waterlogged/oak_leaves"
+    },
+    "waterlogged=false": {
+      "model": "minecraft:block/oak_leaves"
+    }
+  }
+}

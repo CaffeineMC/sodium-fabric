@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "waterlogged=true": {
+      "model": "minecraft:block/waterlogged/acacia_leaves"
+    },
+    "waterlogged=false": {
+      "model": "minecraft:block/acacia_leaves"
+    }
+  }
+}
