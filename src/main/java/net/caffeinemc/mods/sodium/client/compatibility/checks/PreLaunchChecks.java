@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
+import com.sun.jna.platform.win32.VersionHelpers;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaDriverVersion;
@@ -9,6 +10,8 @@ import net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMT;
 import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import net.caffeinemc.mods.sodium.client.util.OsUtils.OperatingSystem;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +23,11 @@ public class PreLaunchChecks {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-EarlyDriverScanner");
 
     public static void onGameInit() {
+        if (BugChecks.FORCE_DGPU) {
+            forceDGPU();
+        }
+
+
         if (BugChecks.ISSUE_899) {
             var installedVersion = findIntelDriverMatchingBug899();
 
@@ -131,4 +139,38 @@ public class PreLaunchChecks {
         return null;
     }
 
+    private static void forceDGPU() {
+        if (OsUtils.getOs() != OperatingSystem.WIN) {
+            return;
+        }
+        if (!VersionHelpers.IsWindows10OrGreater()) {
+            //Only works on windows 10 and up for the time being
+            return;
+        }
+        D3DKMT.WDDMAdapterInfo selected = null;
+        for (var adapter : GraphicsAdapterProbe.getAdapters()) {
+            if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
+                //Find target gpu, for the time being select the first dgpu
+                if ((wddmAdapterInfo.adapterType()&0x10)!=0) {
+                    selected = wddmAdapterInfo;
+                    break;
+                }
+            }
+        }
+        if (selected == null) {
+            return;
+        }
+        LOGGER.info("Attempting to forcefully set the gpu used to " + selected);
+
+        //Need to force the preference type to be user selection
+        for (var adapter : GraphicsAdapterProbe.getAdapters()) {
+            if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
+                D3DKMT.d3dkmtCacheHybridQueryValue(wddmAdapterInfo.luid(), 5 /*D3DKMT_GPU_PREFERENCE_STATE_USER_SPECIFIED_GPU*/, false, 2/*D3DKMT_GPU_PREFERENCE_TYPE_USER_PREFERENCE*/);
+            }
+        }
+
+        //Prime the kernel adapter cache with the selected adapter
+        D3DKMT.setPciProperties(1 /*USER_SETTINGS*/, selected.pciInfo());
+        D3DKMT.setPciProperties(2 /*GLOBAL_SETTINGS*/, selected.pciInfo());
+    }
 }

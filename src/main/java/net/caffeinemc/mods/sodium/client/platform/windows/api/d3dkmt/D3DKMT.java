@@ -10,6 +10,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,7 @@ import java.util.List;
 
 import static net.caffeinemc.mods.sodium.client.platform.windows.api.Gdi32.*;
 import static net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMTQueryAdapterInfoType.WDDM12.*;
+import static net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMTQueryAdapterInfoType.WDDM20.KMTQAITYPE_PHYSICALADAPTERDEVICEIDS;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.system.MemoryUtil.memByteBuffer;
 
@@ -27,6 +29,7 @@ public class D3DKMT {
 
     private static final boolean SUPPORTS_D3DKMT = VersionHelpers.IsWindowsVistaOrGreater() && Gdi32.isD3DKMTSupported();
     private static final boolean SUPPORTS_QUERYING_ADAPTER_TYPE = VersionHelpers.IsWindows8OrGreater();
+    private static final boolean SUPPORTS_QUERYING_PCI_INFO = VersionHelpers.IsWindows10OrGreater();
 
     public static List<WDDMAdapterInfo> findGraphicsAdapters() {
         if (!SUPPORTS_D3DKMT) {
@@ -55,7 +58,7 @@ public class D3DKMT {
             var pAdapterInfo = adapterInfoBuffer.get(adapterIndex);
             int pAdapter = pAdapterInfo.getAdapterHandle();
 
-            var parsed = getAdapterInfo(pAdapter);
+            var parsed = getAdapterInfo(pAdapter, pAdapterInfo.getLuid());
 
             if (parsed != null) {
                 results.add(parsed);
@@ -73,7 +76,7 @@ public class D3DKMT {
         }
     }
 
-    private static @Nullable D3DKMT.WDDMAdapterInfo getAdapterInfo(int adapter) {
+    private static @Nullable D3DKMT.WDDMAdapterInfo getAdapterInfo(int adapter, long luid) {
         int adapterType = -1;
 
         if (SUPPORTS_QUERYING_ADAPTER_TYPE) {
@@ -96,7 +99,12 @@ public class D3DKMT {
             driverVendor = GraphicsAdapterVendor.fromIcdName(getOpenGlIcdName(driverFileName));
         }
 
-        return new WDDMAdapterInfo(driverVendor, adapterName, adapterType, driverFileName, driverVersion);
+        PciInfo pciInfo = null;
+        if (SUPPORTS_QUERYING_PCI_INFO) {
+            pciInfo = queryPciInfo(adapter, 0);
+        }
+
+        return new WDDMAdapterInfo(driverVendor, adapterName, adapterType, luid, driverFileName, driverVersion, pciInfo);
 
     }
 
@@ -163,6 +171,21 @@ public class D3DKMT {
         }
     }
 
+    private static PciInfo queryPciInfo(int adapter, int physicalAdapterIndex) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            var queryDeviceIds = D3DKMTQueryDeviceIdsStruct.calloc(stack);
+            queryDeviceIds.setPhysicalAdapterIndex(0);
+            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_PHYSICALADAPTERDEVICEIDS, memByteBuffer(queryDeviceIds));
+
+            var deviceIds = queryDeviceIds.getDeviceIds();
+
+
+            return new PciInfo(deviceIds.getVendorId(),
+                    deviceIds.getDeviceId(),
+                    (deviceIds.getSubSystemId()<<16)|deviceIds.getSubVendorId());
+        }
+    }
+
     private static void d3dkmtQueryAdapterInfo(int adapter, int type, ByteBuffer holder) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var info = D3DKMTQueryAdapterInfoStruct.malloc(stack);
@@ -172,6 +195,39 @@ public class D3DKMT {
             info.setDataLength(holder.remaining());
 
             apiCheckError("D3DKMTQueryAdapterInfo", nd3dKmtQueryAdapterInfo(info.address()));
+        }
+    }
+
+    public static void d3dkmtCacheHybridQueryValue(long luid, int state, boolean userPreferenceQuery, int queryType) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            var info = D3DKMTHybridListStruct.malloc(stack);
+            info.setAdapterLuid(luid);
+            info.setState(state);
+            info.setbUserPreferenceQuery(userPreferenceQuery);
+            info.setQueryType(queryType);
+
+            apiCheckError("D3DKMTCacheHybridQueryValue", nD3DKMTCacheHybridQueryValue(info.address()));
+        }
+    }
+
+    private static void d3dkmtSetProperties(int type, ByteBuffer payload) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            var properties = D3DKMTProperties.calloc(stack);
+            properties.setType(type);
+            properties.setSize(payload.remaining());
+            properties.setPointer(memAddress(payload));
+
+            apiCheckError("D3DKMTSetProperties", nD3DKMTSetProperties(properties.address()));
+        }
+    }
+
+    public static void setPciProperties(int type, PciInfo info) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            var pci = D3DKMTPciStruct.calloc(stack);
+            pci.setDevice(info.device);
+            pci.setVendor(info.vendor);
+            pci.setSubSys(info.subsys);
+            d3dkmtSetProperties(type, MemoryUtil.memByteBuffer(pci.address(), pci.sizeof()));//Cannot figure out how to do this nicely
         }
     }
 
@@ -188,12 +244,25 @@ public class D3DKMT {
         }
     }
 
+    public record PciInfo(
+            int vendor,
+            int device,
+            int subsys) {
+        @Override
+        public String toString() {
+            return String.format("PciInfo{%X&%X&%X}", this.vendor, this.device, this.subsys);
+        }
+    }
+
+
     public record WDDMAdapterInfo(
             @NotNull GraphicsAdapterVendor vendor,
             @NotNull String name,
             int adapterType,
+            long luid,
             String openglIcdFilePath,
-            WindowsFileVersion openglIcdVersion
+            WindowsFileVersion openglIcdVersion,
+            PciInfo pciInfo
     ) implements GraphicsAdapterInfo {
         public String getOpenGlIcdName() {
             return D3DKMT.getOpenGlIcdName(this.name);
@@ -201,8 +270,8 @@ public class D3DKMT {
 
         @Override
         public String toString() {
-            return "AdapterInfo{vendor=%s, description='%s', adapterType=0x%08X, openglIcdFilePath='%s', openglIcdVersion=%s}"
-                    .formatted(this.vendor, this.name, this.adapterType, this.openglIcdFilePath, this.openglIcdVersion);
+            return "AdapterInfo{vendor=%s, description='%s', adapterType=0x%08X, openglIcdFilePath='%s', openglIcdVersion=%s, pciInfo=%s}"
+                    .formatted(this.vendor, this.name, this.adapterType, this.openglIcdFilePath, this.openglIcdVersion, this.pciInfo);
         }
     }
 

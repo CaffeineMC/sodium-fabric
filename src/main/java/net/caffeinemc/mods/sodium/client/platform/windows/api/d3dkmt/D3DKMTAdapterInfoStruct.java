@@ -62,6 +62,10 @@ class D3DKMTAdapterInfoStruct extends Struct<D3DKMTAdapterInfoStruct> {
         return memGetInt(this.address + OFFSET_HADAPTER);
     }
 
+    public long getLuid() {
+        return memGetInt(this.address + OFFSET_ADAPTER_LUID);
+    }
+
     @Override
     public int sizeof() {
         return SIZEOF;

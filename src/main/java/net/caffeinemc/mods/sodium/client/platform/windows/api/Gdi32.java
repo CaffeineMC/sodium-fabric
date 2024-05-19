@@ -14,6 +14,8 @@ public class Gdi32 {
     public static final long PFN_D3DKMTQueryAdapterInfo = apiGetFunctionAddressOptional(LIBRARY, "D3DKMTQueryAdapterInfo");
     public static final long PFN_D3DKMTCloseAdapter = apiGetFunctionAddressOptional(LIBRARY, "D3DKMTCloseAdapter");
     public static final long PFN_D3DKMTEnumAdapters = apiGetFunctionAddressOptional(LIBRARY, "D3DKMTEnumAdapters");
+    public static final long PFN_D3DKMTCacheHybridQueryValue = apiGetFunctionAddressOptional(LIBRARY, "D3DKMTCacheHybridQueryValue");
+    public static final long PFN_D3DKMTSetProperties = apiGetFunctionAddressOptional(LIBRARY, "D3DKMTSetProperties");
 
     public static boolean isD3DKMTSupported() {
         return PFN_D3DKMTQueryAdapterInfo != NULL && PFN_D3DKMTCloseAdapter != NULL && PFN_D3DKMTEnumAdapters != NULL;
@@ -35,5 +37,17 @@ public class Gdi32 {
     public static int /* NTSTATUS */ nD3DKMTCloseAdapter(long ptr /* D3DKMT_CLOSEADAPTER */) {
         Validate.isTrue(PFN_D3DKMTCloseAdapter != NULL);
         return JNI.callPI(ptr, PFN_D3DKMTCloseAdapter);
+    }
+
+    //Undocumented
+    public static int /* NTSTATUS */ nD3DKMTCacheHybridQueryValue(long ptr /* D3DKMT_HYBRID_LIST */) {
+        Validate.isTrue(PFN_D3DKMTCacheHybridQueryValue != NULL);
+        return JNI.callPI(ptr, PFN_D3DKMTCacheHybridQueryValue);
+    }
+
+    //Undocumented
+    public static int /* NTSTATUS */ nD3DKMTSetProperties(long ptr /* D3DKMT_PROPERTIES */) {
+        Validate.isTrue(PFN_D3DKMTSetProperties != NULL);
+        return JNI.callPI(ptr, PFN_D3DKMTSetProperties);
     }
 }
