@@ -5,7 +5,6 @@ package net.caffeinemc.mods.sodium.client.compatibility.checks;
  * failing checks will crash the game and prompt the user for intervention.
  */
 class BugChecks {
-    public static final boolean FORCE_DGPU = configureCheck("forgeDGPU", true);
     public static final boolean ISSUE_899 = configureCheck("issue899", true);
     public static final boolean ISSUE_1486 = configureCheck("issue1486", true);
     public static final boolean ISSUE_2048 = configureCheck("issue2048", true);

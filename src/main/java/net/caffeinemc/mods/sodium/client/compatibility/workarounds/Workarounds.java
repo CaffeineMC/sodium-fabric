@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.client.compatibility.workarounds;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
+import net.caffeinemc.mods.sodium.client.compatibility.workarounds.windows.ForceDedicatedGPU;
 import net.caffeinemc.mods.sodium.client.util.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,10 @@ public class Workarounds {
         var operatingSystem = OsUtils.getOs();
 
         var graphicsAdapters = GraphicsAdapterProbe.getAdapters();
+
+        if (ForceDedicatedGPU.shouldForceDedicatedGPU(operatingSystem, graphicsAdapters.size())) {
+            workarounds.add(Reference.FORCE_DEDICATED_GPU);
+        }
 
         if (isUsingNvidiaGraphicsCard(operatingSystem, graphicsAdapters)) {
             workarounds.add(Reference.NVIDIA_THREADED_OPTIMIZATIONS);
@@ -82,5 +87,10 @@ public class Workarounds {
          * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1624">GitHub Issue</a>
          */
         NO_ERROR_CONTEXT_UNSUPPORTED,
+
+        /**
+         * Attempt to force opengl to launch on dedicated gpu when user hasn't specified a preference.
+         */
+        FORCE_DEDICATED_GPU
     }
 }
