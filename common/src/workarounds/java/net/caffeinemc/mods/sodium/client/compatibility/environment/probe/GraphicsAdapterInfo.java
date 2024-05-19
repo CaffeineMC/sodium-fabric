@@ -1,5 +1,19 @@
 package net.caffeinemc.mods.sodium.client.compatibility.environment.probe;
 
-public record GraphicsAdapterInfo(GraphicsAdapterVendor vendor, String name, String version) {
+import org.jetbrains.annotations.NotNull;
 
+public interface GraphicsAdapterInfo {
+    @NotNull GraphicsAdapterVendor vendor();
+
+    @NotNull String name();
+
+    record LinuxPciAdapterInfo(
+            @NotNull GraphicsAdapterVendor vendor,
+            @NotNull String name,
+
+            String pciVendorId,
+            String pciDeviceId
+    ) implements GraphicsAdapterInfo {
+
+    }
 }
