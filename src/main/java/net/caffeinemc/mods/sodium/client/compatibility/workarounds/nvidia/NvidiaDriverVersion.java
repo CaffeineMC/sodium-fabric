@@ -1,52 +1,21 @@
 package net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia;
 
-import net.caffeinemc.mods.sodium.client.compatibility.environment.GLContextInfo;
-import org.apache.commons.lang3.Validate;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
-import java.util.regex.Pattern;
+import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 
 public record NvidiaDriverVersion(int major, int minor) {
-    private static final Pattern PATTERN = Pattern.compile("^.*NVIDIA (?<major>\\d+)\\.(?<minor>\\d+)(?<suffix>\\.\\d+)?$");
-
-    @Nullable
-    public static NvidiaDriverVersion tryParse(GLContextInfo driver) {
-        if (!Objects.equals(driver.vendor(), "NVIDIA Corporation")) {
-            return null;
-        }
-
-        var matcher = PATTERN.matcher(driver.version());
-
-        if (!matcher.matches()) {
-            return null;
-        }
-
-        int major, minor;
-
-        try {
-            major = Integer.parseInt(matcher.group("major"));
-            minor = Integer.parseInt(matcher.group("minor"));
-        } catch (NumberFormatException e) {
-            return null;
-        }
+    public static NvidiaDriverVersion parse(WindowsFileVersion version) {
+        // NVIDIA drivers use a strange versioning format, where the major/minor are concatenated into
+        // the end of the file version. For example, driver 526.47 is represented as X.Y.15.2657, where
+        // the X and Y values are the usual for WDDM drivers.
+        int merged = (((version.z() - 10) * 10_000) + version.w());
+        int major = merged / 100;
+        int minor = merged % 100;
 
         return new NvidiaDriverVersion(major, minor);
     }
 
-    /**
-     * @param oldest The oldest version (inclusive) to test against
-     * @param newest The newest version (exclusive) to test against
-     * @return True if this version is within the specified version range
-     */
-    public boolean isWithinRange(NvidiaDriverVersion oldest, NvidiaDriverVersion newest) {
-        return this.asInteger() >= oldest.asInteger() && this.asInteger() < newest.asInteger();
-    }
-
-    private long asInteger() {
-        Validate.isTrue(this.major >= 0);
-        Validate.isTrue(this.minor >= 0);
-
-        return (Integer.toUnsignedLong(this.major) << 32) | (Integer.toUnsignedLong(this.minor) << 0);
+    @Override
+    public String toString() {
+        return "%d.%d".formatted(this.major, this.minor);
     }
 }

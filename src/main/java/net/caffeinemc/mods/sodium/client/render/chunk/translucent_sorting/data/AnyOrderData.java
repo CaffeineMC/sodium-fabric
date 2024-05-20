@@ -22,8 +22,10 @@ import net.minecraft.core.SectionPos;
  * use it.
  */
 public class AnyOrderData extends SplitDirectionData {
-    AnyOrderData(SectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
-        super(sectionPos, buffer, ranges);
+    private Sorter sorterOnce;
+
+    AnyOrderData(SectionPos sectionPos, VertexRange[] ranges, int quadCount) {
+        super(sectionPos, ranges, quadCount);
     }
 
     @Override
@@ -31,15 +33,27 @@ public class AnyOrderData extends SplitDirectionData {
         return SortType.NONE;
     }
 
+    @Override
+    public Sorter getSorter() {
+        var sorter = this.sorterOnce;
+        if (sorter == null) {
+            throw new IllegalStateException("Sorter already used!");
+        }
+        this.sorterOnce = null;
+        return sorter;
+    }
+
     /**
      * Important: The vertex indexes must start at zero for each facing.
      */
     public static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, SectionPos sectionPos, NativeBuffer buffer) {
-        buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
-        var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
-
+            TQuad[] quads, SectionPos sectionPos) {
         var ranges = translucentMesh.getVertexRanges();
+        var anyOrderData = new AnyOrderData(sectionPos, ranges, quads.length);
+        var sorter = new StaticSorter(quads.length);
+        anyOrderData.sorterOnce = sorter;
+        var indexBuffer = sorter.getIntBuffer();
+
         for (var range : ranges) {
             if (range == null) {
                 continue;
@@ -50,6 +64,7 @@ public class AnyOrderData extends SplitDirectionData {
                 TranslucentData.writeQuadVertexIndexes(indexBuffer, i);
             }
         }
-        return new AnyOrderData(sectionPos, buffer, ranges);
+
+        return anyOrderData;
     }
 }

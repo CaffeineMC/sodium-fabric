@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -8,7 +9,7 @@ import org.lwjgl.system.Struct;
 
 import java.nio.ByteBuffer;
 
-public class MsgBoxParamSw extends Struct {
+public class MsgBoxParamSw extends Struct<MsgBoxParamSw> {
     public static final int SIZEOF;
     public static final int ALIGNOF;
     public static final int
@@ -58,6 +59,11 @@ public class MsgBoxParamSw extends Struct {
 
     private MsgBoxParamSw(long address, @Nullable ByteBuffer container) {
         super(address, container);
+    }
+
+    @Override
+    protected @NotNull MsgBoxParamSw create(long address, ByteBuffer container) {
+        return new MsgBoxParamSw(address, container);
     }
 
     @Override
