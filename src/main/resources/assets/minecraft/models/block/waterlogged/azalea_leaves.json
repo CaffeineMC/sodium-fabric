@@ -1,5 +1,5 @@
 {
-  "parent": "block/leaves",
+  "parent": "block/azalea_leaves",
   "textures": {
     "all": "block/waterlogged/azalea_leaves"
   }

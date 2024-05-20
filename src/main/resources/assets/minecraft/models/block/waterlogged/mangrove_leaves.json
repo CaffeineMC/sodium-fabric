@@ -1,5 +1,5 @@
 {
-  "parent": "block/leaves",
+  "parent": "block/mangrove_leaves",
   "textures": {
     "all": "block/waterlogged/mangrove_leaves"
   }
