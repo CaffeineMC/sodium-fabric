@@ -101,6 +101,8 @@ public class D3DKMT {
 
         PciInfo pciInfo = null;
         if (SUPPORTS_QUERYING_PCI_INFO) {
+            //Query the first adapter in the LDA chain as this will always be the root device that "produces"/does
+            // the rendering
             pciInfo = queryPciInfo(adapter, 0);
         }
 
@@ -171,18 +173,28 @@ public class D3DKMT {
         }
     }
 
+    //Queries the pci device info of an adapter and physical device index into the LDA chain
     private static PciInfo queryPciInfo(int adapter, int physicalAdapterIndex) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var queryDeviceIds = D3DKMTQueryDeviceIdsStruct.calloc(stack);
-            queryDeviceIds.setPhysicalAdapterIndex(0);
+            queryDeviceIds.setPhysicalAdapterIndex(physicalAdapterIndex);
             d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_PHYSICALADAPTERDEVICEIDS, memByteBuffer(queryDeviceIds));
-
             var deviceIds = queryDeviceIds.getDeviceIds();
-
-
             return new PciInfo(deviceIds.getVendorId(),
                     deviceIds.getDeviceId(),
                     (deviceIds.getSubSystemId()<<16)|deviceIds.getSubVendorId());
+        }
+    }
+
+    //Sets the d3dkmt properties of the given type to the supplied pci device info
+    public static void setPciProperties(int type, PciInfo info) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            var pci = D3DKMTPciStruct.calloc(stack);
+            pci.setDevice(info.device);
+            pci.setVendor(info.vendor);
+            pci.setSubSys(info.subsys);
+            //Cannot figure out how to do this nicely
+            d3dkmtSetProperties(type, MemoryUtil.memByteBuffer(pci.address(), pci.sizeof()));
         }
     }
 
@@ -218,16 +230,6 @@ public class D3DKMT {
             properties.setPointer(memAddress(payload));
 
             apiCheckError("D3DKMTSetProperties", nD3DKMTSetProperties(properties.address()));
-        }
-    }
-
-    public static void setPciProperties(int type, PciInfo info) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            var pci = D3DKMTPciStruct.calloc(stack);
-            pci.setDevice(info.device);
-            pci.setVendor(info.vendor);
-            pci.setSubSys(info.subsys);
-            d3dkmtSetProperties(type, MemoryUtil.memByteBuffer(pci.address(), pci.sizeof()));//Cannot figure out how to do this nicely
         }
     }
 

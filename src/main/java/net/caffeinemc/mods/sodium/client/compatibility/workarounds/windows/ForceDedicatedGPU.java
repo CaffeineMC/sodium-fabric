@@ -17,11 +17,23 @@ import java.util.Set;
 public class ForceDedicatedGPU {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-ForceDedicatedGPU");
     public static final String USER_GPU_PREFERENCE_REGISTRY = "Software\\Microsoft\\DirectX\\UserGpuPreferences";
+
     private static final int PREFERENCE_WINDOWS_DECIDE = 0;
     private static final int PREFERENCE_POWER_SAVING = 1;
     private static final int PREFERENCE_HIGH_PERFORMANCE = 2;
     private static final int PREFERENCE_USER_SPECIFIC = 0x40000000;
     public static boolean shouldForceDedicatedGPU(OsUtils.OperatingSystem operatingSystem, int adapterCount) {
+        /*
+         * To see if sodium should attempt to override the normal windows gpu selection
+         *  we query the registry entry USER_GPU_PREFERENCE_REGISTRY key with the value being the current executing module name
+         *  this is how windows does it so we should follow suite.
+         *  If there is an entry it should (assuming the registry hasnt been corrupted) have valid data associated with it
+         *  in this entry contains `GpuPreference` which specifies what mode windows should use to select the gpu to run on
+         *  NOTE: there are undocumented preferences like 0x80000000 which is unknown what they are for
+         * Once we have the preference we only force the dedicated gpu if the preference is unknown or `Let Windows decide`
+         */
+
+
         if (adapterCount <= 1) {//Dont do it if there is only 1 (or none) adapters
             return false;
         }
@@ -69,31 +81,66 @@ public class ForceDedicatedGPU {
 
 
     public static void forceDedicatedGpu() {
+        /*
+         * This gets into the blackmagic of how we force windows to select a specific gpu to launch opengl on
+         * it is not simple nor is it known if it can force an adapter with multiple gpus of the same vendor
+         *
+         * The way it works is not simple, nor will this go over the exact mechanism indepth that windows uses to choose
+         * what gpu the opengl context should run on however an outline is necessary.
+         *
+         * Firstly, if there is a dedicated gpu plugged into the primary monitor (Or whatever HDC the HWND has)
+         * it will bypass all checks and preferences a user has set even in the case of user preference.
+         *
+         * It then queries the global preferred rendering device `QueryUserGlobalSettings` (identified by PNP, not adapter id/LUID)
+         * Then enumerates over all adapters using D3DKMTEnumAdapters2 creates a sorting order and sorts them
+         *
+         * After this and some more strangeness the loader invokes `QueryFinalGPUPreferenceDecision` which returns
+         *  the DXGI driver preference value for the current process.
+         *  if the value is 0x40000000 (I.E. user specified), `QueryUserSettings` is invoked to retrieve the PNP name
+         *      of the preferred pci device
+         *  if the preference is 2 it selects a different device
+         *  else it uses its already selected device
+         *
+         * The way we force a pci selection without patching or redirecting any methods is by effectively doing cache poisoning
+         * When `QueryFinalGPUPreferenceDecision` `QueryUserSettings` `QueryUserGlobalSettings` are invoked, they will check
+         *  whether they have cached values using `D3DKMTGetProperties` and `D3DKMTCacheHybridQueryValue`
+         *  we can exploit this by setting these caches ourselves
+         */
+
+
+        //Find an adapter we like
         D3DKMT.WDDMAdapterInfo selected = null;
         for (var adapter : GraphicsAdapterProbe.getAdapters()) {
             if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
                 //Find target gpu, for the time being select the first dgpu
-                if ((wddmAdapterInfo.adapterType()&0x10)!=0) {
+                if (shouldSelectAdapter(wddmAdapterInfo)) {
                     selected = wddmAdapterInfo;
                     break;
                 }
             }
         }
+
         if (selected == null) {
             LOGGER.info("Unable to find a dedicated gpu to launch the game on.");
             return;
         }
+
         LOGGER.info("Attempting to forcefully set the gpu used to " + selected);
 
-        //Need to force the preference type to be user selection
+        //Populate D3DKMTCacheHybridQueryValue to always specify we want to select our own pci device
         for (var adapter : GraphicsAdapterProbe.getAdapters()) {
             if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
                 D3DKMT.d3dkmtCacheHybridQueryValue(wddmAdapterInfo.luid(), 5 /*D3DKMT_GPU_PREFERENCE_STATE_USER_SPECIFIED_GPU*/, false, 2/*D3DKMT_GPU_PREFERENCE_TYPE_USER_PREFERENCE*/);
             }
         }
 
-        //Prime the kernel adapter cache with the selected adapter
+        //Prime D3DKMTGetProperties to always return the pci device we want in both `QueryUserSettings` and `QueryUserGlobalSettings`
         D3DKMT.setPciProperties(1 /*USER_SETTINGS*/, selected.pciInfo());
         D3DKMT.setPciProperties(2 /*GLOBAL_SETTINGS*/, selected.pciInfo());
+    }
+
+    private static boolean shouldSelectAdapter(D3DKMT.WDDMAdapterInfo adapter) {
+        //For the time being only pick the dedicated gpu
+        return (adapter.adapterType()&0x10)!=0;
     }
 }
