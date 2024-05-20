@@ -106,7 +106,7 @@ class GFNITriggers implements SectionTriggers<DynamicData> {
             }
         }
 
-        data.clearGeometryPlanes();
+        data.discardGeometryPlanes();
 
         // check if catchup trigger is necessary
         if (movement.hasChanged()) {
