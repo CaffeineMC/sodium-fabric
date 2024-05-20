@@ -14,9 +14,6 @@ public record ChunkShaderOptions(ChunkFogMode fog, TerrainRenderPass pass, Chunk
         }
 
         constants.add("USE_VERTEX_COMPRESSION"); // TODO: allow compact vertex format to be disabled
-        constants.add("VERT_POS_SCALE", String.valueOf(this.vertexType.getPositionScale()));
-        constants.add("VERT_POS_OFFSET", String.valueOf(this.vertexType.getPositionOffset()));
-        constants.add("VERT_TEX_SCALE", String.valueOf(this.vertexType.getTextureScale()));
 
         return constants.build();
     }

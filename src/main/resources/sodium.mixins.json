@@ -16,6 +16,7 @@
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
     "core.model.quad.BakedQuadMixin",
+    "core.model.FaceBakeryMixin",
     "core.render.VertexFormatAccessor",
     "core.render.chunk.LiquidBlockRendererMixin",
     "core.render.frustum.FrustumMixin",
@@ -84,7 +85,6 @@
     "features.textures.mipmaps.MipmapGeneratorMixin",
     "features.textures.mipmaps.SpriteContentsMixin",
     "features.world.biome.BiomeMixin",
-    "features.world.storage.ClientChunkCacheMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.event_loop.RenderSystemMixin"
   ]

@@ -60,7 +60,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         shader.setProjectionMatrix(matrices.projection());
         shader.setModelViewMatrix(matrices.modelView());
 
-        Iterator<ChunkRenderList> iterator = renderLists.iterator(renderPass.isReverseOrder());
+        Iterator<ChunkRenderList> iterator = renderLists.iterator(renderPass.isTranslucent());
 
         while (iterator.hasNext()) {
             ChunkRenderList renderList = iterator.next();
@@ -113,7 +113,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                                           boolean useBlockFaceCulling) {
         batch.clear();
 
-        var iterator = renderList.sectionsWithGeometryIterator(pass.isReverseOrder());
+        var iterator = renderList.sectionsWithGeometryIterator(pass.isTranslucent());
 
         if (iterator == null) {
             return;
@@ -355,14 +355,16 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources, boolean useSharedIndexBuffer) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
                 TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), new GlVertexAttributeBinding[] {
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_MATERIAL_MESH)),
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_HI,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_HI)),
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_LO,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_LO)),
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR_SHADE)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_TEXTURE)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE))
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR)),
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.TEXTURE)),
+                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_MATERIAL_INDEX,
+                                this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_MATERIAL_INDEX))
                 }),
                 TessellationBinding.forElementBuffer(useSharedIndexBuffer
                         ? this.sharedIndexBuffer.getBufferObject()

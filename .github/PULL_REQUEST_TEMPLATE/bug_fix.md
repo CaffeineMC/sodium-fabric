@@ -12,11 +12,8 @@ assignees: ''
 Make sure you have read our [Contributor Guidelines](/CONTRIBUTING.md) before submitting any pull requests to this
 repository.
 
-When submitting changes to this repository, it is assumed that you are licensing your contribution under the
-[Polyform Shield 1.0.0](/LICENSE) terms, unless you state otherwise.
-
-This section should be removed before submitting your pull request. Doing so indicates that you have read and
-acknowledged it.
+This section (Preface) should be removed before submitting your pull request. Doing so indicates that you have read
+and agreed to the terms laid out within.
 
 ### Linked Issues
 Provide links to the issue(s) which will be closed upon merging this pull request. There must be an open issue for
