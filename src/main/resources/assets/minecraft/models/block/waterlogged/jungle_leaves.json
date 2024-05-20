@@ -1,6 +1,0 @@
-{
-  "parent": "block/jungle_leaves",
-  "textures": {
-    "all": "block/waterlogged/jungle_leaves"
-  }
-}
