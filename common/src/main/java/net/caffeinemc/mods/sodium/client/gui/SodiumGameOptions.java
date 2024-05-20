@@ -50,7 +50,7 @@ public class SodiumGameOptions {
         public boolean sortingEnabled = true;
 
         public SortBehavior getSortBehavior() {
-            return this.sortingEnabled ? SortBehavior.DYNAMIC_DEFER_NEARBY_ONE_FRAME : SortBehavior.OFF;
+            return this.sortingEnabled ? SortBehavior.DYNAMIC_DEFER_NEARBY_ZERO_FRAMES : SortBehavior.OFF;
         }
     }
 
