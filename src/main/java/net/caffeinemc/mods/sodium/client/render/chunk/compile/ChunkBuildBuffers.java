@@ -68,6 +68,10 @@ public class ChunkBuildBuffers {
             return null;
         }
 
+        if (forceUnassigned) {
+            vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(0, vertexCount);
+        }
+
         var mergedBuffer = new NativeBuffer(vertexCount * this.vertexType.getVertexFormat().getStride());
         var mergedBufferBuilder = mergedBuffer.getDirectBuffer();
 
