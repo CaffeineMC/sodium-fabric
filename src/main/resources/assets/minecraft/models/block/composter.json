@@ -6,7 +6,7 @@
     "outside":  "minecraft:block/composter_side",
     "inside":   "minecraft:block/composter_bottom"
   },
-  "elements":         [
+  "elements": [
     {
 	  "from":  [  0,  0,  0 ],
       "to":    [ 16, 16, 16 ],
