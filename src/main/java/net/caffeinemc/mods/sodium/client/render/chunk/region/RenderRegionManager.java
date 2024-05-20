@@ -13,11 +13,10 @@ import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.render.chunk.RenderSection;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
-import net.caffeinemc.mods.sodium.client.render.chunk.compile.OutputWithIndexData;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -86,31 +85,19 @@ public class RenderRegionManager {
                 }
             }
 
-            if (result instanceof OutputWithIndexData indexDataOutput) {
-                var indexData = indexDataOutput.getTranslucentData();
-                boolean retainIndexData = false;
-                if (indexData != null) {
-                    if (indexData.isReusingUploadedData()) {
-                        retainIndexData = true;
-                    } else {
-                        var buffer = indexData.getBuffer();
+            if (result instanceof ChunkSortOutput indexDataOutput && !indexDataOutput.isReusingUploadedIndexData()) {
+                var buffer = indexDataOutput.getIndexBuffer();
 
-                        // TODO: sometimes the buffer is null even when reuse isn't happening. maybe the data on the
-                        // render section is being replaced before it gets here?
-                        if (buffer == null) {
-                            throw new IllegalStateException("Translucent data buffer is null");
-                        }
-
-                        indexUploads.add(new PendingSectionIndexBufferUpload(result.render, indexData,
-                                new PendingUpload(buffer)));
-                    }
+                // when a non-present TranslucentData is used like NoData, the indexBuffer is null
+                if (buffer == null) {
+                    continue;
                 }
 
-                if (!retainIndexData) {
-                    var storage = region.getStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
-                    if (storage != null) {
-                        storage.removeIndexData(renderSectionIndex);
-                    }
+                indexUploads.add(new PendingSectionIndexBufferUpload(result.render, new PendingUpload(buffer)));
+
+                var storage = region.getStorage(DefaultTerrainRenderPasses.TRANSLUCENT);
+                if (storage != null) {
+                    storage.removeIndexData(renderSectionIndex);
                 }
             }
         }
@@ -206,7 +193,7 @@ public class RenderRegionManager {
     private record PendingSectionMeshUpload(RenderSection section, BuiltSectionMeshParts meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
     }
 
-    private record PendingSectionIndexBufferUpload(RenderSection section, PresentTranslucentData translucentData, PendingUpload indexBufferUpload) {
+    private record PendingSectionIndexBufferUpload(RenderSection section, PendingUpload indexBufferUpload) {
     }
 
 

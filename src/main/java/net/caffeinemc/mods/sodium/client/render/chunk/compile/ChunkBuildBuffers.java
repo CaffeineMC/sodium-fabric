@@ -80,12 +80,12 @@ public class ChunkBuildBuffers {
             vertexCount += buffer.count();
         }
 
-        if (forceUnassigned) {
-            vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(0, vertexCount);
-        }
-
         if (vertexCount == 0) {
             return null;
+        }
+
+        if (forceUnassigned) {
+            vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(0, vertexCount);
         }
 
         var mergedBuffer = new NativeBuffer(vertexCount * this.vertexType.getVertexFormat().getStride());
@@ -94,8 +94,6 @@ public class ChunkBuildBuffers {
         for (var buffer : vertexBuffers) {
             mergedBufferBuilder.put(buffer);
         }
-
-        mergedBufferBuilder.flip(); // TODO: necessary?
 
         return new BuiltSectionMeshParts(mergedBuffer, vertexRanges);
     }

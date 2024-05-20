@@ -12,8 +12,8 @@ import net.minecraft.core.SectionPos;
 public abstract class SplitDirectionData extends PresentTranslucentData {
     private final VertexRange[] ranges;
 
-    public SplitDirectionData(SectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
-        super(sectionPos, buffer);
+    public SplitDirectionData(SectionPos sectionPos, VertexRange[] ranges, int quadCount) {
+        super(sectionPos, quadCount);
         this.ranges = ranges;
     }
 

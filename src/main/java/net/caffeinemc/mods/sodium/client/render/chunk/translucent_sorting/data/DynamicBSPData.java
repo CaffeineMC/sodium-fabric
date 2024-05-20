@@ -1,53 +1,54 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import org.joml.Vector3dc;
-import org.joml.Vector3fc;
-
 import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPNode;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPResult;
-import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.core.SectionPos;
+import org.joml.Vector3dc;
 
 /**
  * Constructs a BSP tree of the quads and sorts them dynamically.
- * 
+ *
  * Triggering is performed when the BSP tree's partition planes are crossed in
  * any direction (bidirectional).
  */
-public class BSPDynamicData extends DynamicData {
+public class DynamicBSPData extends DynamicData {
     private static final int NODE_REUSE_MIN_GENERATION = 1;
 
     private final BSPNode rootNode;
     private final int generation;
 
-    private BSPDynamicData(SectionPos sectionPos,
-            NativeBuffer buffer, VertexRange range, BSPResult result, Vector3dc cameraPos, int generation) {
-        super(sectionPos, buffer, range, result, cameraPos);
+    private DynamicBSPData(SectionPos sectionPos, VertexRange range, BSPResult result, Vector3dc initialCameraPos, TQuad[] quads, int generation) {
+        super(sectionPos, range, quads.length, result, initialCameraPos);
         this.rootNode = result.getRootNode();
         this.generation = generation;
     }
 
+    private class DynamicBSPSorter extends DynamicSorter {
+        private DynamicBSPSorter(int quadCount) {
+            super(quadCount);
+        }
+
+        @Override
+        void writeSort(CombinedCameraPos cameraPos, boolean initial) {
+            DynamicBSPData.this.rootNode.collectSortedQuads(this.getIndexBuffer(), cameraPos.getRelativeCameraPos());
+        }
+    }
+
     @Override
-    public void sortOnTrigger(Vector3fc cameraPos) {
-        this.sort(cameraPos);
+    public Sorter getSorter() {
+        return new DynamicBSPSorter(this.getQuadCount());
     }
 
-    private void sort(Vector3fc cameraPos) {
-        this.unsetReuseUploadedData();
-
-        this.rootNode.collectSortedQuads(getBuffer(), cameraPos);
-    }
-
-    public static BSPDynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            CombinedCameraPos cameraPos, TQuad[] quads, SectionPos sectionPos,
-            NativeBuffer buffer, TranslucentData oldData) {
+    public static DynamicBSPData fromMesh(BuiltSectionMeshParts translucentMesh,
+                                          CombinedCameraPos cameraPos, TQuad[] quads, SectionPos sectionPos,
+                                          TranslucentData oldData) {
         BSPNode oldRoot = null;
         int generation = 0;
         boolean prepareNodeReuse = false;
-        if (oldData instanceof BSPDynamicData oldBSPData) {
+        if (oldData instanceof DynamicBSPData oldBSPData) {
             generation = oldBSPData.generation + 1;
             oldRoot = oldBSPData.rootNode;
 
@@ -58,11 +59,8 @@ public class BSPDynamicData extends DynamicData {
         var result = BSPNode.buildBSP(quads, sectionPos, oldRoot, prepareNodeReuse);
 
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
-        buffer = PresentTranslucentData.nativeBufferForQuads(buffer, quads);
 
-        var dynamicData = new BSPDynamicData(sectionPos, buffer, range, result,
-                cameraPos.getAbsoluteCameraPos(), generation);
-        dynamicData.sort(cameraPos.getRelativeCameraPos());
+        var dynamicData = new DynamicBSPData(sectionPos, range, result, cameraPos.getAbsoluteCameraPos(), quads, generation);
 
         // prepare geometry planes for integration into GFNI triggering
         result.prepareIntegration();
