@@ -12,7 +12,6 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.caffeinemc.mods.sodium.client.util.MathUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
@@ -22,6 +21,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -32,7 +32,6 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
-import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL30C;
@@ -182,13 +181,11 @@ public class CloudRenderer {
     }
 
     private void applyFogModifiers(ClientLevel level, FogRenderer.FogData fogData, LocalPlayer player, int cloudDistance, float tickDelta) {
-        if (Minecraft.getInstance().gameRenderer == null || Minecraft.getInstance().gameRenderer.getMainCamera() == null) {
-            return;
-        }
+        GameRenderer renderer = Minecraft.getInstance().gameRenderer;
+        Camera camera = renderer.getMainCamera();
+        FogType fogType = camera.getFluidInCamera();
 
-        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-        FogType cameraSubmersionType = camera.getFluidInCamera();
-        if (cameraSubmersionType == FogType.LAVA) {
+        if (fogType == FogType.LAVA) {
             if (player.isSpectator()) {
                 fogData.start = -8.0f;
                 fogData.end = (cloudDistance) * 0.5f;
@@ -199,7 +196,7 @@ public class CloudRenderer {
                 fogData.start = 0.25f;
                 fogData.end = 1.0f;
             }
-        } else if (cameraSubmersionType == FogType.POWDER_SNOW) {
+        } else if (fogType == FogType.POWDER_SNOW) {
             if (player.isSpectator()) {
                 fogData.start = -8.0f;
                 fogData.end = (cloudDistance) * 0.5f;
@@ -207,22 +204,30 @@ public class CloudRenderer {
                 fogData.start = 0.0f;
                 fogData.end = 2.0f;
             }
-        } else if (cameraSubmersionType == FogType.WATER) {
+        } else if (fogType == FogType.WATER) {
             fogData.start = -8.0f;
             fogData.end = 96.0f;
             fogData.end *= Math.max(0.25f, player.getWaterVision());
-            if (fogData.end > (cloudDistance)) {
+
+            if (fogData.end > cloudDistance) {
                 fogData.end = cloudDistance;
                 fogData.shape = FogShape.CYLINDER;
             }
-        } else if (level.effects().isFoggyAt(Mth.floor(camera.getPosition().x), Mth.floor(camera.getPosition().z)) || Minecraft.getInstance().gui.getBossOverlay().shouldCreateWorldFog()) {
-            fogData.start = (cloudDistance) * 0.05f;
-            fogData.end = Math.min((cloudDistance), 192.0f) * 0.5f;
+        } else {
+            Vec3 position = camera.getPosition();
+
+            if (level.effects().isFoggyAt(Mth.floor(position.x), Mth.floor(position.z)) ||
+                    Minecraft.getInstance().gui.getBossOverlay().shouldCreateWorldFog()) {
+                fogData.start = (cloudDistance) * 0.05f;
+                fogData.end = Math.min((cloudDistance), 192.0f) * 0.5f;
+            }
         }
 
         FogRenderer.MobEffectFogFunction fogModifier = FogRenderer.getPriorityFogFunction(player, tickDelta);
+
         if (fogModifier != null) {
             MobEffectInstance statusEffectInstance = player.getEffect(fogModifier.getMobEffect());
+
             if (statusEffectInstance != null) {
                 fogModifier.setupFog(fogData, player, statusEffectInstance, (cloudDistance * 8), tickDelta);
             }
@@ -231,20 +236,21 @@ public class CloudRenderer {
 
     private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
         var writer = VertexBufferWriter.of(bufferBuilder);
-        boolean fastClouds = cloudRenderMode == CloudStatus.FAST;
+        var fastClouds = this.cloudRenderMode == CloudStatus.FAST;
 
-        for (int offsetX = -cloudDistance; offsetX < cloudDistance; offsetX++) {
-            for (int offsetZ = -cloudDistance; offsetZ < cloudDistance; offsetZ++) {
-                int connectedEdges = this.edges.getEdges(centerCellX + offsetX, centerCellZ + offsetZ);
+        for (int offsetCellX = -cloudDistance; offsetCellX < cloudDistance; offsetCellX++) {
+            for (int offsetCellZ = -cloudDistance; offsetCellZ < cloudDistance; offsetCellZ++) {
+                int cellIndex = this.edges.getCellIndexWrapping(centerCellX + offsetCellX, centerCellZ + offsetCellZ);
+                int cellFaces = this.edges.getCellFaces(cellIndex);
 
-                if (connectedEdges == 0) {
+                if (cellFaces == 0) {
                     continue;
                 }
 
-                int texel = this.edges.getColor(centerCellX + offsetX, centerCellZ + offsetZ);
+                int cellColor = this.edges.getCellColor(cellIndex);
 
-                float x = offsetX * 12;
-                float z = offsetZ * 12;
+                float x = offsetCellX * 12;
+                float z = offsetCellZ * 12;
 
                 try (MemoryStack stack = MemoryStack.stackPush()) {
                     final long buffer = stack.nmalloc((fastClouds ? 4 : (6 * 4)) * ColorVertex.STRIDE);
@@ -253,13 +259,13 @@ public class CloudRenderer {
                     int count = 0;
 
                     // -Y
-                    if ((connectedEdges & DIR_NEG_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, fastClouds ? CLOUD_COLOR_POS_Y : CLOUD_COLOR_NEG_Y);
+                    if ((cellFaces & DIR_NEG_Y) != 0) {
+                        int mixedColor = ColorMixer.mul(cellColor, fastClouds ? CLOUD_COLOR_POS_Y : CLOUD_COLOR_NEG_Y);
 
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
 
                         count += 4;
                     }
@@ -271,61 +277,61 @@ public class CloudRenderer {
                     }
 
                     // +Y
-                    if ((connectedEdges & DIR_POS_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Y);
+                    if ((cellFaces & DIR_POS_Y) != 0) {
+                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_Y);
 
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z +  0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z +  0.0f, mixedColor);
 
                         count += 4;
                     }
 
                     // -X
-                    if ((connectedEdges & DIR_NEG_X) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_X);
+                    if ((cellFaces & DIR_NEG_X) != 0) {
+                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_NEG_X);
 
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z +  0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
 
                         count += 4;
                     }
 
                     // +X
-                    if ((connectedEdges & DIR_POS_X) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_X);
+                    if ((cellFaces & DIR_POS_X) != 0) {
+                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_X);
 
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z +  0.0f, mixedColor);
 
                         count += 4;
                     }
 
                     // -Z
-                    if ((connectedEdges & DIR_NEG_Z) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Z);
+                    if ((cellFaces & DIR_NEG_Z) != 0) {
+                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_NEG_Z);
 
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z +  0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z +  0.0f, mixedColor);
 
                         count += 4;
                     }
 
                     // +Z
-                    if ((connectedEdges & DIR_POS_Z) != 0) {
-                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Z);
+                    if ((cellFaces & DIR_POS_Z) != 0) {
+                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_Z);
 
-                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
-                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z + 12.0f, mixedColor);
+                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
 
                         count += 4;
                     }
@@ -382,7 +388,7 @@ public class CloudRenderer {
     }
 
     private static class CloudEdges {
-        private final byte[] edges;
+        private final byte[] faces;
         private final int[] colors;
         private final int width, height;
 
@@ -390,75 +396,115 @@ public class CloudRenderer {
             int width = texture.getWidth();
             int height = texture.getHeight();
 
-            Validate.isTrue(MathUtil.isPowerOfTwo(width), "Texture width must be power-of-two");
-            Validate.isTrue(MathUtil.isPowerOfTwo(height), "Texture height must be power-of-two");
-
-            this.edges = new byte[width * height];
+            this.faces = new byte[width * height];
             this.colors = new int[width * height];
 
             this.width = width;
             this.height = height;
 
+            this.loadTextureData(texture, width, height);
+        }
+
+        private void loadTextureData(NativeImage texture, int width, int height) {
             for (int x = 0; x < width; x++) {
                 for (int z = 0; z < height; z++) {
-                    int index = index(x, z, width, height);
-                    int cell = texture.getPixelRGBA(x, z);
+                    int index = this.getCellIndex(x, z);
+                    int color = texture.getPixelRGBA(x, z);
 
-                    this.colors[index] = cell;
+                    this.colors[index] = color;
 
-                    int edges = 0;
-
-                    if (isOpaqueCell(cell)) {
-                        edges |= DIR_NEG_Y | DIR_POS_Y;
-
-                        int negX = texture.getPixelRGBA(wrap(x - 1, width), wrap(z, height));
-
-                        if (cell != negX) {
-                            edges |= DIR_NEG_X;
-                        }
-
-                        int posX = texture.getPixelRGBA(wrap(x + 1, width), wrap(z, height));
-
-                        if (!isOpaqueCell(posX) && cell != posX) {
-                            edges |= DIR_POS_X;
-                        }
-
-                        int negZ = texture.getPixelRGBA(wrap(x, width), wrap(z - 1, height));
-
-                        if (cell != negZ) {
-                            edges |= DIR_NEG_Z;
-                        }
-
-                        int posZ = texture.getPixelRGBA(wrap(x, width), wrap(z + 1, height));
-
-                        if (!isOpaqueCell(posZ) && cell != posZ) {
-                            edges |= DIR_POS_Z;
-                        }
+                    if (!isTransparentCell(color)) {
+                        this.faces[index] = (byte) getVisibleFaces(texture, color, x, z);
                     }
-
-                    this.edges[index] = (byte) edges;
                 }
             }
         }
 
-        private static boolean isOpaqueCell(int color) {
-            return ColorARGB.unpackAlpha(color) > 1;
+        private static int getVisibleFaces(NativeImage image, int color, int x, int z) {
+            // Since the cloud texture is only 2D, nothing can hide the top or bottom faces
+            int faces = DIR_NEG_Y | DIR_POS_Y;
+
+            // Generate faces where the neighbor cell is a different color
+            // Do not generate duplicate faces between two cells
+            {
+                // -X face
+                int neighbor = getNeighborTexel(image, x - 1, z);
+
+                if (color != neighbor) {
+                    faces |= DIR_NEG_X;
+                }
+            }
+
+            {
+                // +X face
+                int neighbor = getNeighborTexel(image, x + 1, z);
+
+                if (isTransparentCell(neighbor) && color != neighbor) {
+                    faces |= DIR_POS_X;
+                }
+            }
+
+            {
+                // -Z face
+                int neighbor = getNeighborTexel(image, x, z - 1);
+
+                if (color != neighbor) {
+                    faces |= DIR_NEG_Z;
+                }
+            }
+
+            {
+                // +Z face
+                int neighbor = getNeighborTexel(image, x, z + 1);
+
+                if (isTransparentCell(neighbor) && color != neighbor) {
+                    faces |= DIR_POS_Z;
+                }
+            }
+
+            return faces;
         }
 
-        public int getEdges(int x, int z) {
-            return this.edges[index(x, z, this.width, this.height)];
+        private static int getNeighborTexel(NativeImage image, int x, int z) {
+            x = wrapTexelCoord(x, 0, image.getWidth() - 1);
+            z = wrapTexelCoord(z, 0, image.getHeight() - 1);
+
+            return image.getPixelRGBA(x, z);
         }
 
-        public int getColor(int x, int z) {
-            return this.colors[index(x, z, this.width, this.height)];
+        private static int wrapTexelCoord(int coord, int min, int max) {
+            if (coord < min) {
+                coord = max;
+            }
+
+            if (coord > max) {
+                coord = min;
+            }
+
+            return coord;
         }
 
-        private static int index(int posX, int posZ, int width, int height) {
-            return (wrap(posX, width) * width) + wrap(posZ, height);
+        private static boolean isTransparentCell(int color) {
+            return ColorARGB.unpackAlpha(color) <= 1;
         }
 
-        private static int wrap(int pos, int dim) {
-            return (pos & (dim - 1));
+        public int getCellFaces(int index) {
+            return this.faces[index];
+        }
+
+        public int getCellColor(int index) {
+            return this.colors[index];
+        }
+
+        private int getCellIndexWrapping(int x, int z) {
+            return this.getCellIndex(
+                    Math.floorMod(x, this.width),
+                    Math.floorMod(z, this.height)
+            );
+        }
+
+        private int getCellIndex(int x, int z) {
+            return (x * this.width) + z;
         }
     }
 }
