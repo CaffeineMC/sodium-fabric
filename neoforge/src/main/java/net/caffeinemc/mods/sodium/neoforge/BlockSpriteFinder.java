@@ -39,10 +39,10 @@ public class BlockSpriteFinder {
     private final TextureAtlas spriteAtlasTexture;
     private int badSpriteCount = 0;
 
-    public BlockSpriteFinder(Map<ResourceLocation, TextureAtlasSprite> sprites, TextureAtlas spriteAtlasTexture) {
+    public BlockSpriteFinder(TextureAtlas spriteAtlasTexture) {
         root = new Node(0.5f, 0.5f, 0.25f);
         this.spriteAtlasTexture = spriteAtlasTexture;
-        sprites.values().forEach(root::add);
+        spriteAtlasTexture.getTextureLocations().forEach((loc) -> root.add(spriteAtlasTexture.getSprite(loc)));
     }
 
     public TextureAtlasSprite find(float u, float v) {

@@ -16,7 +16,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 //     [out] ULONG Version;
 //     [in]  ULONG Flags;
 // } D3DKMT_OPENGLINFO;
-public class D3DKMTOpenGLInfoStruct extends Struct<D3DKMTOpenGLInfoStruct> {
+public class D3DKMTOpenGLInfoStruct extends Struct {
     private static final int MAX_PATH = 260;
     private static final int SIZEOF, ALIGNOF;
 
@@ -41,11 +41,6 @@ public class D3DKMTOpenGLInfoStruct extends Struct<D3DKMTOpenGLInfoStruct> {
 
     private D3DKMTOpenGLInfoStruct(long address, @Nullable ByteBuffer container) {
         super(address, container);
-    }
-
-    @Override
-    protected @NotNull D3DKMTOpenGLInfoStruct create(long address, ByteBuffer container) {
-        return new D3DKMTOpenGLInfoStruct(address, container);
     }
 
     public static D3DKMTOpenGLInfoStruct calloc() {

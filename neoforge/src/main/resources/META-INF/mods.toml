@@ -20,16 +20,3 @@ provides = ["indium"]
 
 [modproperties.sodium]
 "fabric-renderer-api-v1:contains_renderer"=true
-
-[[dependencies.sodium]]
-modId="minecraft"
-type="required"
-versionRange="[1.20.4,1.21)"
-ordering="NONE"
-side="CLIENT"
-
-[[mixins]]
-config = "sodium.mixins.json"
-
-[[mixins]]
-config = "sodium-forge.mixins.json"

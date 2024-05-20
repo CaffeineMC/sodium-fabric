@@ -13,9 +13,9 @@ import net.minecraft.client.resources.model.SimpleBakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.ChunkRenderTypeSet;
-import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.client.model.data.MultipartModelData;
+import net.minecraftforge.client.ChunkRenderTypeSet;
+import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.client.model.data.MultipartModelData;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.*;
@@ -51,7 +51,7 @@ public class MultiPartBakedModelMixin {
      * @author JellySquid
      * @reason Avoid expensive allocations and replace bitfield indirection
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction direction, RandomSource random, ModelData modelData, @org.jetbrains.annotations.Nullable RenderType renderType) {
         if (state == null) {
             return Collections.emptyList();
@@ -102,7 +102,7 @@ public class MultiPartBakedModelMixin {
      * @author embeddedt, IMS
      * @reason Optimize render type lookup using existing cache
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource random, @NotNull ModelData data) {
         long seed = random.nextLong();
 

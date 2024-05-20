@@ -35,7 +35,7 @@ public abstract class LevelRendererMixin {
      * ways the fog can be reduced in {@link FogRenderer#setupFog(Camera, FogRenderer.FogMode, float, boolean, float)} ()}.</p>
      */
     @Inject(method = "renderSky", at = @At("HEAD"), cancellable = true)
-    private void preRenderSky(Matrix4f matrix4f, Matrix4f matrix4f2, float f, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci) {
+    private void preRenderSky(PoseStack poseStack, Matrix4f matrix4f, float f, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci) {
         // Cancels sky rendering when the camera is submersed underwater.
         // This prevents the sky from being visible through chunks culled by Sodium's fog occlusion.
         // Fixes https://bugs.mojang.com/browse/MC-152504.

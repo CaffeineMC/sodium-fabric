@@ -1,9 +1,12 @@
 package net.caffeinemc.mods.sodium.mixin.core;
 
+import com.mojang.realmsclient.client.RealmsClient;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.checks.ResourcePackScanner;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.main.GameConfig;
+import net.minecraft.server.packs.resources.ReloadInstance;
 import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.lwjgl.opengl.GL32C;
@@ -74,8 +77,8 @@ public class MinecraftMixin {
     /**
      * Check for problematic core shader resource packs after the initial game launch.
      */
-    @Inject(method = "buildInitialScreens", at = @At("TAIL"))
-    private void postInit(CallbackInfoReturnable<Runnable> cir) {
+    @Inject(method = "setInitialScreen", at = @At("TAIL"))
+    private void postInit(RealmsClient realmsClient, ReloadInstance reloadInstance, GameConfig.QuickPlayData quickPlayData, CallbackInfo ci) {
         ResourcePackScanner.checkIfCoreShaderLoaded(this.resourceManager);
     }
 

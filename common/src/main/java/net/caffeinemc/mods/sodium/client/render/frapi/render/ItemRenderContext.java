@@ -132,7 +132,7 @@ public class ItemRenderContext extends AbstractRenderContext {
         this.transformMode = transformMode;
         this.poseStack = poseStack;
         matPosition = poseStack.last().pose();
-        trustedNormals = poseStack.last().trustedNormals;
+        trustedNormals = true;
         matNormal = poseStack.last().normal();
         this.bufferSource = bufferSource;
         this.lightmap = lightmap;

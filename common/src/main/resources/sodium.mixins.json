@@ -13,7 +13,7 @@
   "client": [
     "core.MinecraftMixin",
     "core.WindowMixin",
-    "core.gui.LevelLoadStatusManagerMixin",
+    "core.gui.ReceivingLevelScreenMixin",
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
     "core.model.quad.BakedQuadMixin",
@@ -28,7 +28,7 @@
     "core.render.immediate.consumer.BufferSourceMixin",
     "core.render.immediate.consumer.VertexMultiConsumerMixin$DoubleMixin",
     "core.render.immediate.consumer.VertexMultiConsumerMixin$MultipleMixin",
-    "core.render.world.RenderBuffersMixin",
+    "core.render.world.ChunkRenderDispatcherMixin",
     "core.render.world.LevelRendererMixin",
     "core.world.biome.ClientLevelMixin",
     "core.world.chunk.ZeroBitStorageMixin",

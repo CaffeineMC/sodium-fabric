@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(LeavesBlock.class)
 public class LeavesBlockMixin extends Block {
     public LeavesBlockMixin() {
-        super(Properties.ofFullCopy(Blocks.AIR));
+        super(Properties.copy(Blocks.AIR));
         throw new AssertionError("Mixin constructor called!");
     }
 

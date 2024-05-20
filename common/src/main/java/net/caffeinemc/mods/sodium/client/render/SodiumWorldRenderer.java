@@ -379,7 +379,7 @@ public class SodiumWorldRenderer {
 
                 PoseStack.Pose entry = matrices.last();
                 VertexConsumer transformer = new SheetedDecalTextureGenerator(bufferBuilder,
-                        entry, 1.0f);
+                        entry.pose(), entry.normal(), 1.0f);
 
                 consumer = (layer) -> layer.affectsCrumbling() ? VertexMultiConsumer.create(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
             }

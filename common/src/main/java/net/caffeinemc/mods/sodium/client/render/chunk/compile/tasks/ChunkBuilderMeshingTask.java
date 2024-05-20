@@ -144,8 +144,9 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             throw fillCrashInfo(CrashReport.forThrowable(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
-        SodiumPlatformHelpers.INSTANCE.renderAdditionalRenderers(renderContext.getRenderers(), type -> buffers.get(DefaultMaterials.forRenderLayer(type)).asFallbackVertexConsumer(DefaultMaterials.forRenderLayer(type), collector),
-                slice);
+        if (SodiumPlatformHelpers.INSTANCE.shouldRenderIE(renderContext.getOrigin())) {
+            SodiumPlatformHelpers.INSTANCE.renderConnectionsInSection(buffers, slice, renderContext.getOrigin());
+        }
 
         blockRenderer.release();
 

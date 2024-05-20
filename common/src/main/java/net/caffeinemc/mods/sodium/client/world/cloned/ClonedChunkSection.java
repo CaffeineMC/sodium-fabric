@@ -56,7 +56,9 @@ public class ClonedChunkSection {
 
         Int2ReferenceMap<BlockEntity> blockEntityMap = null;
         Int2ReferenceMap<Object> blockEntityRenderDataMap = null;
-        auxLightManager = SodiumPlatformHelpers.INSTANCE.getLightManager(chunk, pos);
+
+        // Not required on 1.20.4 and below.
+        auxLightManager = null;
 
         if (section != null) {
             if (!section.hasOnlyAir()) {

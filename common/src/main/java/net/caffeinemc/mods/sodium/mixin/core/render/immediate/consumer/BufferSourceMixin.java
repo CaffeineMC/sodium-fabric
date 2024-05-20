@@ -25,7 +25,8 @@ public class BufferSourceMixin {
 
     @ModifyVariable(method = {
             "method_24213",
-            "lambda$endBatch$0"
+            "lambda$endBatch$0",
+            "m_109916_"
     }, require = 1, at = @At(value = "LOAD", ordinal = 0))
     private VertexConsumer changeComparedVertexConsumer(VertexConsumer vertexConsumer) {
         if (vertexConsumer instanceof DirectBufferBuilder bufferBuilder) {

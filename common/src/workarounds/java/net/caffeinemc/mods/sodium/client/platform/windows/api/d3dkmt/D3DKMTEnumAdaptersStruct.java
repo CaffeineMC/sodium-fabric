@@ -15,7 +15,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 //  [in] ULONG              NumAdapters;
 //       D3DKMT_ADAPTERINFO Adapters[MAX_ENUM_ADAPTERS];
 //} D3DKMT_ENUMADAPTERS;
-class D3DKMTEnumAdaptersStruct extends Struct<D3DKMTEnumAdaptersStruct> {
+class D3DKMTEnumAdaptersStruct extends Struct {
     private static final int SIZEOF, ALIGNOF;
     private static final int MAX_ENUM_ADAPTERS = 16;
 
@@ -37,11 +37,6 @@ class D3DKMTEnumAdaptersStruct extends Struct<D3DKMTEnumAdaptersStruct> {
 
     private D3DKMTEnumAdaptersStruct(long address, @Nullable ByteBuffer container) {
         super(address, container);
-    }
-
-    @Override
-    protected @NotNull D3DKMTEnumAdaptersStruct create(long address, ByteBuffer container) {
-        return new D3DKMTEnumAdaptersStruct(address, container);
     }
 
     public static D3DKMTEnumAdaptersStruct calloc(MemoryStack stack) {

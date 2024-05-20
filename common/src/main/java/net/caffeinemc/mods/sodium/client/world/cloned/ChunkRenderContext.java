@@ -10,14 +10,12 @@ public class ChunkRenderContext {
     private final ClonedChunkSection[] sections;
     private final BoundingBox volume;
     private final Object modelData;
-    private final List<?> renderers;
 
-    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume, Object modelData, List<?> renderers) {
+    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume, Object modelData) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
         this.modelData = modelData;
-        this.renderers = renderers;
     }
 
     public ClonedChunkSection[] getSections() {
@@ -34,9 +32,5 @@ public class ChunkRenderContext {
 
     public Object getModelData() {
         return modelData;
-    }
-
-    public List<?> getRenderers() {
-        return renderers;
     }
 }

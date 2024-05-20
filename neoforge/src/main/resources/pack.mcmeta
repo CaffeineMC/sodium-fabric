@@ -1,0 +1,10 @@
+{
+    "pack": {
+        "pack_format": 7,
+        "supported_formats": {
+            "min_inclusive": 16,
+            "max_inclusive": 90000
+        },
+        "description": "Sodium"
+    }
+}

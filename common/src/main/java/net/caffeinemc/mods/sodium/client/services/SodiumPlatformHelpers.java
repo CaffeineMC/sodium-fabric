@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.services;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
@@ -41,7 +42,7 @@ public interface SodiumPlatformHelpers {
 
     Path getConfigDir();
 
-    Object getRenderData(Level level, BoundingBox pos, BlockEntity value);
+    Object getRenderData(Level level, ChunkPos pos, BlockEntity value);
 
     boolean isDevelopmentEnvironment();
 
@@ -63,7 +64,7 @@ public interface SodiumPlatformHelpers {
 
     boolean renderFluidFromVanilla();
 
-    void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, Matrix4f modelMatrix, Matrix4f projectionMatrix, int ticks, Camera mainCamera, Frustum cullingFrustum);
+    void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, PoseStack modelMatrix, Matrix4f projectionMatrix, int ticks, Camera mainCamera, Frustum cullingFrustum);
 
     FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider);
 
@@ -76,10 +77,4 @@ public interface SodiumPlatformHelpers {
     void renderConnectionsInSection(ChunkBuildBuffers buffers, LevelSlice worldSlice, SectionPos position);
 
     boolean shouldRenderIE(SectionPos position);
-
-    void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice);
-
-    List<?> getExtraRenderers(Level level, BlockPos origin);
-
-    Object getLightManager(LevelChunk chunk, SectionPos pos);
 }

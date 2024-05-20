@@ -18,7 +18,7 @@ import static org.lwjgl.system.MemoryUtil.memPutInt;
 //     VOID                    *pPrivateDriverData;
 //     UINT                    PrivateDriverDataSize;
 // } D3DKMT_QUERYADAPTERINFO;
-class D3DKMTQueryAdapterInfoStruct extends Struct<D3DKMTAdapterInfoStruct> {
+class D3DKMTQueryAdapterInfoStruct extends Struct {
     private static final int SIZEOF, ALIGNOF;
 
     private static final int OFFSET_ADAPTER_HANDLE;
@@ -45,11 +45,6 @@ class D3DKMTQueryAdapterInfoStruct extends Struct<D3DKMTAdapterInfoStruct> {
 
     private D3DKMTQueryAdapterInfoStruct(long address, @Nullable ByteBuffer container) {
         super(address, container);
-    }
-
-    @Override
-    protected @NotNull D3DKMTAdapterInfoStruct create(long address, ByteBuffer container) {
-        return new D3DKMTAdapterInfoStruct(address, container);
     }
 
     public static D3DKMTQueryAdapterInfoStruct malloc(MemoryStack stack) {

@@ -5,11 +5,11 @@ import cpw.mods.jarhandling.JarContents;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingIssue;
 import net.neoforged.fml.loading.StringUtils;
-import net.neoforged.neoforgespi.ILaunchContext;
-import net.neoforged.neoforgespi.locating.IDiscoveryPipeline;
-import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
-import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
-import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
+import net.minecraftforgespi.ILaunchContext;
+import net.minecraftforgespi.locating.IDiscoveryPipeline;
+import net.minecraftforgespi.locating.IModFileCandidateLocator;
+import net.minecraftforgespi.locating.IncompatibleFileReporting;
+import net.minecraftforgespi.locating.ModFileDiscoveryAttributes;
 import org.lwjgl.system.Configuration;
 
 import java.io.IOException;

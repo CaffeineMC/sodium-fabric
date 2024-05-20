@@ -9,19 +9,21 @@ import net.caffeinemc.mods.sodium.neoforge.render.SpriteFinderCache;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.ModLoadingContext;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.minecraftforge.client.ConfigScreenHandler;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+
+import java.util.function.Supplier;
 
 @Mod("sodium")
 public class SodiumForgeMod {
-    public SodiumForgeMod(IEventBus bus) {
+    public SodiumForgeMod() {
         SodiumClientMod.onInitialization(ModList.get().getModContainerById("sodium").get().getModInfo().getVersion().toString());
-        bus.addListener(this::onResourceReload);
-        ModLoadingContext.get().registerExtensionPoint(IConfigScreenFactory.class, () -> (minecraft, screen) -> SodiumOptionsGUI.createScreen(screen));
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onResourceReload);
+        ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class, () -> new ConfigScreenHandler.ConfigScreenFactory((mc, screen) -> SodiumOptionsGUI.createScreen(screen)));
         RendererAccess.INSTANCE.registerRenderer(SodiumRenderer.INSTANCE);
     }
 

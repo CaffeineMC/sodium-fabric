@@ -63,7 +63,7 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
 
         this.vertexConsumer = buffer;
         this.matPosition = poseStack.last().pose();
-        this.trustedNormals = poseStack.last().trustedNormals;
+        this.trustedNormals = true;
         this.matNormal = poseStack.last().normal();
         this.overlay = overlay;
 

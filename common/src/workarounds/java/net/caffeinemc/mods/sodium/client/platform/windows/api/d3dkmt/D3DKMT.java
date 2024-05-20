@@ -19,8 +19,7 @@ import java.util.List;
 
 import static net.caffeinemc.mods.sodium.client.platform.windows.api.Gdi32.*;
 import static net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMTQueryAdapterInfoType.WDDM12.*;
-import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memByteBuffer;
+import static org.lwjgl.system.MemoryUtil.*;
 
 public class D3DKMT {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-D3DKMT");
@@ -117,7 +116,7 @@ public class D3DKMT {
     private static @Nullable String queryDriverFileName(int adapter) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             D3DKMTOpenGLInfoStruct info = D3DKMTOpenGLInfoStruct.calloc(stack);
-            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_UMOPENGLINFO, memByteBuffer(info));
+            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_UMOPENGLINFO, memByteBuffer(info.address(), info.sizeof()));
 
             return info.getUserModeDriverFileName();
         }
@@ -142,7 +141,7 @@ public class D3DKMT {
     private static @NotNull String queryFriendlyName(int adapter) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             D3DKMTAdapterRegistryInfoStruct registryInfo = D3DKMTAdapterRegistryInfoStruct.calloc(stack);
-            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_ADAPTERREGISTRYINFO, memByteBuffer(registryInfo));
+            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_ADAPTERREGISTRYINFO, memByteBuffer(registryInfo.address(), registryInfo.sizeof()));
 
             String name = registryInfo.getAdapterString();
 

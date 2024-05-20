@@ -2,10 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.workarounds.context_creation;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.blaze3d.platform.DisplayData;
-import com.mojang.blaze3d.platform.ScreenManager;
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.platform.WindowEventHandler;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.PostLaunchChecks;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.ModuleScanner;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.GLContextInfo;
@@ -14,6 +11,8 @@ import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.Nvidia
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.minecraft.Util;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.WGL;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
@@ -75,8 +74,10 @@ public class WindowMixin {
         }
     }
 
-    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;", shift = At.Shift.AFTER))
-    private void postContextReady(WindowEventHandler eventHandler, ScreenManager monitorTracker, DisplayData settings, String videoMode, String title, CallbackInfo ci) {
+    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL;createCapabilities()Lorg/lwjgl/opengl/GLCapabilities;"))
+    private GLCapabilities postContextReady() {
+        GLCapabilities capabilities = GL.createCapabilities();
+
         GLContextInfo driver = GLContextInfo.create();
 
         if (driver == null) {
@@ -96,6 +97,8 @@ public class WindowMixin {
 
         PostLaunchChecks.onContextInitialized();
         ModuleScanner.checkModules();
+
+        return capabilities;
     }
 
     @Inject(method = "updateDisplay", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;flipFrame(J)V", shift = At.Shift.AFTER))

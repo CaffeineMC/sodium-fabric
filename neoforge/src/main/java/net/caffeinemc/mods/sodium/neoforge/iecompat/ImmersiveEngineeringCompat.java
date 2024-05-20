@@ -3,7 +3,7 @@ package net.caffeinemc.mods.sodium.neoforge.iecompat;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.core.SectionPos;
-import net.neoforged.fml.loading.FMLLoader;
+import net.minecraftforge.fml.loading.FMLLoader;
 
 public class ImmersiveEngineeringCompat {
     public static boolean isLoaded = FMLLoader.getLoadingModList().getModFileById("immersiveengineering") != null;

@@ -1,29 +1,29 @@
+import net.minecraftforge.artifactural.api.artifact.ArtifactIdentifier
+
 plugins {
     id("idea")
     id("maven-publish")
-    id("net.neoforged.gradle.userdev") version "7.0.105"
+    id("net.minecraftforge.gradle") version "[6.0,6.2)"
     id("java-library")
+    id("org.spongepowered.mixin") version "0.7-SNAPSHOT"
 }
 
 base {
-    archivesName = "sodium-neoforge-1.20.5"
+    archivesName = "sodium-forge-1.20.1"
 }
 
 val MINECRAFT_VERSION: String by rootProject.extra
 val NEOFORGE_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
 
-base {
-    archivesName = "sodium-neoforge-${MINECRAFT_VERSION}"
-}
-
-if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
-    minecraft.accessTransformers {
-        file("src/main/resources/META-INF/accesstransformer.cfg")
-    }
-}
-
 jarJar.enable()
+
+mixin {
+    add(sourceSets.main.get(), "sodium.refmap.json")
+    add(project(":common").sourceSets.main.get(), "sodium.refmap.json")
+    config("sodium.mixins.json")
+    config("sodium-forge.mixins.json")
+}
 
 sourceSets {
     val service = create("service")
@@ -38,11 +38,27 @@ sourceSets {
     }
 
     test.get().apply {
+        compileClasspath += main.get().compileClasspath
         compileClasspath += project(":common").sourceSets.getByName("workarounds").output
     }
 }
 
 repositories {
+    mavenCentral()
+
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = uri("https://api.modrinth.com/maven")
+            }
+        }
+        forRepositories(fg.repository) // Only add this if you're using ForgeGradle, otherwise remove this line
+        filter {
+            includeGroup("maven.modrinth")
+        }
+    }
+
     exclusiveContent {
         forRepository {
             maven {
@@ -55,124 +71,125 @@ repositories {
             }
         }
         filter {
-            includeGroup("net.caffeinemc.new2")
+            includeGroup("net.caffeinemc.lts")
         }
     }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = uri("https://api.modrinth.com/maven")
+    maven { url = uri("https://maven.fabricmc.net/") }
+    maven { url = uri("https://maven.architectury.dev/") }
+    maven { url = uri("https://files.minecraftforge.net/maven/") }
+    maven { url = uri("https://maven.neoforged.net/releases/") }
+    mavenLocal()
+    maven("https://repo.spongepowered.org/repository/maven-public/") { name = "Sponge Snapshots" }
+
+}
+
+minecraft {
+    mappings("official", "1.20.1")
+    copyIdeResources = true //Calls processResources when in dev
+
+    val transformerFile = file("src/main/resources/META-INF/accesstransformer.cfg")
+    if (transformerFile.exists()) {
+        accessTransformer(transformerFile)
+    }
+
+    runs {
+        create("client") {
+            workingDirectory(project.file("run"))
+            ideaModule("${rootProject.name}.${project.name}.main")
+            property("mixin.env.remapRefMap", "true")
+            property("mixin.env.refMapRemappingFile", "${projectDir}/build/createSrgToMcp/output.srg")
+            mods {
+                create("modRun") {
+                    source(sourceSets.main.get())
+                    source(project(":common").sourceSets.main.get())
+                }
             }
         }
-        //forRepositories(fg.repository) // Only add this if you're using ForgeGradle, otherwise remove this line
-        filter {
-            includeGroup("maven.modrinth")
+
+        create("data") {
+            //programArguments.addAll("--mod", "sodium", "--all", "--output", file("src/generated/resources/").getAbsolutePath(), "--existing", file("src/main/resources/").getAbsolutePath())
         }
-    }
-}
-
-val fullJar: Jar by tasks.creating(Jar::class) {
-    duplicatesStrategy = DuplicatesStrategy.WARN
-    dependsOn(tasks.jarJar)
-    from(sourceSets.getByName("service").output)
-    from(project(":common").sourceSets.getByName("desktop").output)
-    from(project(":common").sourceSets.getByName("workarounds").output)
-
-    into("META-INF/jarjar/") {
-        from(tasks.jarJar.get().archiveFile)
-    }
-
-    into("META-INF") {
-        from(projectDir.resolve("src").resolve("main").resolve("resources").resolve("sodium-icon.png"))
-
-        from(projectDir.resolve("src").resolve("main").resolve("resources").resolve("META-INF").resolve("neoforge.mods.toml"))
-    }
-
-    from(rootDir.resolve("LICENSE.md"))
-
-    filesMatching("neoforge.mods.toml") {
-        expand(mapOf("version" to MOD_VERSION))
-    }
-
-    manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
-    manifest.attributes["FMLModType"] = "LIBRARY"
-
-}
-
-tasks.build {
-    dependsOn(fullJar)
-}
-
-tasks.jar {
-    from(rootDir.resolve("LICENSE.md"))
-
-    archiveClassifier = "modonly"
-}
-
-runs {
-    configureEach {
-        modSource(project.sourceSets.main.get())
-    }
-    create("client") {
-        dependencies {
-            runtime("com.lodborg:interval-tree:1.0.0")
-            runtime(project(":common").sourceSets.getByName("workarounds").output)
-        }
-    }
-
-    create("data") {
-        programArguments.addAll("--mod", "sodium", "--all", "--output", file("src/generated/resources/").getAbsolutePath(), "--existing", file("src/main/resources/").getAbsolutePath())
     }
 }
 
 dependencies {
-    implementation("net.neoforged:neoforge:${NEOFORGE_VERSION}")
+    minecraft("net.minecraftforge:forge:${MINECRAFT_VERSION}-${NEOFORGE_VERSION}")
     compileOnly(project(":common"))
-    implementation("net.caffeinemc.new2:fabric_api_base:0.4.31")
-    jarJar("net.caffeinemc.new2:fabric_api_base:[0.4.31,0.4.33)")
-    implementation("net.caffeinemc.new2:fabric_renderer_api_v1:3.2.1")
-    jarJar("net.caffeinemc.new2:fabric_renderer_api_v1:[3.2.1, 3.2.2)")
-    implementation("net.caffeinemc.new2:fabric_rendering_data_attachment_v1:0.3.37")
-    jarJar("net.caffeinemc.new2:fabric_rendering_data_attachment_v1:[0.3.37,0.3.38)")
+    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+
+    compileOnly("io.github.llamalad7:mixinextras-common:0.3.5")
+    annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5")
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.3.5")) {
+        jarJar.ranged(this, "[0.3.5,)")
+    }
+    implementation("net.caffeinemc.lts:fabric_api_base:0.4.32")
+    jarJar("net.caffeinemc.lts:fabric_api_base:[0.4.32,0.4.33)") {
+        isTransitive = false
+    }
+    implementation("net.caffeinemc.lts:fabric_renderer_api_v1:3.2.1")
+    jarJar("net.caffeinemc.lts:fabric_renderer_api_v1:[3.2.1,3.2.2)"){
+        isTransitive = false
+    }
+    implementation("net.caffeinemc.lts:fabric_rendering_data_attachment_v1:0.3.37")
+    jarJar("net.caffeinemc.lts:fabric_rendering_data_attachment_v1:[0.3.37,0.3.38)"){
+        isTransitive = false
+    }
     implementation("com.lodborg:interval-tree:1.0.0")
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
-    implementation("net.caffeinemc.new2:fabric_block_view_api_v2:1.0.1")
-    jarJar("net.caffeinemc.new2:fabric_block_view_api_v2:[1.0.1, 1.0.2)")
-
-    compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
+    implementation("net.caffeinemc.lts:fabric_block_view_api_v2:1.0.1")
+    jarJar("net.caffeinemc.lts:fabric_block_view_api_v2:[1.0.1,1.0.2)") {
+        isTransitive = false
+    }
+    compileOnly(fg.deobf("maven.modrinth:immersiveengineering:MAqXk6P8"))
 }
+
 
 tasks.jarJar {
-    archiveClassifier = "jarJar"
+    dependsOn("reobfJar")
+    archiveClassifier = ""
 }
 
-// NeoGradle compiles the game, but we don't want to add our common code to the game's code
-val notNeoTask: (Task) -> Boolean = { it: Task -> !it.name.startsWith("neo") && !it.name.startsWith("compileService") }
-
-tasks.withType<JavaCompile>().matching(notNeoTask).configureEach {
-    source(project(":common").sourceSets.main.get().allSource)
-    source(project(":common").sourceSets.getByName("api").allSource)
+tasks.jar {
+    archiveClassifier = "std"
 }
 
-tasks.withType<Javadoc>().matching(notNeoTask).configureEach {
-    source(project(":common").sourceSets.main.get().allJava)
-    source(project(":common").sourceSets.getByName("api").allJava)
+val notNeoTask: (Task) -> Boolean = { it: Task ->
+    !it.name.startsWith("compileService")
 }
 
-tasks.withType<ProcessResources>().matching(notNeoTask).configureEach {
-    from(project(":common").sourceSets.main.get().resources)
+tasks {
+    withType<JavaCompile>().matching(notNeoTask).configureEach {
+        source(project(":common").sourceSets.main.get().allSource)
+        source(project(":common").sourceSets.getByName("api").allSource)
+        source(project(":common").sourceSets.getByName("workarounds").allSource)
+    }
+
+    javadoc { source(project(":common").sourceSets.main.get().allJava) }
+
+    processResources { from(project(":common").sourceSets.main.get().resources) }
+
+    jar { finalizedBy("reobfJar") }
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 publishing {
     publications {
-
-    }
-    repositories {
-        maven {
-            url = uri("file://" + System.getenv("local_maven"))
+        register("mavenJava", MavenPublication::class) {
+            artifactId = base.archivesName.get()
+            artifact(tasks.jar)
+            fg.component(this)
         }
     }
+
+    repositories {
+        maven("file://${System.getenv("local_maven")}")
+    }
+}
+
+
+sourceSets.forEach {
+    val dir = layout.buildDirectory.dir("sourceSets/${it.name}")
+    it.output.setResourcesDir(dir)
+    it.java.destinationDirectory.set(dir)
 }

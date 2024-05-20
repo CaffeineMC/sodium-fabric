@@ -32,7 +32,7 @@ public class SpriteFinderCache {
         public void onResourceManagerReload(ResourceManager manager) {
             ModelManager modelManager = Minecraft.getInstance().getModelManager();
             TextureAtlas atlas = modelManager.getAtlas(TextureAtlas.LOCATION_BLOCKS);
-            blockAtlasSpriteFinder = new BlockSpriteFinder(atlas.getTextures(), atlas);
+            blockAtlasSpriteFinder = new BlockSpriteFinder(atlas);
         }
     }
 }

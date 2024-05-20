@@ -24,6 +24,7 @@ import net.minecraft.client.gui.screens.VideoSettingsScreen;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -241,6 +242,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         this.updateControls();
 
+        super.renderBackground(graphics);
         super.render(graphics, this.prompt != null ? -1 : mouseX, this.prompt != null ? -1 : mouseY, delta);
 
         if (this.hoveredElement != null) {
@@ -442,9 +444,9 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     static {
         DONATION_PROMPT_MESSAGE = List.of(
                 FormattedText.composite(Component.literal("Hello!")),
-                FormattedText.composite(Component.literal("It seems that you've been enjoying "), Component.literal("Sodium").withColor(0x27eb92), Component.literal(", the free and open-source optimization mod for Minecraft.")),
-                FormattedText.composite(Component.literal("Mods like these are complex. They require "), Component.literal("thousands of hours").withColor(0xff6e00), Component.literal(" of development, debugging, and tuning to create the experience that players have come to expect.")),
-                FormattedText.composite(Component.literal("If you'd like to show your token of appreciation, and support the development of our mod in the process, then consider "), Component.literal("buying us a coffee").withColor(0xed49ce), Component.literal(".")),
+                FormattedText.composite(Component.literal("It seems that you've been enjoying "), Component.literal("Sodium").withStyle(Style.EMPTY.withColor(0x27eb92)), Component.literal(", the free and open-source optimization mod for Minecraft.")),
+                FormattedText.composite(Component.literal("Mods like these are complex. They require "), Component.literal("thousands of hours").withStyle(Style.EMPTY.withColor(0xff6e00)), Component.literal(" of development, debugging, and tuning to create the experience that players have come to expect.")),
+                FormattedText.composite(Component.literal("If you'd like to show your token of appreciation, and support the development of our mod in the process, then consider "), Component.literal("buying us a coffee").withStyle(Style.EMPTY.withColor(0xed49ce)), Component.literal(".")),
                 FormattedText.composite(Component.literal("And thanks again for using our mod! We hope it helps you (and your computer.)"))
         );
     }
