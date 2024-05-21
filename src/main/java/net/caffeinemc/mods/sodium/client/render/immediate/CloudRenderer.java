@@ -234,112 +234,155 @@ public class CloudRenderer {
         }
     }
 
-    private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
+    private void rebuildGeometry(BufferBuilder bufferBuilder, int radius, int originCellX, int originCellZ) {
         var writer = VertexBufferWriter.of(bufferBuilder);
-        var fastClouds = this.cloudRenderMode == CloudStatus.FAST;
+        var useFastGraphics = this.cloudRenderMode == CloudStatus.FAST;
 
-        for (int offsetCellX = -cloudDistance; offsetCellX < cloudDistance; offsetCellX++) {
-            for (int offsetCellZ = -cloudDistance; offsetCellZ < cloudDistance; offsetCellZ++) {
-                int cellIndex = this.edges.getCellIndexWrapping(centerCellX + offsetCellX, centerCellZ + offsetCellZ);
-                int cellFaces = this.edges.getCellFaces(cellIndex);
+        addCellGeometryToBuffer(writer, this.edges, originCellX, originCellZ, 0, 0, useFastGraphics);
 
-                if (cellFaces == 0) {
-                    continue;
-                }
+        for (int layer = 1; layer <= radius; layer++) {
+            for (int z = -layer; z < layer; z++) {
+                int x = Math.abs(z) - layer;
+                addCellGeometryToBuffer(writer, this.edges, originCellX, originCellZ, x, z, useFastGraphics);
+            }
 
-                int cellColor = this.edges.getCellColor(cellIndex);
+            for (int z = layer; z > -layer; z--) {
+                int x = layer - Math.abs(z);
+                addCellGeometryToBuffer(writer, this.edges, originCellX, originCellZ, x, z, useFastGraphics);
+            }
+        }
 
-                float x = offsetCellX * 12;
-                float z = offsetCellZ * 12;
+        for (int layer = radius + 1; layer <= 2 * radius; layer++) {
+            int l = layer - radius;
 
-                try (MemoryStack stack = MemoryStack.stackPush()) {
-                    final long buffer = stack.nmalloc((fastClouds ? 4 : (6 * 4)) * ColorVertex.STRIDE);
+            for (int z = -radius; z <= -l; z++) {
+                int x = -z - layer;
+                addCellGeometryToBuffer(writer, this.edges, originCellX, originCellZ, x, z, useFastGraphics);
+            }
 
-                    long ptr = buffer;
-                    int count = 0;
+            for (int z = l; z <= radius; z++) {
+                int x = z - layer;
+                addCellGeometryToBuffer(writer, this.edges, originCellX, originCellZ, x, z, useFastGraphics);
+            }
 
-                    // -Y
-                    if ((cellFaces & DIR_NEG_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(cellColor, fastClouds ? CLOUD_COLOR_POS_Y : CLOUD_COLOR_NEG_Y);
+            for (int z = radius; z >= l; z--) {
+                int x = layer - z;
+                addCellGeometryToBuffer(writer, this.edges, originCellX, originCellZ, x, z, useFastGraphics);
+            }
 
-                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
+            for (int z = -l; z >= -radius; z--) {
+                int x = layer + z;
+                addCellGeometryToBuffer(writer, this.edges, originCellX, originCellZ, x, z, useFastGraphics);
+            }
+        }
+    }
 
-                        count += 4;
-                    }
+    private static void addCellGeometryToBuffer(VertexBufferWriter writer,
+                                                CloudEdges edges,
+                                                int originX, int originZ,
+                                                int offsetX, int offsetZ,
+                                                boolean useFastGraphics) {
+        int cellX = originX + offsetX;
+        int cellZ = originZ + offsetZ;
 
-                    // Only emit -Y geometry to emulate vanilla fast clouds
-                    if (fastClouds) {
-                        writer.push(stack, buffer, count, ColorVertex.FORMAT);
-                        continue;
-                    }
+        int cellIndex = edges.getCellIndexWrapping(cellX, cellZ);
+        int cellFaces = edges.getCellFaces(cellIndex);
 
-                    // +Y
-                    if ((cellFaces & DIR_POS_Y) != 0) {
-                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_Y);
+        if (cellFaces == 0) {
+            return;
+        }
 
-                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z +  0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z +  0.0f, mixedColor);
+        int cellColor = edges.getCellColor(cellIndex);
 
-                        count += 4;
-                    }
+        float posX = offsetX * 12;
+        float posZ = offsetZ * 12;
 
-                    // -X
-                    if ((cellFaces & DIR_NEG_X) != 0) {
-                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_NEG_X);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            final long buffer = stack.nmalloc(6 * 4 * ColorVertex.STRIDE);
 
-                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z +  0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
+            long ptr = buffer;
+            int count = 0;
 
-                        count += 4;
-                    }
+            // -Y
+            if ((cellFaces & DIR_NEG_Y) != 0) {
+                int mixedColor = ColorMixer.mul(cellColor, useFastGraphics ? CLOUD_COLOR_POS_Y : CLOUD_COLOR_NEG_Y);
 
-                    // +X
-                    if ((cellFaces & DIR_POS_X) != 0) {
-                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_X);
+                ptr = writeVertex(ptr, posX + 12.0f, 0.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 0.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 0.0f, posZ +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 0.0f, posZ +  0.0f, mixedColor);
 
-                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z +  0.0f, mixedColor);
+                count += 4;
+            }
 
-                        count += 4;
-                    }
+            // Only emit -Y geometry to emulate vanilla fast clouds
+            if (useFastGraphics) {
+                writer.push(stack, buffer, count, ColorVertex.FORMAT);
+                return;
+            }
 
-                    // -Z
-                    if ((cellFaces & DIR_NEG_Z) != 0) {
-                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_NEG_Z);
+            // +Y
+            if ((cellFaces & DIR_POS_Y) != 0) {
+                int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_Y);
 
-                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z +  0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 4.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 4.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 4.0f, posZ +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 4.0f, posZ +  0.0f, mixedColor);
 
-                        count += 4;
-                    }
+                count += 4;
+            }
 
-                    // +Z
-                    if ((cellFaces & DIR_POS_Z) != 0) {
-                        int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_Z);
+            // -X
+            if ((cellFaces & DIR_NEG_X) != 0) {
+                int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_NEG_X);
 
-                        ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x + 12.0f, 4.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 4.0f, z + 12.0f, mixedColor);
-                        ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 0.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 4.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 4.0f, posZ +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 0.0f, posZ +  0.0f, mixedColor);
 
-                        count += 4;
-                    }
+                count += 4;
+            }
 
-                    if (count > 0) {
-                        writer.push(stack, buffer, count, ColorVertex.FORMAT);
-                    }
-                }
+            // +X
+            if ((cellFaces & DIR_POS_X) != 0) {
+                int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_X);
+
+                ptr = writeVertex(ptr, posX + 12.0f, 4.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 0.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 0.0f, posZ +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 4.0f, posZ +  0.0f, mixedColor);
+
+                count += 4;
+            }
+
+            // -Z
+            if ((cellFaces & DIR_NEG_Z) != 0) {
+                int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_NEG_Z);
+
+                ptr = writeVertex(ptr, posX + 12.0f, 4.0f, posZ +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 0.0f, posZ +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 0.0f, posZ +  0.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 4.0f, posZ +  0.0f, mixedColor);
+
+                count += 4;
+            }
+
+            // +Z
+            if ((cellFaces & DIR_POS_Z) != 0) {
+                int mixedColor = ColorMixer.mul(cellColor, CLOUD_COLOR_POS_Z);
+
+                ptr = writeVertex(ptr, posX + 12.0f, 0.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX + 12.0f, 4.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 4.0f, posZ + 12.0f, mixedColor);
+                ptr = writeVertex(ptr, posX +  0.0f, 0.0f, posZ + 12.0f, mixedColor);
+
+                count += 4;
+            }
+
+            if (count > 0) {
+                writer.push(stack, buffer, count, ColorVertex.FORMAT);
             }
         }
     }
