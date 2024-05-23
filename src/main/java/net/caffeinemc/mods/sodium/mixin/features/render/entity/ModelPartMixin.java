@@ -81,8 +81,8 @@ public class ModelPartMixin implements ModelPartData {
         this.children = Collections.unmodifiableMap(this.children);
     }
 
-    @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;IIFFFF)V", at = @At("HEAD"), cancellable = true)
-    private void onRender(PoseStack matrices, VertexConsumer vertices, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
+    @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V", at = @At("HEAD"), cancellable = true)
+    private void onRender(PoseStack matrices, VertexConsumer vertices, int light, int overlay, int color, CallbackInfo ci) {
         VertexBufferWriter writer = VertexConsumerUtils.convertOrLog(vertices);
 
         if (writer == null) {
@@ -91,7 +91,7 @@ public class ModelPartMixin implements ModelPartData {
 
         ci.cancel();
 
-        EntityRenderer.render(matrices, writer, (ModelPart) (Object) this, light, overlay, ColorABGR.pack(red, green, blue, alpha));
+        EntityRenderer.render(matrices, writer, (ModelPart) (Object) this, light, overlay, color);
     }
 
     /**

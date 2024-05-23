@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
-import com.mojang.blaze3d.vertex.DefaultedVertexConsumer;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
@@ -17,10 +16,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "net/minecraft/client/renderer/OutlineBufferSource$EntityOutlineGenerator")
-public abstract class EntityOutlineGeneratorMixin extends DefaultedVertexConsumer implements VertexBufferWriter {
+public abstract class EntityOutlineGeneratorMixin implements VertexBufferWriter, VertexConsumer {
     @Shadow
     @Final
     private VertexConsumer delegate;
+
+    @Shadow
+    @Final
+    private int color;
 
     @Unique
     private boolean canUseIntrinsics;
@@ -38,7 +41,7 @@ public abstract class EntityOutlineGeneratorMixin extends DefaultedVertexConsume
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
         transform(ptr, count, format,
-                ColorABGR.pack(this.defaultR, this.defaultG, this.defaultB, this.defaultA));
+                color);
 
         VertexBufferWriter.of(this.delegate)
                 .push(stack, ptr, count, format);

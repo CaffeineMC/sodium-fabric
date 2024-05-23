@@ -1,8 +1,8 @@
 package net.caffeinemc.mods.sodium.mixin.features.render.immediate.buffer_builder.intrinsics;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultedVertexConsumer;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.client.render.immediate.model.BakedModelEncoder;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
@@ -14,22 +14,18 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @SuppressWarnings({ "SameParameterValue" })
 @Mixin(BufferBuilder.class)
-public abstract class BufferBuilderMixin extends DefaultedVertexConsumer {
+public abstract class BufferBuilderMixin implements VertexConsumer {
     @Shadow
     private boolean fastFormat;
 
     @Override
     public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float r, float g, float b, float a, int light, int overlay) {
         if (!this.fastFormat) {
-            super.putBulkData(matrices, bakedQuad, r, g, b, a, light, overlay);
+            VertexConsumer.super.putBulkData(matrices, bakedQuad, r, g, b, a, light, overlay);
 
             SpriteUtil.markSpriteActive(bakedQuad.getSprite());
 
             return;
-        }
-
-        if (this.defaultColorSet) {
-            throw new IllegalStateException();
         }
 
         if (bakedQuad.getVertices().length < 32) {
@@ -49,15 +45,11 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer {
     @Override
     public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float[] brightnessTable, float r, float g, float b, float a, int[] light, int overlay, boolean colorize) {
         if (!this.fastFormat) {
-            super.putBulkData(matrices, bakedQuad, brightnessTable, r, g, b, a, light, overlay, colorize);
+            VertexConsumer.super.putBulkData(matrices, bakedQuad, brightnessTable, r, g, b, a, light, overlay, colorize);
 
             SpriteUtil.markSpriteActive(bakedQuad.getSprite());
 
             return;
-        }
-
-        if (this.defaultColorSet) {
-            throw new IllegalStateException();
         }
 
         if (bakedQuad.getVertices().length < 32) {
