@@ -3,7 +3,9 @@
   "textures":         {
     "particle":  "minecraft:block/flower_pot",
     "flowerpot": "minecraft:block/flower_pot",
-    "dirt":      "minecraft:block/dirt"
+    "dirt":      "minecraft:block/dirt",
+    "bamboo":    "minecraft:block/bamboo_stalk",
+    "leaf":      "minecraft:block/bamboo_singleleaf"
   },
   "elements":         [
     {
@@ -82,6 +84,26 @@
       "faces": {
         "down": { "uv": [ 6, 12, 10, 16 ], "texture": "#flowerpot", "cullface": "down" },
         "up":   { "uv": [ 6,  6, 10, 10 ], "texture": "#dirt" }
+      }
+    },
+    {
+	  "from":  [ 7,  4, 7 ],
+      "to":    [ 9, 16, 9 ],
+      "faces": {
+        "up":    { "uv": [ 13, 0, 15,  2 ], "texture": "#bamboo", "cullface": "up" },
+        "north": { "uv": [  6, 0,  8, 12 ], "texture": "#bamboo" },
+        "south": { "uv": [  6, 0,  8, 12 ], "texture": "#bamboo" },
+        "west":  { "uv": [  6, 0,  8, 12 ], "texture": "#bamboo" },
+        "east":  { "uv": [  6, 0,  8, 12 ], "texture": "#bamboo" }
+      }
+    },
+    {
+	  "from":  [  0,  2, 8 ],
+      "to":    [ 16, 18, 8 ],
+      "shade": false,
+      "faces": {
+        "north": { "uv": [  0, 0, 16, 16 ], "texture": "#leaf" },
+        "south": { "uv": [ 16, 0,  0, 16 ], "texture": "#leaf" }
       }
     }
   ]

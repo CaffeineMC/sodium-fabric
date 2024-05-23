@@ -83,6 +83,36 @@
         "down": { "uv": [ 6, 12, 10, 16 ], "texture": "#flowerpot", "cullface": "down" },
         "up":   { "uv": [ 6,  6, 10, 10 ], "texture": "#dirt" }
       }
+    },
+    {
+      "from":     [ 8,  4,  2.6 ],
+      "to":       [ 8, 16, 13.4 ],
+      "rotation": {
+        "origin": [ 8, 8, 8 ],
+        "axis": "y",
+        "angle": 45,
+        "rescale": true
+      },
+      "shade":   false,
+      "faces":   {
+        "west": { "uv": [ 0, 0, 16, 16 ], "texture": "#plant", "tintindex": 0 },
+        "east": { "uv": [ 0, 0, 16, 16 ], "texture": "#plant", "tintindex": 0 }
+      }
+    },
+    {
+      "from":     [ 8,  4,  2.6 ],
+      "to":       [ 8, 16, 13.4 ],
+      "rotation": {
+        "origin": [ 8, 8, 8 ],
+        "axis": "y",
+        "angle": -45,
+        "rescale": true
+      },
+      "shade":   false,
+      "faces":    {
+        "west": { "uv": [ 0, 0, 16, 16 ], "texture": "#plant", "tintindex": 0 },
+        "east": { "uv": [ 0, 0, 16, 16 ], "texture": "#plant", "tintindex": 0 }
+      }
     }
   ]
 }
