@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.mixin.features.render.entity;
 
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.client.model.ModelCuboidAccessor;
 import net.caffeinemc.mods.sodium.client.render.immediate.model.EntityRenderer;
 import net.caffeinemc.mods.sodium.client.render.immediate.model.ModelCuboid;
@@ -91,7 +92,7 @@ public class ModelPartMixin implements ModelPartData {
 
         ci.cancel();
 
-        EntityRenderer.render(matrices, writer, (ModelPart) (Object) this, light, overlay, color);
+        EntityRenderer.render(matrices, writer, (ModelPart) (Object) this, light, overlay, ColorARGB.toABGR(color));
     }
 
     /**
