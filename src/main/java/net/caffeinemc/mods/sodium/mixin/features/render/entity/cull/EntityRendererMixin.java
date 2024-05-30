@@ -19,8 +19,14 @@ public abstract class EntityRendererMixin<T extends Entity> {
             return;
         }
 
+        Boolean returnValue = cir.getReturnValue();
+        if (returnValue == null) {
+            cir.setReturnValue(true);
+            returnValue = true;
+        }
+
         // If the entity isn't culled already by other means, try to perform a second pass
-        if (cir.getReturnValue() && !renderer.isEntityVisible(entity)) {
+        if (returnValue && !renderer.isEntityVisible(entity)) {
             cir.setReturnValue(false);
         }
     }
