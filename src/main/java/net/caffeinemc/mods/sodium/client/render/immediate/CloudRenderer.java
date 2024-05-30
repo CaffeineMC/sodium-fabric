@@ -101,9 +101,14 @@ public class CloudRenderer {
         FogRenderer.setupFog(camera, FogRenderer.FogMode.FOG_TERRAIN, cloudDistance * 8, shouldUseWorldFog(level, pos), tickDelta);
 
         boolean fastClouds = geometry.params().renderMode() == CloudStatus.FAST;
+        boolean fabulous = Minecraft.useShaderTransparency();
 
         if (fastClouds) {
             RenderSystem.disableCull();
+        }
+
+        if (fabulous) {
+            Minecraft.getInstance().levelRenderer.getCloudsTarget().bindWrite(false);
         }
 
         Vec3 colorModulator = level.getCloudColor(tickDelta);
@@ -126,6 +131,10 @@ public class CloudRenderer {
 
         if (fastClouds) {
             RenderSystem.enableCull();
+        }
+
+        if (fabulous) {
+            Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
         }
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
