@@ -7,6 +7,7 @@ import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatRegistry;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry;
+import net.caffeinemc.mods.sodium.client.render.vertex.BufferBuilderExtension;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
@@ -22,7 +23,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
-public abstract class BufferBuilderMixin implements VertexConsumer, VertexBufferWriter {
+public abstract class BufferBuilderMixin implements VertexConsumer, VertexBufferWriter, BufferBuilderExtension {
     @Shadow
     protected abstract void ensureBuilding();
 
@@ -50,6 +51,15 @@ public abstract class BufferBuilderMixin implements VertexConsumer, VertexBuffer
     private void onInit(ByteBufferBuilder byteBufferBuilder, VertexFormat.Mode mode, VertexFormat format, CallbackInfo ci) {
         this.formatDescription = VertexFormatRegistry.instance()
                 .get(format);
+    }
+
+    @Override
+    public void duplicateLastVertex() {
+        if (this.vertices != 0) {
+            long l = this.buffer.reserve(this.vertexSize);
+            MemoryIntrinsics.copyMemory(l - this.vertexSize, l, this.vertexSize);
+            ++this.vertices;
+        }
     }
 
     @Override

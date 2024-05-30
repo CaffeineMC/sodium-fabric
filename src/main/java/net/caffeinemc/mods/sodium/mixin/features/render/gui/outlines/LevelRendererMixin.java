@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.features.render.gui.outlines;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.client.render.vertex.BufferBuilderExtension;
 import net.caffeinemc.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.LineVertex;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -80,6 +81,10 @@ public class LevelRendererMixin {
         float v8y = Math.fma(position.m01(), x2f, Math.fma(position.m11(), y2f, Math.fma(position.m21(), z2f, position.m31())));
         float v8z = Math.fma(position.m02(), x2f, Math.fma(position.m12(), y2f, Math.fma(position.m22(), z2f, position.m32())));
 
+        if (writer instanceof BufferBuilderExtension extension) {
+            extension.duplicateLastVertex();
+        }
+
         writeLineVertices(writer, v1x, v1y, v1z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), NormI8.pack(normal.m00(), normal.m01(), normal.m02()));
         writeLineVertices(writer, v2x, v2y, v2z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), NormI8.pack(normal.m00(), normal.m01(), normal.m02()));
         writeLineVertices(writer, v1x, v1y, v1z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), NormI8.pack(normal.m10(), normal.m11(), normal.m12()));
@@ -103,7 +108,7 @@ public class LevelRendererMixin {
         writeLineVertices(writer, v7x, v7y, v7z, color, NormI8.pack(normal.m10(), normal.m11(), normal.m12()));
         writeLineVertices(writer, v8x, v8y, v8z, color, NormI8.pack(normal.m10(), normal.m11(), normal.m12()));
         writeLineVertices(writer, v5x, v5y, v5z, color, NormI8.pack(normal.m20(), normal.m21(), normal.m22()));
-        writeLineVertices(writer, v8x, v8y, v8z, color, NormI8.pack(normal.m20(), normal.m21(), normal.m22()));
+        writeSingleVertex(writer, v8x, v8y, v8z, color, NormI8.pack(normal.m20(), normal.m21(), normal.m22()));
     }
 
     @Unique
@@ -119,7 +124,17 @@ public class LevelRendererMixin {
 
             writer.push(stack, buffer, 2, LineVertex.FORMAT);
         }
+    }
 
+    @Unique
+    private static void writeSingleVertex(VertexBufferWriter writer, float x, float y, float z, int color, int normal) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            long buffer = stack.nmalloc(LineVertex.STRIDE);
+
+            LineVertex.put(buffer, x, y, z, color, normal);
+
+            writer.push(stack, buffer, 1, LineVertex.FORMAT);
+        }
     }
 
 }
