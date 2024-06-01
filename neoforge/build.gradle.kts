@@ -1,7 +1,7 @@
 plugins {
     id("idea")
     id("maven-publish")
-    id("net.neoforged.gradle.userdev") version "7.0.105"
+    id("net.neoforged.gradle.userdev") version "7.0.137"
     id("java-library")
 }
 
@@ -28,16 +28,13 @@ jarJar.enable()
 sourceSets {
     val service = create("service")
 
+
     service.apply {
         compileClasspath += main.get().compileClasspath
         compileClasspath += project(":common").sourceSets.getByName("workarounds").output
     }
 
     main.get().apply {
-        compileClasspath += project(":common").sourceSets.getByName("workarounds").output
-    }
-
-    test.get().apply {
         compileClasspath += project(":common").sourceSets.getByName("workarounds").output
     }
 }
@@ -101,7 +98,9 @@ val fullJar: Jar by tasks.creating(Jar::class) {
 }
 
 tasks.build {
+    dependsOn.clear()
     dependsOn(fullJar)
+
 }
 
 tasks.jar {
@@ -113,16 +112,15 @@ tasks.jar {
 runs {
     configureEach {
         modSource(project.sourceSets.main.get())
-    }
-    create("client") {
-        dependencies {
-            runtime("com.lodborg:interval-tree:1.0.0")
-            runtime(project(":common").sourceSets.getByName("workarounds").output)
-        }
+        modSource(project.project(":common").sourceSets.getByName("workarounds"))
     }
 
-    create("data") {
-        programArguments.addAll("--mod", "sodium", "--all", "--output", file("src/generated/resources/").getAbsolutePath(), "--existing", file("src/main/resources/").getAbsolutePath())
+    create("client") {
+
+        dependencies {
+            runtime("com.lodborg:interval-tree:1.0.0")
+
+        }
     }
 }
 
@@ -139,7 +137,6 @@ dependencies {
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
     implementation("net.caffeinemc.new2:fabric_block_view_api_v2:1.0.1")
     jarJar("net.caffeinemc.new2:fabric_block_view_api_v2:[1.0.1, 1.0.2)")
-
     compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
 }
 

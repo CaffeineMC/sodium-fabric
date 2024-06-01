@@ -24,7 +24,7 @@ public class ForgeColorProviders {
 
         @Override
         public void getColors(LevelSlice slice, BlockPos pos, FluidState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, ColorARGB.toABGR(this.handler.getTintColor(state, slice, pos), 255));
+            Arrays.fill(output, ColorARGB.withAlpha(this.handler.getTintColor(state, slice, pos), 255));
         }
     }
 }
