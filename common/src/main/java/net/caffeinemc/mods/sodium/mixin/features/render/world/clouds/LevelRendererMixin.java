@@ -34,7 +34,7 @@ public class LevelRendererMixin {
      * @author jellysquid3
      * @reason Optimize cloud rendering
      */
-    @Inject(method = "renderClouds", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "renderClouds", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/DimensionSpecialEffects;getCloudHeight()F"), cancellable = true) // Inject after Forge checks dimension support
     public void renderClouds(PoseStack poseStack, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z, CallbackInfo ci) {
         ci.cancel();
 
