@@ -76,6 +76,7 @@ sourceSets {
 loom {
     mixin {
         defaultRefmapName = "sodium.refmap.json"
+        useLegacyMixinAp = false
     }
 
     accessWidenerPath = file("src/main/resources/sodium.accesswidener")

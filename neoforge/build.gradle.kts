@@ -37,6 +37,11 @@ sourceSets {
     main.get().apply {
         compileClasspath += project(":common").sourceSets.getByName("workarounds").output
     }
+
+    test.get().apply {
+        compileClasspath += main.get().compileClasspath
+        compileClasspath += project(":common").sourceSets.getByName("workarounds").output
+    }
 }
 
 repositories {
@@ -74,6 +79,7 @@ repositories {
     maven { url = uri("https://maven.architectury.dev/") }
     maven { url = uri("https://files.minecraftforge.net/maven/") }
     maven { url = uri("https://maven.neoforged.net/releases/") }
+    maven { url = uri("https://maven.su5ed.dev/releases") }
     mavenLocal()
     maven("https://repo.spongepowered.org/repository/maven-public/") { name = "Sponge Snapshots" }
 
@@ -110,7 +116,7 @@ minecraft {
 
 dependencies {
     minecraft("net.minecraftforge:forge:${MINECRAFT_VERSION}-${NEOFORGE_VERSION}")
-    compileOnly(project(":common"))
+    compileOnly(project(":common", "namedElements"))
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
 
     compileOnly("io.github.llamalad7:mixinextras-common:0.3.5")
@@ -118,23 +124,26 @@ dependencies {
     implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.3.5")) {
         jarJar.ranged(this, "[0.3.5,)")
     }
-    implementation("net.caffeinemc.lts:fabric_api_base:0.4.32")
-    jarJar("net.caffeinemc.lts:fabric_api_base:[0.4.32,0.4.33)") {
+    implementation(fg.deobf("dev.su5ed.sinytra.fabric-api:fabric-api-base:0.4.31+ef105b4977"))
+    jarJar("dev.su5ed.sinytra.fabric-api:fabric-api-base:[0.4.30,0.4.32)") {
+        isTransitive = false
+        jarJar.pin(this, "0.4.31+ef105b4977")
+    }
+    implementation(fg.deobf("dev.su5ed.sinytra.fabric-api:fabric-renderer-api-v1:3.2.1+1d29b44577"))
+    jarJar("dev.su5ed.sinytra.fabric-api:fabric-renderer-api-v1:[3.2.1,3.2.2)"){
         isTransitive = false
     }
-    implementation("net.caffeinemc.lts:fabric_renderer_api_v1:3.2.1")
-    jarJar("net.caffeinemc.lts:fabric_renderer_api_v1:[3.2.1,3.2.2)"){
+    implementation(fg.deobf("dev.su5ed.sinytra.fabric-api:fabric-rendering-data-attachment-v1:0.3.37+a6081afc77"))
+    jarJar("dev.su5ed.sinytra.fabric-api:fabric-rendering-data-attachment-v1:[0.3.36,0.3.38)"){
         isTransitive = false
+        jarJar.pin(this, "0.3.37+a6081afc77")
     }
-    implementation("net.caffeinemc.lts:fabric_rendering_data_attachment_v1:0.3.37")
-    jarJar("net.caffeinemc.lts:fabric_rendering_data_attachment_v1:[0.3.37,0.3.38)"){
-        isTransitive = false
-    }
-    implementation("com.lodborg:interval-tree:1.0.0")
+    minecraftLibrary("com.lodborg:interval-tree:1.0.0")
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
-    implementation("net.caffeinemc.lts:fabric_block_view_api_v2:1.0.1")
-    jarJar("net.caffeinemc.lts:fabric_block_view_api_v2:[1.0.1,1.0.2)") {
+    implementation(fg.deobf("dev.su5ed.sinytra.fabric-api:fabric-block-view-api-v2:1.0.1+0767707077"))
+    jarJar("dev.su5ed.sinytra.fabric-api:fabric-block-view-api-v2:[1.0.1,1.0.2)") {
         isTransitive = false
+        jarJar.pin(this, "1.0.1+0767707077")
     }
     compileOnly(fg.deobf("maven.modrinth:immersiveengineering:MAqXk6P8"))
 }
