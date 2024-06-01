@@ -32,7 +32,7 @@ public class WeightedBakedModelMixin {
         WeightedEntry.Wrapper<BakedModel> quad = getAt(this.list, Math.abs((int) random.nextLong()) % this.totalWeight);
 
         if (quad != null) {
-            return quad.data()
+            return quad.getData()
                     .getQuads(state, face, random);
         }
 

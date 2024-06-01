@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.fabric;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
@@ -25,6 +26,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -55,7 +57,7 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     }
 
     @Override
-    public Object getRenderData(Level level, BoundingBox pos, BlockEntity value) {
+    public Object getRenderData(Level level, ChunkPos pos, BlockEntity value) {
         if (value == null) {
             return null;
         }
@@ -113,7 +115,7 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     }
 
     @Override
-    public void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, Matrix4f modelMatrix, Matrix4f projectionMatrix, int ticks, Camera mainCamera, Frustum cullingFrustum) {
+    public void runChunkLayerEvents(RenderType renderLayer, LevelRenderer levelRenderer, PoseStack modelMatrix, Matrix4f projectionMatrix, int ticks, Camera mainCamera, Frustum cullingFrustum) {
 
     }
 
@@ -145,20 +147,5 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
     public boolean shouldRenderIE(SectionPos position) {
         return false;
-    }
-
-    @Override
-    public void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice) {
-        // Fabric has no concept of additional chunk renderers; everything is handled through FRAPI.
-    }
-
-    @Override
-    public List<?> getExtraRenderers(Level level, BlockPos origin) {
-        return List.of();
-    }
-
-    @Override
-    public Object getLightManager(LevelChunk chunk, SectionPos pos) {
-        return null;
     }
 }
