@@ -28,17 +28,13 @@ mixin {
 sourceSets {
     val service = create("service")
 
+
     service.apply {
         compileClasspath += main.get().compileClasspath
         compileClasspath += project(":common").sourceSets.getByName("workarounds").output
     }
 
     main.get().apply {
-        compileClasspath += project(":common").sourceSets.getByName("workarounds").output
-    }
-
-    test.get().apply {
-        compileClasspath += main.get().compileClasspath
         compileClasspath += project(":common").sourceSets.getByName("workarounds").output
     }
 }

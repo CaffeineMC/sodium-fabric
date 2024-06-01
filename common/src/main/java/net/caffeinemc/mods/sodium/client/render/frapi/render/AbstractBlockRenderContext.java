@@ -227,7 +227,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
                         for (int j = 0; j < count; j++) {
                             final BakedQuad q = quads.get(j);
-                            editorQuad.fromVanilla(q, type == RenderType.translucent() ? TRANSLUCENT_MATERIAL : defaultMaterial, cullFace);
+                            editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : defaultMaterial, cullFace);
                             // Call processQuad instead of emit for efficiency
                             // (avoid unnecessarily clearing data, trying to apply transforms, and performing cull check again)
 
@@ -240,7 +240,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
                     for (int j = 0; j < count; j++) {
                         final BakedQuad q = quads.get(j);
-                        editorQuad.fromVanilla(q, type == RenderType.translucent() ? TRANSLUCENT_MATERIAL : defaultMaterial, cullFace);
+                        editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : defaultMaterial, cullFace);
                         // Call renderQuad instead of emit for efficiency
                         // (avoid unnecessarily clearing data)
                         this.renderQuad(editorQuad);
