@@ -12,6 +12,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
@@ -45,13 +46,6 @@ public class FluidRendererImpl extends FluidRenderer {
         var meshBuilder = buffers.get(material);
 
         IClientFluidTypeExtensions handler = IClientFluidTypeExtensions.of(fluidState);
-
-        // Match the vanilla FluidRenderer's behavior if the handler is null
-        // The IDE's wrong. Ignore it.
-        if (handler.getStillTexture() == null) {
-            boolean isLava = fluidState.is(FluidTags.LAVA);
-            handler = IClientFluidTypeExtensions.of(isLava ? Fluids.LAVA : Fluids.WATER);
-        }
 
         // Invoking FluidRenderHandler#renderFluid can invoke vanilla FluidRenderer#render.
         //
