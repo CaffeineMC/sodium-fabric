@@ -34,8 +34,18 @@ public abstract class BiomeMixin {
     @Unique
     private int defaultColorIndex;
 
+    @Unique
+    private BiomeEffects cachedSpecialEffects;
+
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void setupColors(CallbackInfo ci) {
+    private void onInit(CallbackInfo ci) {
+        setupColors();
+    }
+
+    @Unique
+    private void setupColors() {
+        this.cachedSpecialEffects = effects;
+
         var grassColor = this.effects.getGrassColor();
 
         if (grassColor.isPresent()) {
@@ -59,6 +69,10 @@ public abstract class BiomeMixin {
      */
     @Overwrite
     public int getGrassColorAt(double x, double z) {
+        if (this.effects != this.cachedSpecialEffects) {
+            setupColors();
+        }
+
         int color;
 
         if (this.hasCustomGrassColor) {
@@ -82,6 +96,10 @@ public abstract class BiomeMixin {
      */
     @Overwrite
     public int getFoliageColor() {
+        if (this.effects != this.cachedSpecialEffects) {
+            setupColors();
+        }
+
         int color;
 
         if (this.hasCustomFoliageColor) {
