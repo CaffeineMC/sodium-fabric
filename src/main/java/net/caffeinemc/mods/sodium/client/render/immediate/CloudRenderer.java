@@ -118,6 +118,7 @@ public class CloudRenderer {
         vertexBuffer.bind();
 
         RenderSystem.enableBlend();
+        RenderSystem.enableDepthTest();
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
                 GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
         RenderSystem.depthFunc(GL32C.GL_LESS);
