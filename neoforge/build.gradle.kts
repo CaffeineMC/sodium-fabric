@@ -1,7 +1,9 @@
+import net.neoforged.gradle.dsl.common.runs.run.RunDevLogin
+
 plugins {
     id("idea")
     id("maven-publish")
-    id("net.neoforged.gradle.userdev") version "7.0.137"
+    id("net.neoforged.gradle.userdev") version "7.0.139"
     id("java-library")
 }
 
@@ -111,15 +113,15 @@ tasks.jar {
 
 runs {
     configureEach {
+
         modSource(project.sourceSets.main.get())
         modSource(project.project(":common").sourceSets.getByName("workarounds"))
     }
 
     create("client") {
-
+        this.extensions.getByType(RunDevLogin::class.java).setEnabled((properties.getOrDefault("useDevLogin", "false") as String).toBoolean())
         dependencies {
             runtime("com.lodborg:interval-tree:1.0.0")
-
         }
     }
 }
