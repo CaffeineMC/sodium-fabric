@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 //  DWORD dwFileDateLS;
 // } VS_FIXEDFILEINFO;
 
-public class VersionFixedFileInfoStruct extends Struct<VersionFixedFileInfoStruct> {
+public class VersionFixedFileInfoStruct extends Struct {
     private static final int SIZEOF, ALIGNOF;
 
     private static final int OFFSET_DW_SIGNATURE;
@@ -78,11 +78,6 @@ public class VersionFixedFileInfoStruct extends Struct<VersionFixedFileInfoStruc
 
     public static VersionFixedFileInfoStruct from(long address) {
         return new VersionFixedFileInfoStruct(address, null);
-    }
-
-    @Override
-    protected VersionFixedFileInfoStruct create(long address, ByteBuffer container) {
-        return new VersionFixedFileInfoStruct(address, container);
     }
 
     public int getFileVersionMostSignificantBits() {

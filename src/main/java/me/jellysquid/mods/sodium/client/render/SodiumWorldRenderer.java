@@ -358,7 +358,7 @@ public class SodiumWorldRenderer {
 
                 MatrixStack.Entry entry = matrices.peek();
                 VertexConsumer transformer = new OverlayVertexConsumer(bufferBuilder,
-                        entry, 1.0f);
+                        entry.getPositionMatrix(), entry.getNormalMatrix(), 1.0f);
 
                 consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.union(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
             }

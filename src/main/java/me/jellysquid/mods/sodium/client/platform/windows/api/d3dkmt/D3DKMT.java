@@ -117,7 +117,7 @@ public class D3DKMT {
     private static @Nullable String queryDriverFileName(int adapter) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             D3DKMTOpenGLInfoStruct info = D3DKMTOpenGLInfoStruct.calloc(stack);
-            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_UMOPENGLINFO, memByteBuffer(info));
+            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_UMOPENGLINFO, memByteBuffer(info.address(), info.sizeof()));
 
             return info.getUserModeDriverFileName();
         }
@@ -142,7 +142,7 @@ public class D3DKMT {
     private static @NotNull String queryFriendlyName(int adapter) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             D3DKMTAdapterRegistryInfoStruct registryInfo = D3DKMTAdapterRegistryInfoStruct.calloc(stack);
-            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_ADAPTERREGISTRYINFO, memByteBuffer(registryInfo));
+            d3dkmtQueryAdapterInfo(adapter, KMTQAITYPE_ADAPTERREGISTRYINFO, memByteBuffer(registryInfo.address(), registryInfo.sizeof()));
 
             String name = registryInfo.getAdapterString();
 

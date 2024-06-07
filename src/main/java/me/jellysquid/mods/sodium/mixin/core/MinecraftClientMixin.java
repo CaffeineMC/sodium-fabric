@@ -6,7 +6,9 @@ import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
 import me.jellysquid.mods.sodium.client.compatibility.checks.ResourcePackScanner;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
+import net.minecraft.client.realms.RealmsClient;
 import net.minecraft.resource.ReloadableResourceManagerImpl;
+import net.minecraft.resource.ResourceReload;
 import net.minecraft.util.profiler.Profiler;
 import org.lwjgl.opengl.GL32C;
 import org.spongepowered.asm.mixin.Final;
@@ -77,7 +79,7 @@ public class MinecraftClientMixin {
      * Check for problematic core shader resource packs after the initial game launch.
      */
     @Inject(method = "onInitFinished", at = @At("TAIL"))
-    private void postInit(CallbackInfoReturnable<Runnable> cir) {
+    private void postInit(RealmsClient realms, ResourceReload reload, RunArgs.QuickPlay quickPlay, CallbackInfo ci) {
         ResourcePackScanner.checkIfCoreShaderLoaded(this.resourceManager);
     }
 

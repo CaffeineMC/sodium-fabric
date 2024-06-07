@@ -9,7 +9,7 @@ import org.lwjgl.system.Struct;
 
 import java.nio.ByteBuffer;
 
-public class MsgBoxParamSw extends Struct<MsgBoxParamSw> {
+public class MsgBoxParamSw extends Struct {
     public static final int SIZEOF;
     public static final int ALIGNOF;
     public static final int
@@ -59,11 +59,6 @@ public class MsgBoxParamSw extends Struct<MsgBoxParamSw> {
 
     private MsgBoxParamSw(long address, @Nullable ByteBuffer container) {
         super(address, container);
-    }
-
-    @Override
-    protected @NotNull MsgBoxParamSw create(long address, ByteBuffer container) {
-        return new MsgBoxParamSw(address, container);
     }
 
     @Override

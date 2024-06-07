@@ -12,7 +12,7 @@
   "client": [
     "core.MinecraftClientMixin",
     "core.WindowMixin",
-    "core.gui.WorldLoadingStateMixin",
+    "core.gui.DownloadingTerrainScreenMixin",
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
     "core.model.quad.BakedQuadMixin",
@@ -25,7 +25,7 @@
     "core.render.immediate.consumer.VertexConsumerProviderImmediateMixin",
     "core.render.immediate.consumer.VertexConsumersMixin$DualMixin",
     "core.render.immediate.consumer.VertexConsumersMixin$UnionMixin",
-    "core.render.world.BufferBuilderStorageMixin",
+    "core.render.world.ChunkBuilderMixin",
     "core.render.world.WorldRendererMixin",
     "core.world.biome.ClientWorldMixin",
     "core.world.chunk.EmptyPaletteStorageMixin",

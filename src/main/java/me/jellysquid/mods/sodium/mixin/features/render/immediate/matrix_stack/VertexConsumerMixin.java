@@ -37,20 +37,11 @@ public interface VertexConsumerMixin {
      * @author JellySquid
      */
     @Overwrite
-    default VertexConsumer normal(MatrixStack.Entry entry, float x, float y, float z) {
-        Matrix3f matrix = entry.getNormalMatrix();
-
+    default VertexConsumer normal(Matrix3f matrix, float x, float y, float z) {
         float xt = MatrixHelper.transformNormalX(matrix, x, y, z);
         float yt = MatrixHelper.transformNormalY(matrix, x, y, z);
         float zt = MatrixHelper.transformNormalZ(matrix, x, y, z);
 
-        if (!entry.canSkipNormalization) {
-            float scalar = Math.invsqrt(Math.fma(xt, xt, Math.fma(yt, yt, zt * zt)));
-
-            xt *= scalar;
-            yt *= scalar;
-            zt *= scalar;
-        }
 
         return this.normal(xt, yt, zt);
     }

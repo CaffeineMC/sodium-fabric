@@ -16,7 +16,7 @@ import static org.lwjgl.system.MemoryUtil.memGetInt;
 //    ULONG               NumOfSources;
 //    BOOL                bPrecisePresentRegionsPreferred;
 // } D3DKMT_ADAPTERINFO;
-class D3DKMTAdapterInfoStruct extends Struct<D3DKMTAdapterInfoStruct> {
+class D3DKMTAdapterInfoStruct extends Struct {
     public static final int SIZEOF, ALIGNOF;
 
     private static final int OFFSET_HADAPTER;
@@ -43,11 +43,6 @@ class D3DKMTAdapterInfoStruct extends Struct<D3DKMTAdapterInfoStruct> {
 
     D3DKMTAdapterInfoStruct(long address, ByteBuffer container) {
         super(address, container);
-    }
-
-    @Override
-    protected D3DKMTAdapterInfoStruct create(long address, ByteBuffer container) {
-        return new D3DKMTAdapterInfoStruct(address, container);
     }
 
     public static D3DKMTAdapterInfoStruct create(long address) {

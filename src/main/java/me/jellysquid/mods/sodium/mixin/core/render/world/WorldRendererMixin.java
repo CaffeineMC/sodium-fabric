@@ -99,11 +99,11 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
      * @author JellySquid
      */
     @Overwrite
-    private void renderLayer(RenderLayer renderLayer, double x, double y, double z, Matrix4f modelView, Matrix4f projection) {
+    private void renderLayer(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z, Matrix4f projection) {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.drawChunkLayer(renderLayer, new ChunkRenderMatrices(projection, modelView), x, y, z);
+            this.renderer.drawChunkLayer(renderLayer, new ChunkRenderMatrices(projection, matrices.peek().getPositionMatrix()), x, y, z);
         } finally {
             RenderDevice.exitManagedCode();
         }
@@ -185,8 +185,8 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
     }
 
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
-    private void onRenderBlockEntities(float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f modelView, Matrix4f projection, CallbackInfo ci) {
-        this.renderer.renderBlockEntities(new MatrixStack(), this.bufferBuilders, this.blockBreakingProgressions, camera, this.world.getTickManager().isFrozen() ? 1.0F : tickDelta);
+    private void onRenderBlockEntities(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f positionMatrix, CallbackInfo ci) {
+        this.renderer.renderBlockEntities(matrices, this.bufferBuilders, this.blockBreakingProgressions, camera, tickDelta);
     }
 
     /**

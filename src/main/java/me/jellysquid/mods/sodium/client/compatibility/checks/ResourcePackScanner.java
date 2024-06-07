@@ -178,7 +178,7 @@ public class ResourcePackScanner {
     }
 
     private static String getResourcePackName(ResourcePack pack) {
-        var path = pack.getId();
+        var path = pack.getName();
 
         // Omit 'file/' prefix for the in-game message
         return path.startsWith("file/") ? path.substring(5) : path;
@@ -200,7 +200,7 @@ public class ResourcePackScanner {
                 ignoredShaders.addAll(meta.ignoredShaders());
             }
         } catch (IOException x) {
-            LOGGER.error("Failed to load pack.mcmeta file for resource pack '{}'", resourcePack.getId());
+            LOGGER.error("Failed to load pack.mcmeta file for resource pack '{}'", resourcePack.getName());
         }
         return ignoredShaders;
     }

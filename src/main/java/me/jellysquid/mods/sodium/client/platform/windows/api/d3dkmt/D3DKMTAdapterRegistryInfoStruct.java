@@ -15,7 +15,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 //         WCHAR DacType[MAX_PATH];
 //         WCHAR ChipType[MAX_PATH];
 // } D3DKMT_ADAPTERREGISTRYINFO;
-class D3DKMTAdapterRegistryInfoStruct extends Struct<D3DKMTAdapterRegistryInfoStruct> {
+class D3DKMTAdapterRegistryInfoStruct extends Struct {
     private static final int MAX_PATH = 260;
     private static final int SIZEOF, ALIGNOF;
 
@@ -43,11 +43,6 @@ class D3DKMTAdapterRegistryInfoStruct extends Struct<D3DKMTAdapterRegistryInfoSt
 
     private D3DKMTAdapterRegistryInfoStruct(long address, ByteBuffer container) {
         super(address, container);
-    }
-
-    @Override
-    protected D3DKMTAdapterRegistryInfoStruct create(long address, ByteBuffer container) {
-        return new D3DKMTAdapterRegistryInfoStruct(address, container);
     }
 
     public static D3DKMTAdapterRegistryInfoStruct calloc(MemoryStack stack) {

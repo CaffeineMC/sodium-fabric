@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.mixin.core.gui;
 
+import net.minecraft.client.gui.screen.DownloadingTerrainScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.WorldLoadingState;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(WorldLoadingState.class)
-public class WorldLoadingStateMixin {
+@Mixin(DownloadingTerrainScreen.class)
+public class DownloadingTerrainScreenMixin {
     @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;getBlockPos()Lnet/minecraft/util/math/BlockPos;"))
     private BlockPos redirect$getPlayerBlockPosition(ClientPlayerEntity instance) {
         // Ensure the "eye" position (which the chunk rendering code is actually concerned about) is used instead of
