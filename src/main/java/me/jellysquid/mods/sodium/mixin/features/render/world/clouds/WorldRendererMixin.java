@@ -37,7 +37,12 @@ public class WorldRendererMixin {
             this.cloudRenderer = new CloudRenderer(this.client.getResourceManager());
         }
 
-        this.cloudRenderer.render(this.world, this.client.player, matrices, modelView, projectionMatrix, this.ticks, tickDelta, x, y, z);
+        matrices.push();
+        matrices.multiplyPositionMatrix(modelView);
+
+        this.cloudRenderer.render(this.world, this.client.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
+
+        matrices.pop();
     }
 
     @Inject(method = "reload(Lnet/minecraft/resource/ResourceManager;)V", at = @At("RETURN"))
