@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.workarounds.context_creation;
 
 import me.jellysquid.mods.sodium.client.compatibility.checks.ModuleScanner;
-import me.jellysquid.mods.sodium.client.compatibility.checks.LateDriverScanner;
+import me.jellysquid.mods.sodium.client.compatibility.checks.PostLaunchChecks;
 import me.jellysquid.mods.sodium.client.compatibility.workarounds.Workarounds;
 import me.jellysquid.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaWorkarounds;
 import net.minecraft.client.WindowEventHandler;
@@ -58,7 +58,7 @@ public class WindowMixin {
             this.wglPrevContext = MemoryUtil.NULL;
         }
 
-        LateDriverScanner.onContextInitialized();
+        PostLaunchChecks.onContextInitialized();
         ModuleScanner.checkModules();
     }
 

@@ -66,6 +66,7 @@ public class ResourcePackScanner {
 
         var likelyIncompatibleResourcePacks = resourcePacks.stream()
                 .filter((pack) -> !pack.shaderIncludes.isEmpty())
+                .filter((pack) -> !incompatibleResourcePacks.contains(pack)) // filter out known-incompatible packs
                 .toList();
 
         boolean shown = false;

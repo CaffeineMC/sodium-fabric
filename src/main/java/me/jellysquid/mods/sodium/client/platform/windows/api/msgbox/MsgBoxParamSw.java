@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.platform.windows.api.msgbox;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -61,7 +62,7 @@ public class MsgBoxParamSw extends Struct<MsgBoxParamSw> {
     }
 
     @Override
-    protected MsgBoxParamSw create(long address, ByteBuffer container) {
+    protected @NotNull MsgBoxParamSw create(long address, ByteBuffer container) {
         return new MsgBoxParamSw(address, container);
     }
 
