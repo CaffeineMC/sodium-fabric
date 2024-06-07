@@ -7,6 +7,7 @@ import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
+import net.minecraft.block.enums.CameraSubmersionType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
@@ -32,7 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class CloudRenderer {
-    private static final Identifier CLOUDS_TEXTURE_ID = new Identifier("textures/environment/clouds.png");
+    private static final Identifier CLOUDS_TEXTURE_ID = Identifier.of("textures/environment/clouds.png");
 
     private static final int CLOUD_COLOR_NEG_Y = ColorABGR.pack(0.7F, 0.7F, 0.7F, 1.0f);
     private static final int CLOUD_COLOR_POS_Y = ColorABGR.pack(1.0f, 1.0f, 1.0f, 1.0f);
@@ -85,8 +86,7 @@ public class CloudRenderer {
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12));
 
         if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ || this.cachedRenderDistance != renderDistance || cloudRenderMode != MinecraftClient.getInstance().options.getCloudRenderModeValue()) {
-            BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-            bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+            BufferBuilder bufferBuilder = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
             this.cloudRenderMode = MinecraftClient.getInstance().options.getCloudRenderModeValue();
 
@@ -98,6 +98,8 @@ public class CloudRenderer {
 
             this.vertexBuffer.bind();
             this.vertexBuffer.upload(bufferBuilder.end());
+
+            Tessellator.getInstance().clear();
 
             VertexBuffer.unbind();
 

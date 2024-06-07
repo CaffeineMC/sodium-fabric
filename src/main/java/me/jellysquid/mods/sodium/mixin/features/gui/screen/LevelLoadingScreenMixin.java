@@ -64,8 +64,7 @@ public class LevelLoadingScreenMixin {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         
-        BufferBuilder bufferBuilder = tessellator.getBuffer();
-        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
         var writer = VertexBufferWriter.of(bufferBuilder);
 
@@ -113,7 +112,13 @@ public class LevelLoadingScreenMixin {
             }
         }
 
-        tessellator.draw();
+        BuiltBuffer buffer = bufferBuilder.endNullable();
+
+        if (buffer != null) {
+            BufferRenderer.drawWithGlobalProgram(buffer);
+        }
+
+        Tessellator.getInstance().clear();
 
         RenderSystem.disableBlend();
     }

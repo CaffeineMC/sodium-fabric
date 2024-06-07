@@ -382,7 +382,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         }
 
         if (this.prompt == null && keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-            MinecraftClient.getInstance().setScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
+            MinecraftClient.getInstance().setScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance(), MinecraftClient.getInstance().options));
 
             return true;
         }

@@ -49,7 +49,7 @@ public class ShaderParser {
         String namespace = matcher.group("namespace");
         String path = matcher.group("path");
 
-        Identifier identifier = new Identifier(namespace, path);
+        Identifier identifier = Identifier.of(namespace, path);
         String source = ShaderLoader.getShaderSource(identifier);
 
         return ShaderParser.parseShader(source);

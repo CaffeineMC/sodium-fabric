@@ -6,6 +6,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.BufferBuilderStorage;
 import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.RenderTickCounter;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,7 +30,7 @@ public class GameRendererMixin {
     private static boolean HAS_RENDERED_OVERLAY_ONCE = false;
 
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;draw()V", shift = At.Shift.AFTER))
-    private void onRender(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
+    private void onRender(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
         // Do not start updating the console overlay until the font renderer is ready
         // This prevents the console from using tofu boxes for everything during early startup
         if (MinecraftClient.getInstance().getOverlay() != null) {

@@ -17,7 +17,7 @@ public interface VertexConsumerMixin {
     VertexConsumer normal(float x, float y, float z);
 
     @Shadow
-    VertexConsumer vertex(double x, double y, double z);
+    VertexConsumer vertex(float x, float y, float z);
 
     /**
      * @reason Avoid allocations

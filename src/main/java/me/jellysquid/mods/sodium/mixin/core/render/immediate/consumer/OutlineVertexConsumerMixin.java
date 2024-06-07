@@ -5,7 +5,6 @@ import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.ColorAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
@@ -17,10 +16,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "net/minecraft/client/render/OutlineVertexConsumerProvider$OutlineVertexConsumer")
-public abstract class OutlineVertexConsumerMixin extends FixedColorVertexConsumer implements VertexBufferWriter {
+public abstract class OutlineVertexConsumerMixin implements VertexBufferWriter {
     @Shadow
     @Final
     private VertexConsumer delegate;
+
+    @Shadow
+    @Final
+    private int color;
 
     @Unique
     private boolean canUseIntrinsics;
@@ -38,7 +41,7 @@ public abstract class OutlineVertexConsumerMixin extends FixedColorVertexConsume
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
         transform(ptr, count, format,
-                ColorABGR.pack(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha));
+                this.color);
 
         VertexBufferWriter.of(this.delegate)
                 .push(stack, ptr, count, format);

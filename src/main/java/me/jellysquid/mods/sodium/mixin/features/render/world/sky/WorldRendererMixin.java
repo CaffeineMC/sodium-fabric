@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.world.sky;
 
+import net.minecraft.block.enums.CameraSubmersionType;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -7,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.CameraSubmersionType;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 

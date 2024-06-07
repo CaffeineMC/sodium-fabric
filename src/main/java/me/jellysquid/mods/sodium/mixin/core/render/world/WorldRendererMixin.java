@@ -14,6 +14,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.player.BlockBreakingInfo;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -185,8 +186,8 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
     }
 
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
-    private void onRenderBlockEntities(float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f modelView, Matrix4f projection, CallbackInfo ci) {
-        this.renderer.renderBlockEntities(new MatrixStack(), this.bufferBuilders, this.blockBreakingProgressions, camera, this.world.getTickManager().isFrozen() ? 1.0F : tickDelta);
+    private void onRenderBlockEntities(RenderTickCounter tickCounter, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci) {
+        this.renderer.renderBlockEntities(new MatrixStack(), this.bufferBuilders, this.blockBreakingProgressions, camera, tickCounter.getTickDelta(false));
     }
 
     /**

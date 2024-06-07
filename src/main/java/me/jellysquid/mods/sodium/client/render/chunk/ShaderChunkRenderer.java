@@ -43,13 +43,13 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         ShaderConstants constants = options.constants();
 
         GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX,
-                new Identifier("sodium", path + ".vsh"), constants);
+                Identifier.of("sodium", path + ".vsh"), constants);
         
         GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT,
-                new Identifier("sodium", path + ".fsh"), constants);
+                Identifier.of("sodium", path + ".fsh"), constants);
 
         try {
-            return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
+            return GlProgram.builder(Identifier.of("sodium", "chunk_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
                     .bindAttribute("a_PosId", ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID)

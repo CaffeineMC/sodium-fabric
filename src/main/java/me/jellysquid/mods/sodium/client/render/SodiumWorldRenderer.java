@@ -24,6 +24,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.BlockBreakingInfo;
 import net.minecraft.util.math.*;
 import net.minecraft.util.profiler.Profiler;
 

@@ -4,12 +4,12 @@ import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.client.render.VertexFormats;
 
 public enum CommonVertexAttribute {
-    POSITION(VertexFormats.POSITION_ELEMENT),
-    COLOR(VertexFormats.COLOR_ELEMENT),
-    TEXTURE(VertexFormats.TEXTURE_ELEMENT),
-    OVERLAY(VertexFormats.OVERLAY_ELEMENT),
-    LIGHT(VertexFormats.LIGHT_ELEMENT),
-    NORMAL(VertexFormats.NORMAL_ELEMENT);
+    POSITION(VertexFormatElement.POSITION),
+    COLOR(VertexFormatElement.COLOR),
+    TEXTURE(VertexFormatElement.UV_0),
+    OVERLAY(VertexFormatElement.UV_1),
+    LIGHT(VertexFormatElement.UV_2),
+    NORMAL(VertexFormatElement.NORMAL);
 
     private final VertexFormatElement element;
 
@@ -30,6 +30,6 @@ public enum CommonVertexAttribute {
     }
 
     public int getByteLength() {
-        return this.element.getByteLength();
+        return this.element.getSizeInBytes();
     }
 }

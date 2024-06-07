@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import net.minecraft.client.color.world.FoliageColors;
-import net.minecraft.client.color.world.GrassColors;
+import net.minecraft.world.biome.FoliageColors;
+import net.minecraft.world.biome.GrassColors;
 
 public class BiomeColorMaps {
     private static final int WIDTH = 256;
