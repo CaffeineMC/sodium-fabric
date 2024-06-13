@@ -3,7 +3,7 @@ import net.neoforged.gradle.dsl.common.runs.run.RunDevLogin
 plugins {
     id("idea")
     id("maven-publish")
-    id("net.neoforged.gradle.userdev") version "7.0.139"
+    id("net.neoforged.gradle.userdev") version "7.0.142"
     id("java-library")
 }
 

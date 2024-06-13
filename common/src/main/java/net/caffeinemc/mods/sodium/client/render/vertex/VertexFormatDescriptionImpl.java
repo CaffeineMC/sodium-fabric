@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.vertex;
 
-import net.caffeinemc.mods.sodium.mixin.core.render.VertexFormatAccessor;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -33,7 +32,7 @@ public class VertexFormatDescriptionImpl implements VertexFormatDescription {
         for (int elementIndex = 0; elementIndex < elementList.size(); elementIndex++) {
             var element = elementList.get(elementIndex);
             var commonType = CommonVertexAttribute.getCommonType(element);
-            if (element != DefaultVertexFormat.ELEMENT_PADDING && (commonType == null || !attributeSet.add(commonType))) {
+            if ((commonType == null || !attributeSet.add(commonType))) {
                 return false;
             }
         }
@@ -47,14 +46,14 @@ public class VertexFormatDescriptionImpl implements VertexFormatDescription {
         Arrays.fill(commonElementOffsets, -1);
 
         var elementList = format.getElements();
-        var elementOffsets = ((VertexFormatAccessor) format).getOffsets();
+        var elementOffsets = format.getOffsetsByElement();
 
         for (int elementIndex = 0; elementIndex < elementList.size(); elementIndex++) {
             var element = elementList.get(elementIndex);
             var commonType = CommonVertexAttribute.getCommonType(element);
 
             if (commonType != null) {
-                commonElementOffsets[commonType.ordinal()] = elementOffsets.getInt(elementIndex);
+                commonElementOffsets[commonType.ordinal()] = elementOffsets[element.id()];
             }
         }
 
