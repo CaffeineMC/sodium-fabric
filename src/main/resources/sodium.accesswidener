@@ -17,5 +17,4 @@ accessible method net/minecraft/client/util/math/MatrixStack$Entry <init> (Lorg/
 
 accessible field net/minecraft/client/color/world/GrassColors colorMap [I
 accessible field net/minecraft/client/color/world/FoliageColors colorMap [I
-accessible field net/minecraft/client/util/math/MatrixStack$Entry canSkipNormalization Z
 accessible method net/minecraft/client/render/BackgroundRenderer getFogModifier (Lnet/minecraft/entity/Entity;F)Lnet/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier;
