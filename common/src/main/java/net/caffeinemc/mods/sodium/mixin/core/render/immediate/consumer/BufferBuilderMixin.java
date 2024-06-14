@@ -2,7 +2,6 @@ package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import net.caffeinemc.mods.sodium.client.render.vertex.buffer.BufferBuilderExtension;
-import net.caffeinemc.mods.sodium.client.render.vertex.buffer.DirectBufferBuilder;
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;

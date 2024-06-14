@@ -27,8 +27,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
 
     private Material material;
-    private boolean isColorFixed;
-    private int fixedColor = 0xFFFFFFFF;
     private int vertexIndex;
     private int writtenAttributes;
     private TranslucentGeometryCollector collector;
@@ -43,7 +41,13 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public @NotNull VertexConsumer vertex(double x, double y, double z) {
+    public @NotNull VertexConsumer addVertex(float x, float y, float z) {
+        if (this.vertexIndex != 0) {
+            endLastVertex();
+        }
+
+        this.vertexIndex++;
+
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.x = (float) x;
         vertex.y = (float) y;
@@ -54,11 +58,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
 
     // Writing color ignores alpha since alpha is used as a color multiplier by Sodium.
     @Override
-    public @NotNull VertexConsumer color(int red, int green, int blue, int alpha) {
-        if (this.isColorFixed) {
-            throw new IllegalStateException();
-        }
-
+    public @NotNull VertexConsumer setColor(int red, int green, int blue, int alpha) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorABGR.pack(red, green, blue, 0xFF);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
@@ -66,11 +66,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public @NotNull VertexConsumer color(float red, float green, float blue, float alpha) {
-        if (this.isColorFixed) {
-            throw new IllegalStateException();
-        }
-
+    public @NotNull VertexConsumer setColor(float red, float green, float blue, float alpha) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorABGR.pack(red, green, blue, 1);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
@@ -78,11 +74,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public @NotNull VertexConsumer color(int argb) {
-        if (this.isColorFixed) {
-            throw new IllegalStateException();
-        }
-
+    public @NotNull VertexConsumer setColor(int argb) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorARGB.toABGR(argb, 0xFF);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
@@ -90,7 +82,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public @NotNull VertexConsumer uv(float u, float v) {
+    public @NotNull VertexConsumer setUv(float u, float v) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.u = u;
         vertex.v = v;
@@ -100,17 +92,17 @@ public class ChunkVertexConsumer implements VertexConsumer {
 
     // Overlay is ignored for chunk geometry.
     @Override
-    public @NotNull VertexConsumer overlayCoords(int u, int v) {
+    public @NotNull VertexConsumer setUv1(int u, int v) {
         return this;
     }
 
     @Override
-    public @NotNull VertexConsumer overlayCoords(int uv) {
+    public @NotNull VertexConsumer setOverlay(int uv) {
         return this;
     }
 
     @Override
-    public @NotNull VertexConsumer uv2(int u, int v) {
+    public @NotNull VertexConsumer setUv2(int u, int v) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.light = ((v & 0xFFFF) << 16) | (u & 0xFFFF);
         this.writtenAttributes |= ATTRIBUTE_LIGHT_BIT;
@@ -118,7 +110,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public @NotNull VertexConsumer uv2(int uv) {
+    public @NotNull VertexConsumer setLight(int uv) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.light = uv;
         this.writtenAttributes |= ATTRIBUTE_LIGHT_BIT;
@@ -126,25 +118,16 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public @NotNull VertexConsumer normal(float x, float y, float z) {
+    public @NotNull VertexConsumer setNormal(float x, float y, float z) {
         this.writtenAttributes |= ATTRIBUTE_NORMAL_BIT;
         return this;
     }
 
-    @Override
-    public void endVertex() {
-        if (this.isColorFixed) {
-            ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-            vertex.color = this.fixedColor;
-            this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
-        }
-
+    public void endLastVertex() {
         if (this.writtenAttributes != REQUIRED_ATTRIBUTES) {
             throw new IllegalStateException("Not filled all elements of the vertex");
         }
-
-        this.vertexIndex++;
-
+        
         if (this.vertexIndex == 4) {
             int normal = calculateNormal();
 
@@ -213,14 +196,12 @@ public class ChunkVertexConsumer implements VertexConsumer {
         return NormI8.pack(normX, normY, normZ);
     }
 
-    @Override
-    public void defaultColor(int red, int green, int blue, int alpha) {
-        this.fixedColor = ColorABGR.pack(red, green, blue, 0xFF);
-        this.isColorFixed = true;
-    }
+    // TODO: Make sure this is correct -IMS
+    public void endLastVertexIfNeeded() {
+        if (vertexIndex != 0) {
+            endLastVertex();
 
-    @Override
-    public void unsetDefaultColor() {
-        this.isColorFixed = false;
+            vertexIndex = 0;
+        }
     }
 }

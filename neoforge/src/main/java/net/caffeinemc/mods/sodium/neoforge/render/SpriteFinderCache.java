@@ -21,7 +21,7 @@ public class SpriteFinderCache {
     }
 
     public static class ReloadListener implements ResourceManagerReloadListener {
-        public static final ResourceLocation ID = new ResourceLocation("sodium", "sprite_finder_cache");
+        public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("sodium", "sprite_finder_cache");
         public static final ReloadListener INSTANCE = new ReloadListener();
 
         private ReloadListener() {

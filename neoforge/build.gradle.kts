@@ -42,19 +42,9 @@ sourceSets {
 }
 
 repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                url = uri("https://maven.pkg.github.com/ims212/forge-frapi")
-                credentials {
-                    username = "IMS212"
-                    // Read only token
-                    password = "ghp_" + "DEuGv0Z56vnSOYKLCXdsS9svK4nb9K39C1Hn"
-                }
-            }
-        }
-        filter {
-            includeGroup("net.caffeinemc.new2")
+    flatDir {
+        dir {
+            "libs"
         }
     }
     exclusiveContent {
@@ -119,7 +109,7 @@ runs {
     }
 
     create("client") {
-        this.extensions.getByType(RunDevLogin::class.java).setEnabled((properties.getOrDefault("useDevLogin", "false") as String).toBoolean())
+        //this.extensions.getByType(RunDevLogin::class.java).setEnabled((properties.getOrDefault("useDevLogin", "false") as String).toBoolean())
         dependencies {
             runtime("com.lodborg:interval-tree:1.0.0")
         }

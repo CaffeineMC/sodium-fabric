@@ -1,10 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin.features.gui.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
@@ -67,8 +64,7 @@ public class LevelLoadingScreenMixin {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         
-        BufferBuilder bufferBuilder = tessellator.getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         var writer = VertexBufferWriter.of(bufferBuilder);
 
@@ -116,7 +112,12 @@ public class LevelLoadingScreenMixin {
             }
         }
 
-        tessellator.end();
+        MeshData data = bufferBuilder.build();
+
+        if (data != null) {
+            BufferUploader.drawWithShader(data);
+        }
+        Tesselator.getInstance().clear();
 
         RenderSystem.disableBlend();
     }
