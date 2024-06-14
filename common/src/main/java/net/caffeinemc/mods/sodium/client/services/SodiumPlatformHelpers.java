@@ -6,6 +6,7 @@ import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
+import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
@@ -82,4 +83,6 @@ public interface SodiumPlatformHelpers {
     List<?> getExtraRenderers(Level level, BlockPos origin);
 
     Object getLightManager(LevelChunk chunk, SectionPos pos);
+
+    TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos);
 }

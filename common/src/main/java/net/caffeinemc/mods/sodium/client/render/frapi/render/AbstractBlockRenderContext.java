@@ -38,10 +38,18 @@ import java.util.function.Supplier;
  * <p>Make sure to set the {@link #lighters} in the subclass constructor.
  */
 public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
-    private static final RenderMaterial SHADED_MATERIAL = SodiumRenderer.STANDARD_MATERIAL;
-    private static final RenderMaterial FLAT_MATERIAL = SodiumRenderer.INSTANCE.materialFinder().ambientOcclusion(TriState.FALSE).find();
+    private static final RenderMaterial[] STANDARD_MATERIALS;
     private static final RenderMaterial TRANSLUCENT_MATERIAL = SodiumRenderer.INSTANCE.materialFinder().blendMode(BlendMode.TRANSLUCENT).find();
 
+    static {
+        STANDARD_MATERIALS = new RenderMaterial[TriState.values().length];
+
+        TriState[] values = TriState.values();
+        for (int i = 0; i < values.length; i++) {
+            TriState state = values[i];
+            STANDARD_MATERIALS[i] = SodiumRenderer.INSTANCE.materialFinder().ambientOcclusion(state).find();
+        }
+    }
     private final MutableQuadViewImpl editorQuad = new MutableQuadViewImpl() {
         {
             data = new int[EncodingFormat.TOTAL_STRIDE];
@@ -81,6 +89,11 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
      * The current render type being rendered.
      */
     protected RenderType type;
+
+    /**
+     * The current model's model data.
+     */
+    protected Object modelData;
 
     private final BlockOcclusionCache occlusionCache = new BlockOcclusionCache();
     private boolean enableCulling = true;
@@ -199,13 +212,6 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     /* Handling of vanilla models - this is the hot path for non-modded models */
     public void bufferDefaultModel(BakedModel model, @Nullable BlockState state) {
         MutableQuadViewImpl editorQuad = this.editorQuad;
-        final RenderMaterial defaultMaterial = model.useAmbientOcclusion() ? SHADED_MATERIAL : FLAT_MATERIAL;
-
-        Object modelData = null;
-        if (slice != null) {
-            modelData = SodiumPlatformHelpers.INSTANCE.getProperModelData(model, state, pos, slice, slice.getPlatformModelData(pos));
-        }
-
         Iterable<RenderType> types = SodiumPlatformHelpers.INSTANCE.getMaterials(level, model, state, pos, random, modelData);
 
 
@@ -220,6 +226,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
             RenderType prevType = type;
             for (RenderType type : types) {
                 this.type = type;
+                TriState ao = SodiumPlatformHelpers.INSTANCE.useAmbientOcclusion(model, state, modelData, type, slice, pos);
                 if (noTransform) {
                     if (!this.isFaceCulled(cullFace)) {
                         final List<BakedQuad> quads = SodiumPlatformHelpers.INSTANCE.getQuads(level, pos, model, state, cullFace, random, type, modelData);
@@ -227,7 +234,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
                         for (int j = 0; j < count; j++) {
                             final BakedQuad q = quads.get(j);
-                            editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : defaultMaterial, cullFace);
+                            editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : STANDARD_MATERIALS[ao.ordinal()], cullFace);
                             // Call processQuad instead of emit for efficiency
                             // (avoid unnecessarily clearing data, trying to apply transforms, and performing cull check again)
 
@@ -240,7 +247,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
 
                     for (int j = 0; j < count; j++) {
                         final BakedQuad q = quads.get(j);
-                        editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : defaultMaterial, cullFace);
+                        editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : STANDARD_MATERIALS[ao.ordinal()], cullFace);
                         // Call renderQuad instead of emit for efficiency
                         // (avoid unnecessarily clearing data)
                         this.renderQuad(editorQuad);
