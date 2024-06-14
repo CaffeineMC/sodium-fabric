@@ -11,6 +11,7 @@
   },
   "client" : [
     "ClientHooksMixin",
+    "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
     "LevelSliceMixin",
     "SimpleBakedModelAccessor"

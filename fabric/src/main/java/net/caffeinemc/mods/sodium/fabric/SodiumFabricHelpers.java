@@ -10,6 +10,7 @@ import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.fabric.render.FluidRendererImpl;
 import net.caffeinemc.mods.sodium.fabric.render.SpriteFinderCache;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
+import net.fabricmc.fabric.api.util.TriState;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -160,5 +161,10 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
     public Object getLightManager(LevelChunk chunk, SectionPos pos) {
         return null;
+    }
+
+    @Override
+    public TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
+        return model.useAmbientOcclusion() ? TriState.DEFAULT : TriState.FALSE;
     }
 }

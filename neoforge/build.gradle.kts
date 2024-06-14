@@ -42,9 +42,12 @@ sourceSets {
 }
 
 repositories {
-    flatDir {
-        dir {
-            "libs"
+    maven {
+        url = uri("https://maven.pkg.github.com/ims212/Forge_Fabric_API")
+        credentials {
+            username = "IMS212"
+            // Read only token
+            password = "ghp_" + "DEuGv0Z56vnSOYKLCXdsS9svK4nb9K39C1Hn"
         }
     }
     exclusiveContent {
@@ -119,16 +122,16 @@ runs {
 dependencies {
     implementation("net.neoforged:neoforge:${NEOFORGE_VERSION}")
     compileOnly(project(":common"))
-    implementation("net.caffeinemc.new2:fabric_api_base:0.4.31")
-    jarJar("net.caffeinemc.new2:fabric_api_base:[0.4.31,0.4.33)")
-    implementation("net.caffeinemc.new2:fabric_renderer_api_v1:3.2.1")
-    jarJar("net.caffeinemc.new2:fabric_renderer_api_v1:[3.2.1, 3.2.2)")
-    implementation("net.caffeinemc.new2:fabric_rendering_data_attachment_v1:0.3.37")
-    jarJar("net.caffeinemc.new2:fabric_rendering_data_attachment_v1:[0.3.37,0.3.38)")
+    implementation("net.fabricmc:fabric_api_base:0.4.40+${MINECRAFT_VERSION}")
+    jarJar("net.fabricmc:fabric_api_base:[0.4.40,0.4.41)")
+    implementation("net.fabricmc:fabric_renderer_api_v1:3.2.12+${MINECRAFT_VERSION}")
+    jarJar("net.fabricmc:fabric_renderer_api_v1:[3.2.12, 3.2.13)")
+    implementation("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}")
+    jarJar("net.fabricmc:fabric_rendering_data_attachment_v1:[0.3.46,0.3.47)")
     implementation("com.lodborg:interval-tree:1.0.0")
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
-    implementation("net.caffeinemc.new2:fabric_block_view_api_v2:1.0.1")
-    jarJar("net.caffeinemc.new2:fabric_block_view_api_v2:[1.0.1, 1.0.2)")
+    implementation("net.fabricmc:fabric_block_view_api_v2:1.0.8+${MINECRAFT_VERSION}")
+    jarJar("net.fabricmc:fabric_block_view_api_v2:[1.0.8, 1.0.9)")
     compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
 }
 
