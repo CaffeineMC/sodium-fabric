@@ -50,7 +50,9 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
     public void sodium$duplicateVertex() {
         if (vertices == 0) return;
 
-        // TODO IMS
+        long dst = this.buffer.reserve(this.vertexSize);
+        MemoryIntrinsics.copyMemory(dst - this.vertexSize, dst, this.vertexSize);
+        ++this.vertices;
     }
 
     @Override
