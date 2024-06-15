@@ -10,7 +10,7 @@
     "conformVisibility": true
   },
   "client" : [
-    "ClientHooksMixin",
+    "ForgeGUIMixin",
     "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
     "SimpleBakedModelAccessor"

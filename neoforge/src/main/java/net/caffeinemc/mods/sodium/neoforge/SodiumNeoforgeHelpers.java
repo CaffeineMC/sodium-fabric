@@ -27,6 +27,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -165,6 +166,6 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
 
     @Override
     public TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
-        return TRI_STATES[model.useAmbientOcclusion(state, (ModelData) data, renderType).ordinal()];
+        return model.useAmbientOcclusion(state, renderType) ? TriState.DEFAULT : TriState.FALSE;
     }
 }
