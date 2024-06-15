@@ -79,14 +79,17 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         this.colorProvider = this.colorProviderRegistry.getColorProvider(state.getBlock());
 
+        type = ItemBlockRenderTypes.getChunkRenderType(state);
+
         this.prepareCulling(true);
         this.prepareAoInfo(model.useAmbientOcclusion());
 
-        type = ItemBlockRenderTypes.getChunkRenderType(state);
+        modelData = SodiumPlatformHelpers.INSTANCE.getProperModelData(model, state, pos, slice, slice.getPlatformModelData(pos));
 
         ((FabricBakedModel) model).emitBlockQuads(this.level, state, pos, this.randomSupplier, this);
 
         type = null;
+        modelData = SodiumPlatformHelpers.INSTANCE.getEmptyModelData();
     }
 
     /**

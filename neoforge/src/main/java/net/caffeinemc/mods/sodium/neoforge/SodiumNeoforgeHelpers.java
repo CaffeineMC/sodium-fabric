@@ -13,6 +13,7 @@ import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.neoforge.render.FluidRendererImpl;
 import net.caffeinemc.mods.sodium.neoforge.render.SpriteFinderCache;
+import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
@@ -26,7 +27,6 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -155,5 +155,16 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public boolean shouldRenderIE(SectionPos position) {
         return ImmersiveEngineeringCompat.isLoaded && ImmersiveEngineeringCompat.sectionNeedsRendering(position);
+    }
+
+    private static final TriState[] TRI_STATES = new TriState[] {
+            TriState.TRUE,
+            TriState.DEFAULT,
+            TriState.FALSE
+    };
+
+    @Override
+    public TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
+        return TRI_STATES[model.useAmbientOcclusion(state, (ModelData) data, renderType).ordinal()];
     }
 }

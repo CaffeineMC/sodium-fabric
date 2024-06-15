@@ -7,6 +7,7 @@ import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
+import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
@@ -77,4 +78,6 @@ public interface SodiumPlatformHelpers {
     void renderConnectionsInSection(ChunkBuildBuffers buffers, LevelSlice worldSlice, SectionPos position);
 
     boolean shouldRenderIE(SectionPos position);
+
+    TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos);
 }
