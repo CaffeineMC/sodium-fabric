@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.render.immediate.consumer;
 
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.ColorAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
@@ -62,7 +63,7 @@ public abstract class OutlineVertexConsumerMixin implements VertexBufferWriter {
         long offsetColor = format.getElementOffset(CommonVertexAttribute.COLOR);
 
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
-            ColorAttribute.set(ptr + offsetColor, color);
+            ColorAttribute.set(ptr + offsetColor, ColorARGB.toABGR(color));
             ptr += stride;
         }
     }
