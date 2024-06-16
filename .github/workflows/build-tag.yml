@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
-          java-version: 21
+          java-version: 17
       - name: Initialize caches
         uses: actions/cache@v3
         with:
