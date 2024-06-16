@@ -6,7 +6,7 @@ object Constants {
     const val FABRIC_API_VERSION: String = "0.100.1+1.21"
 
     // https://semver.org/
-    const val MOD_VERSION: String = "0.5.9"
+    const val MOD_VERSION: String = "0.5.11"
 }
 
 plugins {
