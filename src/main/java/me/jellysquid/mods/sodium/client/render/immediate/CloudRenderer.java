@@ -61,7 +61,7 @@ public class CloudRenderer {
     }
 
     public void render(@Nullable ClientWorld level, ClientPlayerEntity player, MatrixStack matrices, Matrix4f projectionMatrix, float ticks, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-        if (level == null) {
+        if (level == null || edges.isBlank) {
             return;
         }
 
@@ -390,6 +390,7 @@ public class CloudRenderer {
         private final byte[] faces;
         private final int[] colors;
         private final int width, height;
+        private boolean isBlank;
 
         public CloudEdges(NativeImage texture) {
             int width = texture.getWidth();
@@ -405,6 +406,8 @@ public class CloudRenderer {
         }
 
         private void loadTextureData(NativeImage texture, int width, int height) {
+            this.isBlank = true;
+
             for (int x = 0; x < width; x++) {
                 for (int z = 0; z < height; z++) {
                     int index = this.getCellIndex(x, z);
@@ -413,6 +416,7 @@ public class CloudRenderer {
                     this.colors[index] = color;
 
                     if (!isTransparentCell(color)) {
+                        this.isBlank = false;
                         this.faces[index] = (byte) getVisibleFaces(texture, color, x, z);
                     }
                 }
