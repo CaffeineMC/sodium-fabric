@@ -196,7 +196,7 @@ public class D3DKMT {
             WindowsFileVersion openglIcdVersion
     ) implements GraphicsAdapterInfo {
         public String getOpenGlIcdName() {
-            return D3DKMT.getOpenGlIcdName(this.name);
+            return D3DKMT.getOpenGlIcdName(this.openglIcdFilePath);
         }
 
         @Override
