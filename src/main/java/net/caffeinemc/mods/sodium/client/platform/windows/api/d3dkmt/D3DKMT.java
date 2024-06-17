@@ -124,6 +124,8 @@ public class D3DKMT {
     }
 
     private static @Nullable WindowsFileVersion queryDriverVersion(String file) {
+        LOGGER.info("Querying version for file: {}", file);
+        
         var version = Version.getModuleFileVersion(file);
 
         if (version == null) {
