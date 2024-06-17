@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.*;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 public class Kernel32 {
     private static final SharedLibrary LIBRARY = APIUtil.apiCreateLibrary("kernel32");
@@ -20,6 +21,7 @@ public class Kernel32 {
     private static final long PFN_GetLastError;
 
     private static final long PFN_GetModuleFileNameW;
+    private static final long PFN_GetSystemDirectoryW;
 
 
     static {
@@ -28,6 +30,7 @@ public class Kernel32 {
         PFN_GetModuleHandleExW = APIUtil.apiGetFunctionAddress(LIBRARY, "GetModuleHandleExW");
         PFN_GetLastError = APIUtil.apiGetFunctionAddress(LIBRARY, "GetLastError");
         PFN_GetModuleFileNameW = APIUtil.apiGetFunctionAddress(LIBRARY, "GetModuleFileNameW");
+        PFN_GetSystemDirectoryW = APIUtil.apiGetFunctionAddress(LIBRARY, "GetSystemDirectoryW");
     }
 
     public static void setEnvironmentVariable(String name, @Nullable String value) {
@@ -89,7 +92,7 @@ public class Kernel32 {
     }
 
     public static String getModuleFileName(long phModule) {
-        ByteBuffer lpFileName = MemoryUtil.memAlignedAlloc(16, MAX_PATH);
+        ByteBuffer lpFileName = MemoryUtil.memAlignedAlloc(16, MAX_PATH * Short.BYTES);
 
         try {
             int length = JNI.callPPI(phModule, MemoryUtil.memAddress(lpFileName), lpFileName.capacity(), PFN_GetModuleFileNameW);
@@ -101,6 +104,22 @@ public class Kernel32 {
             return MemoryUtil.memUTF16(lpFileName, length);
         } finally {
             MemoryUtil.memAlignedFree(lpFileName);
+        }
+    }
+
+    public static String getSystemDirectory() {
+        ByteBuffer lpBuffer = MemoryUtil.memAlignedAlloc(16, MAX_PATH * Short.BYTES);
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            int length = JNI.callPI(MemoryUtil.memAddress(lpBuffer), MAX_PATH, PFN_GetSystemDirectoryW);
+
+            if (length == 0) {
+                throw new RuntimeException("GetSystemDirectoryW failed, error=" + getLastError());
+            }
+
+            return MemoryUtil.memUTF16(lpBuffer, length);
+        } finally {
+            MemoryUtil.memAlignedFree(lpBuffer);
         }
     }
 

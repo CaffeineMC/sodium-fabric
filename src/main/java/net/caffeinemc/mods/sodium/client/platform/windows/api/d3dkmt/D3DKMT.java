@@ -5,6 +5,7 @@ import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.Graphic
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Gdi32;
+import net.caffeinemc.mods.sodium.client.platform.windows.api.Kernel32;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.version.Version;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
@@ -14,6 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,17 +91,44 @@ public class D3DKMT {
         String adapterName = queryFriendlyName(adapter);
 
         @Nullable String driverFileName = queryDriverFileName(adapter);
-        @Nullable WindowsFileVersion driverVersion = null;
+        @Nullable String driverFilePath = null;
+
+        if (driverFileName != null) {
+            driverFilePath = getFilePathForModuleName(driverFileName);
+        }
 
         GraphicsAdapterVendor driverVendor = GraphicsAdapterVendor.UNKNOWN;
 
-        if (driverFileName != null) {
-            driverVersion = queryDriverVersion(driverFileName);
-            driverVendor = GraphicsAdapterVendor.fromIcdName(getOpenGlIcdName(driverFileName));
+        @Nullable WindowsFileVersion driverVersion = null;
+
+        if (driverFilePath != null) {
+            driverVersion = queryDriverVersion(driverFilePath);
+            driverVendor = GraphicsAdapterVendor.fromIcdName(getOpenGlIcdName(driverFilePath));
+        } else {
+            LOGGER.warn("Could not resolve file path of OpenGL ICD module name: {}", driverFileName);
         }
 
-        return new WDDMAdapterInfo(driverVendor, adapterName, adapterType, driverFileName, driverVersion);
+        return new WDDMAdapterInfo(driverVendor, adapterName, adapterType, driverFilePath, driverVersion);
 
+    }
+
+    private static @Nullable String getFilePathForModuleName(@NotNull String fileName) {
+        // Check if the file name is already an absolute path, or a valid relative path
+        Path filePath = Paths.get(fileName);
+
+        if (filePath.isAbsolute() || Files.exists(filePath)) {
+            return filePath.toString();
+        }
+
+        // Try to resolve the module in %SYSTEMROOT%/System32
+        filePath = Paths.get(Kernel32.getSystemDirectory(), fileName);
+
+        if (Files.exists(filePath)) {
+            return filePath.toString();
+        }
+
+        // No idea where the module is located...
+        return null;
     }
 
     private static boolean isSupportedAdapterType(int adapterType) {
