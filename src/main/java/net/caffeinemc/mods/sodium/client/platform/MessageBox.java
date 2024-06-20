@@ -10,7 +10,10 @@ import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import com.mojang.blaze3d.platform.Window;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
+
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.Objects;
 
 public class MessageBox {
@@ -30,16 +33,32 @@ public class MessageBox {
         static @Nullable MessageBoxImpl chooseImpl() {
             if (OsUtils.getOs() == OsUtils.OperatingSystem.WIN) {
                 return new WindowsMessageBoxImpl();
+            } else {
+                // TODO: Tiny File Dialogs is really bad. We need something better.
+                //return new TFDMessageBoxImpl();
+                return null;
             }
-
-            // TODO: Provide an implementation on other platforms
-            return null;
         }
 
         void showMessageBox(@Nullable Window window,
                             IconType icon, String title,
                             String description,
                             @Nullable String helpUrl);
+    }
+
+    private static class TFDMessageBoxImpl implements MessageBoxImpl {
+        // This adds information about how to open the help box, since we cannot change the buttons.
+        private static final String NOTICE = "\n\nFor more information, click OK; otherwise, click Cancel.";
+
+        @Override
+        public void showMessageBox(@Nullable Window window, IconType icon, String title, String description, @Nullable String helpUrl) {
+            boolean clicked = TinyFileDialogs.tinyfd_messageBox(title, helpUrl == null ? description : description + NOTICE, helpUrl == null ? "ok" : "okcancel", icon.name().toLowerCase(Locale.ROOT), false);
+
+            if (clicked && helpUrl != null) {
+                Util.getPlatform()
+                        .openUri(helpUrl);
+            }
+        }
     }
 
     private static class WindowsMessageBoxImpl implements MessageBoxImpl {
