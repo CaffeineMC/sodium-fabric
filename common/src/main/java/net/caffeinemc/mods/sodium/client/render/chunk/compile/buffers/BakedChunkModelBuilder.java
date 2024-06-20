@@ -30,7 +30,6 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
 
     @Override
     public VertexConsumer asFallbackVertexConsumer(Material material, TranslucentGeometryCollector collector) {
-        fallbackVertexConsumer.endLastVertexIfNeeded();
         fallbackVertexConsumer.setData(material, collector);
         return fallbackVertexConsumer;
     }
