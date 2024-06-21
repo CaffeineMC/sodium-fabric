@@ -30,14 +30,13 @@ public class PreLaunchChecks {
 
     public static void beforeLWJGLInit() {
         if (BugChecks.ISSUE_2561) {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            String message = normalMessage;
-
-            if (Arrays.stream(stackTrace).map(StackTraceElement::toString).anyMatch(s -> s.contains("org.prismlauncher."))) {
-                message = prismMessage;
-            }
-
             if (!Version.getVersion().startsWith(REQUIRED_LWJGL_VERSION)) {
+                String message = normalMessage;
+
+                if (System.getProperty("minecraft.launcher.brand", "unknown").equalsIgnoreCase("PrismLauncher")) {
+                    message = prismMessage;
+                }
+
                 showCriticalErrorAndClose("Sodium Renderer - Unsupported LWJGL",
                         ("""
                                 The game failed to start because the currently active LWJGL version is not \
