@@ -31,8 +31,10 @@ public enum GraphicsAdapterVendor {
         // Intel Gen 8          - ig8icd
         // Intel Gen 9, 9.5     - ig9icd
         // Intel Gen 11         - ig11icd
-        // Intel Gen 12         - igxelpicd (Xe-LP; integrated) and igxehpicd (Xe-LP; dedicated)
-        if (name.matches("ig(4|7|75|8|9|11|xelp|xehp)icd(32|64)")) {
+        // Intel Gen 12         - ig12icd (UHD Graphics, with early drivers)
+        //                        igxelpicd (Xe-LP; integrated)
+        //                        igxehpicd (Xe-HP; dedicated)
+        if (name.matches("ig(4|7|75|8|9|11|12|xelp|xehp)icd(32|64)")) {
             return INTEL;
         }
 
