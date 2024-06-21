@@ -1,35 +1,21 @@
-import net.neoforged.gradle.dsl.common.runs.run.RunDevLogin
-
 plugins {
     id("idea")
     id("maven-publish")
-    id("net.neoforged.gradle.userdev") version "7.0.142"
+    id("net.neoforged.moddev") version "0.1.102"
     id("java-library")
 }
 
-base {
-    archivesName = "sodium-neoforge-1.20.5"
-}
 
 val MINECRAFT_VERSION: String by rootProject.extra
 val NEOFORGE_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
 
 base {
-    archivesName = "sodium-neoforge-${MINECRAFT_VERSION}"
+    archivesName = "sodium-neoforge"
 }
-
-if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
-    minecraft.accessTransformers {
-        file("src/main/resources/META-INF/accesstransformer.cfg")
-    }
-}
-
-jarJar.enable()
 
 sourceSets {
     val service = create("service")
-
 
     service.apply {
         compileClasspath += main.get().compileClasspath
@@ -57,22 +43,22 @@ repositories {
                 url = uri("https://api.modrinth.com/maven")
             }
         }
-        //forRepositories(fg.repository) // Only add this if you're using ForgeGradle, otherwise remove this line
         filter {
             includeGroup("maven.modrinth")
         }
     }
+    maven { url = uri("https://maven.neoforged.net/releases/") }
+
 }
 
 val fullJar: Jar by tasks.creating(Jar::class) {
-    duplicatesStrategy = DuplicatesStrategy.WARN
-    dependsOn(tasks.jarJar)
+    dependsOn(tasks.jar)
     from(sourceSets.getByName("service").output)
     from(project(":common").sourceSets.getByName("desktop").output)
     from(project(":common").sourceSets.getByName("workarounds").output)
 
     into("META-INF/jarjar/") {
-        from(tasks.jarJar.get().archiveFile)
+        from(tasks.jar.get().archiveFile)
     }
 
     into("META-INF") {
@@ -95,7 +81,6 @@ val fullJar: Jar by tasks.creating(Jar::class) {
 tasks.build {
     dependsOn.clear()
     dependsOn(fullJar)
-
 }
 
 tasks.jar {
@@ -104,39 +89,58 @@ tasks.jar {
     archiveClassifier = "modonly"
 }
 
-runs {
-    configureEach {
+neoForge {
+    // Specify the version of NeoForge to use.
+    version = NEOFORGE_VERSION
 
-        modSource(project.sourceSets.main.get())
-        modSource(project.project(":common").sourceSets.getByName("workarounds"))
-    }
-
-    create("client") {
-        //this.extensions.getByType(RunDevLogin::class.java).setEnabled((properties.getOrDefault("useDevLogin", "false") as String).toBoolean())
-        dependencies {
-            runtime("com.lodborg:interval-tree:1.0.0")
+    runs {
+        create("client") {
+            additionalRuntimeClasspath.add("com.lodborg:interval-tree:1.0.0")
+            additionalRuntimeClasspath.add(rootProject.project(":common").sourceSets.getByName("workarounds").output)
+            client()
         }
     }
 }
 
+val localRuntime = configurations.create("localRuntime")
+
 dependencies {
-    implementation("net.neoforged:neoforge:${NEOFORGE_VERSION}")
     compileOnly(project(":common"))
     implementation("net.fabricmc:fabric_api_base:0.4.40+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_api_base:0.4.40+${MINECRAFT_VERSION}")
+    jarJar("net.fabricmc:fabric_api_base") {
+        version {
+            strictly("[0.4.40+${MINECRAFT_VERSION}]")
+        }
+    }
     implementation("net.fabricmc:fabric_renderer_api_v1:3.2.12+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_renderer_api_v1:3.2.12+${MINECRAFT_VERSION}")
+    jarJar("net.fabricmc:fabric_renderer_api_v1") {
+        version {
+            strictly("[3.2.12+${MINECRAFT_VERSION}]")
+        }
+    }
     implementation("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}")
-    implementation("com.lodborg:interval-tree:1.0.0")
+    jarJar("net.fabricmc:fabric_rendering_data_attachment_v1") {
+        version {
+            strictly("[0.3.46+${MINECRAFT_VERSION}]")
+        }
+    }
+    localRuntime("com.lodborg:interval-tree:1.0.0")
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
     implementation("net.fabricmc:fabric_block_view_api_v2:1.0.8+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_block_view_api_v2:1.0.8+${MINECRAFT_VERSION}")
+    jarJar("net.fabricmc:fabric_block_view_api_v2") {
+        version {
+            strictly("[1.0.8+${MINECRAFT_VERSION}]")
+        }
+    }
     compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
 }
 
-tasks.jarJar {
-    archiveClassifier = "jarJar"
+// Sets up a dependency configuration called 'localRuntime'.
+// This configuration should be used instead of 'runtimeOnly' to declare
+// a dependency that will be present for runtime testing but that is
+// "optional", meaning it will not be pulled by dependents of this mod.
+configurations {
+    runtimeClasspath.get().extendsFrom(localRuntime)
 }
 
 // NeoGradle compiles the game, but we don't want to add our common code to the game's code
