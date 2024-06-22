@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class GraphicsAdapterProbe {
@@ -21,11 +22,18 @@ public class GraphicsAdapterProbe {
     public static void findAdapters() {
         LOGGER.info("Searching for graphics cards...");
 
-        List<? extends GraphicsAdapterInfo> adapters = switch (OsUtils.getOs()) {
-            case WIN -> findAdapters$Windows();
-            case LINUX -> findAdapters$Linux();
-            default -> null;
-        };
+        List<? extends GraphicsAdapterInfo> adapters;
+
+        try {
+            adapters = switch (OsUtils.getOs()) {
+                case WIN -> findAdapters$Windows();
+                case LINUX -> findAdapters$Linux();
+                default -> null;
+            };
+        } catch (Exception e) {
+            LOGGER.error("Failed to find graphics adapters!", e);
+            return;
+        }
 
         if (adapters == null) {
             // Not supported on this platform
@@ -90,7 +98,8 @@ public class GraphicsAdapterProbe {
 
     public static Collection<? extends GraphicsAdapterInfo> getAdapters() {
         if (ADAPTERS == null) {
-            throw new RuntimeException("Graphics adapters not probed yet");
+            LOGGER.error("Graphics adapters not probed yet; returning an empty list.");
+            return Collections.emptyList();
         }
 
         return ADAPTERS;
