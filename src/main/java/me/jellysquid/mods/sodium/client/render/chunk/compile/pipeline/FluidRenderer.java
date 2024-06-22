@@ -67,15 +67,14 @@ public class FluidRenderer {
     }
 
     private boolean isFluidOccluded(BlockRenderView world, int x, int y, int z, Direction dir, Fluid fluid) {
-        BlockPos pos = this.scratchPos.set(x, y, z);
-        BlockState blockState = world.getBlockState(pos);
-        BlockPos adjPos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
-
-        if (blockState.isOpaque()) {
-            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world, pos, dir, SideShapeType.FULL);
+        var adjPos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
+        BlockState blockState = world.getBlockState(adjPos);
+        if (blockState.getFluidState().getFluid().matchesType(fluid)) {
+            return true;
         }
-        return world.getFluidState(adjPos).getFluid().matchesType(fluid);
+        return blockState.isOpaque() && dir != Direction.UP && blockState.isSideSolid(world, adjPos, dir.getOpposite(), SideShapeType.FULL);
     }
+
 
     private boolean isSideExposed(BlockRenderView world, int x, int y, int z, Direction dir, float height) {
         BlockPos pos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
@@ -85,10 +84,7 @@ public class FluidRenderer {
             VoxelShape shape = blockState.getCullingShape(world, pos);
 
             // Hoist these checks to avoid allocating the shape below
-            if (shape == VoxelShapes.fullCube()) {
-                // The top face always be inset, so if the shape above is a full cube it can't possibly occlude
-                return dir == Direction.UP;
-            } else if (shape.isEmpty()) {
+            if (shape.isEmpty()) {
                 return true;
             }
 
