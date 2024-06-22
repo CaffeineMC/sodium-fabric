@@ -74,7 +74,8 @@
     "fabric-renderer-api-v1": "*",
     "fabric-rendering-data-attachment-v1": "*",
     "fabric-rendering-fluids-v1": ">=2.0.0",
-    "fabric-resource-loader-v0": "*"
+    "fabric-resource-loader-v0": "*",
+    "minecraft": "1.21"
   },
   "breaks": {
     "optifabric": "*",

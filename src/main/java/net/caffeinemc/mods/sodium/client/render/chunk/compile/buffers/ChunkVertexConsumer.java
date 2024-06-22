@@ -1,12 +1,15 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import net.caffeinemc.mods.sodium.client.render.frapi.SpriteFinderCache;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
+import net.caffeinemc.mods.sodium.client.render.frapi.SpriteFinderCache;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import org.jetbrains.annotations.NotNull;
@@ -27,29 +30,30 @@ public class ChunkVertexConsumer implements VertexConsumer {
     private int fixedColor = 0xFFFFFFFF;
     private int vertexIndex;
     private int writtenAttributes;
-    private ModelQuadFacing facing;
+    private TranslucentGeometryCollector collector;
 
     public ChunkVertexConsumer(ChunkModelBuilder modelBuilder) {
         this.modelBuilder = modelBuilder;
     }
 
-    public void setMaterial(Material material) {
+    public void setData(Material material, TranslucentGeometryCollector collector) {
         this.material = material;
+        this.collector = collector;
     }
 
     @Override
-    public @NotNull VertexConsumer vertex(double x, double y, double z) {
+    public @NotNull VertexConsumer addVertex(float x, float y, float z) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.x = (float) x;
         vertex.y = (float) y;
         vertex.z = (float) z;
         this.writtenAttributes |= ATTRIBUTE_POSITION_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
     // Writing color ignores alpha since alpha is used as a color multiplier by Sodium.
     @Override
-    public @NotNull VertexConsumer color(int red, int green, int blue, int alpha) {
+    public @NotNull VertexConsumer setColor(int red, int green, int blue, int alpha) {
         if (this.isColorFixed) {
             throw new IllegalStateException();
         }
@@ -57,11 +61,11 @@ public class ChunkVertexConsumer implements VertexConsumer {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorABGR.pack(red, green, blue, 0xFF);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
     @Override
-    public @NotNull VertexConsumer color(float red, float green, float blue, float alpha) {
+    public @NotNull VertexConsumer setColor(float red, float green, float blue, float alpha) {
         if (this.isColorFixed) {
             throw new IllegalStateException();
         }
@@ -69,11 +73,11 @@ public class ChunkVertexConsumer implements VertexConsumer {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorABGR.pack(red, green, blue, 1);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
     @Override
-    public @NotNull VertexConsumer color(int argb) {
+    public @NotNull VertexConsumer setColor(int argb) {
         if (this.isColorFixed) {
             throw new IllegalStateException();
         }
@@ -81,57 +85,52 @@ public class ChunkVertexConsumer implements VertexConsumer {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorARGB.toABGR(argb, 0xFF);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
     @Override
-    public @NotNull VertexConsumer uv(float u, float v) {
+    public @NotNull VertexConsumer setUv(float u, float v) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.u = u;
         vertex.v = v;
         this.writtenAttributes |= ATTRIBUTE_TEXTURE_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
     // Overlay is ignored for chunk geometry.
     @Override
-    public @NotNull VertexConsumer overlayCoords(int u, int v) {
-        return this;
+    public @NotNull VertexConsumer setUv1(int u, int v) {
+        return potentiallyEndVertex();
     }
 
     @Override
-    public @NotNull VertexConsumer overlayCoords(int uv) {
-        return this;
+    public @NotNull VertexConsumer setOverlay(int uv) {
+        return potentiallyEndVertex();
     }
 
     @Override
-    public @NotNull VertexConsumer uv2(int u, int v) {
+    public @NotNull VertexConsumer setUv2(int u, int v) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.light = ((v & 0xFFFF) << 16) | (u & 0xFFFF);
         this.writtenAttributes |= ATTRIBUTE_LIGHT_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
     @Override
-    public @NotNull VertexConsumer uv2(int uv) {
+    public @NotNull VertexConsumer setLight(int uv) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.light = uv;
         this.writtenAttributes |= ATTRIBUTE_LIGHT_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
     @Override
-    public @NotNull VertexConsumer normal(float x, float y, float z) {
-        if (this.vertexIndex == 0) {
-            this.facing = ModelQuadFacing.fromDirection(Direction.getNearest(x, y, z));
-        }
-
+    public @NotNull VertexConsumer setNormal(float x, float y, float z) {
         this.writtenAttributes |= ATTRIBUTE_NORMAL_BIT;
-        return this;
+        return potentiallyEndVertex();
     }
 
-    @Override
-    public void endVertex() {
+    public VertexConsumer potentiallyEndVertex() {
         if (this.isColorFixed) {
             ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
             vertex.color = this.fixedColor;
@@ -139,13 +138,22 @@ public class ChunkVertexConsumer implements VertexConsumer {
         }
 
         if (this.writtenAttributes != REQUIRED_ATTRIBUTES) {
-            throw new IllegalStateException("Not filled all elements of the vertex");
+            return this;
         }
 
         this.vertexIndex++;
+        this.writtenAttributes = 0;
 
         if (this.vertexIndex == 4) {
-            this.modelBuilder.getVertexBuffer(this.facing).push(this.vertices, this.material);
+            int normal = calculateNormal();
+
+            ModelQuadFacing cullFace = ModelQuadFacing.fromPackedNormal(normal);
+
+            if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
+                collector.appendQuad(normal, vertices, cullFace);
+            }
+
+            this.modelBuilder.getVertexBuffer(cullFace).push(this.vertices, this.material);
 
             float u = 0;
             float v = 0;
@@ -156,20 +164,53 @@ public class ChunkVertexConsumer implements VertexConsumer {
             }
 
             TextureAtlasSprite sprite = SpriteFinderCache.forBlockAtlas().find(u * 0.25f, v * 0.25f);
-            this.modelBuilder.addSprite(sprite);
+
+            if (sprite != null) {
+                this.modelBuilder.addSprite(sprite);
+            }
 
             this.vertexIndex = 0;
         }
+
+        return this;
     }
 
-    @Override
-    public void defaultColor(int red, int green, int blue, int alpha) {
-        this.fixedColor = ColorABGR.pack(red, green, blue, 0xFF);
-        this.isColorFixed = true;
-    }
+    private int calculateNormal() {
+        final float x0 = vertices[0].x;
+        final float y0 = vertices[0].y;
+        final float z0 = vertices[0].z;
 
-    @Override
-    public void unsetDefaultColor() {
-        this.isColorFixed = false;
+        final float x1 = vertices[1].x;
+        final float y1 = vertices[1].y;
+        final float z1 = vertices[1].z;
+
+        final float x2 = vertices[2].x;
+        final float y2 = vertices[2].y;
+        final float z2 = vertices[2].z;
+
+        final float x3 = vertices[3].x;
+        final float y3 = vertices[3].y;
+        final float z3 = vertices[3].z;
+
+        final float dx0 = x2 - x0;
+        final float dy0 = y2 - y0;
+        final float dz0 = z2 - z0;
+        final float dx1 = x3 - x1;
+        final float dy1 = y3 - y1;
+        final float dz1 = z3 - z1;
+
+        float normX = dy0 * dz1 - dz0 * dy1;
+        float normY = dz0 * dx1 - dx0 * dz1;
+        float normZ = dx0 * dy1 - dy0 * dx1;
+
+        // normalize by length for the packed normal
+        float length = (float) Math.sqrt(normX * normX + normY * normY + normZ * normZ);
+        if (length != 0.0 && length != 1.0) {
+            normX /= length;
+            normY /= length;
+            normZ /= length;
+        }
+
+        return NormI8.pack(normX, normY, normZ);
     }
 }

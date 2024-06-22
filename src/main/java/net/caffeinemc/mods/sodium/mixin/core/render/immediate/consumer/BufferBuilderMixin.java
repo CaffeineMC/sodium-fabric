@@ -1,7 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import net.caffeinemc.mods.sodium.client.render.vertex.buffer.BufferBuilderExtension;
-import net.caffeinemc.mods.sodium.client.render.vertex.buffer.DirectBufferBuilder;
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
@@ -10,6 +10,7 @@ import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,110 +18,44 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultedVertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
-public abstract class BufferBuilderMixin extends DefaultedVertexConsumer implements VertexBufferWriter, BufferBuilderExtension {
+public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBuilderExtension {
     @Shadow
-    protected abstract void ensureCapacity(int size);
+    @Final
+    private int vertexSize;
 
     @Shadow
-    private ByteBuffer buffer;
+    @Final
+    private ByteBufferBuilder buffer;
 
     @Shadow
     private int vertices;
 
     @Shadow
-    private int nextElementByte;
-
-    @Shadow
-    private VertexFormat.Mode mode;
+    private long vertexPointer;
 
     @Unique
     private VertexFormatDescription formatDescription;
 
-    @Unique
-    private int vertexStride;
-
-    private DirectBufferBuilder directBufferBuilder;
-
     @Inject(
-            method = "switchFormat",
-            at = @At(
-                    value = "FIELD",
-                    target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;format:Lcom/mojang/blaze3d/vertex/VertexFormat;",
-                    opcode = Opcodes.PUTFIELD
-            )
+            method = "<init>",
+            at = @At(value = "TAIL")
     )
-    private void onFormatChanged(VertexFormat format, CallbackInfo ci) {
+    private void onFormatChanged(ByteBufferBuilder byteBufferBuilder, VertexFormat.Mode mode, VertexFormat format, CallbackInfo ci) {
         this.formatDescription = VertexFormatRegistry.instance()
                 .get(format);
-        this.vertexStride = this.formatDescription.stride();
-        this.directBufferBuilder = this.formatDescription.isSimpleFormat() ? new DirectBufferBuilder(this) : null;
     }
 
-    @Inject(method = { "discard", "reset", "begin" }, at = @At("RETURN"))
-    private void resetDelegate(CallbackInfo ci) {
-        if (this.directBufferBuilder != null) {
-            this.directBufferBuilder.reset();
+    @Override
+    public void sodium$duplicateVertex() {
+        if (this.vertices != 0) {
+            long dst = this.buffer.reserve(this.vertexSize);
+            MemoryIntrinsics.copyMemory(dst - this.vertexSize, dst, this.vertexSize);
+            ++this.vertices;
         }
-    }
-
-    @Override
-    public ByteBuffer sodium$getBuffer() {
-        return this.buffer;
-    }
-
-    @Override
-    public int sodium$getElementOffset() {
-        return this.nextElementByte;
-    }
-
-    @Override
-    public VertexFormatDescription sodium$getFormatDescription() {
-        return this.formatDescription;
-    }
-
-    @Override
-    public DirectBufferBuilder sodium$getDelegate() {
-        return this.directBufferBuilder;
-    }
-
-    @Override
-    public void sodium$moveToNextVertex() {
-        this.vertices++;
-        this.nextElementByte += this.vertexStride;
-
-        this.ensureCapacity(this.vertexStride);
-
-        if (this.shouldDuplicateVertices()) {
-            this.duplicateVertex();
-        }
-    }
-
-    @Override
-    public boolean sodium$hasDefaultColor() {
-        return this.defaultColorSet;
-    }
-
-    @Unique
-    private boolean shouldDuplicateVertices() {
-        return this.mode == VertexFormat.Mode.LINES || this.mode == VertexFormat.Mode.LINE_STRIP;
-    }
-
-    @Unique
-    private void duplicateVertex() {
-        MemoryIntrinsics.copyMemory(
-                MemoryUtil.memAddress(this.buffer, this.nextElementByte - this.vertexStride),
-                MemoryUtil.memAddress(this.buffer, this.nextElementByte),
-                this.vertexStride);
-
-        this.nextElementByte += this.vertexStride;
-        this.vertices++;
-
-        this.ensureCapacity(this.vertexStride);
     }
 
     @Override
@@ -130,14 +65,9 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer impleme
 
     @Override
     public void push(MemoryStack stack, long src, int count, VertexFormatDescription format) {
-        var length = count * this.vertexStride;
+        var length = count * this.vertexSize;
 
-        // Ensure that there is always space for 1 more vertex; see BufferBuilder.next()
-        this.ensureCapacity(length + this.vertexStride);
-
-        // The buffer may change in the even, so we need to make sure that the
-        // pointer is retrieved *after* the resize
-        var dst = MemoryUtil.memAddress(this.buffer, this.nextElementByte);
+        var dst = this.buffer.reserve(length);
 
         if (format == this.formatDescription) {
             // The layout is the same, so we can just perform a memory copy
@@ -149,7 +79,7 @@ public abstract class BufferBuilderMixin extends DefaultedVertexConsumer impleme
         }
 
         this.vertices += count;
-        this.nextElementByte += length;
+        this.vertexPointer = (dst + length) - vertexSize;
     }
 
     @Unique
