@@ -3,12 +3,7 @@ package net.caffeinemc.mods.sodium.client.render.immediate;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -38,7 +33,7 @@ import java.io.InputStream;
 import java.util.Objects;
 
 public class CloudRenderer {
-    private static final ResourceLocation CLOUDS_TEXTURE_ID = new ResourceLocation("textures/environment/clouds.png");
+    private static final ResourceLocation CLOUDS_TEXTURE_ID = ResourceLocation.withDefaultNamespace("textures/environment/clouds.png");
 
     private CloudTextureData textureData;
     private ShaderInstance shaderProgram;
@@ -156,8 +151,7 @@ public class CloudRenderer {
                                                           CloudGeometryParameters parameters,
                                                           CloudTextureData textureData)
     {
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         var writer = VertexBufferWriter.of(bufferBuilder);
 
@@ -207,7 +201,7 @@ public class CloudRenderer {
             }
         }
 
-        BufferBuilder.RenderedBuffer builtBuffer = bufferBuilder.end();
+        MeshData meshData = bufferBuilder.build();
 
         VertexBuffer vertexBuffer;
 
@@ -217,7 +211,11 @@ public class CloudRenderer {
             vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
         }
 
-        uploadToVertexBuffer(vertexBuffer, builtBuffer);
+        if (meshData != null) {
+            uploadToVertexBuffer(vertexBuffer, meshData);
+        }
+
+        Tesselator.getInstance().clear();
 
         return new CloudGeometry(vertexBuffer, parameters);
     }
@@ -398,9 +396,9 @@ public class CloudRenderer {
         return buffer + ColorVertex.STRIDE;
     }
 
-    private static void uploadToVertexBuffer(VertexBuffer vertexBuffer, BufferBuilder.RenderedBuffer builtBuffer) {
+    private static void uploadToVertexBuffer(VertexBuffer vertexBuffer, MeshData meshData) {
         vertexBuffer.bind();
-        vertexBuffer.upload(builtBuffer);
+        vertexBuffer.upload(meshData);
 
         VertexBuffer.unbind();
     }

@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.features.gui.hooks.console;
 
 
 import net.caffeinemc.mods.sodium.client.gui.console.ConsoleHooks;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
@@ -29,7 +30,7 @@ public class GameRendererMixin {
     private static boolean HAS_RENDERED_OVERLAY_ONCE = false;
 
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;flush()V", shift = At.Shift.AFTER))
-    private void onRender(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
+    private void onRender(DeltaTracker deltaTracker, boolean bl, CallbackInfo ci) {
         // Do not start updating the console overlay until the font renderer is ready
         // This prevents the console from using tofu boxes for everything during early startup
         if (Minecraft.getInstance().getOverlay() != null) {

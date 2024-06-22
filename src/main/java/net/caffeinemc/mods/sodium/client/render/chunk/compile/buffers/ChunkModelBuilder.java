@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
@@ -23,5 +24,5 @@ public interface ChunkModelBuilder {
      * @param material the material that should be used for geometry pushed to the vertex consumer
      * @return the fallback vertex consumer which adds geometry to this model builder
      */
-    VertexConsumer asFallbackVertexConsumer(Material material);
+    VertexConsumer asFallbackVertexConsumer(Material material, TranslucentGeometryCollector collector);
 }

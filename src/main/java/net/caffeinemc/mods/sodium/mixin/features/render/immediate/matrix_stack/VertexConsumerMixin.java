@@ -13,22 +13,22 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(VertexConsumer.class)
 public interface VertexConsumerMixin {
     @Shadow
-    VertexConsumer normal(float x, float y, float z);
+    VertexConsumer setNormal(float x, float y, float z);
 
     @Shadow
-    VertexConsumer vertex(double x, double y, double z);
+    VertexConsumer addVertex(float x, float y, float z);
 
     /**
      * @reason Avoid allocations
      * @author JellySquid
      */
     @Overwrite
-    default VertexConsumer vertex(Matrix4f matrix, float x, float y, float z) {
+    default VertexConsumer addVertex(Matrix4f matrix, float x, float y, float z) {
         float xt = MatrixHelper.transformPositionX(matrix, x, y, z);
         float yt = MatrixHelper.transformPositionY(matrix, x, y, z);
         float zt = MatrixHelper.transformPositionZ(matrix, x, y, z);
 
-        return this.vertex(xt, yt, zt);
+        return this.addVertex(xt, yt, zt);
     }
 
     /**
@@ -36,7 +36,7 @@ public interface VertexConsumerMixin {
      * @author JellySquid
      */
     @Overwrite
-    default VertexConsumer normal(PoseStack.Pose pose, float x, float y, float z) {
+    default VertexConsumer setNormal(PoseStack.Pose pose, float x, float y, float z) {
         Matrix3f matrix = pose.normal();
 
         float xt = MatrixHelper.transformNormalX(matrix, x, y, z);
@@ -51,6 +51,6 @@ public interface VertexConsumerMixin {
             zt *= scalar;
         }
 
-        return this.normal(xt, yt, zt);
+        return this.setNormal(xt, yt, zt);
     }
 }
