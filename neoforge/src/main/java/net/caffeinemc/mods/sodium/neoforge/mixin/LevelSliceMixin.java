@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.neoforge.mixin;
 
 
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ChunkPos;
@@ -25,6 +26,10 @@ public abstract class LevelSliceMixin implements BlockAndTintGetter {
 
     @Shadow
     private @Nullable Object modelDataSnapshot;
+
+    @Shadow
+    @Final
+    private ClientLevel level;
 
     @Shadow
     private int originBlockX, originBlockY, originBlockZ;
@@ -60,5 +65,10 @@ public abstract class LevelSliceMixin implements BlockAndTintGetter {
         int relBlockZ = pos.getZ() - this.originBlockZ;
 
         return (AuxiliaryLightManager) auxLightManager[getLocalSectionIndex(relBlockX >> 4, relBlockY >> 4, relBlockZ >> 4)];
+    }
+
+    @Override
+    public float getShade(float normalX, float normalY, float normalZ, boolean shade) {
+        return this.level.getShade(normalX, normalY, normalZ, shade);
     }
 }

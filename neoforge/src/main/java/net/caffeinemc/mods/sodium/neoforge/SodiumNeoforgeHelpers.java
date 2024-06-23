@@ -3,8 +3,10 @@ package net.caffeinemc.mods.sodium.neoforge;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectFunction;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.neoforge.iecompat.ImmersiveEngineeringCompat;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
@@ -175,6 +177,11 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
         return TRI_STATES[model.useAmbientOcclusion(state, (ModelData) data, renderType).ordinal()];
+    }
+
+    @Override
+    public float getAccurateShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade) {
+        return level.getShade(NormI8.unpackX(quad.getFaceNormal()), NormI8.unpackY(quad.getFaceNormal()), NormI8.unpackZ(quad.getFaceNormal()), shade);
     }
 
     private static final ThreadLocal<PoseStack> emptyStack = ThreadLocal.withInitial(PoseStack::new);
