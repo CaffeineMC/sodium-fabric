@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.platform;
 
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxParamSw;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxCallback;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.User32;
@@ -10,6 +11,9 @@ import org.lwjgl.system.MemoryUtil;
 import com.mojang.blaze3d.platform.Window;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Objects;
@@ -29,7 +33,7 @@ public class MessageBox {
 
     private interface MessageBoxImpl {
         static @Nullable MessageBoxImpl chooseImpl() {
-            if (SystemInfo.getCurrentPlatform() == PlatformEnum.WINDOWS) {
+            if (OsUtils.getOs() == OsUtils.OperatingSystem.WIN) {
                 return new WindowsMessageBoxImpl();
             } else {
                 // TODO: Tiny File Dialogs is really bad. We need something better.
@@ -53,8 +57,11 @@ public class MessageBox {
             boolean clicked = TinyFileDialogs.tinyfd_messageBox(title, helpUrl == null ? description : description + NOTICE, helpUrl == null ? "ok" : "okcancel", icon.name().toLowerCase(Locale.ROOT), false);
 
             if (clicked && helpUrl != null) {
-                Util.getPlatform()
-                        .openUri(helpUrl);
+                try {
+                    Desktop.getDesktop().browse(URI.create(helpUrl));
+                } catch (IOException e) {
+                    System.out.println("Failed to open! Giving up.");
+                }
             }
         }
     }
