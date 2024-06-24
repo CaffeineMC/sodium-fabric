@@ -2,7 +2,7 @@ plugins {
     java
     idea
     `maven-publish`
-    id("fabric-loom") version("1.6.6")
+    id("fabric-loom") version("1.7.1")
 }
 
 val MINECRAFT_VERSION: String by rootProject.extra

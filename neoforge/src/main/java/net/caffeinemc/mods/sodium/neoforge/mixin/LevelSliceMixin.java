@@ -6,12 +6,10 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ChunkPos;
-import net.neoforged.neoforge.client.model.data.ModelDataManager;
-import net.neoforged.neoforge.common.world.AuxiliaryLightManager;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraftforge.client.model.data.ModelDataManager;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
-import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.common.extensions.IBlockGetterExtension;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
@@ -22,49 +20,21 @@ import org.spongepowered.asm.mixin.Shadow;
 public abstract class LevelSliceMixin implements BlockAndTintGetter {
     @Shadow
     @Final
-    private Object[] auxLightManager;
-
-    @Shadow
-    private @Nullable Object modelDataSnapshot;
-
-    @Shadow
-    @Final
     private ClientLevel level;
 
     @Shadow
-    private int originBlockX, originBlockY, originBlockZ;
-
-    @Shadow
-    public Object getPlatformModelData(BlockPos pos) {
-        return null;
+    public BlockEntity getBlockEntity(int blockX, int blockY, int blockZ) {
+        throw new IllegalStateException();
     }
 
     @Override
-    public ModelData getModelData(BlockPos pos) {
-        Object modelData = getPlatformModelData(pos);
-        return modelData != null ? (ModelData) modelData : null;
-    }
-
-    @Shadow
-    public static int getLocalSectionIndex(int sectionX, int sectionY, int sectionZ) {
-        throw new IllegalStateException("Not shadowed!");
+    public @Nullable BlockEntity getExistingBlockEntity(BlockPos pos) {
+        return this.getBlockEntity(pos.getX(), pos.getY(), pos.getZ());
     }
 
     @Override
-    public @Nullable AuxiliaryLightManager getAuxLightManager(ChunkPos pos) {
-        int relChunkX = pos.x - (this.originBlockX >> 4);
-        int relChunkZ = pos.z - (this.originBlockZ >> 4);
-
-        return (AuxiliaryLightManager) auxLightManager[getLocalSectionIndex(relChunkX, 0, relChunkZ)];
-    }
-
-    @Override
-    public @Nullable AuxiliaryLightManager getAuxLightManager(BlockPos pos) {
-        int relBlockX = pos.getX() - this.originBlockX;
-        int relBlockY = pos.getY() - this.originBlockY;
-        int relBlockZ = pos.getZ() - this.originBlockZ;
-
-        return (AuxiliaryLightManager) auxLightManager[getLocalSectionIndex(relBlockX >> 4, relBlockY >> 4, relBlockZ >> 4)];
+    public @Nullable ModelDataManager getModelDataManager() {
+        return level.getModelDataManager();
     }
 
     @Override

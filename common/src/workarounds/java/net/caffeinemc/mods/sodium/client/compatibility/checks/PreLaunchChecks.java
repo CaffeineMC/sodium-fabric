@@ -30,7 +30,8 @@ public class PreLaunchChecks {
 
     public static void beforeLWJGLInit() {
         if (BugChecks.ISSUE_2561) {
-            if (!Version.getVersion().startsWith(REQUIRED_LWJGL_VERSION)) {
+            // Fabric has a habit of changing the version in runClient.
+            if (!Version.getVersion().startsWith(REQUIRED_LWJGL_VERSION) && !Boolean.parseBoolean(System.getProperty("fabric.development", "false"))) {
                 String message = normalMessage;
 
                 if (System.getProperty("minecraft.launcher.brand", "unknown").equalsIgnoreCase("PrismLauncher")) {
