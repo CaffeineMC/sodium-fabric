@@ -64,6 +64,11 @@ public class CloudRenderer {
             return;
         }
 
+        // Skip rendering clouds if texture is completely blank
+        if (this.textureData.isBlank) {
+            return;
+        }
+
         Vec3 pos = camera.getPosition();
 
         double cloudTime = (ticks + tickDelta) * 0.03F;
@@ -502,6 +507,7 @@ public class CloudRenderer {
     private static class CloudTextureData {
         private final byte[] faces;
         private final int[] colors;
+        private boolean isBlank;
 
         private final int width, height;
 
@@ -511,6 +517,7 @@ public class CloudRenderer {
 
             this.faces = new byte[width * height];
             this.colors = new int[width * height];
+            this.isBlank = true;
 
             this.width = width;
             this.height = height;
@@ -528,6 +535,7 @@ public class CloudRenderer {
 
                     if (!isTransparentCell(color)) {
                         this.faces[index] = (byte) getOpenFaces(texture, color, x, z);
+                        this.isBlank = false;
                     }
                 }
             }

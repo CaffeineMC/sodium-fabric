@@ -231,7 +231,7 @@ public class DefaultFluidRenderer {
                 setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
             }
 
-            this.updateQuad(quad, level, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
+            this.updateQuad(quad, level, blockPos, lighter, Direction.UP, ModelQuadFacing.POS_Y, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, collector, material, offset, quad, aligned ? ModelQuadFacing.POS_Y : ModelQuadFacing.UNASSIGNED, false);
 
             if (fluidState.shouldRenderBackwardUpFace(level, this.scratchPos.set(posX, posY + 1, posZ))) {
@@ -254,7 +254,7 @@ public class DefaultFluidRenderer {
             setVertex(quad, 2, 1.0F, yOffset, 0.0f, maxU, minV);
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
-            this.updateQuad(quad, level, blockPos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
+            this.updateQuad(quad, level, blockPos, lighter, Direction.DOWN, ModelQuadFacing.NEG_Y, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, collector, material, offset, quad, ModelQuadFacing.NEG_Y, false);
         }
 
@@ -354,7 +354,7 @@ public class DefaultFluidRenderer {
 
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
-                this.updateQuad(quad, level, blockPos, lighter, dir, br, colorProvider, fluidState);
+                this.updateQuad(quad, level, blockPos, lighter, dir, facing, br, colorProvider, fluidState);
                 this.writeQuad(meshBuilder, collector, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
@@ -369,10 +369,21 @@ public class DefaultFluidRenderer {
         return Math.abs(a - b) <= ALIGNED_EQUALS_EPSILON;
     }
 
-    private void updateQuad(ModelQuadView quad, LevelSlice level, BlockPos pos, LightPipeline lighter, Direction dir, float brightness,
+    private void updateQuad(ModelQuadViewMutable quad, LevelSlice level, BlockPos pos, LightPipeline lighter, Direction dir, ModelQuadFacing facing, float brightness,
                             ColorProvider<FluidState> colorProvider, FluidState fluidState) {
+
+        int normal;
+        if (facing.isAligned()) {
+            normal = facing.getPackedAlignedNormal();
+        } else {
+            normal = quad.calculateNormal();
+        }
+
+        quad.setFaceNormal(normal);
+
         QuadLightData light = this.quadLightData;
-        lighter.calculate(quad, pos, light, null, dir, false);
+
+        lighter.calculate(quad, pos, light, null, dir, false, true);
 
         colorProvider.getColors(level, pos, fluidState, quad, this.quadColors);
 
@@ -407,14 +418,18 @@ public class DefaultFluidRenderer {
 
         if (material.isTranslucent() && collector != null) {
             int normal;
+
             if (facing.isAligned()) {
                 normal = facing.getPackedAlignedNormal();
             } else {
-                normal = quad.calculateNormal();
+                // This was updated earlier in updateQuad. There is no situation where the normal vector should have changed.
+                normal = quad.getFaceNormal();
             }
+
             if (flip) {
                 normal = NormI8.flipPacked(normal);
             }
+
             collector.appendQuad(normal, vertices, facing);
         }
 

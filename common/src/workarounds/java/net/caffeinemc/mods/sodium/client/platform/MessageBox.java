@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.platform;
 
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxParamSw;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.msgbox.MsgBoxCallback;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.User32;
@@ -8,13 +9,13 @@ import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import com.mojang.blaze3d.platform.Window;
-import oshi.PlatformEnum;
-import oshi.SystemInfo;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.Objects;
 
 public class MessageBox {
@@ -32,18 +33,37 @@ public class MessageBox {
 
     private interface MessageBoxImpl {
         static @Nullable MessageBoxImpl chooseImpl() {
-            if (SystemInfo.getCurrentPlatform() == PlatformEnum.WINDOWS) {
+            if (OsUtils.getOs() == OsUtils.OperatingSystem.WIN) {
                 return new WindowsMessageBoxImpl();
+            } else {
+                // TODO: Tiny File Dialogs is really bad. We need something better.
+                //return new TFDMessageBoxImpl();
+                return null;
             }
-
-            // TODO: Provide an implementation on other platforms
-            return null;
         }
 
         void showMessageBox(@Nullable Window window,
                             IconType icon, String title,
                             String description,
                             @Nullable String helpUrl);
+    }
+
+    private static class TFDMessageBoxImpl implements MessageBoxImpl {
+        // This adds information about how to open the help box, since we cannot change the buttons.
+        private static final String NOTICE = "\n\nFor more information, click OK; otherwise, click Cancel.";
+
+        @Override
+        public void showMessageBox(@Nullable Window window, IconType icon, String title, String description, @Nullable String helpUrl) {
+            boolean clicked = TinyFileDialogs.tinyfd_messageBox(title, helpUrl == null ? description : description + NOTICE, helpUrl == null ? "ok" : "okcancel", icon.name().toLowerCase(Locale.ROOT), false);
+
+            if (clicked && helpUrl != null) {
+                try {
+                    Desktop.getDesktop().browse(URI.create(helpUrl));
+                } catch (IOException e) {
+                    System.out.println("Failed to open! Giving up.");
+                }
+            }
+        }
     }
 
     private static class WindowsMessageBoxImpl implements MessageBoxImpl {
