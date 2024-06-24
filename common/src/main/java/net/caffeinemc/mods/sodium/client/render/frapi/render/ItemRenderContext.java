@@ -18,12 +18,14 @@ package net.caffeinemc.mods.sodium.client.render.frapi.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.MatrixUtil;
 import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.EncodingFormat;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.mixin.features.render.frapi.ItemRendererAccessor;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
@@ -93,7 +95,9 @@ public class ItemRenderContext extends AbstractRenderContext {
     private boolean isDefaultTranslucent;
     private boolean isTranslucentDirect;
     private boolean isDefaultGlint;
+    private boolean isGlintDynamicDisplay;
 
+    private PoseStack.Pose dynamicDisplayGlintEntry;
     private VertexConsumer translucentVertexConsumer;
     private VertexConsumer cutoutVertexConsumer;
     private VertexConsumer translucentGlintVertexConsumer;
@@ -142,8 +146,10 @@ public class ItemRenderContext extends AbstractRenderContext {
         ((FabricBakedModel) model).emitItemQuads(itemStack, randomSupplier, this);
 
         this.itemStack = null;
+        this.poseStack = null;
         this.bufferSource = null;
 
+        dynamicDisplayGlintEntry = null;
         translucentVertexConsumer = null;
         cutoutVertexConsumer = null;
         translucentGlintVertexConsumer = null;
@@ -171,6 +177,7 @@ public class ItemRenderContext extends AbstractRenderContext {
         }
 
         isDefaultGlint = itemStack.hasFoil();
+        isGlintDynamicDisplay = ItemRendererAccessor.sodium$hasAnimatedTexture(itemStack);
 
         defaultVertexConsumer = getVertexConsumer(BlendMode.DEFAULT, TriState.DEFAULT);
     }
@@ -192,7 +199,7 @@ public class ItemRenderContext extends AbstractRenderContext {
 
     private void colorizeQuad(MutableQuadViewImpl quad, int colorIndex) {
         if (colorIndex != -1) {
-            final int itemColor = 0xFF000000 | colorMap.getColor(itemStack, colorIndex);
+            final int itemColor = colorMap.getColor(itemStack, colorIndex);
 
             for (int i = 0; i < 4; i++) {
                 quad.color(i, ColorHelper.multiplyColor(itemColor, quad.color(i)));
@@ -272,6 +279,10 @@ public class ItemRenderContext extends AbstractRenderContext {
     }
 
     private VertexConsumer createTranslucentVertexConsumer(boolean glint) {
+        if (glint && isGlintDynamicDisplay) {
+            return createDynamicDisplayGlintVertexConsumer(Minecraft.useShaderTransparency() && !isTranslucentDirect ? Sheets.translucentItemSheet() : Sheets.translucentCullBlockSheet());
+        }
+
         if (isTranslucentDirect) {
             return ItemRenderer.getFoilBufferDirect(bufferSource, Sheets.translucentCullBlockSheet(), true, glint);
         } else if (Minecraft.useShaderTransparency()) {
@@ -282,7 +293,25 @@ public class ItemRenderContext extends AbstractRenderContext {
     }
 
     private VertexConsumer createCutoutVertexConsumer(boolean glint) {
+        if (glint && isGlintDynamicDisplay) {
+            return createDynamicDisplayGlintVertexConsumer(Sheets.cutoutBlockSheet());
+        }
+
         return ItemRenderer.getFoilBufferDirect(bufferSource, Sheets.cutoutBlockSheet(), true, glint);
+    }
+
+    private VertexConsumer createDynamicDisplayGlintVertexConsumer(RenderType type) {
+        if (dynamicDisplayGlintEntry == null) {
+            dynamicDisplayGlintEntry = poseStack.last().copy();
+
+            if (transformMode == ItemDisplayContext.GUI) {
+                MatrixUtil.mulComponentWise(dynamicDisplayGlintEntry.pose(), 0.5F);
+            } else if (transformMode.firstPerson()) {
+                MatrixUtil.mulComponentWise(dynamicDisplayGlintEntry.pose(), 0.75F);
+            }
+        }
+
+        return ItemRenderer.getCompassFoilBuffer(bufferSource, type, dynamicDisplayGlintEntry);
     }
 
     public void bufferDefaultModel(BakedModel model, @Nullable BlockState state) {
