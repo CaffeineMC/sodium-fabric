@@ -9,7 +9,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
  * Partitions quads into multiple child BSP nodes with multiple parallel
  * partition planes. This is uses less memory and time than constructing a
  * binary BSP tree through more partitioning passes.
- * 
+ *
  * Implementation note: Detecting and avoiding the double array when possible
  * brings no performance benefit in sorting speed, only a building speed
  * detriment.
@@ -116,13 +116,13 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
             var partition = partitions.get(i);
 
             // if the partition actually has a plane
-            float partitionDistance = -1;
+            float partitionDistance = Float.NaN;
             if (endsWithPlane || i < count - 1) {
                 partitionDistance = partition.distance();
                 workspace.addAlignedPartitionPlane(axis, partitionDistance);
 
                 // NOTE: sanity check
-                if (partitionDistance == -1) {
+                if (Float.isNaN(partitionDistance)) {
                     throw new IllegalStateException("partition distance not set");
                 }
 
@@ -139,9 +139,10 @@ class InnerMultiPartitionBSPNode extends InnerPartitionBSPNode {
                         oldChildIndex++;
                         oldPartitionDistance = oldChildIndex < oldPlaneDistances.length
                                 ? oldPlaneDistances[oldChildIndex]
-                                : -1;
+                                : Float.NaN;
                     }
-                    if (oldChildIndex < oldPartitionNodes.length && oldPartitionDistance == partitionDistance) {
+                    if (oldChildIndex < oldPartitionNodes.length
+                            && (oldPartitionDistance == partitionDistance || Float.isNaN(partitionDistance) && Float.isNaN(oldPartitionDistance))) {
                         oldChild = oldPartitionNodes[oldChildIndex];
                     }
                 }
