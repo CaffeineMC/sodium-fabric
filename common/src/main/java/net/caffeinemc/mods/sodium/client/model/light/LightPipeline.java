@@ -18,6 +18,7 @@ public interface LightPipeline {
      * @param cullFace The cull face of the quad
      * @param lightFace The light face of the quad
      * @param shade True if the block is shaded by ambient occlusion
+     * @param isFluid True if the block is being drawn by the fluid renderer
      */
-    void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade);
+    void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, boolean isFluid);
 }

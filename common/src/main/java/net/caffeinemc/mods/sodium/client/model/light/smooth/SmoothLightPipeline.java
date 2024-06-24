@@ -66,7 +66,7 @@ public class SmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, boolean isFluid) {
         this.updateCachedData(pos.asLong());
 
         int flags = quad.getFlags();
@@ -85,8 +85,10 @@ public class SmoothLightPipeline implements LightPipeline {
             }
         } else if ((flags & ModelQuadFlags.IS_PARALLEL) != 0) {
             this.applyParallelFace(neighborInfo, quad, pos, lightFace, out, shade);
+        } else if (isFluid) {
+            this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out, shade);
         } else {
-            irregularFace(pos, quad, out, shade);
+            this.applyIrregularFace(pos, quad, out, shade);
         }
     }
 
@@ -232,7 +234,11 @@ public class SmoothLightPipeline implements LightPipeline {
         }
     }
 
-    private void irregularFace(BlockPos blockPos, ModelQuadView quad, QuadLightData out, boolean shade) {
+    /**
+     * Calculates the light data for a quad that does not follow any grid and is not parallel to it's light face.
+     * Flags: !IS_ALIGNED, !IS_PARTIAL, !IS_FULL
+     */
+    private void applyIrregularFace(BlockPos blockPos, ModelQuadView quad, QuadLightData out, boolean shade) {
         final float[] w = this.weights;
         final float[] aoResult = out.br;
         final int[] lightResult = out.lm;

@@ -31,7 +31,7 @@ public class FlatLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, boolean isFluid) {
         int lightmap;
 
         // To match vanilla behavior, use the cull face if it exists/is available

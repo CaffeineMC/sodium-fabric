@@ -16,6 +16,7 @@ public class ModelQuad implements ModelQuadViewMutable {
     private Direction direction;
 
     private int colorIdx;
+    private int faceNormal;
 
     @Override
     public void setX(int idx, float x) {
@@ -55,6 +56,11 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public void setNormal(int idx, int normal) {
         this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX] = normal;
+    }
+
+    @Override
+    public void setFaceNormal(int normal) {
+        this.faceNormal = normal;
     }
 
     @Override
@@ -119,7 +125,7 @@ public class ModelQuad implements ModelQuadViewMutable {
 
     @Override
     public int getFaceNormal() {
-        return getVertexNormal(0);
+        return faceNormal;
     }
 
     @Override
