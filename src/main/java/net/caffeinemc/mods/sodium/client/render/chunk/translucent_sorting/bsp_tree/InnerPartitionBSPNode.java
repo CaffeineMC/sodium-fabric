@@ -279,7 +279,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
             // find gaps
             partitions.clear();
-            float distance = -1;
+            float distance = Float.NaN;
             IntArrayList quadsBefore = null;
             IntArrayList quadsOn = null;
             int thickness = 0;
@@ -289,7 +289,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
                         // unless at the start, flush if there's a gap
                         if (thickness == 0 && (quadsBefore != null || quadsOn != null)) {
                             partitions.add(new Partition(distance, quadsBefore, quadsOn));
-                            distance = -1;
+                            distance = Float.NaN;
                             quadsBefore = null;
                             quadsOn = null;
                         }
@@ -298,11 +298,11 @@ abstract class InnerPartitionBSPNode extends BSPNode {
 
                         // flush to partition if still writing last partition
                         if (quadsOn != null) {
-                            if (distance == -1) {
+                            if (Float.isNaN(distance)) {
                                 throw new IllegalStateException("distance not set");
                             }
                             partitions.add(new Partition(distance, quadsBefore, quadsOn));
-                            distance = -1;
+                            distance = Float.NaN;
                             quadsOn = null;
                         }
                         if (quadsBefore == null) {
@@ -359,7 +359,7 @@ abstract class InnerPartitionBSPNode extends BSPNode {
             // flush the last partition, use the -1 distance to indicate the end if it
             // doesn't use quadsOn (which requires a certain distance to be given)
             if (quadsBefore != null || quadsOn != null) {
-                partitions.add(new Partition(endsWithPlane ? distance : -1, quadsBefore, quadsOn));
+                partitions.add(new Partition(endsWithPlane ? distance : Float.NaN, quadsBefore, quadsOn));
             }
 
             // check if this can be turned into a binary partition node
