@@ -44,6 +44,7 @@ public class FluidRenderer {
     // TODO: allow this to be changed by vertex format
     // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
     private static final float EPSILON = 0.001f;
+    private static final float ALIGNED_EQUALS_EPSILON = 0.011f;
 
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
     private final MutableFloat scratchHeight = new MutableFloat(0);
@@ -67,15 +68,14 @@ public class FluidRenderer {
     }
 
     private boolean isFluidOccluded(BlockRenderView world, int x, int y, int z, Direction dir, Fluid fluid) {
-        BlockPos pos = this.scratchPos.set(x, y, z);
-        BlockState blockState = world.getBlockState(pos);
-        BlockPos adjPos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
-
-        if (blockState.isOpaque()) {
-            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world, pos, dir, SideShapeType.FULL);
+        var adjPos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
+        BlockState blockState = world.getBlockState(adjPos);
+        if (blockState.getFluidState().getFluid().matchesType(fluid)) {
+            return true;
         }
-        return world.getFluidState(adjPos).getFluid().matchesType(fluid);
+        return blockState.isOpaque() && dir != Direction.UP && blockState.isSideSolid(world, adjPos, dir.getOpposite(), SideShapeType.FULL);
     }
+
 
     private boolean isSideExposed(BlockRenderView world, int x, int y, int z, Direction dir, float height) {
         BlockPos pos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
@@ -85,10 +85,7 @@ public class FluidRenderer {
             VoxelShape shape = blockState.getCullingShape(world, pos);
 
             // Hoist these checks to avoid allocating the shape below
-            if (shape == VoxelShapes.fullCube()) {
-                // The top face always be inset, so if the shape above is a full cube it can't possibly occlude
-                return dir == Direction.UP;
-            } else if (shape.isEmpty()) {
+            if (shape.isEmpty()) {
                 return true;
             }
 
@@ -98,6 +95,10 @@ public class FluidRenderer {
         }
 
         return true;
+    }
+
+    private static boolean isAlignedEquals(float a, float b) {
+        return Math.abs(a - b) <= ALIGNED_EQUALS_EPSILON;
     }
 
     public void render(WorldSlice world, FluidState fluidState, BlockPos blockPos, BlockPos offset, ChunkBuildBuffers buffers) {
@@ -219,10 +220,30 @@ public class FluidRenderer {
 
             quad.setSprite(sprite);
 
-            setVertex(quad, 0, 0.0f, northWestHeight, 0.0f, u1, v1);
-            setVertex(quad, 1, 0.0f, southWestHeight, 1.0F, u2, v2);
-            setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
-            setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
+
+            // top surface alignedness is calculated with a more relaxed epsilon
+            boolean aligned = isAlignedEquals(northEastHeight, northWestHeight)
+                    && isAlignedEquals(northWestHeight, southEastHeight)
+                    && isAlignedEquals(southEastHeight, southWestHeight)
+                    && isAlignedEquals(southWestHeight, northEastHeight);
+
+            boolean creaseNorthEastSouthWest = aligned
+                    || northEastHeight > northWestHeight && northEastHeight > southEastHeight
+                    || northEastHeight < northWestHeight && northEastHeight < southEastHeight
+                    || southWestHeight > northWestHeight && southWestHeight > southEastHeight
+                    || southWestHeight < northWestHeight && southWestHeight < southEastHeight;
+
+            if (creaseNorthEastSouthWest) {
+                setVertex(quad, 1, 0.0f, northWestHeight, 0.0f, u1, v1);
+                setVertex(quad, 2, 0.0f, southWestHeight, 1.0F, u2, v2);
+                setVertex(quad, 3, 1.0F, southEastHeight, 1.0F, u3, v3);
+                setVertex(quad, 0, 1.0F, northEastHeight, 0.0f, u4, v4);
+            } else {
+                setVertex(quad, 0, 0.0f, northWestHeight, 0.0f, u1, v1);
+                setVertex(quad, 1, 0.0f, southWestHeight, 1.0F, u2, v2);
+                setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
+                setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
+            }
 
             this.updateQuad(quad, world, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, material, offset, quad, facing, false);
@@ -232,7 +253,6 @@ public class FluidRenderer {
                         ModelQuadFacing.NEG_Y, true);
 
             }
-
         }
 
         if (!sfDown) {
@@ -367,7 +387,7 @@ public class FluidRenderer {
         if (override != null) {
             return override;
         }
-        
+
         return DefaultColorProviders.adapt(handler);
     }
 
@@ -401,7 +421,7 @@ public class FluidRenderer {
         var vertices = this.vertices;
 
         for (int i = 0; i < 4; i++) {
-            var out = vertices[flip ? 3 - i : i];
+            var out = vertices[flip ? (3 - i + 1) & 0b11 : i];
             out.x = offset.getX() + quad.getX(i);
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
