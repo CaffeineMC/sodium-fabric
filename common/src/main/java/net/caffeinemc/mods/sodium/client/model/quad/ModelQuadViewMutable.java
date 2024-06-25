@@ -49,6 +49,11 @@ public interface ModelQuadViewMutable extends ModelQuadView {
     void setNormal(int idx, int normal);
 
     /**
+     * Sets the normal vector of the face to the value {@param normal}
+     */
+    void setFaceNormal(int normal);
+
+    /**
      * Sets the bit-flag field which contains the {@link ModelQuadFlags} for this quad
      */
     void setFlags(int flags);

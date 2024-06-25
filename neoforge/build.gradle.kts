@@ -107,31 +107,15 @@ val localRuntime = configurations.create("localRuntime")
 dependencies {
     compileOnly(project(":common"))
     implementation("net.fabricmc:fabric_api_base:0.4.40+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_api_base") {
-        version {
-            strictly("[0.4.40+${MINECRAFT_VERSION}]")
-        }
-    }
+    jarJar("net.fabricmc:fabric_api_base:0.4.40+${MINECRAFT_VERSION}")
     implementation("net.fabricmc:fabric_renderer_api_v1:3.2.12+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_renderer_api_v1") {
-        version {
-            strictly("[3.2.12+${MINECRAFT_VERSION}]")
-        }
-    }
+    jarJar("net.fabricmc:fabric_renderer_api_v1:3.2.12+${MINECRAFT_VERSION}")
     implementation("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_rendering_data_attachment_v1") {
-        version {
-            strictly("[0.3.46+${MINECRAFT_VERSION}]")
-        }
-    }
-    localRuntime("com.lodborg:interval-tree:1.0.0")
+    jarJar("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}")
+    implementation("com.lodborg:interval-tree:1.0.0")
     jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
     implementation("net.fabricmc:fabric_block_view_api_v2:1.0.8+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_block_view_api_v2") {
-        version {
-            strictly("[1.0.8+${MINECRAFT_VERSION}]")
-        }
-    }
+    jarJar("net.fabricmc:fabric_block_view_api_v2:1.0.8+${MINECRAFT_VERSION}")
     compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
 }
 

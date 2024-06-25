@@ -52,6 +52,7 @@
     "features.render.frapi.BakedModelMixin",
     "features.render.frapi.ModelBlockRendererMixin",
     "features.render.frapi.ItemRendererMixin",
+    "features.render.frapi.ItemRendererAccessor",
     "features.render.gui.font.BakedGlyphMixin",
     "features.render.gui.outlines.LevelRendererMixin",
     "features.render.immediate.DirectionMixin",

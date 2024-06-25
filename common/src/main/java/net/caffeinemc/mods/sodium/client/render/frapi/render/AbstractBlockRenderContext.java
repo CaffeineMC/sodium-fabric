@@ -194,7 +194,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     protected void shadeQuad(MutableQuadViewImpl quad, LightMode lightMode, boolean emissive) {
         LightPipeline lighter = this.lighters.getLighter(lightMode);
         QuadLightData data = this.quadLightData;
-        lighter.calculate(quad, this.pos, data, quad.cullFace(), quad.lightFace(), quad.hasShade());
+        lighter.calculate(quad, this.pos, data, quad.cullFace(), quad.lightFace(), quad.hasShade(), false);
 
         if (emissive) {
             for (int i = 0; i < 4; i++) {

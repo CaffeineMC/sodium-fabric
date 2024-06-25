@@ -1,8 +1,10 @@
 package net.caffeinemc.mods.sodium.fabric;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
@@ -166,5 +168,47 @@ public class SodiumFabricHelpers implements SodiumPlatformHelpers {
     @Override
     public TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
         return model.useAmbientOcclusion() ? TriState.DEFAULT : TriState.FALSE;
+    }
+
+    /**
+     * Ported from Indigo.
+     * Finds mean of per-face shading factors weighted by normal components.
+     * Not how light actually works but the vanilla diffuse shading model is a hack to start with
+     * and this gives reasonable results for non-cubic surfaces in a vanilla-style renderer.
+     */
+    private float normalShade(BlockAndTintGetter blockView, float normalX, float normalY, float normalZ, boolean hasShade) {
+        float sum = 0;
+        float div = 0;
+
+        if (normalX > 0) {
+            sum += normalX * blockView.getShade(Direction.EAST, hasShade);
+            div += normalX;
+        } else if (normalX < 0) {
+            sum += -normalX * blockView.getShade(Direction.WEST, hasShade);
+            div -= normalX;
+        }
+
+        if (normalY > 0) {
+            sum += normalY * blockView.getShade(Direction.UP, hasShade);
+            div += normalY;
+        } else if (normalY < 0) {
+            sum += -normalY * blockView.getShade(Direction.DOWN, hasShade);
+            div -= normalY;
+        }
+
+        if (normalZ > 0) {
+            sum += normalZ * blockView.getShade(Direction.SOUTH, hasShade);
+            div += normalZ;
+        } else if (normalZ < 0) {
+            sum += -normalZ * blockView.getShade(Direction.NORTH, hasShade);
+            div -= normalZ;
+        }
+
+        return sum / div;
+    }
+
+    @Override
+    public float getAccurateShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade) {
+        return normalShade(level, NormI8.unpackX(quad.getFaceNormal()), NormI8.unpackY(quad.getFaceNormal()), NormI8.unpackZ(quad.getFaceNormal()), shade);
     }
 }

@@ -155,6 +155,33 @@ class AoFaceData {
         this.flags |= AoCompletionFlags.HAS_LIGHT_DATA;
     }
 
+    static AoFaceData weightedMean(AoFaceData in0, float w0, AoFaceData in1, float w1, AoFaceData out) {
+        out.ao[0] = in0.ao[0] * w0 + in1.ao[0] * w1;
+        out.ao[1] = in0.ao[1] * w0 + in1.ao[1] * w1;
+        out.ao[2] = in0.ao[2] * w0 + in1.ao[2] * w1;
+        out.ao[3] = in0.ao[3] * w0 + in1.ao[3] * w1;
+
+        if (!in0.hasUnpackedLightData()) in0.unpackLightData();
+        if (!in1.hasUnpackedLightData()) in1.unpackLightData();
+
+        out.bl[0] = (int) (in0.bl[0] * w0 + in1.bl[0] * w1);
+        out.bl[1] = (int) (in0.bl[1] * w0 + in1.bl[1] * w1);
+        out.bl[2] = (int) (in0.bl[2] * w0 + in1.bl[2] * w1);
+        out.bl[3] = (int) (in0.bl[3] * w0 + in1.bl[3] * w1);
+
+        out.sl[0] = (int) (in0.sl[0] * w0 + in1.sl[0] * w1);
+        out.sl[1] = (int) (in0.sl[1] * w0 + in1.sl[1] * w1);
+        out.sl[2] = (int) (in0.sl[2] * w0 + in1.sl[2] * w1);
+        out.sl[3] = (int) (in0.sl[3] * w0 + in1.sl[3] * w1);
+
+        out.lm[0] = packLight(out.sl[0], out.bl[0]);
+        out.lm[1] = packLight(out.sl[1], out.bl[1]);
+        out.lm[2] = packLight(out.sl[2], out.bl[2]);
+        out.lm[3] = packLight(out.sl[3], out.bl[3]);
+
+        return out;
+    }
+
     public void unpackLightData() {
         int[] lm = this.lm;
 
@@ -201,6 +228,10 @@ class AoFaceData {
 
     private static float unpackBlockLight(int i) {
         return i & 0xFF;
+    }
+
+    private static int packLight(float sl, float bl) {
+        return (((int) sl & 0xFF) << 16) | ((int) bl & 0xFF);
     }
 
     private static int calculateCornerBrightness(int a, int b, int c, int d, boolean aem, boolean bem, boolean cem, boolean dem) {

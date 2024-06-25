@@ -8,6 +8,7 @@ import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 public class SodiumPreLaunch implements PreLaunchEntrypoint {
     @Override
     public void onPreLaunch() {
+        PreLaunchChecks.beforeLWJGLInit();
         GraphicsAdapterProbe.findAdapters();
         PreLaunchChecks.onGameInit();
         Workarounds.init();
