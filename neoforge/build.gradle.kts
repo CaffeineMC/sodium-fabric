@@ -1,7 +1,7 @@
 plugins {
     id("idea")
     id("maven-publish")
-    id("net.neoforged.moddev") version "0.1.102"
+    id("net.neoforged.moddev") version "0.1.110"
     id("java-library")
 }
 
@@ -98,6 +98,12 @@ neoForge {
             additionalRuntimeClasspath.add("com.lodborg:interval-tree:1.0.0")
             additionalRuntimeClasspath.add(rootProject.project(":common").sourceSets.getByName("workarounds").output)
             client()
+        }
+    }
+
+    mods {
+        create("sodium") {
+            sourceSet(sourceSets.main.get())
         }
     }
 }
