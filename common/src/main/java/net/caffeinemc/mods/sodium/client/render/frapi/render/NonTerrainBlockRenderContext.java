@@ -30,6 +30,7 @@ import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
@@ -66,6 +67,8 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
         this.trustedNormals = poseStack.last().trustedNormals;
         this.matNormal = poseStack.last().normal();
         this.overlay = overlay;
+        this.type = ItemBlockRenderTypes.getChunkRenderType(state);
+        this.modelData = SodiumPlatformHelpers.INSTANCE.getEmptyModelData();
 
         this.lightDataCache.reset(pos, blockView);
         this.prepareCulling(cull);
@@ -74,6 +77,8 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
         ((FabricBakedModel) model).emitBlockQuads(blockView, state, pos, this.randomSupplier, this);
 
         this.level = null;
+        this.type = null;
+        this.modelData = null;
         this.lightDataCache.release();
         this.random = null;
         this.vertexConsumer = null;
