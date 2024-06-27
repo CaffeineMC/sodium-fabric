@@ -7,6 +7,7 @@ plugins {
 
 
 val MINECRAFT_VERSION: String by rootProject.extra
+val PARCHMENT_VERSION: String? by rootProject.extra
 val NEOFORGE_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
 
@@ -92,6 +93,11 @@ tasks.jar {
 neoForge {
     // Specify the version of NeoForge to use.
     version = NEOFORGE_VERSION
+
+    parchment {
+        mappingsVersion = PARCHMENT_VERSION
+        minecraftVersion = MINECRAFT_VERSION
+    }
 
     runs {
         create("client") {
