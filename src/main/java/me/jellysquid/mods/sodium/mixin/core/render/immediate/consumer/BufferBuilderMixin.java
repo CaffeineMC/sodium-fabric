@@ -39,6 +39,8 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, Extended
     @Shadow
     private long vertexPointer;
 
+    @Shadow
+    private int currentMask;
     @Unique
     private VertexFormatDescription formatDescription;
 
@@ -79,6 +81,7 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, Extended
 
         this.vertexCount += count;
         this.vertexPointer = dst + length;
+        this.currentMask = 0;
     }
 
     @Unique
