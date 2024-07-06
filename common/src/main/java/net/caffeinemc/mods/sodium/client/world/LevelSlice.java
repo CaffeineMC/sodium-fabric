@@ -3,8 +3,6 @@ package net.caffeinemc.mods.sodium.client.world;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelColorCache;
-import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorSource;
-import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorView;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelBiomeSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.caffeinemc.mods.sodium.client.world.cloned.ClonedChunkSection;
@@ -48,7 +46,7 @@ import java.util.Objects;
  *
  * <p>Object pooling should be used to avoid huge allocations as this class contains many large arrays.</p>
  */
-public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, RenderAttachedBlockView {
+public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlockView {
     private static final LightLayer[] LIGHT_TYPES = LightLayer.values();
 
     // The number of blocks in a section.
@@ -361,11 +359,6 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
     @Override
     public int getMinBuildHeight() {
         return this.level.getMinBuildHeight();
-    }
-
-    @Override
-    public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
-        return this.biomeColors.getColor(source, blockX, blockY, blockZ);
     }
 
     //@Override
