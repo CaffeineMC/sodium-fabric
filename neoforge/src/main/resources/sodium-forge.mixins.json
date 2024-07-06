@@ -15,6 +15,7 @@
     "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
     "LevelSliceMixin",
+    "MixinClientModLoader",
     "SimpleBakedModelAccessor"
   ]
 }

@@ -2,10 +2,9 @@ package net.caffeinemc.mods.sodium.client.model.color;
 
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.client.model.quad.blender.BlendedColorProvider;
-import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorSource;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
-import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.minecraft.client.color.block.BlockColor;
+import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
@@ -16,6 +15,8 @@ public class DefaultColorProviders {
         return new VanillaAdapter(color);
     }
 
+    private static ThreadLocal<BlockPos.MutableBlockPos> blockPosHolder = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
+
     public static class GrassColorProvider<T> extends BlendedColorProvider<T> {
         public static final ColorProvider<BlockState> BLOCKS = new GrassColorProvider<>();
 
@@ -25,7 +26,7 @@ public class DefaultColorProviders {
 
         @Override
         protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return slice.getColor(BiomeColorSource.GRASS, x, y, z);
+            return BiomeColors.getAverageGrassColor(slice, blockPosHolder.get().set(x, y, z));
         }
     }
 
@@ -38,7 +39,7 @@ public class DefaultColorProviders {
 
         @Override
         protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return slice.getColor(BiomeColorSource.FOLIAGE, x, y, z);
+            return BiomeColors.getAverageFoliageColor(slice, blockPosHolder.get().set(x, y, z));
         }
     }
 
@@ -52,7 +53,7 @@ public class DefaultColorProviders {
 
         @Override
         protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return slice.getColor(BiomeColorSource.WATER, x, y, z);
+            return BiomeColors.getAverageWaterColor(slice, blockPosHolder.get().set(x, y, z));
         }
     }
 
