@@ -1,10 +1,10 @@
 package net.caffeinemc.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
 import net.caffeinemc.mods.sodium.client.services.PlatformModelAccess;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelDataContainer;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelColorCache;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelBiomeSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -144,8 +144,8 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
             }
         }
 
-        SodiumModelDataContainer modelData = PlatformModelAccess.getInstance().getModelDataContainer(level, pos.chunk());
-        List<?> renderers = SodiumPlatformHelpers.INSTANCE.getExtraRenderers(level, pos.origin());
+        SodiumModelDataContainer modelData = PlatformModelAccess.getInstance().getModelDataContainer(level, pos);
+        List<?> renderers = PlatformLevelAccess.getInstance().getExtraRenderers(level, pos.origin());
 
         return new ChunkRenderContext(pos, sections, box, modelData, renderers);
     }

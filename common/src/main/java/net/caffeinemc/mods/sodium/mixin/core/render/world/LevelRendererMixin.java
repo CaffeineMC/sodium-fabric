@@ -2,7 +2,6 @@ package net.caffeinemc.mods.sodium.mixin.core.render.world;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.ChunkRenderMatrices;
@@ -131,7 +130,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
             RenderDevice.exitManagedCode();
         }
 
-        PlatformLevelAccess.getInstance().runChunkLayerEvents(renderLayer, ((LevelRenderer) (Object) this), matrices, projectionMatrix, this.ticks, this.minecraft.gameRenderer.getMainCamera(), this.cullingFrustum);
+        PlatformLevelAccess.getInstance().runChunkLayerEvents(renderLayer, ((LevelRenderer) (Object) this), modelMatrix, projectionMatrix, this.ticks, this.minecraft.gameRenderer.getMainCamera(), this.cullingFrustum);
     }
 
     /**

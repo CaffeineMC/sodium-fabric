@@ -1,9 +1,9 @@
 package net.caffeinemc.mods.sodium.neoforge;
 
 import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
-import net.minecraftforge.fml.loading.FMLConfig;
-import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLConfig;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
 

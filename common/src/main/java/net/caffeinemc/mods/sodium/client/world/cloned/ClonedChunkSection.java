@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
 import net.caffeinemc.mods.sodium.client.world.PalettedContainerROExtension;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.core.BlockPos;
@@ -55,7 +56,7 @@ public class ClonedChunkSection {
 
         Int2ReferenceMap<BlockEntity> blockEntityMap = null;
         Int2ReferenceMap<Object> blockEntityRenderDataMap = null;
-        auxLightManager = SodiumPlatformHelpers.INSTANCE.getLightManager(chunk, pos);
+        auxLightManager = PlatformLevelAccess.INSTANCE.getLightManager(chunk, pos);
 
         if (section != null) {
             if (!section.hasOnlyAir()) {

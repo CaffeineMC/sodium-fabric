@@ -11,9 +11,7 @@
   },
   "client" : [
     "ClientHooksMixin",
-    "ClientModLoaderMixin",
-    "FaceBakeryMixin",
-    "ForgeGUIMixin",
+    "ResourcePackLoaderMixin",
     "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
     "LevelSliceMixin",

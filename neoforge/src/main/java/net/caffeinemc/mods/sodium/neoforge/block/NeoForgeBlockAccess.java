@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.neoforge.block;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.renderer.RenderType;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
 public class NeoForgeBlockAccess implements PlatformBlockAccess {
@@ -47,8 +49,14 @@ public class NeoForgeBlockAccess implements PlatformBlockAccess {
         return level.getShade(NormI8.unpackX(quad.getFaceNormal()), NormI8.unpackY(quad.getFaceNormal()), NormI8.unpackZ(quad.getFaceNormal()), shade);
     }
 
+    private static final TriState[] TRI_STATES = new TriState[] {
+            TriState.TRUE,
+            TriState.DEFAULT,
+            TriState.FALSE
+    };
+
     @Override
-    public TriState usesAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
-        return model.useAmbientOcclusion(state, renderType) ? TriState.DEFAULT : TriState.FALSE;
+    public TriState usesAmbientOcclusion(BakedModel model, BlockState state, SodiumModelData data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
+        return TRI_STATES[model.useAmbientOcclusion(state, (ModelData) (Object) data, renderType).ordinal()];
     }
 }

@@ -20,6 +20,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortTy
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
 import net.caffeinemc.mods.sodium.client.util.task.CancellationToken;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -143,7 +144,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             throw fillCrashInfo(CrashReport.forThrowable(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
-        SodiumPlatformHelpers.INSTANCE.renderAdditionalRenderers(renderContext.getRenderers(), type -> buffers.get(DefaultMaterials.forRenderLayer(type)).asFallbackVertexConsumer(DefaultMaterials.forRenderLayer(type), collector),
+        PlatformLevelAccess.INSTANCE.renderAdditionalRenderers(renderContext.getRenderers(), type -> buffers.get(DefaultMaterials.forRenderLayer(type)).asFallbackVertexConsumer(DefaultMaterials.forRenderLayer(type), collector),
                 slice);
 
         blockRenderer.release();

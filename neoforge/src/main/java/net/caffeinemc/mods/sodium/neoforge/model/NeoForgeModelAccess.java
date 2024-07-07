@@ -11,12 +11,13 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.data.ModelData;
+import net.neoforged.neoforge.client.model.data.ModelData;
 
 import java.util.List;
 import java.util.Map;
@@ -34,12 +35,12 @@ public class NeoForgeModelAccess implements PlatformModelAccess {
     }
 
     @Override
-    public SodiumModelDataContainer getModelDataContainer(Level level, ChunkPos chunkPos) {
-        Set<Map.Entry<BlockPos, ModelData>> entrySet = level.getModelDataManager().getAt(chunkPos).entrySet();
+    public SodiumModelDataContainer getModelDataContainer(Level level, SectionPos sectionPos) {
+        Set<Long2ObjectMap.Entry<ModelData>> entrySet = level.getModelDataManager().getAt(sectionPos).long2ObjectEntrySet();
         Long2ObjectMap<SodiumModelData> modelDataMap = new Long2ObjectOpenHashMap<>(entrySet.size());
 
-        for (Map.Entry<BlockPos, ModelData> entry : entrySet) {
-            modelDataMap.put(entry.getKey().asLong(), (SodiumModelData) (Object) entry.getValue());
+        for (Long2ObjectMap.Entry<ModelData> entry : entrySet) {
+            modelDataMap.put(entry.getLongKey(), (SodiumModelData) (Object) entry.getValue());
         }
 
         return new SodiumModelDataContainer(modelDataMap);

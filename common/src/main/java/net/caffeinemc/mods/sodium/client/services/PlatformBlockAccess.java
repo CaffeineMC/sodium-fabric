@@ -86,5 +86,5 @@ public interface PlatformBlockAccess {
      * @param pos The current position
      * @return If ambient occlusion is forced, or {@code DEFAULT}
      */
-    TriState usesAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos);
+    TriState usesAmbientOcclusion(BakedModel model, BlockState state, SodiumModelData data, RenderType renderType, BlockAndTintGetter level, BlockPos pos);
 }

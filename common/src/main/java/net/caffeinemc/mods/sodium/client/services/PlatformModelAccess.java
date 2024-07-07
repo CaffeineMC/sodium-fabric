@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ChunkPos;
@@ -51,10 +52,10 @@ public interface PlatformModelAccess {
     /**
      * Gets the container holding model data for this chunk. <b>This operation is not thread safe.</b>
      * @param level The current vanilla Level.
-     * @param chunkPos The current chunk position.
+     * @param sectionPos The current chunk position.
      * @return
      */
-    SodiumModelDataContainer getModelDataContainer(Level level, ChunkPos chunkPos);
+    SodiumModelDataContainer getModelDataContainer(Level level, SectionPos sectionPos);
 
     /**
      * Gets the true model data from the block data in the container.

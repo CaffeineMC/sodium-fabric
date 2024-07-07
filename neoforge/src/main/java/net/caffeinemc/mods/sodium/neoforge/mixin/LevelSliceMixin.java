@@ -1,6 +1,8 @@
 package net.caffeinemc.mods.sodium.neoforge.mixin;
 
 
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelDataContainer;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -25,7 +27,7 @@ public abstract class LevelSliceMixin implements BlockAndTintGetter {
     private Object[] auxLightManager;
 
     @Shadow
-    private @Nullable Object modelDataSnapshot;
+    private @Nullable SodiumModelDataContainer modelDataSnapshot;
 
     @Shadow
     @Final
@@ -35,14 +37,14 @@ public abstract class LevelSliceMixin implements BlockAndTintGetter {
     private int originBlockX, originBlockY, originBlockZ;
 
     @Shadow
-    public Object getPlatformModelData(BlockPos pos) {
+    public SodiumModelData getPlatformModelData(BlockPos pos) {
         return null;
     }
 
     @Override
     public ModelData getModelData(BlockPos pos) {
-        Object modelData = getPlatformModelData(pos);
-        return modelData != null ? (ModelData) modelData : null;
+        SodiumModelData modelData = getPlatformModelData(pos);
+        return modelData != null ? (ModelData) (Object) modelData : null;
     }
 
     @Shadow
