@@ -12,8 +12,8 @@ public class CompactChunkVertex implements ChunkVertexType {
     public static final int STRIDE = 20;
 
     public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(ChunkMeshAttribute.class, STRIDE)
-            .addElement(ChunkMeshAttribute.POSITION_HI, 0, GlVertexAttributeFormat.UNSIGNED_2_10_10_10_REV, 4, false, false)
-            .addElement(ChunkMeshAttribute.POSITION_LO, 4, GlVertexAttributeFormat.UNSIGNED_2_10_10_10_REV, 4, false, false)
+            .addElement(ChunkMeshAttribute.POSITION_HI, 0, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+            .addElement(ChunkMeshAttribute.POSITION_LO, 4, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
             .addElement(ChunkMeshAttribute.COLOR, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
             .addElement(ChunkMeshAttribute.TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false, true)
             .addElement(ChunkMeshAttribute.LIGHT_MATERIAL_INDEX, 16, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, false, true)
@@ -22,8 +22,8 @@ public class CompactChunkVertex implements ChunkVertexType {
     private static final int POSITION_MAX_VALUE = 1 << 20;
     private static final int TEXTURE_MAX_VALUE = 1 << 15;
 
-    private static final float MODEL_TRANSLATION = 8.0f;
-    private static final float MODEL_SCALE = 32.0f;
+    private static final float MODEL_ORIGIN = 8.0f;
+    private static final float MODEL_RANGE = 32.0f;
 
     @Override
     public GlVertexFormat<ChunkMeshAttribute> getVertexFormat() {
@@ -48,9 +48,9 @@ public class CompactChunkVertex implements ChunkVertexType {
             for (int i = 0; i < 4; i++) {
                 var vertex = vertices[i];
 
-                int x = encodePosition(vertex.x);
-                int y = encodePosition(vertex.y);
-                int z = encodePosition(vertex.z);
+                int x = quantizePosition(vertex.x);
+                int y = quantizePosition(vertex.y);
+                int z = quantizePosition(vertex.z);
 
                 int u = encodeTexture(texCentroidU, vertex.u);
                 int v = encodeTexture(texCentroidV, vertex.v);
@@ -82,8 +82,12 @@ public class CompactChunkVertex implements ChunkVertexType {
                 ((z & 0x3FF) << 20);
     }
 
-    private static int encodePosition(float position) {
-        return Math.round((position + MODEL_TRANSLATION) * (POSITION_MAX_VALUE / MODEL_SCALE));
+    private static int quantizePosition(float position) {
+        return ((int) (normalizePosition(position) * POSITION_MAX_VALUE)) & 0xFFFFF;
+    }
+
+    private static float normalizePosition(float v) {
+        return (MODEL_ORIGIN + v) / MODEL_RANGE;
     }
 
     private static int packTexture(int u, int v) {
@@ -91,22 +95,16 @@ public class CompactChunkVertex implements ChunkVertexType {
     }
 
     private static int encodeTexture(float center, float x) {
-        // Normally, the UV coordinates are shrunk towards the center of the texture by a very small epsilon to avoid
-        // texture bleeding between sprites in the atlas. When compressing to smaller integer formats, this creates a
-        // problem, since the very small offsets can not be encoded without using a significant number of bits.
+        // Shrink the texture coordinates (towards the center of the mapped texture region) by the minimum
+        // addressable unit (after quantization.) Then, encode the sign of the bias that was used, and apply
+        // the inverse transformation on the GPU with a small epsilon.
         //
-        // Rather than encoding very small epsilons, we use a single bit to represent the sign of a constant bias
-        // value, which is then applied in the shader code. The sign of the bias is determined by comparing the
-        // coordinates to the center point of the texture region.
-        //
-        // By always shrinking the texture coordinates at least one unit, we also avoid needing to encode both x=0.0 and
-        // x=1.0, which normally requires an extra bit to represent.
+        // This makes it possible to use much smaller epsilons for avoiding texture bleed, since the epsilon is no
+        // longer encoded into the vertex data (instead, we only store the sign.)
         int bias = (x < center) ? 1 : -1;
         int quantized = floorInt(x * TEXTURE_MAX_VALUE) + bias;
 
-        // When packing the values into a 16-bit unsigned integer, the 15-bit quantized value is shifted to the left by
-        // one, and the least-significant bit (which is now zero-filled) is used to store the sign of the bias.
-        return ((quantized & 0x7FFF) << 1) | (bias >>> 31);
+        return (quantized & 0x7FFF) | (sign(bias) << 15);
     }
 
     private static int encodeLight(int light) {
@@ -120,6 +118,12 @@ public class CompactChunkVertex implements ChunkVertexType {
         return ((light & 0xFFFF) << 0) |
                 ((material & 0xFF) << 16) |
                 ((section & 0xFF) << 24);
+    }
+
+    private static int sign(int x) {
+        // Shift the sign-bit to the least significant bit's position
+        // (0) if positive, (1) if negative
+        return (x >>> 31);
     }
 
     private static int floorInt(float x) {
