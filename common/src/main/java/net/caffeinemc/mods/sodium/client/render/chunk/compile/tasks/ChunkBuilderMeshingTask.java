@@ -144,10 +144,6 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             throw fillCrashInfo(CrashReport.forThrowable(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
-        if (SodiumPlatformHelpers.INSTANCE.shouldRenderIE(renderContext.getOrigin())) {
-            SodiumPlatformHelpers.INSTANCE.renderConnectionsInSection(buffers, slice, renderContext.getOrigin());
-        }
-
         blockRenderer.release();
 
         SortType sortType = SortType.NONE;

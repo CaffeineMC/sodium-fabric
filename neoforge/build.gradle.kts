@@ -145,7 +145,6 @@ dependencies {
         isTransitive = false
         jarJar.pin(this, "1.0.1+0767707077")
     }
-    compileOnly(fg.deobf("maven.modrinth:immersiveengineering:MAqXk6P8"))
 }
 
 

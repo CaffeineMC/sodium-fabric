@@ -76,10 +76,6 @@ public interface SodiumPlatformHelpers {
 
     Object getProperModelData(BakedModel model, BlockState state, BlockPos pos, LevelSlice slice, Object modelData);
 
-    void renderConnectionsInSection(ChunkBuildBuffers buffers, LevelSlice worldSlice, SectionPos position);
-
-    boolean shouldRenderIE(SectionPos position);
-
     TriState useAmbientOcclusion(BakedModel model, BlockState state, Object data, RenderType renderType, BlockAndTintGetter level, BlockPos pos);
 
     float getAccurateShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade);

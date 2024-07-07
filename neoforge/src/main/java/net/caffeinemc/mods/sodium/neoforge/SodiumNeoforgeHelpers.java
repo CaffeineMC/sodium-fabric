@@ -7,7 +7,6 @@ import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
-import net.caffeinemc.mods.sodium.neoforge.iecompat.ImmersiveEngineeringCompat;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
@@ -148,16 +147,6 @@ public class SodiumNeoforgeHelpers implements SodiumPlatformHelpers {
     @Override
     public Object getProperModelData(BakedModel model, BlockState state, BlockPos pos, LevelSlice slice, Object modelData) {
         return model.getModelData(slice, pos, state, (ModelData) modelData);
-    }
-
-    @Override
-    public void renderConnectionsInSection(ChunkBuildBuffers buffers, LevelSlice worldSlice, SectionPos position) {
-        ImmersiveEngineeringCompat.renderConnectionsInSection(buffers, worldSlice, position);
-    }
-
-    @Override
-    public boolean shouldRenderIE(SectionPos position) {
-        return ImmersiveEngineeringCompat.isLoaded && ImmersiveEngineeringCompat.sectionNeedsRendering(position);
     }
 
     private static final TriState[] TRI_STATES = new TriState[] {
