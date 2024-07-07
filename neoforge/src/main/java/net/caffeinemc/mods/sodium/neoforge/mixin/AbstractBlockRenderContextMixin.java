@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.neoforge.mixin;
 
 import net.caffeinemc.mods.sodium.client.render.frapi.render.AbstractBlockRenderContext;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraftforge.client.model.data.ModelData;
@@ -13,11 +14,11 @@ public abstract class AbstractBlockRenderContextMixin implements RenderContext {
     protected RenderType type;
 
     @Shadow
-    protected Object modelData;
+    protected SodiumModelData modelData;
 
     @Override
     public ModelData getModelData() {
-        return (ModelData) this.modelData;
+        return (ModelData) (Object) this.modelData;
     }
 
     @Override

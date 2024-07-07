@@ -12,7 +12,7 @@ import net.caffeinemc.mods.sodium.client.gui.prompt.ScreenPrompt;
 import net.caffeinemc.mods.sodium.client.gui.prompt.ScreenPromptable;
 import net.caffeinemc.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
 import net.caffeinemc.mods.sodium.client.gui.widgets.FlatButtonWidget;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.caffeinemc.mods.sodium.client.util.Dim2i;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -71,7 +71,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
     private void checkPromptTimers() {
         // Never show the prompt in developer workspaces.
-        if (SodiumPlatformHelpers.INSTANCE.isDevelopmentEnvironment()) {
+        if (PlatformInfoAccess.getInstance().isDevelopmentEnvironment()) {
             return;
         }
 

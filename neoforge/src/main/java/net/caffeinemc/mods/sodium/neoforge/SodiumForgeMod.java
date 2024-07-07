@@ -3,7 +3,7 @@ package net.caffeinemc.mods.sodium.neoforge;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.caffeinemc.mods.sodium.client.render.frapi.SodiumRenderer;
-import net.caffeinemc.mods.sodium.neoforge.render.SpriteFinderCache;
+import net.caffeinemc.mods.sodium.neoforge.texture.SpriteFinderCache;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.ModList;

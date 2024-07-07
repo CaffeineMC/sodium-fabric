@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package net.caffeinemc.mods.sodium.neoforge;
+package net.caffeinemc.mods.sodium.neoforge.texture;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.resources.ResourceLocation;
 
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**

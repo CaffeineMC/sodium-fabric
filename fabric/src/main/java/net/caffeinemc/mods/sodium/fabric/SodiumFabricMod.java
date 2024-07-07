@@ -2,7 +2,7 @@ package net.caffeinemc.mods.sodium.fabric;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.render.frapi.SodiumRenderer;
-import net.caffeinemc.mods.sodium.fabric.render.SpriteFinderCache;
+import net.caffeinemc.mods.sodium.fabric.texture.SpriteFinderCache;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;

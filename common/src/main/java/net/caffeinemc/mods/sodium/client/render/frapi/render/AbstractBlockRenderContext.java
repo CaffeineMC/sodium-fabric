@@ -9,7 +9,10 @@ import net.caffeinemc.mods.sodium.client.render.frapi.SodiumRenderer;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.EncodingFormat;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformModelAccess;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
@@ -93,7 +96,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     /**
      * The current model's model data.
      */
-    protected Object modelData;
+    protected SodiumModelData modelData;
 
     private final BlockOcclusionCache occlusionCache = new BlockOcclusionCache();
     private boolean enableCulling = true;
@@ -186,7 +189,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     protected void prepareAoInfo(boolean modelAo) {
         this.useAmbientOcclusion = Minecraft.useAmbientOcclusion();
         // Ignore the incorrect IDEA warning here.
-        this.defaultLightMode = this.useAmbientOcclusion && modelAo && SodiumPlatformHelpers.INSTANCE.getLightEmission(state, level, pos) == 0 ? LightMode.SMOOTH : LightMode.FLAT;
+        this.defaultLightMode = this.useAmbientOcclusion && modelAo && PlatformBlockAccess.getInstance().getLightEmission(state, level, pos) == 0 ? LightMode.SMOOTH : LightMode.FLAT;
     }
 
     // TODO: normal-based (enhanced) AO for smooth lighting pipeline
@@ -212,7 +215,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     /* Handling of vanilla models - this is the hot path for non-modded models */
     public void bufferDefaultModel(BakedModel model, @Nullable BlockState state) {
         MutableQuadViewImpl editorQuad = this.editorQuad;
-        Iterable<RenderType> types = SodiumPlatformHelpers.INSTANCE.getMaterials(level, model, state, pos, random, modelData);
+        Iterable<RenderType> types = PlatformModelAccess.getInstance().getModelRenderTypes(level, model, state, pos, random, modelData);
 
 
         // If there is no transform, we can check the culling face once for all the quads,
@@ -226,10 +229,10 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
             RenderType prevType = type;
             for (RenderType type : types) {
                 this.type = type;
-                TriState ao = SodiumPlatformHelpers.INSTANCE.useAmbientOcclusion(model, state, modelData, type, slice, pos);
+                TriState ao = PlatformBlockAccess.getInstance().usesAmbientOcclusion(model, state, modelData, type, slice, pos);
                 if (noTransform) {
                     if (!this.isFaceCulled(cullFace)) {
-                        final List<BakedQuad> quads = SodiumPlatformHelpers.INSTANCE.getQuads(level, pos, model, state, cullFace, random, type, modelData);
+                        final List<BakedQuad> quads = PlatformModelAccess.getInstance().getQuads(level, pos, model, state, cullFace, random, type, modelData);
                         final int count = quads.size();
 
                         for (int j = 0; j < count; j++) {
@@ -242,7 +245,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
                         }
                     }
                 } else {
-                    final List<BakedQuad> quads = SodiumPlatformHelpers.INSTANCE.getQuads(level, pos, model, state, cullFace, random, type, modelData);
+                    final List<BakedQuad> quads = PlatformModelAccess.getInstance().getQuads(level, pos, model, state, cullFace, random, type, modelData);
                     final int count = quads.size();
 
                     for (int j = 0; j < count; j++) {

@@ -4,9 +4,8 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
-import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.gui.options.TextProvider;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.caffeinemc.mods.sodium.client.util.FileUtil;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import net.minecraft.client.GraphicsStatus;
@@ -124,8 +123,7 @@ public class SodiumGameOptions {
     }
 
     private static Path getConfigPath() {
-        return SodiumPlatformHelpers.INSTANCE
-                .getConfigDir()
+        return PlatformInfoAccess.getInstance().getConfigDirectory()
                 .resolve(DEFAULT_FILE_NAME);
     }
 

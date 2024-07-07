@@ -18,14 +18,14 @@ package net.caffeinemc.mods.sodium.client.render.frapi.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
 import net.caffeinemc.mods.sodium.client.model.light.LightMode;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.model.light.data.SingleBlockLightDataCache;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformTextureAccess;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
@@ -68,7 +68,7 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
         this.matNormal = poseStack.last().normal();
         this.overlay = overlay;
         this.type = ItemBlockRenderTypes.getChunkRenderType(state);
-        this.modelData = SodiumPlatformHelpers.INSTANCE.getEmptyModelData();
+        this.modelData = SodiumModelData.EMPTY;
 
         this.lightDataCache.reset(pos, blockView);
         this.prepareCulling(cull);
@@ -125,6 +125,6 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
 
     private void bufferQuad(MutableQuadViewImpl quad) {
         QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
-        SpriteUtil.markSpriteActive(SodiumPlatformHelpers.INSTANCE.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
+        SpriteUtil.markSpriteActive(PlatformTextureAccess.getInstance().findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
     }
 }

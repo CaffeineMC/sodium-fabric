@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.fabric.render;
+package net.caffeinemc.mods.sodium.fabric.texture;
 
 import net.fabricmc.fabric.api.renderer.v1.model.SpriteFinder;
 import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;

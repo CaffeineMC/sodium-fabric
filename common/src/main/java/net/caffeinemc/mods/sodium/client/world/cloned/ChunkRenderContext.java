@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.world.cloned;
 
+import net.caffeinemc.mods.sodium.client.services.SodiumModelDataContainer;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
@@ -9,9 +10,9 @@ public class ChunkRenderContext {
     private final SectionPos origin;
     private final ClonedChunkSection[] sections;
     private final BoundingBox volume;
-    private final Object modelData;
+    private final SodiumModelDataContainer modelData;
 
-    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume, Object modelData) {
+    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume, SodiumModelDataContainer modelData) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
@@ -30,7 +31,7 @@ public class ChunkRenderContext {
         return this.volume;
     }
 
-    public Object getModelData() {
+    public SodiumModelDataContainer getModelData() {
         return modelData;
     }
 }

@@ -10,12 +10,13 @@
     "conformVisibility": true
   },
   "client" : [
+    "ClientModLoaderMixin",
     "FaceBakeryMixin",
     "ForgeGUIMixin",
     "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
     "LevelSliceMixin",
-    "MixinClientModLoader",
+    "ModelDataMixin",
     "SimpleBakedModelAccessor"
   ]
 }

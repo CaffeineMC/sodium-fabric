@@ -1,10 +1,7 @@
 package net.caffeinemc.mods.sodium.neoforge.mixin;
 
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ReferenceSortedSets;
 import net.minecraftforge.client.loading.ClientModLoader;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.forgespi.locating.IModFile;
 import net.minecraftforge.resource.PathPackResources;
@@ -16,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.util.*;
 
 @Mixin(ClientModLoader.class)
-public class MixinClientModLoader {
+public class ClientModLoaderMixin {
     @Unique
     private static final IModFile SODIUM_FILE = LoadingModList.get().getModFileById("sodium").getFile();
 

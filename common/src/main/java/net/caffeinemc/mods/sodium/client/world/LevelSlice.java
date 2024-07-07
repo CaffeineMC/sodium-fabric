@@ -1,7 +1,9 @@
 package net.caffeinemc.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformModelAccess;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelDataContainer;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelColorCache;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelBiomeSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -95,7 +97,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
     private final @Nullable Int2ReferenceMap<Object>[] blockEntityRenderDataArrays;
 
     // (Local Section -> Model Data) table.
-    private @Nullable Object modelDataSnapshot;
+    private @Nullable SodiumModelDataContainer modelDataSnapshot;
 
     // The starting point from which this slice captures blocks
     private int originBlockX, originBlockY, originBlockZ;
@@ -141,7 +143,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
             }
         }
 
-        Object modelData = SodiumPlatformHelpers.INSTANCE.getRenderData(level, pos.chunk(), null);
+        SodiumModelDataContainer modelData = PlatformModelAccess.getInstance().getModelDataContainer(level, pos.chunk());
 
         return new ChunkRenderContext(pos, sections, box, modelData);
     }
@@ -379,12 +381,12 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
         return blockEntityRenderDataMap.get(getLocalBlockIndex(relBlockX & 15, relBlockY & 15, relBlockZ & 15));
     }
 
-    public Object getPlatformModelData(BlockPos pos) {
+    public SodiumModelData getPlatformModelData(BlockPos pos) {
         if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
-            return SodiumPlatformHelpers.INSTANCE.getEmptyModelData();
+            return SodiumModelData.EMPTY;
         }
 
-        return SodiumPlatformHelpers.INSTANCE.getModelData(modelDataSnapshot, pos);
+        return modelDataSnapshot.getModelData(pos);
     }
 
     //@Override

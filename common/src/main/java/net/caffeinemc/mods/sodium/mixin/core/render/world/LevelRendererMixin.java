@@ -6,7 +6,8 @@ import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import net.caffeinemc.mods.sodium.client.render.viewport.ViewportProvider;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
 import net.caffeinemc.mods.sodium.client.world.LevelRendererExtension;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -128,7 +129,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
             RenderDevice.exitManagedCode();
         }
 
-        SodiumPlatformHelpers.INSTANCE.runChunkLayerEvents(renderLayer, ((LevelRenderer) (Object) this), matrices, projectionMatrix, this.ticks, this.minecraft.gameRenderer.getMainCamera(), this.cullingFrustum);
+        PlatformLevelAccess.getInstance().runChunkLayerEvents(renderLayer, ((LevelRenderer) (Object) this), matrices, projectionMatrix, this.ticks, this.minecraft.gameRenderer.getMainCamera(), this.cullingFrustum);
     }
 
     /**
@@ -139,7 +140,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     private void setupRender(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
 
         var viewport = ((ViewportProvider) frustum).sodium$createViewport();
-        var updateChunksImmediately = SodiumPlatformHelpers.INSTANCE.isFlawlessFramesActive();
+        var updateChunksImmediately = PlatformInfoAccess.getInstance().isFlawlessFramesActive();
 
         RenderDevice.enterManagedCode();
 
