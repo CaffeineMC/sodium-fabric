@@ -11,7 +11,7 @@ import net.caffeinemc.mods.sodium.client.compatibility.checks.ModuleScanner;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.GLContextInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaWorkarounds;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.minecraft.Util;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.WGL;
@@ -62,7 +62,7 @@ public class WindowMixin {
     private long wrapGlfwCreateWindowForge(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor, Operation<Long> op) {
         final boolean applyNvidiaWorkarounds = Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS);
 
-        if (applyNvidiaWorkarounds && !SodiumPlatformHelpers.INSTANCE.isEarlyLoadingScreenActive()) {
+        if (applyNvidiaWorkarounds && !PlatformInfoAccess.getInstance().platformHasEarlyLoadingScreen()) {
             NvidiaWorkarounds.install();
         }
 

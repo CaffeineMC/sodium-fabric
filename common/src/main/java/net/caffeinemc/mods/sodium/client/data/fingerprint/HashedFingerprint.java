@@ -2,8 +2,7 @@ package net.caffeinemc.mods.sodium.client.data.fingerprint;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
-import net.caffeinemc.mods.sodium.client.SodiumMultiPlat;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.caffeinemc.mods.sodium.client.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -69,8 +68,7 @@ public record HashedFingerprint(
     }
 
     private static Path getFilePath() {
-        return SodiumPlatformHelpers.INSTANCE
-                .getConfigDir()
+        return PlatformInfoAccess.getInstance().getConfigDirectory()
                 .resolve("sodium-fingerprint.json");
     }
 }

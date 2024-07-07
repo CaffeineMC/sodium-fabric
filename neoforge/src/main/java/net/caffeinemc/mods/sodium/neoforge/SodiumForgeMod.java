@@ -5,7 +5,7 @@ import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.caffeinemc.mods.sodium.neoforge.iecompat.ImmersiveEngineeringCompat;
 import net.caffeinemc.mods.sodium.neoforge.iecompat.SodiumConnectionRenderer;
 import net.caffeinemc.mods.sodium.client.render.frapi.SodiumRenderer;
-import net.caffeinemc.mods.sodium.neoforge.render.SpriteFinderCache;
+import net.caffeinemc.mods.sodium.neoforge.texture.SpriteFinderCache;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;

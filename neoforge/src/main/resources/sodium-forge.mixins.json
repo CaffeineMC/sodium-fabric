@@ -11,10 +11,13 @@
   },
   "client" : [
     "ClientHooksMixin",
+    "ClientModLoaderMixin",
+    "FaceBakeryMixin",
+    "ForgeGUIMixin",
     "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
     "LevelSliceMixin",
-    "MixinClientModLoader",
+    "ModelDataMixin",
     "SimpleBakedModelAccessor"
   ]
 }

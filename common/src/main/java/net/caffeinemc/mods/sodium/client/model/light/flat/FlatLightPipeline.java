@@ -5,7 +5,7 @@ import net.caffeinemc.mods.sodium.client.model.light.data.LightDataAccess;
 import net.caffeinemc.mods.sodium.client.model.light.data.QuadLightData;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.BlockPos;
@@ -47,7 +47,7 @@ public class FlatLightPipeline implements LightPipeline {
                 Arrays.fill(out.br, this.lightCache.getLevel().getShade(lightFace, shade));
             } else {
                 lightmap = getEmissiveLightmap(this.lightCache.get(pos));
-                Arrays.fill(out.br, SodiumPlatformHelpers.INSTANCE.getAccurateShade(quad, this.lightCache.getLevel(), shade));
+                Arrays.fill(out.br, PlatformBlockAccess.getInstance().getAccurateBlockShade(quad, this.lightCache.getLevel(), shade));
             }
         }
 

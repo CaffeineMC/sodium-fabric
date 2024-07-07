@@ -75,7 +75,7 @@ public class FluidRendererImpl extends FluidRenderer {
         }
     }
 
-    public static boolean renderFromVanilla() {
+    public static boolean tryRenderFluid() {
         return CURRENT_DEFAULT_CONTEXT.get().renderIfSetUp();
     }
 

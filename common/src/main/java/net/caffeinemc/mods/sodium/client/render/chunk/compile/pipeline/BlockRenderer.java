@@ -16,7 +16,9 @@ import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexE
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.frapi.render.AbstractBlockRenderContext;
-import net.caffeinemc.mods.sodium.client.services.SodiumPlatformHelpers;
+import net.caffeinemc.mods.sodium.client.services.PlatformModelAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformTextureAccess;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
@@ -84,12 +86,12 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         this.prepareCulling(true);
         this.prepareAoInfo(model.useAmbientOcclusion());
 
-        modelData = SodiumPlatformHelpers.INSTANCE.getProperModelData(model, state, pos, slice, slice.getPlatformModelData(pos));
+        modelData = PlatformModelAccess.getInstance().getModelData(slice, model, state, pos, slice.getPlatformModelData(pos));
 
         ((FabricBakedModel) model).emitBlockQuads(this.level, state, pos, this.randomSupplier, this);
 
         type = null;
-        modelData = SodiumPlatformHelpers.INSTANCE.getEmptyModelData();
+        modelData = SodiumModelData.EMPTY;
     }
 
     /**
@@ -173,6 +175,6 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ChunkMeshBufferBuilder vertexBuffer = modelBuilder.getVertexBuffer(normalFace);
         vertexBuffer.push(vertices, material);
 
-        modelBuilder.addSprite(SodiumPlatformHelpers.INSTANCE.findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
+        modelBuilder.addSprite(PlatformTextureAccess.getInstance().findInBlockAtlas(quad.getTexU(0), quad.getTexV(0)));
     }
 }
