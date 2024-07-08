@@ -3,7 +3,7 @@ import net.fabricmc.loom.task.AbstractRemapJarTask
 plugins {
     id("java")
     id("idea")
-    id("fabric-loom") version "1.6.6"
+    id("fabric-loom") version "1.7.2"
 }
 
 repositories {
@@ -16,8 +16,8 @@ val FABRIC_LOADER_VERSION: String by rootProject.extra
 val FABRIC_API_VERSION: String by rootProject.extra
 
 // This trick hides common tasks in the IDEA list.
-tasks.forEach {
-    it.group = null
+tasks.configureEach {
+    group = null
 }
 
 dependencies {

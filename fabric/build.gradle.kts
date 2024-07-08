@@ -1,8 +1,7 @@
 plugins {
-    java
-    idea
-    `maven-publish`
-    id("fabric-loom") version("1.6.6")
+    id("java")
+    id("idea")
+    id("fabric-loom") version ("1.7.2")
 }
 
 val MINECRAFT_VERSION: String by rootProject.extra
@@ -11,14 +10,13 @@ val FABRIC_LOADER_VERSION: String by rootProject.extra
 val FABRIC_API_VERSION: String by rootProject.extra
 val MOD_VERSION: String by rootProject.extra
 
-
 base {
-    archivesName.set("sodium-fabric-${MINECRAFT_VERSION}")
+    archivesName.set("sodium-fabric")
 }
 
 dependencies {
     minecraft("com.mojang:minecraft:${MINECRAFT_VERSION}")
-    mappings(loom.layered() {
+    mappings(loom.layered {
         officialMojangMappings()
         if (PARCHMENT_VERSION != null) {
             parchment("org.parchmentmc.data:parchment-${MINECRAFT_VERSION}:${PARCHMENT_VERSION}@zip")
@@ -91,18 +89,5 @@ tasks {
 
     jar {
         from(rootDir.resolve("LICENSE.md"))
-    }
-}
-
-publishing {
-    publications {
-        register("mavenJava", MavenPublication::class) {
-            artifactId = base.archivesName.get()
-            from(components["java"])
-        }
-    }
-
-    repositories {
-        maven("file://${System.getenv("local_maven")}")
     }
 }

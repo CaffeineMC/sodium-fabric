@@ -1,7 +1,6 @@
-
 plugins {
     id("java")
-    id("fabric-loom") version("1.6.6") apply(false)
+    id("fabric-loom") version ("1.7.2") apply (false)
 }
 
 val MINECRAFT_VERSION by extra { "1.21" }
@@ -70,9 +69,6 @@ subprojects {
         options.release.set(21)
     }
 
-    // Disables Gradle's custom module metadata from being published to maven. The
-    // metadata includes mapped dependencies which are not reasonably consumable by
-    // other mod developers.
     tasks.withType<GenerateModuleMetadata>().configureEach {
         enabled = false
     }
