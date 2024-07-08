@@ -1,3 +1,5 @@
+import groovy.lang.Closure
+
 plugins {
     id("idea")
     id("maven-publish")
@@ -37,6 +39,8 @@ repositories {
             password = "ghp_" + "DEuGv0Z56vnSOYKLCXdsS9svK4nb9K39C1Hn"
         }
     }
+    maven { url = uri("https://maven.su5ed.dev/releases") }
+    maven { url = uri("https://maven.neoforged.net/releases/") }
     exclusiveContent {
         forRepository {
             maven {
@@ -48,8 +52,6 @@ repositories {
             includeGroup("maven.modrinth")
         }
     }
-    maven { url = uri("https://maven.neoforged.net/releases/") }
-
 }
 
 val fullJar: Jar by tasks.creating(Jar::class) {
@@ -116,19 +118,25 @@ neoForge {
 
 val localRuntime = configurations.create("localRuntime")
 
+fun includeDep(dependency : String, closure : Action<ExternalModuleDependency>) {
+    dependencies.implementation(dependency, closure)
+    dependencies.jarJar(dependency, closure)
+}
+
+fun includeDep(dependency : String) {
+    dependencies.implementation(dependency)
+    dependencies.jarJar(dependency)
+}
+
 dependencies {
     compileOnly(project(":common"))
-    implementation("net.fabricmc:fabric_api_base:0.4.40+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_api_base:0.4.40+${MINECRAFT_VERSION}")
-    implementation("net.fabricmc:fabric_renderer_api_v1:3.2.12+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_renderer_api_v1:3.2.12+${MINECRAFT_VERSION}")
-    implementation("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}")
-    implementation("com.lodborg:interval-tree:1.0.0")
-    jarJar("com.lodborg:interval-tree:[1.0.0,1.0.1)")
-    implementation("net.fabricmc:fabric_block_view_api_v2:1.0.8+${MINECRAFT_VERSION}")
-    jarJar("net.fabricmc:fabric_block_view_api_v2:1.0.8+${MINECRAFT_VERSION}")
-    compileOnly("maven.modrinth:immersiveengineering:11mMmtHT")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-api-base:0.4.42+d1308dedd1")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-renderer-api-v1:3.3.0+e3455cb4d1")
+    includeDep("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}") {
+        isTransitive = false
+    }
+    includeDep("com.lodborg:interval-tree:1.0.0")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.0.10+9afaaf8cd1")
 }
 
 // Sets up a dependency configuration called 'localRuntime'.

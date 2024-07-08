@@ -22,7 +22,7 @@ public abstract class AbstractBlockRenderContextMixin implements RenderContext {
     }
 
     @Override
-    public RenderType getRenderLayer() {
+    public RenderType getRenderType() {
         return type;
     }
 }
