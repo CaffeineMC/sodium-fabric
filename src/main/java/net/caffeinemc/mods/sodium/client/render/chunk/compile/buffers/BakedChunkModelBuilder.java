@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
@@ -28,8 +29,8 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
     }
 
     @Override
-    public VertexConsumer asFallbackVertexConsumer(Material material) {
-        fallbackVertexConsumer.setMaterial(material);
+    public VertexConsumer asFallbackVertexConsumer(Material material, TranslucentGeometryCollector collector) {
+        fallbackVertexConsumer.setData(material, collector);
         return fallbackVertexConsumer;
     }
 
