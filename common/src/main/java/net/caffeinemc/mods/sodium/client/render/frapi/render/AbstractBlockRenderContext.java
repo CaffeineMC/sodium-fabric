@@ -215,7 +215,6 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     /* Handling of vanilla models - this is the hot path for non-modded models */
     public void bufferDefaultModel(BakedModel model, @Nullable BlockState state) {
         MutableQuadViewImpl editorQuad = this.editorQuad;
-        Iterable<RenderType> types = PlatformModelAccess.getInstance().getModelRenderTypes(level, model, state, pos, random, modelData);
 
 
         // If there is no transform, we can check the culling face once for all the quads,
@@ -226,37 +225,32 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
             final Direction cullFace = ModelHelper.faceFromIndex(i);
 
             RandomSource random = this.randomSupplier.get();
-            RenderType prevType = type;
-            for (RenderType type : types) {
-                this.type = type;
-                TriState ao = PlatformBlockAccess.getInstance().usesAmbientOcclusion(model, state, modelData, type, slice, pos);
-                if (noTransform) {
-                    if (!this.isFaceCulled(cullFace)) {
-                        final List<BakedQuad> quads = PlatformModelAccess.getInstance().getQuads(level, pos, model, state, cullFace, random, type, modelData);
-                        final int count = quads.size();
-
-                        for (int j = 0; j < count; j++) {
-                            final BakedQuad q = quads.get(j);
-                            editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : STANDARD_MATERIALS[ao.ordinal()], cullFace);
-                            // Call processQuad instead of emit for efficiency
-                            // (avoid unnecessarily clearing data, trying to apply transforms, and performing cull check again)
-
-                            this.processQuad(editorQuad);
-                        }
-                    }
-                } else {
+            TriState ao = PlatformBlockAccess.getInstance().usesAmbientOcclusion(model, state, modelData, type, slice, pos);
+            if (noTransform) {
+                if (!this.isFaceCulled(cullFace)) {
                     final List<BakedQuad> quads = PlatformModelAccess.getInstance().getQuads(level, pos, model, state, cullFace, random, type, modelData);
                     final int count = quads.size();
 
                     for (int j = 0; j < count; j++) {
                         final BakedQuad q = quads.get(j);
                         editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : STANDARD_MATERIALS[ao.ordinal()], cullFace);
-                        // Call renderQuad instead of emit for efficiency
-                        // (avoid unnecessarily clearing data)
-                        this.renderQuad(editorQuad);
+                        // Call processQuad instead of emit for efficiency
+                        // (avoid unnecessarily clearing data, trying to apply transforms, and performing cull check again)
+
+                        this.processQuad(editorQuad);
                     }
                 }
-                this.type = prevType;
+            } else {
+                final List<BakedQuad> quads = PlatformModelAccess.getInstance().getQuads(level, pos, model, state, cullFace, random, type, modelData);
+                final int count = quads.size();
+
+                for (int j = 0; j < count; j++) {
+                    final BakedQuad q = quads.get(j);
+                    editorQuad.fromVanilla(q, (type == RenderType.tripwire() || type == RenderType.translucent()) ? TRANSLUCENT_MATERIAL : STANDARD_MATERIALS[ao.ordinal()], cullFace);
+                    // Call renderQuad instead of emit for efficiency
+                    // (avoid unnecessarily clearing data)
+                    this.renderQuad(editorQuad);
+                }
             }
         }
 

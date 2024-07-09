@@ -26,6 +26,7 @@ import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -88,7 +89,12 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         modelData = PlatformModelAccess.getInstance().getModelData(slice, model, state, pos, slice.getPlatformModelData(pos));
 
-        ((FabricBakedModel) model).emitBlockQuads(this.level, state, pos, this.randomSupplier, this);
+        Iterable<RenderType> renderTypes = PlatformModelAccess.getInstance().getModelRenderTypes(level, model, state, pos, random, modelData);
+
+        for (RenderType type : renderTypes) {
+            this.type = type;
+            ((FabricBakedModel) model).emitBlockQuads(this.level, state, pos, this.randomSupplier, this);
+        }
 
         type = null;
         modelData = SodiumModelData.EMPTY;
