@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(RenderSystem.class)
 public class RenderSystemMixin {
+    @SuppressWarnings("EmptyMethod")
     @Redirect(method = "flipFrame", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;pollEvents()V", ordinal = 0), remap = false)
     private static void removeFirstPoll() {
         // noop

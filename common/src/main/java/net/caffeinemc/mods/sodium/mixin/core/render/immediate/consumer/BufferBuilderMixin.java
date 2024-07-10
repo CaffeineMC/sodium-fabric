@@ -27,16 +27,16 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
     private int vertices;
 
     @Shadow
-    private VertexFormat.Mode mode;
+    @Final
+    private int vertexSize;
+
+    @Shadow
+    private long vertexPointer;
 
     @Shadow
     @Final
-    private int vertexSize;
-    @Shadow
-    private long vertexPointer;
-    @Shadow
-    @Final
     private ByteBufferBuilder buffer;
+
     @Unique
     private VertexFormatDescription formatDescription;
 

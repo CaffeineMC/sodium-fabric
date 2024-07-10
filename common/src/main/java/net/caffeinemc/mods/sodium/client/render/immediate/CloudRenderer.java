@@ -621,11 +621,11 @@ public class CloudRenderer {
         }
     }
 
-    private record CloudGeometry(VertexBuffer vertexBuffer, CloudGeometryParameters params) {
+    public record CloudGeometry(VertexBuffer vertexBuffer, CloudGeometryParameters params) {
 
     }
 
-    private record CloudGeometryParameters(int originX, int originZ, int radius, int orientation, CloudStatus renderMode) {
+    public record CloudGeometryParameters(int originX, int originZ, int radius, int orientation, CloudStatus renderMode) {
 
     }
 }

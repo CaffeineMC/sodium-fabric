@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.fabric.texture;
 
 import net.fabricmc.fabric.api.renderer.v1.model.SpriteFinder;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.Minecraft;
@@ -8,6 +9,7 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,7 +26,7 @@ public class SpriteFinderCache {
         return blockAtlasSpriteFinder;
     }
 
-    public static class ReloadListener implements SimpleSynchronousResourceReloadListener {
+    public static class ReloadListener implements ResourceManagerReloadListener, IdentifiableResourceReloadListener {
         public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("sodium", "sprite_finder_cache");
         public static final List<ResourceLocation> DEPENDENCIES = List.of(ResourceReloadListenerKeys.MODELS);
         public static final ReloadListener INSTANCE = new ReloadListener();

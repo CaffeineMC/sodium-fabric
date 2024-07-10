@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.mixin.features.model;
 
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.caffeinemc.mods.sodium.neoforge.mixin.ChunkRenderTypeSetAccessor;
 import net.caffeinemc.mods.sodium.neoforge.mixin.SimpleBakedModelAccessor;

@@ -27,7 +27,7 @@ public abstract class EntityOutlineGeneratorMixin implements VertexBufferWriter 
     @Unique
     private boolean canUseIntrinsics;
 
-    @Inject(method = "<init>", at = @At("RETURN"))
+    @Inject(method = "<init>(Lcom/mojang/blaze3d/vertex/VertexConsumer;I)V", at = @At("RETURN"))
     private void onInit(CallbackInfo ci) {
         this.canUseIntrinsics = VertexBufferWriter.tryOf(this.delegate) != null;
     }

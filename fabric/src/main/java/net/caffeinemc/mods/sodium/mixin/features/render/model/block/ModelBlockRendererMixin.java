@@ -1,13 +1,14 @@
 package net.caffeinemc.mods.sodium.mixin.features.render.model.block;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.client.model.quad.BakedQuadView;
 import net.caffeinemc.mods.sodium.client.render.immediate.model.BakedModelEncoder;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
-import net.caffeinemc.mods.sodium.api.util.ColorABGR;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
@@ -21,14 +22,33 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+
 import java.util.List;
 
 @Mixin(ModelBlockRenderer.class)
 public class ModelBlockRendererMixin {
     @Unique
     private final RandomSource random = new SingleThreadedRandomSource(42L);
+
+    @Unique
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private static void renderQuads(PoseStack.Pose matrices, VertexBufferWriter writer, int defaultColor, List<BakedQuad> quads, int light, int overlay) {
+        for (int i = 0; i < quads.size(); i++) {
+            BakedQuad bakedQuad = quads.get(i);
+
+            if (bakedQuad.getVertices().length < 32) {
+                continue; // ignore bad quads
+            }
+
+            BakedQuadView quad = (BakedQuadView) bakedQuad;
+
+            int color = quad.hasColor() ? defaultColor : 0xFFFFFFFF;
+
+            BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
+
+            SpriteUtil.markSpriteActive(quad.getSprite());
+        }
+    }
 
     /**
      * @reason Use optimized vertex writer intrinsics, avoid allocations
@@ -37,7 +57,7 @@ public class ModelBlockRendererMixin {
     @Inject(method = "renderModel", at = @At("HEAD"), cancellable = true)
     private void renderFast(PoseStack.Pose entry, VertexConsumer vertexConsumer, BlockState blockState, BakedModel bakedModel, float red, float green, float blue, int light, int overlay, CallbackInfo ci) {
         var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
-        if(writer == null) {
+        if (writer == null) {
             return;
         }
 
@@ -66,26 +86,6 @@ public class ModelBlockRendererMixin {
 
         if (!quads.isEmpty()) {
             renderQuads(entry, writer, defaultColor, quads, light, overlay);
-        }
-    }
-
-    @Unique
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private static void renderQuads(PoseStack.Pose matrices, VertexBufferWriter writer, int defaultColor, List<BakedQuad> quads, int light, int overlay) {
-        for (int i = 0; i < quads.size(); i++) {
-            BakedQuad bakedQuad = quads.get(i);
-
-            if (bakedQuad.getVertices().length < 32) {
-                continue; // ignore bad quads
-            }
-
-            BakedQuadView quad = (BakedQuadView) bakedQuad;
-
-            int color = quad.hasColor() ? defaultColor : 0xFFFFFFFF;
-
-            BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
-
-            SpriteUtil.markSpriteActive(quad.getSprite());
         }
     }
 }

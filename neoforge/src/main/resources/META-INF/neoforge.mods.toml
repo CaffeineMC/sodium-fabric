@@ -8,9 +8,9 @@ modId = "sodium"
 version = "${version}"
 displayName = "Sodium"
 
-logoFile="sodium-icon.png" #optional
+logoFile = "sodium-icon.png" #optional
 
-authors="JellySquid"
+authors = "JellySquid"
 
 description = '''
 Sodium is a powerful rendering engine for Minecraft which improves frame rates and reduces lag spikes.
@@ -19,14 +19,14 @@ Sodium is a powerful rendering engine for Minecraft which improves frame rates a
 provides = ["indium"]
 
 [modproperties.sodium]
-"fabric-renderer-api-v1:contains_renderer"=true
+"fabric-renderer-api-v1:contains_renderer" = true
 
 [[dependencies.sodium]]
-modId="minecraft"
-type="required"
-versionRange="[1.20.4,1.21.1)"
-ordering="NONE"
-side="CLIENT"
+modId = "minecraft"
+type = "required"
+versionRange = "[1.20.4,1.21.1)"
+ordering = "NONE"
+side = "CLIENT"
 
 [[mixins]]
 config = "sodium.mixins.json"

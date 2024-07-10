@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public class NeoForgeLevelAccess implements PlatformLevelAccess {
+    private static final ThreadLocal<PoseStack> emptyStack = ThreadLocal.withInitial(PoseStack::new);
+
     @Override
     public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
         return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
@@ -40,8 +42,6 @@ public class NeoForgeLevelAccess implements PlatformLevelAccess {
         ClientHooks.dispatchRenderStage(renderType, levelRenderer, modelMatrix, projectionMatrix, renderTick, camera, frustum);
     }
 
-    private static final ThreadLocal<PoseStack> emptyStack = ThreadLocal.withInitial(PoseStack::new);
-
     @Override
     public List<?> getExtraRenderers(Level level, BlockPos origin) {
         return ClientHooks.gatherAdditionalRenderers(origin, level);
@@ -50,9 +50,8 @@ public class NeoForgeLevelAccess implements PlatformLevelAccess {
     @Override
     public void renderAdditionalRenderers(List<?> renderers, Function<RenderType, VertexConsumer> typeToConsumer, LevelSlice slice) {
         AddSectionGeometryEvent.SectionRenderingContext context = new AddSectionGeometryEvent.SectionRenderingContext(typeToConsumer, slice, emptyStack.get());
-        for (int i = 0, renderersSize = renderers.size(); i < renderersSize; i++) {
-            AddSectionGeometryEvent.AdditionalSectionRenderer renderer = (AddSectionGeometryEvent.AdditionalSectionRenderer) renderers.get(i);
-            renderer.render(context);
+        for (Object o : renderers) {
+            ((AddSectionGeometryEvent.AdditionalSectionRenderer) o).render(context);
         }
     }
 

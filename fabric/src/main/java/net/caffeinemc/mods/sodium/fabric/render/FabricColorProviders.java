@@ -17,7 +17,7 @@ public class FabricColorProviders {
     private static class FabricFluidAdapter implements ColorProvider<FluidState> {
         private final FluidRenderHandler handler;
 
-        public  FabricFluidAdapter(FluidRenderHandler handler) {
+        public FabricFluidAdapter(FluidRenderHandler handler) {
             this.handler = handler;
         }
 

@@ -1,21 +1,21 @@
 {
-  "package": "net.caffeinemc.mods.sodium.neoforge.mixin",
-  "required": true,
-  "compatibilityLevel": "JAVA_17",
-  "refmap": "sodium.refmap.json",
-  "injectors": {
-    "defaultRequire": 1
+  "package" : "net.caffeinemc.mods.sodium.neoforge.mixin",
+  "required" : true,
+  "compatibilityLevel" : "JAVA_17",
+  "refmap" : "sodium.refmap.json",
+  "injectors" : {
+    "defaultRequire" : 1
   },
-  "overwrites": {
-    "conformVisibility": true
+  "overwrites" : {
+    "conformVisibility" : true
   },
   "client" : [
-    "ClientHooksMixin",
-    "ResourcePackLoaderMixin",
     "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
+    "ClientHooksMixin",
     "LevelSliceMixin",
     "ModelDataMixin",
+    "ResourcePackLoaderMixin",
     "SimpleBakedModelAccessor"
   ]
 }

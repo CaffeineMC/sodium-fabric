@@ -10,7 +10,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
 
 @Mixin(ResourcePackLoader.class)
 public class ResourcePackLoaderMixin {

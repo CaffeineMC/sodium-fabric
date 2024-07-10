@@ -24,6 +24,7 @@ public class VertexMultiConsumerMixin {
         @Final
         private VertexConsumer second;
 
+        @Unique
         private boolean canUseIntrinsics;
 
         @Inject(method = "<init>", at = @At("RETURN"))
@@ -49,6 +50,7 @@ public class VertexMultiConsumerMixin {
         @Final
         private VertexConsumer[] delegates;
 
+        @Unique
         private boolean canUseIntrinsics;
 
         @Inject(method = "<init>", at = @At("RETURN"))

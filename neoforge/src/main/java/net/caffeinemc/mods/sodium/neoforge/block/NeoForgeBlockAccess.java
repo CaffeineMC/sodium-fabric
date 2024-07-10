@@ -19,6 +19,12 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
 public class NeoForgeBlockAccess implements PlatformBlockAccess {
+    private static final TriState[] TRI_STATES = new TriState[] {
+            TriState.TRUE,
+            TriState.DEFAULT,
+            TriState.FALSE
+    };
+
     @Override
     public int getLightEmission(BlockState state, BlockAndTintGetter level, BlockPos pos) {
         return state.getLightEmission(level, pos);
@@ -48,12 +54,6 @@ public class NeoForgeBlockAccess implements PlatformBlockAccess {
     public float getAccurateBlockShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade) {
         return level.getShade(NormI8.unpackX(quad.getFaceNormal()), NormI8.unpackY(quad.getFaceNormal()), NormI8.unpackZ(quad.getFaceNormal()), shade);
     }
-
-    private static final TriState[] TRI_STATES = new TriState[] {
-            TriState.TRUE,
-            TriState.DEFAULT,
-            TriState.FALSE
-    };
 
     @Override
     public TriState usesAmbientOcclusion(BakedModel model, BlockState state, SodiumModelData data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {

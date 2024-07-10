@@ -11,7 +11,7 @@ import java.util.BitSet;
 public interface ChunkRenderTypeSetAccessor {
     @Invoker("<init>")
     static ChunkRenderTypeSet create(BitSet set) {
-        return null;
+        throw new IllegalStateException("Not shadowed");
     }
 
     @Accessor

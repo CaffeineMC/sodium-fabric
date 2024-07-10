@@ -8,12 +8,10 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ChunkPos;
-import net.neoforged.neoforge.client.model.data.ModelDataManager;
+import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.common.world.AuxiliaryLightManager;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
-import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.common.extensions.IBlockGetterExtension;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
@@ -37,19 +35,19 @@ public abstract class LevelSliceMixin implements BlockAndTintGetter {
     private int originBlockX, originBlockY, originBlockZ;
 
     @Shadow
+    public static int getLocalSectionIndex(int sectionX, int sectionY, int sectionZ) {
+        throw new IllegalStateException("Not shadowed!");
+    }
+
+    @Shadow
     public SodiumModelData getPlatformModelData(BlockPos pos) {
-        return null;
+        throw new IllegalStateException("Not shadowed!");
     }
 
     @Override
     public ModelData getModelData(BlockPos pos) {
         SodiumModelData modelData = getPlatformModelData(pos);
         return modelData != null ? (ModelData) (Object) modelData : null;
-    }
-
-    @Shadow
-    public static int getLocalSectionIndex(int sectionX, int sectionY, int sectionZ) {
-        throw new IllegalStateException("Not shadowed!");
     }
 
     @Override

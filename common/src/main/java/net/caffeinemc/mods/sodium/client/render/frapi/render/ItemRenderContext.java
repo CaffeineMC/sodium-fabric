@@ -124,6 +124,7 @@ public class ItemRenderContext extends AbstractRenderContext {
         return transformMode;
     }
 
+    @SuppressWarnings("removal")
     @Deprecated
     @Override
     public BakedModelConsumer bakedModelConsumer() {
@@ -321,6 +322,7 @@ public class ItemRenderContext extends AbstractRenderContext {
         }
     }
 
+    @SuppressWarnings("removal")
     @Deprecated
     private class BakedModelConsumerImpl implements BakedModelConsumer {
         @Override

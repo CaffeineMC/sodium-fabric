@@ -86,6 +86,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
     private final BlockState[][] blockArrays;
 
     // (Local Section -> Light Manager) table.
+    @SuppressWarnings("MismatchedReadAndWriteOfArray")
     private final Object[] auxLightManager;
 
     // (Local Section -> Light Arrays) table.

@@ -7,7 +7,6 @@ import net.minecraft.util.Mth;
  * The neighbor information for each face of a block, used when performing smooth lighting in order to calculate
  * the occlusion of each corner.
  */
-@SuppressWarnings("UnnecessaryLocalVariable")
 enum AoNeighborInfo {
     DOWN(new Direction[] { Direction.WEST, Direction.EAST, Direction.NORTH, Direction.SOUTH }, 0.5F) {
         @Override

@@ -153,6 +153,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
         throw new UnsupportedOperationException("itemTransformationMode can only be called on an item render context.");
     }
 
+    @SuppressWarnings("removal")
     @Deprecated
     @Override
     public BakedModelConsumer bakedModelConsumer() {
@@ -257,6 +258,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
         editorQuad.clear();
     }
 
+    @SuppressWarnings("removal")
     @Deprecated
     private class BakedModelConsumerImpl implements BakedModelConsumer {
         @Override

@@ -53,7 +53,7 @@ public interface PlatformModelAccess {
      * Gets the container holding model data for this chunk. <b>This operation is not thread safe.</b>
      * @param level The current vanilla Level.
      * @param sectionPos The current chunk position.
-     * @return
+     * @return The model data container for this section
      */
     SodiumModelDataContainer getModelDataContainer(Level level, SectionPos sectionPos);
 

@@ -11,10 +11,6 @@ public class MixinConfigImpl extends MixinConfig {
         super();
     }
 
-    public static MixinConfig create() {
-        return new MixinConfigImpl();
-    }
-
     @Override
     public void applyModOverrides() {
         for (ModInfo meta : FMLLoader.getLoadingModList().getMods()) {

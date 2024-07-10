@@ -17,6 +17,7 @@
 package net.caffeinemc.mods.sodium.client.render.frapi.helper;
 
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
+import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import org.joml.Vector3f;
@@ -42,27 +43,21 @@ public abstract class GeometryHelper {
 
     /**
      * Identifies the face to which the quad is most closely aligned.
-     * This mimics the value that {@link BakedQuad#getFace()} returns, and is
+     * This mimics the value that {@link BakedQuad#getDirection()} returns, and is
      * used in the vanilla renderer for all diffuse lighting.
      *
      * <p>Derived from the quad face normal and expects convex quads with all points co-planar.
      */
     public static Direction lightFace(QuadView quad) {
         final Vector3f normal = quad.faceNormal();
-        switch (GeometryHelper.longestAxis(normal)) {
-        case X:
-            return normal.x() > 0 ? Direction.EAST : Direction.WEST;
-
-        case Y:
-            return normal.y() > 0 ? Direction.UP : Direction.DOWN;
-
-        case Z:
-            return normal.z() > 0 ? Direction.SOUTH : Direction.NORTH;
-
-        default:
-            // handle WTF case
-            return Direction.UP;
-        }
+        return switch (GeometryHelper.longestAxis(normal)) {
+            case X -> normal.x() > 0 ? Direction.EAST : Direction.WEST;
+            case Y -> normal.y() > 0 ? Direction.UP : Direction.DOWN;
+            case Z -> normal.z() > 0 ? Direction.SOUTH : Direction.NORTH;
+            default ->
+                // handle WTF case
+                    Direction.UP;
+        };
     }
 
     /**

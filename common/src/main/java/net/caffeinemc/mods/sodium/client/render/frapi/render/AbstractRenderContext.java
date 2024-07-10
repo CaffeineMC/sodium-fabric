@@ -71,7 +71,7 @@ public abstract class AbstractRenderContext implements RenderContext {
     public void popTransform() {
         transformStack.pop();
 
-        if (transformStack.size() == 0) {
+        if (transformStack.isEmpty()) {
             activeTransform = NO_TRANSFORM;
         } else if (transformStack.size() == 1) {
             activeTransform = transformStack.get(0);

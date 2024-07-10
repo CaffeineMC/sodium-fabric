@@ -15,7 +15,7 @@ public class DefaultColorProviders {
         return new VanillaAdapter(color);
     }
 
-    private static ThreadLocal<BlockPos.MutableBlockPos> blockPosHolder = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
+    private static final ThreadLocal<BlockPos.MutableBlockPos> blockPosHolder = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
 
     public static class GrassColorProvider<T> extends BlendedColorProvider<T> {
         public static final ColorProvider<BlockState> BLOCKS = new GrassColorProvider<>();

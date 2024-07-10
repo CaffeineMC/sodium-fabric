@@ -12,9 +12,9 @@ import java.util.function.Function;
  * Implements the "Flawless Frames" FREX feature using which third-party mods can instruct Sodium to sacrifice
  * performance (even beyond the point where it can no longer achieve interactive frame rates) in exchange for
  * a noticeable boost to quality.
- *
+ * <p>
  * In Sodium's case, this means waiting for all chunks to be fully updated and ready for rendering before each frame.
- *
+ * <p>
  * See https://github.com/grondag/frex/pull/9
  */
 public class FlawlessFrames {

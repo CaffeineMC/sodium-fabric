@@ -23,22 +23,6 @@ public class WeightedBakedModelMixin {
     @Final
     private int totalWeight;
 
-    /**
-     * @author JellySquid
-     * @reason Avoid excessive object allocations
-     */
-    @Overwrite
-    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction face, RandomSource random) {
-        WeightedEntry.Wrapper<BakedModel> quad = getAt(this.list, Math.abs((int) random.nextLong()) % this.totalWeight);
-
-        if (quad != null) {
-            return quad.data()
-                    .getQuads(state, face, random);
-        }
-
-        return Collections.emptyList();
-    }
-
     @Unique
     private static <T extends WeightedEntry> T getAt(List<T> pool, int totalWeight) {
         int i = 0;
@@ -56,5 +40,21 @@ public class WeightedBakedModelMixin {
         } while (totalWeight >= 0);
 
         return weighted;
+    }
+
+    /**
+     * @author JellySquid
+     * @reason Avoid excessive object allocations
+     */
+    @Overwrite
+    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction face, RandomSource random) {
+        WeightedEntry.Wrapper<BakedModel> quad = getAt(this.list, Math.abs((int) random.nextLong()) % this.totalWeight);
+
+        if (quad != null) {
+            return quad.data()
+                    .getQuads(state, face, random);
+        }
+
+        return Collections.emptyList();
     }
 }
