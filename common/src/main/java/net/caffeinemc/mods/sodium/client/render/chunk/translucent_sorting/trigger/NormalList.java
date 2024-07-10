@@ -69,9 +69,9 @@ public class NormalList {
     }
 
     private double normalDotDouble(Vector3dc v) {
-        return Math.fma((double) this.normal.x, v.x(),
-                Math.fma((double) this.normal.y, v.y(),
-                        (double) this.normal.z * v.z()));
+        return org.joml.Math.fma(this.normal.x, v.x(),
+                org.joml.Math.fma(this.normal.y, v.y(),
+                        this.normal.z * v.z()));
     }
 
     void processMovement(SortTriggering ts, CameraMovement movement) {
