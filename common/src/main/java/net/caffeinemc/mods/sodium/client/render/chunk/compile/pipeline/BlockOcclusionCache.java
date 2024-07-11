@@ -45,7 +45,7 @@ public class BlockOcclusionCache {
         // Blocks can define special behavior to control whether faces are rendered.
         // This is mostly used by transparent blocks (Leaves, Glass, etc.) to not render interior faces between blocks
         // of the same type.
-        if (selfState.skipRendering(otherState, facing) || PlatformBlockAccess.getInstance().shouldSkipRender(view, selfState, otherState, selfPos, facing)) {
+        if (selfState.skipRendering(otherState, facing) || PlatformBlockAccess.getInstance().shouldSkipRender(view, selfState, otherState, selfPos, otherPos, facing)) {
             return false;
         }
 

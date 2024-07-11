@@ -39,10 +39,11 @@ public interface PlatformBlockAccess {
      * @param selfState The block currently being drawn.
      * @param otherState The adjacent block.
      * @param selfPos The current block position.
+     * @param otherPos The other block position.
      * @param facing The direction between the two blocks.
      * @return If the block's face should be skipped.
      */
-    boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, Direction facing);
+    boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, BlockPos otherPos, Direction facing);
 
     /**
      * Returns if the fluid should render fluid overlays if a block is adjacent to it.

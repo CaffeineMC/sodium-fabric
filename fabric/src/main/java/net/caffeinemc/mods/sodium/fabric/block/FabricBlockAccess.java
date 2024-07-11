@@ -61,7 +61,7 @@ public class FabricBlockAccess implements PlatformBlockAccess {
     }
 
     @Override
-    public boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, Direction facing) {
+    public boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, BlockPos otherPos, Direction facing) {
         return false;
     }
 
