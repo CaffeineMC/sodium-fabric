@@ -99,7 +99,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
     private final @Nullable Int2ReferenceMap<Object>[] blockEntityRenderDataArrays;
 
     // (Local Section -> Model Data) table.
-    private @Nullable SodiumModelDataContainer modelDataSnapshot;
+    private final SodiumModelDataContainer[] modelMapArrays;
 
     // The starting point from which this slice captures blocks
     private int originBlockX, originBlockY, originBlockZ;
@@ -145,10 +145,9 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
             }
         }
 
-        SodiumModelDataContainer modelData = PlatformModelAccess.getInstance().getModelDataContainer(level, pos);
         List<?> renderers = PlatformLevelAccess.getInstance().getExtraRenderers(level, pos.origin());
 
-        return new ChunkRenderContext(pos, sections, box, modelData, renderers);
+        return new ChunkRenderContext(pos, sections, box, renderers);
     }
 
     @SuppressWarnings("unchecked")
@@ -161,6 +160,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
         this.blockEntityArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
         this.blockEntityRenderDataArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
         this.auxLightManager = new Object[SECTION_ARRAY_SIZE];
+        this.modelMapArrays = new SodiumModelDataContainer[SECTION_ARRAY_SIZE];
 
         this.biomeSlice = new LevelBiomeSlice();
         this.biomeColors = new LevelColorCache(this.biomeSlice, Minecraft.getInstance().options.biomeBlendRadius().get());
@@ -176,7 +176,6 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
         this.originBlockZ = SectionPos.sectionToBlockCoord(context.getOrigin().getZ() - NEIGHBOR_CHUNK_RADIUS);
 
         this.volume = context.getVolume();
-        this.modelDataSnapshot = context.getModelData();
 
         for (int x = 0; x < SECTION_ARRAY_LENGTH; x++) {
             for (int y = 0; y < SECTION_ARRAY_LENGTH; y++) {
@@ -203,6 +202,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
         this.blockEntityArrays[sectionIndex] = section.getBlockEntityMap();
         this.auxLightManager[sectionIndex] = section.getAuxLightManager();
         this.blockEntityRenderDataArrays[sectionIndex] = section.getBlockEntityRenderDataMap();
+        this.modelMapArrays[sectionIndex] = section.getModelMap();
     }
 
     private void unpackBlockData(BlockState[] blockArray, ChunkRenderContext context, ClonedChunkSection section) {
@@ -389,7 +389,17 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
             return SodiumModelData.EMPTY;
         }
 
-        return modelDataSnapshot.getModelData(pos);
+        int relBlockX = pos.getX() - this.originBlockX;
+        int relBlockY = pos.getY() - this.originBlockY;
+        int relBlockZ = pos.getZ() - this.originBlockZ;
+
+        var modelMap = this.modelMapArrays[getLocalSectionIndex(relBlockX >> 4, relBlockY >> 4, relBlockZ >> 4)];
+
+        if (modelMap.isEmpty()) {
+            return SodiumModelData.EMPTY;
+        }
+
+        return modelMap.getModelData(pos);
     }
 
     //@Override

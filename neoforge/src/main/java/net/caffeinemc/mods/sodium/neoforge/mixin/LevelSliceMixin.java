@@ -25,9 +25,6 @@ public abstract class LevelSliceMixin implements BlockAndTintGetter {
     private Object[] auxLightManager;
 
     @Shadow
-    private @Nullable SodiumModelDataContainer modelDataSnapshot;
-
-    @Shadow
     @Final
     private ClientLevel level;
 

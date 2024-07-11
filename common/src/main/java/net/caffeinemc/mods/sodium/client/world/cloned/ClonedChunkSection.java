@@ -3,8 +3,7 @@ package net.caffeinemc.mods.sodium.client.world.cloned;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
-import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
+import net.caffeinemc.mods.sodium.client.services.*;
 import net.caffeinemc.mods.sodium.client.world.PalettedContainerROExtension;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.core.BlockPos;
@@ -45,6 +44,7 @@ public class ClonedChunkSection {
     private final @Nullable PalettedContainerRO<BlockState> blockData;
 
     private final @Nullable PalettedContainerRO<Holder<Biome>> biomeData;
+    private final SodiumModelDataContainer modelMap;
 
     private long lastUsedTimestamp = Long.MAX_VALUE;
 
@@ -56,6 +56,7 @@ public class ClonedChunkSection {
 
         Int2ReferenceMap<BlockEntity> blockEntityMap = null;
         Int2ReferenceMap<Object> blockEntityRenderDataMap = null;
+        SodiumModelDataContainer modelMap = PlatformModelAccess.getInstance().getModelDataContainer(level, pos);
         auxLightManager = PlatformLevelAccess.INSTANCE.getLightManager(chunk, pos);
 
         if (section != null) {
@@ -76,6 +77,7 @@ public class ClonedChunkSection {
 
         this.blockData = blockData;
         this.biomeData = biomeData;
+        this.modelMap = modelMap;
 
         this.blockEntityMap = blockEntityMap;
         this.blockEntityRenderDataMap = blockEntityRenderDataMap;
@@ -220,6 +222,10 @@ public class ClonedChunkSection {
 
     public @Nullable Int2ReferenceMap<Object> getBlockEntityRenderDataMap() {
         return this.blockEntityRenderDataMap;
+    }
+
+    public SodiumModelDataContainer getModelMap() {
+        return modelMap;
     }
 
     public @Nullable DataLayer getLightArray(LightLayer lightType) {

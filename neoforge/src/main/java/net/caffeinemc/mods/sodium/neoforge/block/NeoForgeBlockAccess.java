@@ -32,7 +32,7 @@ public class NeoForgeBlockAccess implements PlatformBlockAccess {
 
     @Override
     public boolean shouldSkipRender(BlockGetter level, BlockState selfState, BlockState otherState, BlockPos selfPos, Direction facing) {
-        return selfState.supportsExternalFaceHiding() && (otherState.hidesNeighborFace(level, selfPos, selfState, DirectionUtil.getOpposite(facing)));
+        return (otherState.hidesNeighborFace(level, selfPos, otherState, DirectionUtil.getOpposite(facing))) && selfState.supportsExternalFaceHiding();
     }
 
     @Override

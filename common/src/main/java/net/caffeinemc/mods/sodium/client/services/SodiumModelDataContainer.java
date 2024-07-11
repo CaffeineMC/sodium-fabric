@@ -10,12 +10,18 @@ import java.util.Map;
  */
 public class SodiumModelDataContainer {
     private final Long2ObjectMap<SodiumModelData> modelDataMap;
+    private final boolean isEmpty;
 
     public SodiumModelDataContainer(Long2ObjectMap<SodiumModelData> modelDataMap) {
         this.modelDataMap = modelDataMap;
+        this.isEmpty = modelDataMap.isEmpty();
     }
 
     public SodiumModelData getModelData(BlockPos pos) {
         return modelDataMap.getOrDefault(pos.asLong(), SodiumModelData.EMPTY);
+    }
+
+    public boolean isEmpty() {
+        return isEmpty;
     }
 }

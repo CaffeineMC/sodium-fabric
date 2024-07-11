@@ -10,14 +10,12 @@ public class ChunkRenderContext {
     private final SectionPos origin;
     private final ClonedChunkSection[] sections;
     private final BoundingBox volume;
-    private final SodiumModelDataContainer modelData;
     private final List<?> renderers;
 
-    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume, SodiumModelDataContainer modelData, List<?> renderers) {
+    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume, List<?> renderers) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
-        this.modelData = modelData;
         this.renderers = renderers;
     }
 
@@ -31,10 +29,6 @@ public class ChunkRenderContext {
 
     public BoundingBox getVolume() {
         return this.volume;
-    }
-
-    public SodiumModelDataContainer getModelData() {
-        return modelData;
     }
 
     public List<?> getRenderers() {
