@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Objects;
 
 @Mixin(LevelRenderer.class)
-public abstract class LevelRendererMixin {
+public class LevelRendererMixin {
     @Shadow
     private @Nullable ClientLevel level;
     @Shadow
