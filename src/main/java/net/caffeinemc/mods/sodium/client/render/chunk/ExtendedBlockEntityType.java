@@ -1,9 +1,9 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package net.caffeinemc.mods.sodium.client.render.chunk;
+
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.function.Predicate;
-
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
 
 @SuppressWarnings("unchecked")
 public interface ExtendedBlockEntityType<T extends BlockEntity> {
