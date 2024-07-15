@@ -13,7 +13,7 @@ plugins {
     // This prevents a lot of issues where the build script can fail randomly because the Fabric Maven server
     // is not reachable for some reason, and it makes builds much more reproducible. Observation also shows that it
     // really helps to improve startup times on slow connections.
-    id("fabric-loom") version "1.6.5"
+    id("fabric-loom") version "1.7.2"
 }
 
 base {
@@ -32,8 +32,8 @@ loom {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 sourceSets {
@@ -84,8 +84,8 @@ dependencies {
 
 tasks {
     getByName<JavaCompile>("compileDesktopJava") {
-        sourceCompatibility = JavaVersion.VERSION_1_8.toString()
-        targetCompatibility = JavaVersion.VERSION_1_8.toString()
+        sourceCompatibility = JavaVersion.VERSION_21.toString()
+        targetCompatibility = JavaVersion.VERSION_21.toString()
     }
 
     jar {
