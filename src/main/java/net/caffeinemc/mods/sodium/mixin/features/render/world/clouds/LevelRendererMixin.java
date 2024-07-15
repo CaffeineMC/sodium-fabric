@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.world.level.material.FogType;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
@@ -46,10 +45,6 @@ public class LevelRendererMixin {
 
         ClientLevel level = Objects.requireNonNull(this.level);
         Camera camera = this.minecraft.gameRenderer.getMainCamera();
-
-        if (camera.getFluidInCamera() == FogType.LAVA) {
-            return;
-        }
 
         this.cloudRenderer.render(camera, level, projectionMatrix, poseStack, this.ticks, tickDelta);
 
