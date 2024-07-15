@@ -3,7 +3,7 @@
   "id": "sodium",
   "version": "${version}",
   "name": "Sodium",
-  "description": "Sodium is a free and open-source optimization mod for Minecraft which improves frame rates and reduces lag spikes.",
+  "description": "Sodium is a powerful rendering engine for Minecraft which greatly improves frame rates and micro-stutter, while fixing many graphical issues",
   "authors": [
     {
       "name": "@jellysquid3",
@@ -41,15 +41,15 @@
     "sources": "https://github.com/CaffeineMC/sodium-fabric",
     "issues": "https://github.com/CaffeineMC/sodium-fabric/issues"
   },
-  "license": "LGPL-3.0-only",
+  "license": "Polyform-Shield-1.0.0",
   "icon": "assets/sodium/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
-      "me.jellysquid.mods.sodium.client.SodiumClientMod"
+      "net.caffeinemc.mods.sodium.client.SodiumClientMod"
     ],
     "preLaunch": [
-      "me.jellysquid.mods.sodium.client.SodiumPreLaunch"
+      "net.caffeinemc.mods.sodium.client.SodiumPreLaunch"
     ]
   },
   "custom": {
@@ -70,8 +70,12 @@
   ],
   "depends": {
     "fabricloader": ">=0.12.0",
-    "fabric-rendering-data-attachment-v1": ">=0.1",
-    "fabric-rendering-fluids-v1": ">=0.1"
+    "fabric-block-view-api-v2": "*",
+    "fabric-renderer-api-v1": "*",
+    "fabric-rendering-data-attachment-v1": "*",
+    "fabric-rendering-fluids-v1": ">=2.0.0",
+    "fabric-resource-loader-v0": "*",
+    "minecraft": "1.21"
   },
   "breaks": {
     "optifabric": "*",

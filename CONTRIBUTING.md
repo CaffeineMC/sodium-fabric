@@ -1,5 +1,10 @@
 ## Contribution Guidelines
 
+When submitting a pull request, you are granting [JellySquid](https://jellysquid.me) the right to license
+your contributions under the [Polyform Shield License (Version 1.0.0)](LICENSE.md).
+
+If you have any questions about these terms, please [get in contact with us](https://caffeinemc.net/discord).
+
 ### Code Style
 
 When contributing source code to the project, ensure that you make consistent use of our code style guidelines. These
@@ -11,7 +16,7 @@ with some minor changes, as described below.
     - If you are using more than three levels of indentation, you should likely consider restructuring your code.
     - Branches which are only exceptionally or very rarely taken should remain concise. When this is not possible,
       prefer breaking out to a new method (where it makes sense) as this helps the compiler better optimize the code.
-- Use `this` to qualify member and field access, as it avoids some ambiguity in certain contexts.
+- Use `this` to qualify method and field access, as it avoids some ambiguity in certain contexts.
 
 We also provide these code styles as [EditorConfig](https://editorconfig.org/) files, which most Java IDEs will
 automatically detect and make use of.

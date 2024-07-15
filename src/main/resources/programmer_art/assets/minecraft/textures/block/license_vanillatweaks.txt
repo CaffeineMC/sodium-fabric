@@ -1,1 +1,0 @@
-These assets are by Vanilla Tweaks (https://vanillatweaks.net, 1.13 version). They have been licensed under the Lesser GNU General Public License version 3.0 (LGPLv3) by the creators for use in Sodium.

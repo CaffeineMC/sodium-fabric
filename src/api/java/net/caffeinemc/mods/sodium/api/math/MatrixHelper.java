@@ -1,8 +1,9 @@
 package net.caffeinemc.mods.sodium.api.math;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.Direction;
+import org.joml.Math;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -120,11 +121,11 @@ public class MatrixHelper {
      * @param angleY The angle to rotate by on the Y-axis
      * @param angleX The angle to rotate by on the X-axis
      */
-    public static void rotateZYX(MatrixStack.Entry matrices, float angleZ, float angleY, float angleX) {
-        matrices.getPositionMatrix()
+    public static void rotateZYX(PoseStack.Pose matrices, float angleZ, float angleY, float angleX) {
+        matrices.pose()
                 .rotateZYX(angleZ, angleY, angleX);
 
-        matrices.getNormalMatrix()
+        matrices.normal()
                 .rotateZYX(angleZ, angleY, angleX);
     }
 
@@ -133,18 +134,49 @@ public class MatrixHelper {
      * than transforming the vector directly (i.e. with {@link Matrix3f#transform(Vector3f)}), as it can simply
      * extract the values from the provided matrix (rather than transforming the vertices.)
      *
-     * @param matrix The transformation matrix
+     * @param matrix The transformation matrices
+     * @param skipNormalization Whether normalizing the vector is unnecessary
      * @param direction The unit vector (direction) to use
      * @return A transformed normal in packed format
      */
-    public static int transformNormal(Matrix3f matrix, Direction direction) {
-        return switch (direction) {
-            case DOWN  -> NormI8.pack(-matrix.m10, -matrix.m11, -matrix.m12);
-            case UP    -> NormI8.pack( matrix.m10,  matrix.m11,  matrix.m12);
-            case NORTH -> NormI8.pack(-matrix.m20, -matrix.m21, -matrix.m22);
-            case SOUTH -> NormI8.pack( matrix.m20,  matrix.m21,  matrix.m22);
-            case WEST  -> NormI8.pack(-matrix.m00, -matrix.m01, -matrix.m02);
-            case EAST  -> NormI8.pack( matrix.m00,  matrix.m01,  matrix.m02);
-        };
+    public static int transformNormal(Matrix3f matrix, boolean skipNormalization, Direction direction) {
+        float x, y, z;
+        if (direction == Direction.DOWN) {
+            x = -matrix.m10;
+            y = -matrix.m11;
+            z = -matrix.m12;
+        } else if (direction == Direction.UP) {
+            x = matrix.m10;
+            y = matrix.m11;
+            z = matrix.m12;
+        } else if (direction == Direction.NORTH) {
+            x = -matrix.m20;
+            y = -matrix.m21;
+            z = -matrix.m22;
+        } else if (direction == Direction.SOUTH) {
+            x = matrix.m20;
+            y = matrix.m21;
+            z = matrix.m22;
+        } else if (direction == Direction.WEST) {
+            x = -matrix.m00;
+            y = -matrix.m01;
+            z = -matrix.m02;
+        } else if (direction == Direction.EAST) {
+            x = matrix.m00;
+            y = matrix.m01;
+            z = matrix.m02;
+        } else {
+            throw new IllegalArgumentException("An incorrect direction enum was provided..");
+        }
+
+        if (!skipNormalization) {
+            float scalar = Math.invsqrt(Math.fma(x, x, Math.fma(y, y, z * z)));
+
+            x *= scalar;
+            y *= scalar;
+            z *= scalar;
+        }
+
+        return NormI8.pack(x, y, z);
     }
 }
