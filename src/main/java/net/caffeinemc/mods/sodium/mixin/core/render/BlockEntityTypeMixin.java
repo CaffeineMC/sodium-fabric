@@ -1,12 +1,12 @@
-package me.jellysquid.mods.sodium.mixin.core.render;
+package net.caffeinemc.mods.sodium.mixin.core.render;
 
 import java.util.function.Predicate;
 
+import net.caffeinemc.mods.sodium.client.render.chunk.ExtendedBlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import me.jellysquid.mods.sodium.client.render.chunk.ExtendedBlockEntityType;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
 
 @Mixin(BlockEntityType.class)
 public class BlockEntityTypeMixin<T extends BlockEntity> implements ExtendedBlockEntityType<T> {

@@ -3,12 +3,12 @@ package net.caffeinemc.mods.sodium.api.blockentity;
 import java.util.function.Predicate;
 
 import net.caffeinemc.mods.sodium.api.internal.DependencyInjection;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public interface BlockEntityRenderHandler {
     BlockEntityRenderHandler INSTANCE = DependencyInjection.load(BlockEntityRenderHandler.class,
-            "me.jellysquid.mods.sodium.client.render.chunk.BlockEntityRenderHandlerImpl");
+            "net.caffeinemc.mods.sodium.client.render.chunk.BlockEntityRenderHandlerImpl");
 
     static BlockEntityRenderHandler instance() {
         return INSTANCE;
