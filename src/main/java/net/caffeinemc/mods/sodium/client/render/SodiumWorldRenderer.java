@@ -206,9 +206,9 @@ public class SodiumWorldRenderer {
             this.lastCameraPos = new Vector3d(pos);
         }
 
-        boolean runChunkUpdates = true;
+        int maxChunkUpdates = updateChunksImmediately ? this.renderDistance : 1;
 
-        while (runChunkUpdates) {
+        for (int i = 0; i < maxChunkUpdates; i++) {
             if (this.renderSectionManager.needsUpdate()) {
                 profiler.popPush("chunk_render_lists");
 
@@ -224,7 +224,9 @@ public class SodiumWorldRenderer {
 
             this.renderSectionManager.uploadChunks();
 
-            runChunkUpdates = updateChunksImmediately && this.renderSectionManager.needsUpdate();
+            if (!this.renderSectionManager.needsUpdate()) {
+                break;
+            }
         }
 
         profiler.popPush("chunk_render_tick");
