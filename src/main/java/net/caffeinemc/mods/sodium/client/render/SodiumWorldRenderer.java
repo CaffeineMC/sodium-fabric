@@ -155,7 +155,6 @@ public class SodiumWorldRenderer {
      */
     public void setupTerrain(Camera camera,
                              Viewport viewport,
-                             @Deprecated(forRemoval = true) int frame,
                              boolean spectator,
                              boolean updateChunksImmediately) {
         NativeBuffer.reclaim(false);
@@ -207,20 +206,26 @@ public class SodiumWorldRenderer {
             this.lastCameraPos = new Vector3d(pos);
         }
 
-        if (this.renderSectionManager.needsUpdate()) {
-            profiler.popPush("chunk_render_lists");
+        boolean runChunkUpdates = true;
 
-            this.renderSectionManager.update(camera, viewport, frame, spectator);
+        while (runChunkUpdates) {
+            if (this.renderSectionManager.needsUpdate()) {
+                profiler.popPush("chunk_render_lists");
+
+                this.renderSectionManager.update(camera, viewport, spectator);
+            }
+
+            profiler.popPush("chunk_update");
+
+            this.renderSectionManager.cleanupAndFlip();
+            this.renderSectionManager.updateChunks(updateChunksImmediately);
+
+            profiler.popPush("chunk_upload");
+
+            this.renderSectionManager.uploadChunks();
+
+            runChunkUpdates = updateChunksImmediately && this.renderSectionManager.needsUpdate();
         }
-
-        profiler.popPush("chunk_update");
-
-        this.renderSectionManager.cleanupAndFlip();
-        this.renderSectionManager.updateChunks(updateChunksImmediately);
-
-        profiler.popPush("chunk_upload");
-
-        this.renderSectionManager.uploadChunks();
 
         profiler.popPush("chunk_render_tick");
 
