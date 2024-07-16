@@ -28,6 +28,14 @@ versionRange = "[1.20.4,1.21.1)"
 ordering = "NONE"
 side = "CLIENT"
 
+[[dependencies.sodium]]
+modId = "embeddium"
+type = "incompatible"
+reason = "Sodium and Embeddium cannot be used together. Please remove Embeddium."
+versionRange = "[0.0.1,)"
+ordering = "NONE"
+side = "CLIENT"
+
 [[mixins]]
 config = "sodium.mixins.json"
 

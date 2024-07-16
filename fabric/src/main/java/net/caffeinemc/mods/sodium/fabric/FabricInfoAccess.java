@@ -30,4 +30,9 @@ public class FabricInfoAccess implements PlatformInfoAccess {
     public boolean platformHasEarlyLoadingScreen() {
         return false;
     }
+
+    @Override
+    public boolean isModInLoadingList(String modId) {
+        return FabricLoader.getInstance().isModLoaded(modId);
+    }
 }

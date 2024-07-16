@@ -4,6 +4,7 @@ import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.LoadingModList;
 
 import java.nio.file.Path;
 
@@ -31,5 +32,10 @@ public class NeoForgeInfoAccess implements PlatformInfoAccess {
     @Override
     public boolean platformHasEarlyLoadingScreen() {
         return FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL);
+    }
+
+    @Override
+    public boolean isModInLoadingList(String modId) {
+        return LoadingModList.get().getModFileById(modId) != null;
     }
 }
