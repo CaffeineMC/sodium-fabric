@@ -10,6 +10,10 @@
     "conformVisibility" : true
   },
   "client" : [
+    "core.model.quad.BakedQuadMixin",
+    "features.model.MultiPartBakedModelMixin",
+    "features.model.WeightedBakedModelMixin",
+    "features.render.model.block.ModelBlockRendererMixin",
     "AbstractBlockRenderContextMixin",
     "ChunkRenderTypeSetAccessor",
     "ClientHooksMixin",

@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.mixin.core.model.quad;
+package net.caffeinemc.mods.sodium.neoforge.mixin.core.model.quad;
 
 import net.caffeinemc.mods.sodium.client.model.quad.BakedQuadView;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;

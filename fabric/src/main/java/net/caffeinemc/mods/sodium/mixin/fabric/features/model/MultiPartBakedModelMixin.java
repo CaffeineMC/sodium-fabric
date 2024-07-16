@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.mixin.features.model;
+package net.caffeinemc.mods.sodium.mixin.fabric.features.model;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.renderer.block.model.BakedQuad;

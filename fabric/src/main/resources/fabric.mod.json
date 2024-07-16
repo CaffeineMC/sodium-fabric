@@ -66,7 +66,8 @@
   },
   "accessWidener" : "sodium.accesswidener",
   "mixins" : [
-    "sodium.mixins.json"
+    "sodium.mixins.json",
+    "sodium-fabric.mixins.json"
   ],
   "depends" : {
     "fabricloader" : ">=0.12.0",

@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.mixin.features.model;
+package net.caffeinemc.mods.sodium.mixin.fabric.features.model;
 
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;

@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.mixin.features.model;
+package net.caffeinemc.mods.sodium.neoforge.mixin.features.model;
 
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;

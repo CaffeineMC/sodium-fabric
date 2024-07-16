@@ -1,5 +1,3 @@
-import net.fabricmc.loom.task.AbstractRemapJarTask
-
 plugins {
     id("java")
     id("idea")
@@ -14,11 +12,6 @@ val MINECRAFT_VERSION: String by rootProject.extra
 val PARCHMENT_VERSION: String? by rootProject.extra
 val FABRIC_LOADER_VERSION: String by rootProject.extra
 val FABRIC_API_VERSION: String by rootProject.extra
-
-// This trick hides common tasks in the IDEA list.
-tasks.configureEach {
-    group = null
-}
 
 dependencies {
     minecraft(group = "com.mojang", name = "minecraft", version = MINECRAFT_VERSION)
@@ -44,10 +37,6 @@ dependencies {
 
     modCompileOnly("net.fabricmc.fabric-api:fabric-renderer-api-v1:3.2.9+1172e897d7")
     implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
-}
-
-tasks.withType<AbstractRemapJarTask>().forEach {
-    it.targetNamespace = "named"
 }
 
 sourceSets {
@@ -105,6 +94,10 @@ tasks {
         targetCompatibility = JavaVersion.VERSION_1_8.toString()
     }
 
+    remapJar {
+        enabled = false
+    }
+
     jar {
         from(rootDir.resolve("LICENSE.md"))
 
@@ -112,6 +105,19 @@ tasks {
         from(api.output.classesDirs)
         from(api.output.resourcesDir)
 
+        val workarounds = sourceSets.getByName("workarounds")
+        from(workarounds.output.classesDirs)
+        from(workarounds.output.resourcesDir)
+
+        val desktop = sourceSets.getByName("desktop")
+        from(desktop.output.classesDirs)
+        from(desktop.output.resourcesDir)
+
         manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
     }
+}
+
+// This trick hides common tasks in the IDEA list.
+tasks.configureEach {
+    group = null
 }

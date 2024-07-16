@@ -40,7 +40,18 @@ dependencies {
     include(implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0"))
 
     implementation("com.google.code.findbugs:jsr305:3.0.1")
-    compileOnly(project(":common"))
+
+    implementation(project.project(":common").sourceSets.getByName("api").output)
+    implementation(project.project(":common").sourceSets.getByName("main").output)
+    implementation(project.project(":common").sourceSets.getByName("workarounds").output)
+}
+
+tasks.named("compileTestJava").configure {
+    enabled = false
+}
+
+tasks.named("test").configure {
+    enabled = false
 }
 
 loom {
@@ -48,7 +59,7 @@ loom {
         accessWidenerPath.set(project(":common").file("src/main/resources/sodium.accesswidener"))
 
     @Suppress("UnstableApiUsage")
-    mixin { defaultRefmapName.set("sodium.refmap.json") }
+    mixin { defaultRefmapName.set("sodium-fabric.refmap.json") }
 
     runs {
         named("client") {
@@ -57,29 +68,12 @@ loom {
             ideConfigGenerated(true)
             runDir("run")
         }
-        named("server") {
-            server()
-            configName = "Fabric Server"
-            ideConfigGenerated(true)
-            runDir("run")
-        }
     }
 }
 
 tasks {
-    withType<JavaCompile> {
-        source(project(":common").sourceSets.main.get().allSource)
-        source(project(":common").sourceSets.getByName("api").allSource)
-        source(project(":common").sourceSets.getByName("workarounds").allSource)
-    }
-
-    javadoc { source(project(":common").sourceSets.main.get().allJava) }
-
     processResources {
-        from(project(":common").sourceSets.main.get().resources) {
-            exclude("sodium.accesswidener")
-        }
-
+        from(project.project(":common").sourceSets.main.get().resources)
         inputs.property("version", project.version)
 
         filesMatching("fabric.mod.json") {
@@ -88,6 +82,10 @@ tasks {
     }
 
     jar {
-        from(rootDir.resolve("LICENSE.md"))
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+        from(zipTree(project.project(":common").tasks.jar.get().archiveFile))
+
+        manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
     }
 }
