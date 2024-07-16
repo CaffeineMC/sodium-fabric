@@ -77,6 +77,7 @@
     "fabric-resource-loader-v0": "*"
   },
   "breaks": {
+    "embeddium": "*",
     "optifabric": "*",
     "canvas": "*",
     "sodium-blendingregistry": "*",

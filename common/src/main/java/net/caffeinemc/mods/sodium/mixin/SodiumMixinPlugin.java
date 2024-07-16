@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin;
 
 import net.caffeinemc.mods.sodium.client.data.config.MixinConfig;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,6 +18,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
     private final Logger logger = LogManager.getLogger("Sodium");
     private MixinConfig config;
+    private boolean dependencyResolutionFailed;
 
     @Override
     public void onLoad(String mixinPackage) {
@@ -24,6 +26,12 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
             this.config = MixinConfig.load(new File("./config/sodium-mixins.properties"));
         } catch (Exception e) {
             throw new RuntimeException("Could not load configuration file for Sodium", e);
+        }
+
+        this.dependencyResolutionFailed = PlatformInfoAccess.getInstance().isModInLoadingList("embeddium");
+
+        if (dependencyResolutionFailed) {
+            this.logger.error("Not applying any Sodium mixins; dependency resolution has failed.");
         }
 
         this.logger.info("Loaded configuration file for Sodium: {} options available, {} override(s) found",
@@ -37,6 +45,10 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (dependencyResolutionFailed) {
+            return false;
+        }
+
         if (!mixinClassName.startsWith(MIXIN_PACKAGE_ROOT)) {
             this.logger.error("Expected mixin '{}' to start with package root '{}', treating as foreign and " +
                     "disabling!", mixinClassName, MIXIN_PACKAGE_ROOT);

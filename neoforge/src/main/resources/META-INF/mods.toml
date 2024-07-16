@@ -16,6 +16,13 @@ description = '''
 Sodium is a powerful rendering engine for Minecraft which improves frame rates and reduces lag spikes.
 '''
 
+[[dependencies.sodium]]
+modId = "embeddium"
+mandatory = false
+versionRange = "[,0.0.1-INCOMPATIBLE-WITH-SODIUM)"
+ordering = "NONE"
+side = "CLIENT"
+
 provides = ["indium"]
 
 [modproperties.sodium]

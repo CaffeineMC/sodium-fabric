@@ -1,13 +1,5 @@
 package net.caffeinemc.mods.sodium.client.services;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.BlockAndTintGetter;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.FluidState;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
-
 import java.nio.file.Path;
 
 public interface PlatformInfoAccess {
@@ -41,4 +33,9 @@ public interface PlatformInfoAccess {
      * Returns if the platform has a early loading screen.
      */
     boolean platformHasEarlyLoadingScreen();
+
+    /**
+     * Returns if a mod is in the mods folder during loading.
+     */
+    boolean isModInLoadingList(String modId);
 }
