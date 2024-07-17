@@ -79,50 +79,13 @@ public class EntityRenderer {
         }
     }
 
-    public static void render(PoseStack poseStack, VertexBufferWriter writer, ModelPart part, int light, int overlay, int color) {
-        ModelPartData accessor = ModelPartData.from(part);
-        
-        if (!accessor.isVisible()) {
-            return;
-        }
+    public static void renderCuboid(PoseStack.Pose matrices, VertexBufferWriter writer, ModelCuboid cuboid, int light, int overlay, int color) {
+        prepareVertices(matrices, cuboid);
 
-        var cuboids = accessor.getCuboids();
-        var children = accessor.getChildren();
+        var vertexCount = emitQuads(cuboid, color, overlay, light);
 
-        if (ArrayUtils.isEmpty(cuboids) && ArrayUtils.isEmpty(children)) {
-            return;
-        }
-
-        poseStack.pushPose();
-
-        part.translateAndRotate(poseStack);
-
-        if (!accessor.isHidden()) {
-            renderCuboids(poseStack.last(), writer, cuboids, light, overlay, color);
-        }
-
-        renderChildren(poseStack, writer, light, overlay, color, children);
-
-        poseStack.popPose();
-    }
-
-    private static void renderChildren(PoseStack poseStack, VertexBufferWriter writer, int light, int overlay, int color, ModelPart[] children) {
-        for (ModelPart part : children) {
-            render(poseStack, writer, part, light, overlay, color);
-        }
-    }
-
-    private static void renderCuboids(PoseStack.Pose matrices, VertexBufferWriter writer, ModelCuboid[] cuboids, int light, int overlay, int color) {
-        prepareNormals(matrices);
-
-        for (ModelCuboid cuboid : cuboids) {
-            prepareVertices(matrices, cuboid);
-
-            var vertexCount = emitQuads(cuboid, color, overlay, light);
-
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                writer.push(stack, SCRATCH_BUFFER, vertexCount, ModelVertex.FORMAT);
-            }
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            writer.push(stack, SCRATCH_BUFFER, vertexCount, ModelVertex.FORMAT);
         }
     }
 
@@ -180,7 +143,7 @@ public class EntityRenderer {
         buildVertexTexCoord(VERTEX_TEXTURES[FACE_POS_X], cuboid.u0, cuboid.v1, cuboid.u1, cuboid.v2);
     }
 
-    private static void prepareNormals(PoseStack.Pose matrices) {
+    public static void prepareNormals(PoseStack.Pose matrices) {
         CUBE_NORMALS[FACE_NEG_Y] = MatrixHelper.transformNormal(matrices.normal(), true, Direction.DOWN);
         CUBE_NORMALS[FACE_POS_Y] = MatrixHelper.transformNormal(matrices.normal(), true, Direction.UP);
         CUBE_NORMALS[FACE_NEG_Z] = MatrixHelper.transformNormal(matrices.normal(), true, Direction.NORTH);
