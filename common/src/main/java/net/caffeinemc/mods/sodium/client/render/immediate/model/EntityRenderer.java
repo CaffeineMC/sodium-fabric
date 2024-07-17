@@ -35,6 +35,7 @@ public class EntityRenderer {
             VERTEX_X2_Y2_Z2 = 6,
             VERTEX_X1_Y2_Z2 = 7;
 
+    private static int LAST_MATRIX_HASH;
 
     private static final long SCRATCH_BUFFER = MemoryUtil.nmemAlignedAlloc(64, NUM_CUBE_FACES * NUM_FACE_VERTICES * ModelVertex.STRIDE);
 
@@ -78,6 +79,8 @@ public class EntityRenderer {
     }
 
     public static void renderCuboid(PoseStack.Pose matrices, VertexBufferWriter writer, ModelCuboid cuboid, int light, int overlay, int color) {
+        prepareNormalsIfChanged(matrices);
+
         prepareVertices(matrices, cuboid);
 
         var vertexCount = emitQuads(cuboid, color, overlay, light);
@@ -141,21 +144,26 @@ public class EntityRenderer {
         buildVertexTexCoord(VERTEX_TEXTURES[FACE_POS_X], cuboid.u0, cuboid.v1, cuboid.u1, cuboid.v2);
     }
 
-    public static void prepareNormals(PoseStack.Pose matrices) {
-        CUBE_NORMALS[FACE_NEG_Y] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.DOWN);
-        CUBE_NORMALS[FACE_POS_Y] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.UP);
-        CUBE_NORMALS[FACE_NEG_Z] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.NORTH);
-        CUBE_NORMALS[FACE_POS_Z] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.SOUTH);
-        CUBE_NORMALS[FACE_POS_X] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.WEST);
-        CUBE_NORMALS[FACE_NEG_X] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.EAST);
+    public static void prepareNormalsIfChanged(PoseStack.Pose matrices) {
+        int hash = matrices.normal().hashCode();
+        if (hash != LAST_MATRIX_HASH) {
+            LAST_MATRIX_HASH = hash;
 
-        // When mirroring is used, the normals for EAST and WEST are swapped.
-        CUBE_NORMALS_MIRRORED[FACE_NEG_Y] = CUBE_NORMALS[FACE_NEG_Y];
-        CUBE_NORMALS_MIRRORED[FACE_POS_Y] = CUBE_NORMALS[FACE_POS_Y];
-        CUBE_NORMALS_MIRRORED[FACE_NEG_Z] = CUBE_NORMALS[FACE_NEG_Z];
-        CUBE_NORMALS_MIRRORED[FACE_POS_Z] = CUBE_NORMALS[FACE_POS_Z];
-        CUBE_NORMALS_MIRRORED[FACE_POS_X] = CUBE_NORMALS[FACE_NEG_X]; // mirrored
-        CUBE_NORMALS_MIRRORED[FACE_NEG_X] = CUBE_NORMALS[FACE_POS_X]; // mirrored
+            CUBE_NORMALS[FACE_NEG_Y] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.DOWN);
+            CUBE_NORMALS[FACE_POS_Y] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.UP);
+            CUBE_NORMALS[FACE_NEG_Z] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.NORTH);
+            CUBE_NORMALS[FACE_POS_Z] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.SOUTH);
+            CUBE_NORMALS[FACE_POS_X] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.WEST);
+            CUBE_NORMALS[FACE_NEG_X] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.EAST);
+
+            // When mirroring is used, the normals for EAST and WEST are swapped.
+            CUBE_NORMALS_MIRRORED[FACE_NEG_Y] = CUBE_NORMALS[FACE_NEG_Y];
+            CUBE_NORMALS_MIRRORED[FACE_POS_Y] = CUBE_NORMALS[FACE_POS_Y];
+            CUBE_NORMALS_MIRRORED[FACE_NEG_Z] = CUBE_NORMALS[FACE_NEG_Z];
+            CUBE_NORMALS_MIRRORED[FACE_POS_Z] = CUBE_NORMALS[FACE_POS_Z];
+            CUBE_NORMALS_MIRRORED[FACE_POS_X] = CUBE_NORMALS[FACE_NEG_X]; // mirrored
+            CUBE_NORMALS_MIRRORED[FACE_NEG_X] = CUBE_NORMALS[FACE_POS_X]; // mirrored
+        }
     }
 
     private static void buildVertexPosition(Vector3f vector, float x, float y, float z, Matrix4f matrix) {
