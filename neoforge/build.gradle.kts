@@ -1,6 +1,6 @@
 plugins {
     id("idea")
-    id("net.neoforged.moddev") version "0.1.126"
+    id("net.neoforged.moddev") version "1.0.11"
     id("java-library")
 }
 
@@ -74,7 +74,20 @@ dependencies {
 }
 
 tasks.jar {
-    from(project(":common").sourceSets.getByName("desktop").output)
+    val api = project.project(":common").sourceSets.getByName("api")
+    from(api.output.classesDirs)
+    from(api.output.resourcesDir)
+
+    val main = project.project(":common").sourceSets.getByName("main")
+    from(main.output.classesDirs) {
+        exclude("/sodium.refmap.json")
+    }
+    from(main.output.resourcesDir)
+
+    val desktop = project.project(":common").sourceSets.getByName("desktop")
+    from(desktop.output.classesDirs)
+    from(desktop.output.resourcesDir)
+
     from(rootDir.resolve("LICENSE.md"))
 
     filesMatching("neoforge.mods.toml") {
@@ -102,7 +115,10 @@ neoForge {
     mods {
         create("sodium") {
             sourceSet(sourceSets.main.get())
+            sourceSet(project.project(":common").sourceSets.main.get())
+            sourceSet(project.project(":common").sourceSets.getByName("api"))
         }
+
         create("sodiumservice") {
             sourceSet(sourceSets["service"])
             sourceSet(project(":common").sourceSets["workarounds"])
@@ -125,32 +141,16 @@ tasks.named("compileTestJava").configure {
 }
 
 dependencies {
-    compileOnly(project(":common"))
+    compileOnly(project.project(":common").sourceSets.main.get().output)
+    compileOnly(project.project(":common").sourceSets.getByName("api").output)
     includeDep("org.sinytra.forgified-fabric-api:fabric-api-base:0.4.42+d1308dedd1")
     includeDep("org.sinytra.forgified-fabric-api:fabric-renderer-api-v1:3.3.0+e3455cb4d1")
     includeDep("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}") {
         isTransitive = false
     }
-    additionalRuntimeClasspath("com.lodborg:interval-tree:1.0.0")
-    includeDep("com.lodborg:interval-tree:1.0.0")
     includeDep("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.0.10+9afaaf8cd1")
-}
-
-// NeoGradle compiles the game, but we don't want to add our common code to the game's code
-val notNeoTask: (Task) -> Boolean = { it: Task -> !it.name.startsWith("neo") && !it.name.startsWith("compileService") }
-
-tasks.withType<JavaCompile>().matching(notNeoTask).configureEach {
-    source(project(":common").sourceSets.main.get().allSource)
-    source(project(":common").sourceSets.getByName("api").allSource)
-}
-
-tasks.withType<Javadoc>().matching(notNeoTask).configureEach {
-    source(project(":common").sourceSets.main.get().allJava)
-    source(project(":common").sourceSets.getByName("api").allJava)
-}
-
-tasks.withType<ProcessResources>().matching(notNeoTask).configureEach {
-    from(project(":common").sourceSets.main.get().resources)
+    includeDep("com.lodborg:interval-tree:1.0.0")
+    additionalRuntimeClasspath("com.lodborg:interval-tree:1.0.0")
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)

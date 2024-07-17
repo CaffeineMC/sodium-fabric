@@ -2,7 +2,6 @@
   "package": "net.caffeinemc.mods.sodium.mixin",
   "required": true,
   "compatibilityLevel": "JAVA_17",
-  "refmap": "sodium.refmap.json",
   "plugin": "net.caffeinemc.mods.sodium.mixin.SodiumMixinPlugin",
   "injectors": {
     "defaultRequire": 1

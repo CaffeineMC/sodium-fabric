@@ -94,10 +94,6 @@ tasks {
         targetCompatibility = JavaVersion.VERSION_1_8.toString()
     }
 
-    remapJar {
-        enabled = false
-    }
-
     jar {
         from(rootDir.resolve("LICENSE.md"))
 

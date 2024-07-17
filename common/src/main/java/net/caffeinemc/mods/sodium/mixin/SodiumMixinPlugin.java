@@ -40,7 +40,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public String getRefMapperConfig() {
-        return null;
+        return PlatformInfoAccess.getInstance().isDevelopmentEnvironment() ? null : "sodium.refmap.json";
     }
 
     @Override
@@ -85,6 +85,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
         return option.isEnabled();
     }
+
     @Override
     public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {
 
