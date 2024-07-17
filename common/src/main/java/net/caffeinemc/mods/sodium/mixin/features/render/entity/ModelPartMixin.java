@@ -33,12 +33,6 @@ public class ModelPartMixin {
     @Shadow
     public float zRot;
 
-    @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/geom/ModelPart;translateAndRotate(Lcom/mojang/blaze3d/vertex/PoseStack;)V", shift = At.Shift.AFTER))
-    private void onRender(PoseStack matrices, VertexConsumer vertices, int light, int overlay, int color, CallbackInfo ci) {
-        EntityRenderer.prepareNormals(matrices.last());
-    }
-
     /**
      * @author JellySquid
      * @reason Apply transform more quickly
