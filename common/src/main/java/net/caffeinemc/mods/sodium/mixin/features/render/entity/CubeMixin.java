@@ -1,7 +1,12 @@
 package net.caffeinemc.mods.sodium.mixin.features.render.entity;
 
-import net.caffeinemc.mods.sodium.client.model.ModelCuboidAccessor;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.client.render.immediate.model.EntityRenderer;
 import net.caffeinemc.mods.sodium.client.render.immediate.model.ModelCuboid;
+import net.caffeinemc.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.Direction;
 import org.objectweb.asm.Opcodes;
@@ -14,11 +19,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Set;
 
 @Mixin(ModelPart.Cube.class)
-public class CubeMixin implements ModelCuboidAccessor {
+public class CubeMixin {
     @Mutable
     @Shadow
     @Final
     public float minX;
+
     @Unique
     private ModelCuboid sodium$cuboid;
 
@@ -30,8 +36,16 @@ public class CubeMixin implements ModelCuboidAccessor {
         this.minX = value;
     }
 
-    @Override
-    public ModelCuboid sodium$copy() {
-        return this.sodium$cuboid;
+    @Inject(method = "compile", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack$Pose;pose()Lorg/joml/Matrix4f;"), cancellable = true)
+    private void onCompile(PoseStack.Pose pose, VertexConsumer buffer, int light, int overlay, int color, CallbackInfo ci) {
+        VertexBufferWriter writer = VertexConsumerUtils.convertOrLog(buffer);
+
+        if (writer == null) {
+            return;
+        }
+
+        ci.cancel();
+
+        EntityRenderer.renderCuboid(pose, writer, this.sodium$cuboid, light, overlay, ColorARGB.toABGR(color));
     }
 }
