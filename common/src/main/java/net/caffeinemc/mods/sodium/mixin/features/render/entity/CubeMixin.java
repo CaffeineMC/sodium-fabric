@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.features.render.entity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.client.render.immediate.model.EntityRenderer;
@@ -37,7 +38,7 @@ public class CubeMixin {
     }
 
     @Inject(method = "compile", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack$Pose;pose()Lorg/joml/Matrix4f;"), cancellable = true)
-    private void onCompile(PoseStack.Pose pose, VertexConsumer buffer, int light, int overlay, int color, CallbackInfo ci) {
+    private void onCompile(PoseStack.Pose pose, VertexConsumer buffer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
         VertexBufferWriter writer = VertexConsumerUtils.convertOrLog(buffer);
 
         if (writer == null) {
@@ -46,6 +47,6 @@ public class CubeMixin {
 
         ci.cancel();
 
-        EntityRenderer.renderCuboid(pose, writer, this.sodium$cuboid, light, overlay, ColorARGB.toABGR(color));
+        EntityRenderer.renderCuboid(pose, writer, this.sodium$cuboid, light, overlay, ColorABGR.pack(red, green, blue, alpha));
     }
 }
