@@ -7,11 +7,15 @@ on: [ pull_request ]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
-      - uses: gradle/actions/wrapper-validation@v3
-      - uses: actions/setup-java@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
@@ -21,11 +25,11 @@ jobs:
         with:
           cache-read-only: true
 
-      - name: Execute Gradle build
+      - name: Execute Gradle Build
         run: ./gradlew build
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: sodium-artifacts-${{ steps.ref.outputs.branch }}
           path: build/libs/*.jar
