@@ -164,6 +164,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
         // cancellation opportunity right before translucent sorting
         if (cancellationToken.isCancelled()) {
+            meshes.forEach((pass, mesh) -> mesh.getVertexData().free());
             return null;
         }
 
