@@ -37,6 +37,8 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
     @Shadow
     private long vertexPointer;
 
+    @Shadow
+    private int elementsToFill;
     @Unique
     private VertexFormatDescription formatDescription;
 
@@ -80,6 +82,7 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
 
         this.vertices += count;
         this.vertexPointer = (dst + length) - vertexSize;
+        this.elementsToFill = 0;
     }
 
     @Unique
