@@ -341,23 +341,15 @@ public class CloudRenderer {
             final long buffer = stack.nmalloc(4 * ColorVertex.STRIDE);
 
             long ptr = buffer;
-            int count = 0;
 
-            // -Y
-            if (CloudFaceSet.contains(faces, CloudFace.NEG_Y)) {
-                int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
+            int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
 
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
 
-                count += 4;
-            }
-
-            if (count > 0) {
-                writer.push(stack, buffer, count, ColorVertex.FORMAT);
-            }
+            writer.push(stack, buffer, 4, ColorVertex.FORMAT);
         }
     }
 
