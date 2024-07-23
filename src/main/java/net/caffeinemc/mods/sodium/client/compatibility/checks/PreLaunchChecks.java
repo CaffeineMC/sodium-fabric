@@ -116,7 +116,7 @@ public class PreLaunchChecks {
 
         for (var adapter : GraphicsAdapterProbe.getAdapters()) {
             if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
-                var driverName = wddmAdapterInfo.getOpenGlIcdName();
+                @Nullable var driverName = wddmAdapterInfo.getOpenGlIcdName();
                 var driverVersion = wddmAdapterInfo.openglIcdVersion();
 
                 if (driverName == null) {
