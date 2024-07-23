@@ -119,6 +119,10 @@ public class PreLaunchChecks {
                 var driverName = wddmAdapterInfo.getOpenGlIcdName();
                 var driverVersion = wddmAdapterInfo.openglIcdVersion();
 
+                if (driverName == null) {
+                    continue;
+                }
+
                 // Intel OpenGL ICD for Generation 7 GPUs
                 if (driverName.matches("ig7icd(32|64)")) {
                     // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
