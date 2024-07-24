@@ -39,6 +39,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
 import org.joml.Vector3d;
 
 import java.util.Collection;
@@ -57,6 +58,7 @@ public class SodiumWorldRenderer {
     private Vector3d lastCameraPos;
     private double lastCameraPitch, lastCameraYaw;
     private float lastFogDistance;
+    private Matrix4f lastProjectionMatrix;
 
     private boolean useEntityCulling;
 
@@ -179,6 +181,7 @@ public class SodiumWorldRenderer {
 
         Vec3 posRaw = camera.getPosition();
         Vector3d pos = new Vector3d(posRaw.x(), posRaw.y(), posRaw.z());
+        Matrix4f projectionMatrix = new Matrix4f(RenderSystem.getProjectionMatrix());
         float pitch = camera.getXRot();
         float yaw = camera.getYRot();
         float fogDistance = RenderSystem.getShaderFogEnd();
@@ -186,13 +189,19 @@ public class SodiumWorldRenderer {
         if (this.lastCameraPos == null) {
             this.lastCameraPos = new Vector3d(pos);
         }
+        if (this.lastProjectionMatrix == null) {
+            this.lastProjectionMatrix = new Matrix4f(projectionMatrix);
+        }
         boolean cameraLocationChanged = !pos.equals(this.lastCameraPos);
         boolean cameraAngleChanged = pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
+        boolean cameraProjectionChanged = !projectionMatrix.equals(this.lastProjectionMatrix);
+
+        this.lastProjectionMatrix = projectionMatrix;
 
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
 
-        if (cameraLocationChanged || cameraAngleChanged) {
+        if (cameraLocationChanged || cameraAngleChanged || cameraProjectionChanged) {
             this.renderSectionManager.markGraphDirty();
         }
 
