@@ -24,7 +24,7 @@ public class RenderSystemMixin {
 
         for (; now < target; now = GLFW.glfwGetTime()) {
             double waitTime = (target - now) - 0.002; // -2ms to account for inaccuracy of timeouts on some operating systems
-            if (waitTime >= 0.001) { // pretty sure you can't sleep for less than 1ms on Windows or Linux
+            if (waitTime >= 0.001) { // pretty sure you can't sleep for less than 1ms without platform-specific code
                 GLFW.glfwWaitEventsTimeout(waitTime); // could be replaced with Thread.sleep(), but i'm not sure if it'd be as precise
             }
         }
