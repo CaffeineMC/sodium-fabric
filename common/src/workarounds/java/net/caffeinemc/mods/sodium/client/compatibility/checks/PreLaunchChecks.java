@@ -68,7 +68,7 @@ public class PreLaunchChecks {
                                 Required version: 10.18.10.5161 (or newer)
                                 
                                 You must update your graphics card driver in order to continue."""
-                                .replace("###CURRENT_DRIVER###", NvidiaDriverVersion.parse(installedVersion).toString()),
+                                .replace("###CURRENT_DRIVER###", installedVersion.toString()),
                         "https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility#windows-intel-gen7");
             }
         }
@@ -86,7 +86,7 @@ public class PreLaunchChecks {
                                 Required version: 536.23 (or newer)
                                 
                                 You must update your graphics card driver in order to continue."""
-                                .replace("###CURRENT_DRIVER###", installedVersion.toString()),
+                                .replace("###CURRENT_DRIVER###", NvidiaDriverVersion.parse(installedVersion).toString()),
                         "https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility#nvidia-gpus");
 
             }
