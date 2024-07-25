@@ -13,12 +13,12 @@ public class RenderSystemMixin {
      */
     @Overwrite
     public static void limitDisplayFPS(int fps) {
-        double frametime = 1.0 / fps;
+        double frameTime = 1.0 / fps;
         double now = GLFW.glfwGetTime();
-        double target = (now - (now % frametime)) + frametime; // subtracting (now % frametime) corrects for desync
+        double end = (now - (now % frameTime)) + frameTime; // subtracting (now % frameTime) corrects for desync
 
-        for (; now < target; now = GLFW.glfwGetTime()) {
-            int waitTime = (int)((target - now) * 1000.0) - 2; // -2ms to account for sleep imprecision in some OSes
+        for (; now < end; now = GLFW.glfwGetTime()) {
+            int waitTime = (int)((end - now) * 1000.0) - 2; // -2ms to account for sleep imprecision on some operating systems
             if (waitTime >= 1) { // cant sleep less than 1ms without platform-specific code
                 try {
                     Thread.sleep(waitTime); // precision seems fine on both linux and windows
@@ -27,6 +27,6 @@ public class RenderSystemMixin {
             }
         }
 
-        GLFW.glfwPollEvents(); // glfwWaitEventsTimeout won't catch every input if subtracting 2ms from the timeout
+        GLFW.glfwPollEvents();
     }
 }
