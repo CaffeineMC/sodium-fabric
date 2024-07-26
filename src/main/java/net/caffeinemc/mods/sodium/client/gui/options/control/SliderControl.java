@@ -41,7 +41,7 @@ public class SliderControl implements Control<Integer> {
 
     @Override
     public int getMaxWidth() {
-        return 130;
+        return 170;
     }
 
     private static class Button extends ControlElement<Integer> {
