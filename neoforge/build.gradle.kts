@@ -1,6 +1,6 @@
 plugins {
     id("idea")
-    id("net.neoforged.moddev") version "1.0.11"
+    id("net.neoforged.moddev") version "1.0.15"
     id("java-library")
 }
 
