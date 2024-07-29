@@ -37,6 +37,7 @@ public class FluidRendererImpl extends FluidRenderer {
         var meshBuilder = buffers.get(material);
 
         FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getType());
+        boolean hasModOverride = FluidRenderHandlerRegistry.INSTANCE.getOverride(fluidState.getType()) != null;
 
         // Match the vanilla FluidRenderer's behavior if the handler is null
         if (handler == null) {
@@ -66,7 +67,7 @@ public class FluidRendererImpl extends FluidRenderer {
         // parameters are bundled into a DefaultRenderContext which is stored in a ThreadLocal.
 
         DefaultRenderContext defaultContext = CURRENT_DEFAULT_CONTEXT.get();
-        defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler);
+        defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler, hasModOverride);
 
         try {
             handler.renderFluid(blockPos, level, meshBuilder.asFallbackVertexConsumer(material, collector), blockState, fluidState);
@@ -94,8 +95,9 @@ public class FluidRendererImpl extends FluidRenderer {
         private Material material;
         private FluidRenderHandler handler;
         private ColorProviderRegistry colorProviderRegistry;
+        private boolean hasModOverride;
 
-        public void setUp(ColorProviderRegistry colorProviderRegistry, DefaultFluidRenderer renderer, LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler) {
+        public void setUp(ColorProviderRegistry colorProviderRegistry, DefaultFluidRenderer renderer, LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler, boolean hasModOverride) {
             this.colorProviderRegistry = colorProviderRegistry;
             this.renderer = renderer;
             this.level = level;
@@ -106,6 +108,7 @@ public class FluidRendererImpl extends FluidRenderer {
             this.meshBuilder = meshBuilder;
             this.material = material;
             this.handler = handler;
+            this.hasModOverride = hasModOverride;
         }
 
         public void clear() {
@@ -118,12 +121,13 @@ public class FluidRendererImpl extends FluidRenderer {
             this.meshBuilder = null;
             this.material = null;
             this.handler = null;
+            this.hasModOverride = false;
         }
 
         public ColorProvider<FluidState> getColorProvider(Fluid fluid) {
             var override = this.colorProviderRegistry.getColorProvider(fluid);
 
-            if (override != null) {
+            if (!hasModOverride && override != null) {
                 return override;
             }
 
