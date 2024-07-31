@@ -12,14 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Extract current branch name
+      - name: Extract Current Branch Name
         shell: bash
         # bash pattern expansion to grab branch name without slashes
         run: ref="${GITHUB_REF#refs/heads/}" && echo "branch=${ref////-}" >> $GITHUB_OUTPUT
         id: ref
-      - name: Checkout sources
-        uses: actions/checkout@v3
-      - uses: actions/setup-java@v4
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
@@ -29,11 +32,11 @@ jobs:
         with:
           cache-read-only: true
 
-      - name: Execute Gradle build
+      - name: Execute Gradle Build
         run: ./gradlew build -Pbuild.release=true
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: sodium-artifacts-${{ steps.ref.outputs.branch }}
           path: build/libs/*.jar
