@@ -63,9 +63,6 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     @Unique
     private SodiumWorldRenderer renderer;
 
-    @Unique
-    private int frame;
-
     @Override
     public SodiumWorldRenderer sodium$getWorldRenderer() {
         return this.renderer;
@@ -146,7 +143,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.setupTerrain(camera, viewport, this.frame++, spectator, updateChunksImmediately);
+            this.renderer.setupTerrain(camera, viewport, spectator, updateChunksImmediately);
         } finally {
             RenderDevice.exitManagedCode();
         }
