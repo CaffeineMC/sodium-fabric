@@ -128,11 +128,12 @@ public class RenderSectionManager {
         this.cameraPosition = cameraPosition;
     }
 
-    public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
-        this.createTerrainRenderList(camera, viewport, frame, spectator);
+    public void update(Camera camera, Viewport viewport, boolean spectator) {
+        this.lastUpdatedFrame += 1;
+
+        this.createTerrainRenderList(camera, viewport, this.lastUpdatedFrame, spectator);
 
         this.needsGraphUpdate = false;
-        this.lastUpdatedFrame = frame;
     }
 
     private void createTerrainRenderList(Camera camera, Viewport viewport, int frame, boolean spectator) {
