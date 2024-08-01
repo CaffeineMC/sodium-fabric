@@ -222,7 +222,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
             // Add each option's control element
             for (Option<?> option : group.getOptions()) {
                 Control<?> control = option.getControl();
-                ControlElement<?> element = control.createElement(new Dim2i(x, y, 200, 18));
+                ControlElement<?> element = control.createElement(new Dim2i(x, y, 240, 18));
 
                 this.addRenderableWidget(element);
 
