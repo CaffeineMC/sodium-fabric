@@ -41,7 +41,7 @@ public class SliderControl implements Control<Integer> {
 
     @Override
     public int getMaxWidth() {
-        return 130;
+        return 170;
     }
 
     private static class Button extends ControlElement<Integer> {
@@ -112,7 +112,7 @@ public class SliderControl implements Control<Integer> {
             this.drawRect(graphics, thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
             this.drawRect(graphics, sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
 
-            String label = String.valueOf(this.getIntValue());
+            Component label = this.formatter.format(this.getIntValue());
 
             int labelWidth = this.font.width(label);
 
