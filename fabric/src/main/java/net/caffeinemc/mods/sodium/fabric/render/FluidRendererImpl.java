@@ -37,7 +37,7 @@ public class FluidRendererImpl extends FluidRenderer {
         var meshBuilder = buffers.get(material);
 
         FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getType());
-        boolean hasModOverride = FluidRenderHandlerRegistry.INSTANCE.getOverride(fluidState.getType()) != null;
+        boolean hasModOverride = false;
 
         // Match the vanilla FluidRenderer's behavior if the handler is null
         if (handler == null) {
