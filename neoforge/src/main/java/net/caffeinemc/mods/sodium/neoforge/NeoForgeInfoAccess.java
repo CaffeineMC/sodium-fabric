@@ -35,6 +35,11 @@ public class NeoForgeInfoAccess implements PlatformInfoAccess {
     }
 
     @Override
+    public boolean platformUsesRefmap() {
+        return false;
+    }
+
+    @Override
     public boolean isModInLoadingList(String modId) {
         return LoadingModList.get().getModFileById(modId) != null;
     }

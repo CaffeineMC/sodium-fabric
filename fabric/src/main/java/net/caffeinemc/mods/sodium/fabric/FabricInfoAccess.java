@@ -32,6 +32,11 @@ public class FabricInfoAccess implements PlatformInfoAccess {
     }
 
     @Override
+    public boolean platformUsesRefmap() {
+        return true;
+    }
+
+    @Override
     public boolean isModInLoadingList(String modId) {
         return FabricLoader.getInstance().isModLoaded(modId);
     }

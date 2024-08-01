@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("idea")
-    id("fabric-loom") version "1.7.2"
+    id("fabric-loom") version ("1.7.3")
 }
 
 repositories {
