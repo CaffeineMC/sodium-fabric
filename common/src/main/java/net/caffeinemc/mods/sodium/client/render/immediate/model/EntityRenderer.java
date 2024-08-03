@@ -5,6 +5,7 @@ import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
 import net.minecraft.core.Direction;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -35,7 +36,7 @@ public class EntityRenderer {
             VERTEX_X2_Y2_Z2 = 6,
             VERTEX_X1_Y2_Z2 = 7;
 
-    private static int LAST_MATRIX_HASH;
+    private static final Matrix3f lastMatrix = new Matrix3f();
 
     private static final long SCRATCH_BUFFER = MemoryUtil.nmemAlignedAlloc(64, NUM_CUBE_FACES * NUM_FACE_VERTICES * ModelVertex.STRIDE);
 
@@ -145,9 +146,8 @@ public class EntityRenderer {
     }
 
     public static void prepareNormalsIfChanged(PoseStack.Pose matrices) {
-        int hash = matrices.normal().hashCode();
-        if (hash != LAST_MATRIX_HASH) {
-            LAST_MATRIX_HASH = hash;
+        if (!matrices.normal().equals(lastMatrix)) {
+            lastMatrix.set(matrices.normal());
 
             CUBE_NORMALS[FACE_NEG_Y] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.DOWN);
             CUBE_NORMALS[FACE_POS_Y] = MatrixHelper.transformNormal(matrices.normal(), matrices.trustedNormals, Direction.UP);
