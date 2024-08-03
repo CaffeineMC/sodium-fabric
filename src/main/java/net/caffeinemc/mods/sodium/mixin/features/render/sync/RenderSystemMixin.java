@@ -18,12 +18,9 @@ public class RenderSystemMixin {
         double end = (now - (now % frameTime)) + frameTime; // subtracting (now % frameTime) corrects for desync
 
         for (; now < end; now = GLFW.glfwGetTime()) {
-            int waitTime = (int)((end - now) * 1000.0) - 2; // -2ms to account for sleep imprecision on some operating systems
-            if (waitTime >= 1) { // cant sleep less than 1ms without platform-specific code
-                try {
-                    Thread.sleep(waitTime); // precision seems fine on both linux and windows
-                }
-                catch (Exception e) {}
+            double waitTime = (end - now) - 0.002; // -2ms to account for sleep imprecision on some operating systems
+            if (waitTime >= 0.001) { // cant sleep less than 1ms without platform-specific code
+                GLFW.glfwWaitEventsTimeout(waitTime);
             }
         }
 
