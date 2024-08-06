@@ -1,0 +1,18 @@
+{
+  "package": "net.caffeinemc.mods.sodium.mixin.fabric",
+  "required": true,
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "sodium-fabric.refmap.json",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "conformVisibility": true
+  },
+  "client": [
+    "core.model.quad.BakedQuadMixin",
+    "features.model.MultiPartBakedModelMixin",
+    "features.model.WeightedBakedModelMixin",
+    "features.render.model.block.ModelBlockRendererMixin"
+  ]
+}
