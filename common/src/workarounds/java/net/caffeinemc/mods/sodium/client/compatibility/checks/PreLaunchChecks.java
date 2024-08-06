@@ -1,13 +1,12 @@
 package net.caffeinemc.mods.sodium.client.compatibility.checks;
 
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaDriverVersion;
 import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMT;
-import net.caffeinemc.mods.sodium.client.util.OsUtils;
-import net.caffeinemc.mods.sodium.client.util.OsUtils.OperatingSystem;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.Version;
 import org.slf4j.Logger;
@@ -110,7 +109,7 @@ public class PreLaunchChecks {
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/899
     private static @Nullable WindowsFileVersion findIntelDriverMatchingBug899() {
-        if (OsUtils.getOs() != OperatingSystem.WIN) {
+        if (OsUtils.getOs() != OsUtils.OperatingSystem.WIN) {
             return null;
         }
 
@@ -146,7 +145,7 @@ public class PreLaunchChecks {
     private static @Nullable WindowsFileVersion findNvidiaDriverMatchingBug1486() {
         // The Linux driver has two separate branches which have overlapping version numbers, despite also having
         // different feature sets. As a result, we can't reliably determine which Linux drivers are broken...
-        if (OsUtils.getOs() != OperatingSystem.WIN) {
+        if (OsUtils.getOs() != OsUtils.OperatingSystem.WIN) {
             return null;
         }
 
