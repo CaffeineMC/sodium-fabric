@@ -26,11 +26,7 @@ public class SpriteFinderCache {
         return blockAtlasSpriteFinder;
     }
 
-<<<<<<<< HEAD:common/src/main/java/net/caffeinemc/mods/sodium/client/render/frapi/SpriteFinderCache.java
-    public static class ReloadListener implements SimpleSynchronousResourceReloadListener {
-========
     public static class ReloadListener implements ResourceManagerReloadListener, IdentifiableResourceReloadListener {
->>>>>>>> ml:fabric/src/main/java/net/caffeinemc/mods/sodium/fabric/texture/SpriteFinderCache.java
         public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("sodium", "sprite_finder_cache");
         public static final List<ResourceLocation> DEPENDENCIES = List.of(ResourceReloadListenerKeys.MODELS);
         public static final ReloadListener INSTANCE = new ReloadListener();
