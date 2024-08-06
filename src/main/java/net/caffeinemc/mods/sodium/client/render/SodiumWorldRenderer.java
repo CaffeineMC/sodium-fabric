@@ -39,11 +39,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
+import org.joml.Vector3d;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.SortedSet;
-
-import org.joml.Vector3d;
 
 /**
  * Provides an extension to vanilla's {@link LevelRenderer}.
@@ -57,6 +58,7 @@ public class SodiumWorldRenderer {
     private Vector3d lastCameraPos;
     private double lastCameraPitch, lastCameraYaw;
     private float lastFogDistance;
+    private Matrix4f lastProjectionMatrix;
 
     private boolean useEntityCulling;
 
@@ -155,7 +157,6 @@ public class SodiumWorldRenderer {
      */
     public void setupTerrain(Camera camera,
                              Viewport viewport,
-                             @Deprecated(forRemoval = true) int frame,
                              boolean spectator,
                              boolean updateChunksImmediately) {
         NativeBuffer.reclaim(false);
@@ -179,6 +180,7 @@ public class SodiumWorldRenderer {
 
         Vec3 posRaw = camera.getPosition();
         Vector3d pos = new Vector3d(posRaw.x(), posRaw.y(), posRaw.z());
+        Matrix4f projectionMatrix = new Matrix4f(RenderSystem.getProjectionMatrix());
         float pitch = camera.getXRot();
         float yaw = camera.getYRot();
         float fogDistance = RenderSystem.getShaderFogEnd();
@@ -186,13 +188,19 @@ public class SodiumWorldRenderer {
         if (this.lastCameraPos == null) {
             this.lastCameraPos = new Vector3d(pos);
         }
+        if (this.lastProjectionMatrix == null) {
+            this.lastProjectionMatrix = new Matrix4f(projectionMatrix);
+        }
         boolean cameraLocationChanged = !pos.equals(this.lastCameraPos);
         boolean cameraAngleChanged = pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
+        boolean cameraProjectionChanged = !projectionMatrix.equals(this.lastProjectionMatrix);
+
+        this.lastProjectionMatrix = projectionMatrix;
 
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
 
-        if (cameraLocationChanged || cameraAngleChanged) {
+        if (cameraLocationChanged || cameraAngleChanged || cameraProjectionChanged) {
             this.renderSectionManager.markGraphDirty();
         }
 
@@ -207,20 +215,28 @@ public class SodiumWorldRenderer {
             this.lastCameraPos = new Vector3d(pos);
         }
 
-        if (this.renderSectionManager.needsUpdate()) {
-            profiler.popPush("chunk_render_lists");
+        int maxChunkUpdates = updateChunksImmediately ? this.renderDistance : 1;
 
-            this.renderSectionManager.update(camera, viewport, frame, spectator);
+        for (int i = 0; i < maxChunkUpdates; i++) {
+            if (this.renderSectionManager.needsUpdate()) {
+                profiler.popPush("chunk_render_lists");
+
+                this.renderSectionManager.update(camera, viewport, spectator);
+            }
+
+            profiler.popPush("chunk_update");
+
+            this.renderSectionManager.cleanupAndFlip();
+            this.renderSectionManager.updateChunks(updateChunksImmediately);
+
+            profiler.popPush("chunk_upload");
+
+            this.renderSectionManager.uploadChunks();
+
+            if (!this.renderSectionManager.needsUpdate()) {
+                break;
+            }
         }
-
-        profiler.popPush("chunk_update");
-
-        this.renderSectionManager.cleanupAndFlip();
-        this.renderSectionManager.updateChunks(updateChunksImmediately);
-
-        profiler.popPush("chunk_upload");
-
-        this.renderSectionManager.uploadChunks();
 
         profiler.popPush("chunk_render_tick");
 
@@ -239,9 +255,7 @@ public class SodiumWorldRenderer {
     /**
      * Performs a render pass for the given {@link RenderType} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z) {
-        ChunkRenderMatrices matrices = ChunkRenderMatrices.from(matrixStack);
-
+    public void drawChunkLayer(RenderType renderLayer, ChunkRenderMatrices matrices, double x, double y, double z) {
         if (renderLayer == RenderType.solid()) {
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, x, y, z);
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, x, y, z);
@@ -380,7 +394,7 @@ public class SodiumWorldRenderer {
 
                 PoseStack.Pose entry = matrices.last();
                 VertexConsumer transformer = new SheetedDecalTextureGenerator(bufferBuilder,
-                        entry.pose(), entry.normal(), 1.0f);
+                        entry, 1.0f);
 
                 consumer = (layer) -> layer.affectsCrumbling() ? VertexMultiConsumer.create(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
             }

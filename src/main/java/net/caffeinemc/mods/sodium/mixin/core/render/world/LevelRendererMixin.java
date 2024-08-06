@@ -4,10 +4,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer;
+import net.caffeinemc.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import net.caffeinemc.mods.sodium.client.render.viewport.ViewportProvider;
 import net.caffeinemc.mods.sodium.client.util.FlawlessFrames;
 import net.caffeinemc.mods.sodium.client.world.LevelRendererExtension;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -46,9 +48,6 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     private ClientLevel level;
     @Unique
     private SodiumWorldRenderer renderer;
-
-    @Unique
-    private int frame;
 
     @Override
     public SodiumWorldRenderer sodium$getWorldRenderer() {
@@ -105,11 +104,11 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
      * @author JellySquid
      */
     @Overwrite
-    private void renderSectionLayer(RenderType renderLayer, PoseStack matrices, double x, double y, double z, Matrix4f matrix) {
+    private void renderSectionLayer(RenderType renderLayer, double x, double y, double z, Matrix4f modelMatrix, Matrix4f projectionMatrix) {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
+            this.renderer.drawChunkLayer(renderLayer, new ChunkRenderMatrices(projectionMatrix, modelMatrix), x, y, z);
         } finally {
             RenderDevice.exitManagedCode();
         }
@@ -128,7 +127,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.setupTerrain(camera, viewport, this.frame++, spectator, updateChunksImmediately);
+            this.renderer.setupTerrain(camera, viewport, spectator, updateChunksImmediately);
         } finally {
             RenderDevice.exitManagedCode();
         }
@@ -191,8 +190,8 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
     }
 
     @Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;globalBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
-    private void onRenderBlockEntities(PoseStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f positionMatrix, CallbackInfo ci) {
-        this.renderer.renderBlockEntities(matrices, this.renderBuffers, this.destructionProgress, camera, this.level.tickRateManager().isFrozen() ? 1.0F : tickDelta);
+    private void onRenderBlockEntities(DeltaTracker deltaTracker, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, Matrix4f matrix4f2, CallbackInfo ci) {
+        this.renderer.renderBlockEntities(new PoseStack(), this.renderBuffers, this.destructionProgress, camera, deltaTracker.getGameTimeDeltaPartialTick(false));
     }
 
     /**

@@ -15,24 +15,25 @@ jobs:
         run: ref="${GITHUB_REF#refs/heads/}" && echo "branch=${ref////-}" >> $GITHUB_OUTPUT
         id: ref
       - name: Checkout sources
-        uses: actions/checkout@v3
-      - name: Set up JDK
-        uses: actions/setup-java@v2
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v3
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: 17
-      - name: Initialize caches
-        uses: actions/cache@v3
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/loom-cache
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-build-commit-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-build-commit-
-      - name: Build artifacts
+          cache-read-only: false
+
+      - name: Execute Gradle build
         run: ./gradlew build
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:

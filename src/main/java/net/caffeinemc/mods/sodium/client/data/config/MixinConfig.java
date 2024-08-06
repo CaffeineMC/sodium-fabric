@@ -82,7 +82,6 @@ public class MixinConfig {
 
         this.addMixinRule("features.world", true);
         this.addMixinRule("features.world.biome", true);
-        this.addMixinRule("features.world.storage", true);
 
         this.addMixinRule("workarounds", true);
         this.addMixinRule("workarounds.context_creation", true);

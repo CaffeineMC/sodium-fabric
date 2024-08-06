@@ -70,14 +70,12 @@ public class DefaultFluidRenderer {
     }
 
     private boolean isFluidOccluded(BlockAndTintGetter world, int x, int y, int z, Direction dir, Fluid fluid) {
-        BlockPos pos = this.scratchPos.set(x, y, z);
-        BlockState blockState = world.getBlockState(pos);
-        BlockPos adjPos = this.scratchPos.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
-
-        if (blockState.canOcclude()) {
-            return world.getFluidState(adjPos).getType().isSame(fluid) || blockState.isFaceSturdy(world, pos, dir, SupportType.FULL);
+        var adjPos = this.scratchPos.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
+        BlockState blockState = world.getBlockState(adjPos);
+        if (blockState.getFluidState().getType().isSame(fluid)) {
+            return true;
         }
-        return world.getFluidState(adjPos).getType().isSame(fluid);
+        return blockState.canOcclude() && dir != Direction.UP && blockState.isFaceSturdy(world, adjPos, dir.getOpposite(), SupportType.FULL);
     }
 
     private boolean isSideExposed(BlockAndTintGetter world, int x, int y, int z, Direction dir, float height) {
@@ -88,10 +86,7 @@ public class DefaultFluidRenderer {
             VoxelShape shape = blockState.getOcclusionShape(world, pos);
 
             // Hoist these checks to avoid allocating the shape below
-            if (shape == Shapes.block()) {
-                // The top face always be inset, so if the shape above is a full cube it can't possibly occlude
-                return dir == Direction.UP;
-            } else if (shape.isEmpty()) {
+            if (shape.isEmpty()) {
                 return true;
             }
 
@@ -215,16 +210,29 @@ public class DefaultFluidRenderer {
 
             quad.setSprite(sprite);
 
-            setVertex(quad, 0, 0.0f, northWestHeight, 0.0f, u1, v1);
-            setVertex(quad, 1, 0.0f, southWestHeight, 1.0F, u2, v2);
-            setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
-            setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
-
             // top surface alignedness is calculated with a more relaxed epsilon
             boolean aligned = isAlignedEquals(northEastHeight, northWestHeight)
                     && isAlignedEquals(northWestHeight, southEastHeight)
                     && isAlignedEquals(southEastHeight, southWestHeight)
                     && isAlignedEquals(southWestHeight, northEastHeight);
+
+            boolean creaseNorthEastSouthWest = aligned
+                    || northEastHeight > northWestHeight && northEastHeight > southEastHeight
+                    || northEastHeight < northWestHeight && northEastHeight < southEastHeight
+                    || southWestHeight > northWestHeight && southWestHeight > southEastHeight
+                    || southWestHeight < northWestHeight && southWestHeight < southEastHeight;
+
+            if (creaseNorthEastSouthWest) {
+                setVertex(quad, 1, 0.0f, northWestHeight, 0.0f, u1, v1);
+                setVertex(quad, 2, 0.0f, southWestHeight, 1.0F, u2, v2);
+                setVertex(quad, 3, 1.0F, southEastHeight, 1.0F, u3, v3);
+                setVertex(quad, 0, 1.0F, northEastHeight, 0.0f, u4, v4);
+            } else {
+                setVertex(quad, 0, 0.0f, northWestHeight, 0.0f, u1, v1);
+                setVertex(quad, 1, 0.0f, southWestHeight, 1.0F, u2, v2);
+                setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
+                setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
+            }
 
             this.updateQuad(quad, level, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, collector, material, offset, quad, aligned ? ModelQuadFacing.POS_Y : ModelQuadFacing.UNASSIGNED, false);
@@ -233,7 +241,6 @@ public class DefaultFluidRenderer {
                 this.writeQuad(meshBuilder, collector, material, offset, quad,
                         aligned ? ModelQuadFacing.NEG_Y : ModelQuadFacing.UNASSIGNED, true);
             }
-
         }
 
         if (!sfDown) {
@@ -405,7 +412,7 @@ public class DefaultFluidRenderer {
         var vertices = this.vertices;
 
         for (int i = 0; i < 4; i++) {
-            var out = vertices[flip ? 3 - i : i];
+            var out = vertices[flip ? (3 - i + 1) & 0b11 : i];
             out.x = offset.getX() + quad.getX(i);
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
@@ -422,7 +429,7 @@ public class DefaultFluidRenderer {
             builder.addSprite(sprite);
         }
 
-        if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
+        if (material.isTranslucent() && collector != null) {
             int normal;
             if (facing.isAligned()) {
                 normal = facing.getPackedAlignedNormal();

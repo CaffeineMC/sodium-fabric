@@ -63,7 +63,7 @@ public class FluidRenderer {
         defaultContext.setUp(this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler);
 
         try {
-            handler.renderFluid(blockPos, level, meshBuilder.asFallbackVertexConsumer(material), blockState, fluidState);
+            handler.renderFluid(blockPos, level, meshBuilder.asFallbackVertexConsumer(material, collector), blockState, fluidState);
         } finally {
             defaultContext.clear();
         }
