@@ -1,4 +1,4 @@
-<img src="src/main/resources/assets/sodium/icon.png" width="128">
+<img src="common/src/main/resources/assets/sodium/icon.png" width="128">
 
 # Sodium (for Fabric)
 
