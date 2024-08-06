@@ -2,8 +2,8 @@ package net.caffeinemc.mods.sodium.client.gui;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.data.fingerprint.HashedFingerprint;
-import net.caffeinemc.mods.sodium.client.gui.console.Console;
-import net.caffeinemc.mods.sodium.client.gui.console.message.MessageLevel;
+import net.caffeinemc.mods.sodium.client.console.Console;
+import net.caffeinemc.mods.sodium.client.console.message.MessageLevel;
 import net.caffeinemc.mods.sodium.client.gui.options.*;
 import net.caffeinemc.mods.sodium.client.gui.options.control.Control;
 import net.caffeinemc.mods.sodium.client.gui.options.control.ControlElement;
@@ -12,8 +12,8 @@ import net.caffeinemc.mods.sodium.client.gui.prompt.ScreenPrompt;
 import net.caffeinemc.mods.sodium.client.gui.prompt.ScreenPromptable;
 import net.caffeinemc.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
 import net.caffeinemc.mods.sodium.client.gui.widgets.FlatButtonWidget;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.caffeinemc.mods.sodium.client.util.Dim2i;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -70,7 +70,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
     private void checkPromptTimers() {
         // Never show the prompt in developer workspaces.
-        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+        if (PlatformInfoAccess.getInstance().isDevelopmentEnvironment()) {
             return;
         }
 
@@ -357,7 +357,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
         if (flags.contains(OptionFlag.REQUIRES_GAME_RESTART)) {
             Console.instance().logMessage(MessageLevel.WARN,
-                    Component.translatable("sodium.console.game_restart"), 10.0);
+                    "sodium.console.game_restart", true, 10.0);
         }
 
         for (OptionStorage<?> storage : dirtyStorages) {

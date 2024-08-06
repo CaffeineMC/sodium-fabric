@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.client.world.cloned;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.caffeinemc.mods.sodium.client.services.*;
 import net.caffeinemc.mods.sodium.client.world.PalettedContainerROExtension;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.core.BlockPos;
@@ -38,10 +39,12 @@ public class ClonedChunkSection {
     private final @Nullable Int2ReferenceMap<Object> blockEntityRenderDataMap;
 
     private final @Nullable DataLayer[] lightDataArrays;
+    private final @Nullable Object auxLightManager;
 
     private final @Nullable PalettedContainerRO<BlockState> blockData;
 
     private final @Nullable PalettedContainerRO<Holder<Biome>> biomeData;
+    private final SodiumModelDataContainer modelMap;
 
     private long lastUsedTimestamp = Long.MAX_VALUE;
 
@@ -53,6 +56,8 @@ public class ClonedChunkSection {
 
         Int2ReferenceMap<BlockEntity> blockEntityMap = null;
         Int2ReferenceMap<Object> blockEntityRenderDataMap = null;
+        SodiumModelDataContainer modelMap = PlatformModelAccess.getInstance().getModelDataContainer(level, pos);
+        auxLightManager = PlatformLevelAccess.INSTANCE.getLightManager(chunk, pos);
 
         if (section != null) {
             if (!section.hasOnlyAir()) {
@@ -62,9 +67,8 @@ public class ClonedChunkSection {
                     blockData = constructDebugWorldContainer(pos);
                 }
                 blockEntityMap = copyBlockEntities(chunk, pos);
-
-                if (blockEntityMap != null) {
-                    blockEntityRenderDataMap = copyBlockEntityRenderData(blockEntityMap);
+                if (blockEntityMap != null && PlatformBlockAccess.getInstance().platformHasBlockData()) {
+                    blockEntityRenderDataMap = copyBlockEntityRenderData(level, blockEntityMap);
                 }
             }
 
@@ -73,6 +77,7 @@ public class ClonedChunkSection {
 
         this.blockData = blockData;
         this.biomeData = biomeData;
+        this.modelMap = modelMap;
 
         this.blockEntityMap = blockEntityMap;
         this.blockEntityRenderDataMap = blockEntityRenderDataMap;
@@ -173,7 +178,7 @@ public class ClonedChunkSection {
     }
 
     @Nullable
-    private static Int2ReferenceMap<Object> copyBlockEntityRenderData(Int2ReferenceMap<BlockEntity> blockEntities) {
+    private static Int2ReferenceMap<Object> copyBlockEntityRenderData(Level level, Int2ReferenceMap<BlockEntity> blockEntities) {
         Int2ReferenceOpenHashMap<Object> blockEntityRenderDataMap = null;
 
         // Retrieve any render data after we have copied all block entities, as this will call into the code of
@@ -181,7 +186,7 @@ public class ClonedChunkSection {
         // were iterating over any data in that chunk.
         // See https://github.com/CaffeineMC/sodium-fabric/issues/942 for more info.
         for (var entry : Int2ReferenceMaps.fastIterable(blockEntities)) {
-            Object data = entry.getValue().getRenderData();
+            Object data = PlatformBlockAccess.getInstance().getBlockEntityData(entry.getValue());
 
             if (data != null) {
                 if (blockEntityRenderDataMap == null) {
@@ -219,6 +224,10 @@ public class ClonedChunkSection {
         return this.blockEntityRenderDataMap;
     }
 
+    public SodiumModelDataContainer getModelMap() {
+        return modelMap;
+    }
+
     public @Nullable DataLayer getLightArray(LightLayer lightType) {
         return this.lightDataArrays[lightType.ordinal()];
     }
@@ -229,5 +238,9 @@ public class ClonedChunkSection {
 
     public void setLastUsedTimestamp(long timestamp) {
         this.lastUsedTimestamp = timestamp;
+    }
+
+    public Object getAuxLightManager() {
+        return auxLightManager;
     }
 }

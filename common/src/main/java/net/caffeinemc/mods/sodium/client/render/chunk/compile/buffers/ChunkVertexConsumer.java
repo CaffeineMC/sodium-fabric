@@ -9,7 +9,8 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.Transl
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
-import net.caffeinemc.mods.sodium.client.render.frapi.SpriteFinderCache;
+import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformTextureAccess;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import org.jetbrains.annotations.NotNull;
@@ -26,8 +27,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
 
     private Material material;
-    private boolean isColorFixed;
-    private int fixedColor = 0xFFFFFFFF;
     private int vertexIndex;
     private int writtenAttributes;
     private TranslucentGeometryCollector collector;
@@ -44,9 +43,9 @@ public class ChunkVertexConsumer implements VertexConsumer {
     @Override
     public @NotNull VertexConsumer addVertex(float x, float y, float z) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-        vertex.x = (float) x;
-        vertex.y = (float) y;
-        vertex.z = (float) z;
+        vertex.x = x;
+        vertex.y = y;
+        vertex.z = z;
         this.writtenAttributes |= ATTRIBUTE_POSITION_BIT;
         return potentiallyEndVertex();
     }
@@ -54,10 +53,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
     // Writing color ignores alpha since alpha is used as a color multiplier by Sodium.
     @Override
     public @NotNull VertexConsumer setColor(int red, int green, int blue, int alpha) {
-        if (this.isColorFixed) {
-            throw new IllegalStateException();
-        }
-
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorABGR.pack(red, green, blue, 0xFF);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
@@ -66,10 +61,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
 
     @Override
     public @NotNull VertexConsumer setColor(float red, float green, float blue, float alpha) {
-        if (this.isColorFixed) {
-            throw new IllegalStateException();
-        }
-
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorABGR.pack(red, green, blue, 1);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
@@ -78,10 +69,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
 
     @Override
     public @NotNull VertexConsumer setColor(int argb) {
-        if (this.isColorFixed) {
-            throw new IllegalStateException();
-        }
-
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.color = ColorARGB.toABGR(argb, 0xFF);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
@@ -131,12 +118,6 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     public VertexConsumer potentiallyEndVertex() {
-        if (this.isColorFixed) {
-            ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-            vertex.color = this.fixedColor;
-            this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
-        }
-
         if (this.writtenAttributes != REQUIRED_ATTRIBUTES) {
             return this;
         }
@@ -163,7 +144,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
                 v += vertex.v;
             }
 
-            TextureAtlasSprite sprite = SpriteFinderCache.forBlockAtlas().find(u * 0.25f, v * 0.25f);
+            TextureAtlasSprite sprite = PlatformTextureAccess.getInstance().findInBlockAtlas(u * 0.25f, v * 0.25f);
 
             if (sprite != null) {
                 this.modelBuilder.addSprite(sprite);

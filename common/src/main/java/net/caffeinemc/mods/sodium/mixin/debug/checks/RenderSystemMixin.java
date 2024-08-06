@@ -36,7 +36,6 @@ public abstract class RenderSystemMixin {
             "setShaderTexture(ILnet/minecraft/resources/ResourceLocation;)V",
             "setShaderTexture(II)V",
             "setProjectionMatrix",
-            "setInverseViewRotationMatrix",
             "setTextureMatrix",
             "resetTextureMatrix",
             "applyModelViewMatrix",

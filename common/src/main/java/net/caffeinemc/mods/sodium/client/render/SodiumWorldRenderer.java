@@ -45,6 +45,7 @@ import org.joml.Vector3d;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.SortedSet;
+import java.util.function.Consumer;
 
 /**
  * Provides an extension to vanilla's {@link LevelRenderer}.
@@ -403,6 +404,49 @@ public class SodiumWorldRenderer {
         dispatcher.render(entity, tickDelta, matrices, consumer);
 
         matrices.popPose();
+    }
+
+    public void iterateVisibleBlockEntities(Consumer<BlockEntity> blockEntityConsumer) {
+        SortedRenderLists renderLists = this.renderSectionManager.getRenderLists();
+        Iterator<ChunkRenderList> renderListIterator = renderLists.iterator();
+
+        while (renderListIterator.hasNext()) {
+            var renderList = renderListIterator.next();
+
+            var renderRegion = renderList.getRegion();
+            var renderSectionIterator = renderList.sectionsWithEntitiesIterator();
+
+            if (renderSectionIterator == null) {
+                continue;
+            }
+
+            while (renderSectionIterator.hasNext()) {
+                var renderSectionId = renderSectionIterator.nextByteAsInt();
+                var renderSection = renderRegion.getSection(renderSectionId);
+
+                var blockEntities = renderSection.getCulledBlockEntities();
+
+                if (blockEntities == null) {
+                    continue;
+                }
+
+                for (BlockEntity blockEntity : blockEntities) {
+                    blockEntityConsumer.accept(blockEntity);
+                }
+            }
+        }
+
+        for (var renderSection : this.renderSectionManager.getSectionsWithGlobalEntities()) {
+            var blockEntities = renderSection.getGlobalBlockEntities();
+
+            if (blockEntities == null) {
+                continue;
+            }
+
+            for (BlockEntity blockEntity : blockEntities) {
+                blockEntityConsumer.accept(blockEntity);
+            }
+        }
     }
 
     // the volume of a section multiplied by the number of sections to be checked at most

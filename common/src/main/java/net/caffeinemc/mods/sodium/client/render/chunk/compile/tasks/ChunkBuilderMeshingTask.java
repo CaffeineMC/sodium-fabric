@@ -9,15 +9,18 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.PresentTranslucentData;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data.TranslucentData;
+import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
 import net.caffeinemc.mods.sodium.client.util.task.CancellationToken;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -77,11 +80,14 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(minX, minY, minZ);
         BlockPos.MutableBlockPos modelOffset = new BlockPos.MutableBlockPos();
 
-        TranslucentGeometryCollector collector = null;
+        TranslucentGeometryCollector collector;
         if (SodiumClientMod.options().performance.getSortBehavior() != SortBehavior.OFF) {
             collector = new TranslucentGeometryCollector(render.getPosition());
+        } else {
+            collector = null;
         }
-        BlockRenderContext context = new BlockRenderContext(slice, collector);
+        BlockRenderer blockRenderer = cache.getBlockRenderer();
+        blockRenderer.prepare(buffers, slice, collector);
 
         try {
             for (int y = minY; y < maxY; y++) {
@@ -102,13 +108,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
                         if (blockState.getRenderShape() == RenderShape.MODEL) {
                             BakedModel model = cache.getBlockModels()
-                                .getBlockModel(blockState);
-
-                            long seed = blockState.getSeed(blockPos);
-
-                            context.update(blockPos, modelOffset, blockState, model, seed);
-                            cache.getBlockRenderer()
-                                .renderModel(context, buffers);
+                                    .getBlockModel(blockState);
+                            blockRenderer.renderModel(model, blockState, blockPos, modelOffset);
                         }
 
                         FluidState fluidState = blockState.getFluidState();
@@ -142,6 +143,11 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             // Create a new crash report for other exceptions (e.g. thrown in getQuads)
             throw fillCrashInfo(CrashReport.forThrowable(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
+
+        PlatformLevelAccess.INSTANCE.renderAdditionalRenderers(renderContext.getRenderers(), type -> buffers.get(DefaultMaterials.forRenderLayer(type)).asFallbackVertexConsumer(DefaultMaterials.forRenderLayer(type), collector),
+                slice);
+
+        blockRenderer.release();
 
         SortType sortType = SortType.NONE;
         if (collector != null) {

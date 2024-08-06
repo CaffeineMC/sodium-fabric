@@ -112,13 +112,12 @@ public class LevelLoadingScreenMixin {
             }
         }
 
-        MeshData meshData = bufferBuilder.build();
+        MeshData data = bufferBuilder.build();
 
-        if (meshData != null) {
-            BufferUploader.drawWithShader(meshData);
+        if (data != null) {
+            BufferUploader.drawWithShader(data);
         }
-
-        tessellator.clear();
+        Tesselator.getInstance().clear();
 
         RenderSystem.disableBlend();
     }

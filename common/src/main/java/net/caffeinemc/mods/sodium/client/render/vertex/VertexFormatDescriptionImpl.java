@@ -32,7 +32,7 @@ public class VertexFormatDescriptionImpl implements VertexFormatDescription {
         for (int elementIndex = 0; elementIndex < elementList.size(); elementIndex++) {
             var element = elementList.get(elementIndex);
             var commonType = CommonVertexAttribute.getCommonType(element);
-            if (commonType == null || !attributeSet.add(commonType)) {
+            if ((commonType == null || !attributeSet.add(commonType))) {
                 return false;
             }
         }

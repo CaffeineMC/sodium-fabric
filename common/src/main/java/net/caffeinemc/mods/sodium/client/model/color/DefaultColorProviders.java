@@ -2,11 +2,9 @@ package net.caffeinemc.mods.sodium.client.model.color;
 
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.client.model.quad.blender.BlendedColorProvider;
-import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorSource;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
-import net.caffeinemc.mods.sodium.api.util.ColorARGB;
-import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.minecraft.client.color.block.BlockColor;
+import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
@@ -17,9 +15,7 @@ public class DefaultColorProviders {
         return new VanillaAdapter(color);
     }
 
-    public static ColorProvider<FluidState> adapt(FluidRenderHandler handler) {
-        return new FabricFluidAdapter(handler);
-    }
+    private static final ThreadLocal<BlockPos.MutableBlockPos> blockPosHolder = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
 
     public static class GrassColorProvider<T> extends BlendedColorProvider<T> {
         public static final ColorProvider<BlockState> BLOCKS = new GrassColorProvider<>();
@@ -30,7 +26,7 @@ public class DefaultColorProviders {
 
         @Override
         protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return slice.getColor(BiomeColorSource.GRASS, x, y, z);
+            return BiomeColors.getAverageGrassColor(slice, blockPosHolder.get().set(x, y, z));
         }
     }
 
@@ -43,7 +39,7 @@ public class DefaultColorProviders {
 
         @Override
         protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return slice.getColor(BiomeColorSource.FOLIAGE, x, y, z);
+            return BiomeColors.getAverageFoliageColor(slice, blockPosHolder.get().set(x, y, z));
         }
     }
 
@@ -57,7 +53,7 @@ public class DefaultColorProviders {
 
         @Override
         protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return slice.getColor(BiomeColorSource.WATER, x, y, z);
+            return BiomeColors.getAverageWaterColor(slice, blockPosHolder.get().set(x, y, z));
         }
     }
 
@@ -70,20 +66,7 @@ public class DefaultColorProviders {
 
         @Override
         public void getColors(LevelSlice slice, BlockPos pos, BlockState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, ColorARGB.toABGR(this.color.getColor(state, slice, pos, quad.getColorIndex())));
-        }
-    }
-
-    private static class FabricFluidAdapter implements ColorProvider<FluidState> {
-        private final FluidRenderHandler handler;
-
-        public FabricFluidAdapter(FluidRenderHandler handler) {
-            this.handler = handler;
-        }
-
-        @Override
-        public void getColors(LevelSlice slice, BlockPos pos, FluidState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, this.handler.getFluidColor(slice, pos, state));
+            Arrays.fill(output, this.color.getColor(state, slice, pos, quad.getColorIndex()));
         }
     }
 }

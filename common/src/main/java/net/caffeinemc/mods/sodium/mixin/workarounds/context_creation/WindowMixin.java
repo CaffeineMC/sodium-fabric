@@ -1,5 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin.workarounds.context_creation;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.platform.DisplayData;
 import com.mojang.blaze3d.platform.ScreenManager;
 import com.mojang.blaze3d.platform.Window;
@@ -9,6 +11,7 @@ import net.caffeinemc.mods.sodium.client.compatibility.checks.ModuleScanner;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.GLContextInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.nvidia.NvidiaWorkarounds;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.minecraft.Util;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.WGL;
@@ -23,6 +26,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
+
 
 @Mixin(Window.class)
 public class WindowMixin {
@@ -33,7 +40,7 @@ public class WindowMixin {
     @Unique
     private long wglPrevContext = MemoryUtil.NULL;
 
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"))
+    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"), expect = 0, require = 0)
     private long wrapGlfwCreateWindow(int width, int height, CharSequence title, long monitor, long share) {
         final boolean applyNvidiaWorkarounds = Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS);
 
@@ -43,6 +50,24 @@ public class WindowMixin {
 
         try {
             return GLFW.glfwCreateWindow(width, height, title, monitor, share);
+        } finally {
+            if (applyNvidiaWorkarounds) {
+                NvidiaWorkarounds.uninstall();
+            }
+        }
+    }
+
+    @SuppressWarnings("all")
+    @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/neoforged/fml/loading/ImmediateWindowHandler;setupMinecraftWindow(Ljava/util/function/IntSupplier;Ljava/util/function/IntSupplier;Ljava/util/function/Supplier;Ljava/util/function/LongSupplier;)J"), expect = 0, require = 0)
+    private long wrapGlfwCreateWindowForge(final IntSupplier width, final IntSupplier height, final Supplier<String> title, final LongSupplier monitor, Operation<Long> op) {
+        final boolean applyNvidiaWorkarounds = Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_THREADED_OPTIMIZATIONS);
+
+        if (applyNvidiaWorkarounds && !PlatformInfoAccess.getInstance().platformHasEarlyLoadingScreen()) {
+            NvidiaWorkarounds.install();
+        }
+
+        try {
+            return op.call(width, height, title, monitor);
         } finally {
             if (applyNvidiaWorkarounds) {
                 NvidiaWorkarounds.uninstall();

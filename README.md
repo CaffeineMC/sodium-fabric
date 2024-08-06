@@ -1,6 +1,6 @@
-<img src="common/src/main/resources/assets/sodium/icon.png" width="128">
+<img src="common/src/main/resources/sodium-icon.png" width="128">
 
-# Sodium (for Fabric)
+# Sodium
 
 Sodium is a powerful rendering engine and optimization mod for the Minecraft client which improves frame rates and reduces
 micro-stutter, while fixing many graphical issues in Minecraft.

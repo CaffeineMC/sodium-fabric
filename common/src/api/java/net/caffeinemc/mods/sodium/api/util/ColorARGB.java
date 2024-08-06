@@ -73,6 +73,13 @@ public class ColorARGB implements ColorU8 {
     }
 
     /**
+     * Re-packs the ARGB color into an ABGR color with the specified alpha component.
+     */
+    public static int toABGR(int color, float alpha) {
+        return Integer.reverseBytes(color << 8 | ColorU8.normalizedFloatToByte(alpha));
+    }
+
+    /**
      * Re-packs the ARGB color into a aBGR color with the specified alpha component.
      */
     public static int toABGR(int color, int alpha) {

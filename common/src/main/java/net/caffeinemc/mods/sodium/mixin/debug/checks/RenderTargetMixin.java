@@ -16,11 +16,4 @@ public class RenderTargetMixin {
     private boolean validateCurrentThread$imageOperations() {
         return RenderAsserts.validateCurrentThread();
     }
-
-    @Redirect(method = {
-            "blitToScreen(IIZ)V",
-    }, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;isInInitPhase()Z"))
-    private boolean validateCurrentThread$draw() {
-        return RenderAsserts.validateCurrentThread();
-    }
 }

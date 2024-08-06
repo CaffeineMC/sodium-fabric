@@ -24,28 +24,26 @@ import java.nio.ByteBuffer;
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBuilderExtension {
     @Shadow
+    private int vertices;
+
+    @Shadow
     @Final
     private int vertexSize;
+
+    @Shadow
+    private long vertexPointer;
 
     @Shadow
     @Final
     private ByteBufferBuilder buffer;
 
     @Shadow
-    private int vertices;
-
-    @Shadow
-    private long vertexPointer;
-
-    @Shadow
     private int elementsToFill;
+
     @Unique
     private VertexFormatDescription formatDescription;
 
-    @Inject(
-            method = "<init>",
-            at = @At(value = "TAIL")
-    )
+    @Inject(method = "<init>", at = @At("TAIL"))
     private void onFormatChanged(ByteBufferBuilder byteBufferBuilder, VertexFormat.Mode mode, VertexFormat format, CallbackInfo ci) {
         this.formatDescription = VertexFormatRegistry.instance()
                 .get(format);
@@ -53,11 +51,11 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
 
     @Override
     public void sodium$duplicateVertex() {
-        if (this.vertices != 0) {
-            long dst = this.buffer.reserve(this.vertexSize);
-            MemoryIntrinsics.copyMemory(dst - this.vertexSize, dst, this.vertexSize);
-            ++this.vertices;
-        }
+        if (vertices == 0) return;
+
+        long dst = this.buffer.reserve(this.vertexSize);
+        MemoryIntrinsics.copyMemory(dst - this.vertexSize, dst, this.vertexSize);
+        ++this.vertices;
     }
 
     @Override
@@ -69,6 +67,8 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
     public void push(MemoryStack stack, long src, int count, VertexFormatDescription format) {
         var length = count * this.vertexSize;
 
+        // The buffer may change in the even, so we need to make sure that the
+        // pointer is retrieved *after* the resize
         var dst = this.buffer.reserve(length);
 
         if (format == this.formatDescription) {

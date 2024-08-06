@@ -16,6 +16,7 @@ public class ModelQuad implements ModelQuadViewMutable {
     private Direction direction;
 
     private int colorIdx;
+    private int faceNormal;
 
     @Override
     public void setX(int idx, float x) {
@@ -50,6 +51,16 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public void setLight(int idx, int light) {
         this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.LIGHT_INDEX] = light;
+    }
+
+    @Override
+    public void setNormal(int idx, int normal) {
+        this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX] = normal;
+    }
+
+    @Override
+    public void setFaceNormal(int normal) {
+        this.faceNormal = normal;
     }
 
     @Override
@@ -105,6 +116,21 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public float getTexV(int idx) {
         return Float.intBitsToFloat(this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.TEXTURE_INDEX + 1]);
+    }
+
+    @Override
+    public int getVertexNormal(int idx) {
+        return this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.NORMAL_INDEX];
+    }
+
+    @Override
+    public int getFaceNormal() {
+        return faceNormal;
+    }
+
+    @Override
+    public int getLight(int idx) {
+        return this.data[ModelQuadUtil.vertexOffset(idx) + ModelQuadUtil.LIGHT_INDEX];
     }
 
     @Override

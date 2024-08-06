@@ -201,7 +201,7 @@ public class CloudRenderer {
             }
         }
 
-        MeshData meshData = bufferBuilder.build();
+        MeshData builtBuffer = bufferBuilder.buildOrThrow();
 
         VertexBuffer vertexBuffer;
 
@@ -211,9 +211,7 @@ public class CloudRenderer {
             vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
         }
 
-        if (meshData != null) {
-            uploadToVertexBuffer(vertexBuffer, meshData);
-        }
+        uploadToVertexBuffer(vertexBuffer, builtBuffer);
 
         Tesselator.getInstance().clear();
 
@@ -337,23 +335,15 @@ public class CloudRenderer {
             final long buffer = stack.nmalloc(4 * ColorVertex.STRIDE);
 
             long ptr = buffer;
-            int count = 0;
 
-            // -Y
-            if (CloudFaceSet.contains(faces, CloudFace.NEG_Y)) {
-                int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
+            int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
 
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
 
-                count += 4;
-            }
-
-            if (count > 0) {
-                writer.push(stack, buffer, count, ColorVertex.FORMAT);
-            }
+            writer.push(stack, buffer, 4, ColorVertex.FORMAT);
         }
     }
 
@@ -396,9 +386,9 @@ public class CloudRenderer {
         return buffer + ColorVertex.STRIDE;
     }
 
-    private static void uploadToVertexBuffer(VertexBuffer vertexBuffer, MeshData meshData) {
+    private static void uploadToVertexBuffer(VertexBuffer vertexBuffer, MeshData builtBuffer) {
         vertexBuffer.bind();
-        vertexBuffer.upload(meshData);
+        vertexBuffer.upload(builtBuffer);
 
         VertexBuffer.unbind();
     }
@@ -623,11 +613,11 @@ public class CloudRenderer {
         }
     }
 
-    private record CloudGeometry(VertexBuffer vertexBuffer, CloudGeometryParameters params) {
+    public record CloudGeometry(VertexBuffer vertexBuffer, CloudGeometryParameters params) {
 
     }
 
-    private record CloudGeometryParameters(int originX, int originZ, int radius, int orientation, CloudStatus renderMode) {
+    public record CloudGeometryParameters(int originX, int originZ, int radius, int orientation, CloudStatus renderMode) {
 
     }
 }

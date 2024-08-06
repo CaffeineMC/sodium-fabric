@@ -66,7 +66,7 @@ public abstract class BlendedColorProvider<T> implements ColorProvider<T> {
             x0 = z0;
         }
 
-        return ColorARGB.toABGR(x0);
+        return x0;
     }
 
     protected abstract int getColor(LevelSlice slice, int x, int y, int z);

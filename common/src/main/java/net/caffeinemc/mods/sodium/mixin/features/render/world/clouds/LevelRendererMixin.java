@@ -34,14 +34,16 @@ public class LevelRendererMixin {
      * @author jellysquid3
      * @reason Optimize cloud rendering
      */
-    @Overwrite
-    public void renderClouds(PoseStack poseStack, Matrix4f modelMatrix, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
+    @Inject(method = "renderClouds", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/DimensionSpecialEffects;getCloudHeight()F"), cancellable = true) // Inject after Forge checks dimension support
+    public void renderClouds(PoseStack poseStack, Matrix4f matrix4f, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z, CallbackInfo ci) {
+        ci.cancel();
+
         if (this.cloudRenderer == null) {
             this.cloudRenderer = new CloudRenderer(this.minecraft.getResourceManager());
         }
 
         poseStack.pushPose();
-        poseStack.mulPose(modelMatrix);
+        poseStack.mulPose(matrix4f);
 
         ClientLevel level = Objects.requireNonNull(this.level);
         Camera camera = this.minecraft.gameRenderer.getMainCamera();

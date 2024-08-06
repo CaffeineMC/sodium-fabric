@@ -1,10 +1,7 @@
 package net.caffeinemc.mods.sodium.client.data.config;
 
+import net.caffeinemc.mods.sodium.client.services.Services;
 import net.caffeinemc.mods.sodium.mixin.MixinOption;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.api.metadata.CustomValue;
-import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,14 +14,14 @@ import java.util.Properties;
  * <a href="https://github.com/CaffeineMC/sodium-fabric/wiki/Configuration-File">Documentation of these options...</a>
  */
 @SuppressWarnings("CanBeFinal")
-public class MixinConfig {
-    private static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
+public abstract class MixinConfig {
+    protected static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
 
-    private static final String JSON_KEY_SODIUM_OPTIONS = "sodium:options";
+    protected static final String JSON_KEY_SODIUM_OPTIONS = "sodium:options";
 
     private final Map<String, MixinOption> options = new HashMap<>();
 
-    private MixinConfig() {
+    protected MixinConfig() {
         // Defines the default rules which can be configured by the user or other mods.
         // You must manually add a rule for any new mixins not covered by an existing package rule.
         this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
@@ -54,6 +51,8 @@ public class MixinConfig {
         this.addMixinRule("features.render.entity", true);
         this.addMixinRule("features.render.entity.cull", true);
         this.addMixinRule("features.render.entity.shadow", true);
+
+        this.addMixinRule("features.render.frapi", true);
 
         this.addMixinRule("features.render.gui", true);
         this.addMixinRule("features.render.gui.font", true);
@@ -129,39 +128,15 @@ public class MixinConfig {
         }
     }
 
-    private void applyModOverrides() {
-        for (ModContainer container : FabricLoader.getInstance().getAllMods()) {
-            ModMetadata meta = container.getMetadata();
+    public abstract void applyModOverrides();
 
-            if (meta.containsCustomValue(JSON_KEY_SODIUM_OPTIONS)) {
-                CustomValue overrides = meta.getCustomValue(JSON_KEY_SODIUM_OPTIONS);
-
-                if (overrides.getType() != CustomValue.CvType.OBJECT) {
-                    LOGGER.warn("Mod '{}' contains invalid Sodium option overrides, ignoring", meta.getId());
-                    continue;
-                }
-
-                for (Map.Entry<String, CustomValue> entry : overrides.getAsObject()) {
-                    this.applyModOverride(meta, entry.getKey(), entry.getValue());
-                }
-            }
-        }
-    }
-
-    private void applyModOverride(ModMetadata meta, String name, CustomValue value) {
+    protected void applyModOverride(String modId, String name, boolean enabled) {
         MixinOption option = this.options.get(name);
 
         if (option == null) {
-            LOGGER.warn("Mod '{}' attempted to override option '{}', which doesn't exist, ignoring", meta.getId(), name);
+            LOGGER.warn("Mod '{}' attempted to override option '{}', which doesn't exist, ignoring", modId, name);
             return;
         }
-
-        if (value.getType() != CustomValue.CvType.BOOLEAN) {
-            LOGGER.warn("Mod '{}' attempted to override option '{}' with an invalid value, ignoring", meta.getId(), name);
-            return;
-        }
-
-        boolean enabled = value.getAsBoolean();
 
         // disabling the option takes precedence over enabling
         if (!enabled && option.isEnabled()) {
@@ -169,7 +144,7 @@ public class MixinConfig {
         }
 
         if (!enabled || option.isEnabled() || option.getDefiningMods().isEmpty()) {
-            option.addModOverride(enabled, meta.getId());
+            option.addModOverride(enabled, modId);
         }
     }
 
@@ -218,7 +193,7 @@ public class MixinConfig {
                 LOGGER.warn("Could not write default configuration file", e);
             }
 
-            MixinConfig config = new MixinConfig();
+            MixinConfig config = MixinConfig.create();
             config.applyModOverrides();
 
             return config;
@@ -232,11 +207,15 @@ public class MixinConfig {
             throw new RuntimeException("Could not load config file", e);
         }
 
-        MixinConfig config = new MixinConfig();
+        MixinConfig config = MixinConfig.create();
         config.readProperties(props);
         config.applyModOverrides();
 
         return config;
+    }
+
+    private static MixinConfig create() {
+        return Services.load(MixinConfig.class);
     }
 
     private static void writeDefaultConfig(File file) throws IOException {

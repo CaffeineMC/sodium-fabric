@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
 
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
@@ -20,10 +21,9 @@ import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMa
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
-import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
-import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
@@ -98,7 +98,7 @@ public class DefaultFluidRenderer {
         return true;
     }
 
-    public void render(LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler) {
+    public void render(LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, ColorProvider<FluidState> colorProvider, TextureAtlasSprite[] sprites) {
         int posX = blockPos.getX();
         int posY = blockPos.getY();
         int posZ = blockPos.getZ();
@@ -118,10 +118,6 @@ public class DefaultFluidRenderer {
         }
 
         boolean isWater = fluidState.is(FluidTags.WATER);
-
-        final ColorProvider<FluidState> colorProvider = this.getColorProvider(fluid, handler);
-
-        TextureAtlasSprite[] sprites = handler.getFluidSprites(level, blockPos, fluidState);
 
         float fluidHeight = this.fluidHeight(level, fluid, blockPos, Direction.UP);
         float northWestHeight, southWestHeight, southEastHeight, northEastHeight;
@@ -234,7 +230,7 @@ public class DefaultFluidRenderer {
                 setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
             }
 
-            this.updateQuad(quad, level, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
+            this.updateQuad(quad, level, blockPos, lighter, Direction.UP, ModelQuadFacing.POS_Y, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, collector, material, offset, quad, aligned ? ModelQuadFacing.POS_Y : ModelQuadFacing.UNASSIGNED, false);
 
             if (fluidState.shouldRenderBackwardUpFace(level, this.scratchPos.set(posX, posY + 1, posZ))) {
@@ -257,7 +253,7 @@ public class DefaultFluidRenderer {
             setVertex(quad, 2, 1.0F, yOffset, 0.0f, maxU, minV);
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
-            this.updateQuad(quad, level, blockPos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
+            this.updateQuad(quad, level, blockPos, lighter, Direction.DOWN, ModelQuadFacing.NEG_Y, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, collector, material, offset, quad, ModelQuadFacing.NEG_Y, false);
         }
 
@@ -330,11 +326,11 @@ public class DefaultFluidRenderer {
 
                 boolean isOverlay = false;
 
-                if (sprites.length > 2) {
+                if (sprites.length > 2 && sprites[2] != null) {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = level.getBlockState(adjPos);
 
-                    if (FluidRenderHandlerRegistry.INSTANCE.isBlockTransparent(adjBlock.getBlock())) {
+                    if (PlatformBlockAccess.getInstance().shouldShowFluidOverlay(adjBlock, level, adjPos, fluidState)) {
                         sprite = sprites[2];
                         isOverlay = true;
                     }
@@ -357,7 +353,7 @@ public class DefaultFluidRenderer {
 
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
-                this.updateQuad(quad, level, blockPos, lighter, dir, br, colorProvider, fluidState);
+                this.updateQuad(quad, level, blockPos, lighter, dir, facing, br, colorProvider, fluidState);
                 this.writeQuad(meshBuilder, collector, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
@@ -372,38 +368,28 @@ public class DefaultFluidRenderer {
         return Math.abs(a - b) <= ALIGNED_EQUALS_EPSILON;
     }
 
-    private ColorProvider<FluidState> getColorProvider(Fluid fluid, FluidRenderHandler handler) {
-        var override = this.colorProviderRegistry.getColorProvider(fluid);
-
-        if (override != null) {
-            return override;
-        }
-
-        return DefaultColorProviders.adapt(handler);
-    }
-
-    private static FluidRenderHandler getFluidRenderHandler(FluidState fluidState) {
-        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getType());
-
-        // Match the vanilla FluidRenderer's behavior if the handler is null
-        if (handler == null) {
-            boolean isLava = fluidState.is(FluidTags.LAVA);
-            handler = FluidRenderHandlerRegistry.INSTANCE.get(isLava ? Fluids.LAVA : Fluids.WATER);
-        }
-        return handler;
-    }
-
-    private void updateQuad(ModelQuadView quad, LevelSlice level, BlockPos pos, LightPipeline lighter, Direction dir, float brightness,
+    private void updateQuad(ModelQuadViewMutable quad, LevelSlice level, BlockPos pos, LightPipeline lighter, Direction dir, ModelQuadFacing facing, float brightness,
                             ColorProvider<FluidState> colorProvider, FluidState fluidState) {
+
+        int normal;
+        if (facing.isAligned()) {
+            normal = facing.getPackedAlignedNormal();
+        } else {
+            normal = quad.calculateNormal();
+        }
+
+        quad.setFaceNormal(normal);
+
         QuadLightData light = this.quadLightData;
-        lighter.calculate(quad, pos, light, null, dir, false);
+
+        lighter.calculate(quad, pos, light, null, dir, false, true);
 
         colorProvider.getColors(level, pos, fluidState, quad, this.quadColors);
 
         // multiply the per-vertex color against the combined brightness
         // the combined brightness is the per-vertex brightness multiplied by the block's brightness
         for (int i = 0; i < 4; i++) {
-            this.quadColors[i] = ColorABGR.withAlpha(this.quadColors[i], light.br[i] * brightness);
+            this.quadColors[i] = ColorARGB.toABGR(this.quadColors[i], light.br[i] * brightness);
         }
     }
 
@@ -431,14 +417,18 @@ public class DefaultFluidRenderer {
 
         if (material.isTranslucent() && collector != null) {
             int normal;
+
             if (facing.isAligned()) {
                 normal = facing.getPackedAlignedNormal();
             } else {
-                normal = quad.calculateNormal();
+                // This was updated earlier in updateQuad. There is no situation where the normal vector should have changed.
+                normal = quad.getFaceNormal();
             }
+
             if (flip) {
                 normal = NormI8.flipPacked(normal);
             }
+
             collector.appendQuad(normal, vertices, facing);
         }
 

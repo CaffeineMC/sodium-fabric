@@ -1,7 +1,8 @@
 package net.caffeinemc.mods.sodium.client.gui.console;
 
-import net.caffeinemc.mods.sodium.client.gui.console.message.Message;
-import net.caffeinemc.mods.sodium.client.gui.console.message.MessageLevel;
+import net.caffeinemc.mods.sodium.client.console.Console;
+import net.caffeinemc.mods.sodium.client.console.message.Message;
+import net.caffeinemc.mods.sodium.client.console.message.MessageLevel;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import net.minecraft.client.Minecraft;
@@ -173,7 +174,7 @@ public class ConsoleRenderer {
     private record ActiveMessage(MessageLevel level, Component text, double duration, double timestamp) {
 
         public static ActiveMessage create(Message message, double timestamp) {
-            var text = message.text()
+            var text = (message.translated() ? Component.translatable(message.text()) : Component.literal(message.text()))
                     .copy()
                     .withStyle((style) -> style.withFont(Minecraft.UNIFORM_FONT));
 

@@ -17,16 +17,25 @@ import org.joml.Vector3f;
 public class MatrixHelper {
     /**
      * @param mat The transformation matrix to apply to the normal
+     * @param skipNormalization Whether normalizing the vector is unnecessary
      * @param x The X-coordinate of the normal vector
      * @param y The Y-coordinate of the normal vector
      * @param z The Z-coordinate of the normal vector
      * @return The transformed normal vector (in packed format)
      */
-    public static int transformNormal(Matrix3f mat, float x, float y, float z) {
+    public static int transformNormal(Matrix3f mat, boolean skipNormalization, float x, float y, float z) {
         // The transformed normal vector
         float nxt = transformNormalX(mat, x, y, z);
         float nyt = transformNormalY(mat, x, y, z);
         float nzt = transformNormalZ(mat, x, y, z);
+
+        if (!skipNormalization) {
+            float scalar = Math.invsqrt(Math.fma(nxt, nxt, Math.fma(nyt, nyt, nzt * nzt)));
+
+            nxt *= scalar;
+            nyt *= scalar;
+            nzt *= scalar;
+        }
 
         return NormI8.pack(nxt, nyt, nzt);
     }
@@ -36,13 +45,13 @@ public class MatrixHelper {
      * @param norm The normal vector to transform (in packed format)
      * @return The transformed normal vector (in packed format)
      */
-    public static int transformNormal(Matrix3f mat, int norm) {
+    public static int transformNormal(Matrix3f mat, boolean skipNormalization, int norm) {
         // The unpacked normal vector
         float x = NormI8.unpackX(norm);
         float y = NormI8.unpackY(norm);
         float z = NormI8.unpackZ(norm);
 
-        return transformNormal(mat, x, y, z);
+        return transformNormal(mat, skipNormalization, x, y, z);
     }
 
     /**
@@ -129,6 +138,15 @@ public class MatrixHelper {
                 .rotateZYX(angleZ, angleY, angleX);
     }
 
+    /**
+     * Returns the transformed normal vector for a given unit vector (direction). This is significantly faster
+     * than transforming the vector directly (i.e. with {@link Matrix3f#transform(Vector3f)}), as it can simply
+     * extract the values from the provided matrix (rather than transforming the vertices.)
+     *
+     * @param matrix The transformation matrix
+     * @param direction The unit vector (direction) to use
+     * @return A transformed normal in packed format
+     */
     /**
      * Returns the transformed normal vector for a given unit vector (direction). This is significantly faster
      * than transforming the vector directly (i.e. with {@link Matrix3f#transform(Vector3f)}), as it can simply

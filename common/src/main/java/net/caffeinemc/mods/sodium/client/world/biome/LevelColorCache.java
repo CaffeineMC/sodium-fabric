@@ -50,14 +50,6 @@ public class LevelColorCache {
         this.populateStamp++;
     }
 
-    public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
-        return switch (source) {
-            case GRASS -> getColor(BiomeColors.GRASS_COLOR_RESOLVER, blockX, blockY, blockZ);
-            case FOLIAGE -> getColor(BiomeColors.FOLIAGE_COLOR_RESOLVER, blockX, blockY, blockZ);
-            case WATER -> getColor(BiomeColors.WATER_COLOR_RESOLVER, blockX, blockY, blockZ);
-        };
-    }
-
     public int getColor(ColorResolver resolver, int blockX, int blockY, int blockZ) {
         var relBlockX = Mth.clamp(blockX, this.minBlockX, this.maxBlockX) - this.minBlockX;
         var relBlockY = Mth.clamp(blockY, this.minBlockY, this.maxBlockY) - this.minBlockY;

@@ -1,9 +1,11 @@
 package net.caffeinemc.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformModelAccess;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
+import net.caffeinemc.mods.sodium.client.services.SodiumModelDataContainer;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelColorCache;
-import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorSource;
-import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorView;
 import net.caffeinemc.mods.sodium.client.world.biome.LevelBiomeSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.caffeinemc.mods.sodium.client.world.cloned.ClonedChunkSection;
@@ -34,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -46,7 +49,7 @@ import java.util.Objects;
  *
  * <p>Object pooling should be used to avoid huge allocations as this class contains many large arrays.</p>
  */
-public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, RenderAttachedBlockView {
+public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlockView {
     private static final LightLayer[] LIGHT_TYPES = LightLayer.values();
 
     // The number of blocks in a section.
@@ -82,6 +85,10 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
     // (Local Section -> Block States) table.
     private final BlockState[][] blockArrays;
 
+    // (Local Section -> Light Manager) table.
+    @SuppressWarnings("MismatchedReadAndWriteOfArray")
+    private final Object[] auxLightManager;
+
     // (Local Section -> Light Arrays) table.
     private final @Nullable DataLayer[][] lightArrays;
 
@@ -90,6 +97,9 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
 
     // (Local Section -> Block Entity Render Data) table.
     private final @Nullable Int2ReferenceMap<Object>[] blockEntityRenderDataArrays;
+
+    // (Local Section -> Model Data) table.
+    private final SodiumModelDataContainer[] modelMapArrays;
 
     // The starting point from which this slice captures blocks
     private int originBlockX, originBlockY, originBlockZ;
@@ -135,7 +145,9 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
             }
         }
 
-        return new ChunkRenderContext(pos, sections, box);
+        List<?> renderers = PlatformLevelAccess.getInstance().getExtraRenderers(level, pos.origin());
+
+        return new ChunkRenderContext(pos, sections, box, renderers);
     }
 
     @SuppressWarnings("unchecked")
@@ -147,6 +159,8 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
 
         this.blockEntityArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
         this.blockEntityRenderDataArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
+        this.auxLightManager = new Object[SECTION_ARRAY_SIZE];
+        this.modelMapArrays = new SodiumModelDataContainer[SECTION_ARRAY_SIZE];
 
         this.biomeSlice = new LevelBiomeSlice();
         this.biomeColors = new LevelColorCache(this.biomeSlice, Minecraft.getInstance().options.biomeBlendRadius().get());
@@ -186,7 +200,9 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
         this.lightArrays[sectionIndex][LightLayer.SKY.ordinal()] = section.getLightArray(LightLayer.SKY);
 
         this.blockEntityArrays[sectionIndex] = section.getBlockEntityMap();
+        this.auxLightManager[sectionIndex] = section.getAuxLightManager();
         this.blockEntityRenderDataArrays[sectionIndex] = section.getBlockEntityRenderDataMap();
+        this.modelMapArrays[sectionIndex] = section.getModelMap();
     }
 
     private void unpackBlockData(BlockState[] blockArray, ChunkRenderContext context, ClonedChunkSection section) {
@@ -226,6 +242,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
             Arrays.fill(this.lightArrays[sectionIndex], null);
 
             this.blockEntityArrays[sectionIndex] = null;
+            this.auxLightManager[sectionIndex] = null;
             this.blockEntityRenderDataArrays[sectionIndex] = null;
         }
     }
@@ -348,12 +365,7 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
         return this.level.getMinBuildHeight();
     }
 
-    @Override
-    public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
-        return this.biomeColors.getColor(source, blockX, blockY, blockZ);
-    }
-
-    @Override
+    //@Override
     public @Nullable Object getBlockEntityRenderData(BlockPos pos) {
         if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
             return null;
@@ -372,12 +384,30 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
         return blockEntityRenderDataMap.get(getLocalBlockIndex(relBlockX & 15, relBlockY & 15, relBlockZ & 15));
     }
 
-    @Override
+    public SodiumModelData getPlatformModelData(BlockPos pos) {
+        if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
+            return SodiumModelData.EMPTY;
+        }
+
+        int relBlockX = pos.getX() - this.originBlockX;
+        int relBlockY = pos.getY() - this.originBlockY;
+        int relBlockZ = pos.getZ() - this.originBlockZ;
+
+        var modelMap = this.modelMapArrays[getLocalSectionIndex(relBlockX >> 4, relBlockY >> 4, relBlockZ >> 4)];
+
+        if (modelMap.isEmpty()) {
+            return SodiumModelData.EMPTY;
+        }
+
+        return modelMap.getModelData(pos);
+    }
+
+    //@Override
     public boolean hasBiomes() {
         return true;
     }
 
-    @Override
+    //@Override
     public Holder<Biome> getBiomeFabric(BlockPos pos) {
         return this.biomeSlice.getBiome(pos.getX(), pos.getY(), pos.getZ());
     }
@@ -388,5 +418,24 @@ public final class LevelSlice implements BlockAndTintGetter, BiomeColorView, Ren
 
     public static int getLocalSectionIndex(int sectionX, int sectionY, int sectionZ) {
         return (sectionY * SECTION_ARRAY_LENGTH * SECTION_ARRAY_LENGTH) + (sectionZ * SECTION_ARRAY_LENGTH) + sectionX;
+    }
+
+    @Override
+    public @Nullable Object getBlockEntityRenderAttachment(BlockPos pos) {
+        if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
+            return null;
+        }
+
+        int relBlockX = pos.getX() - this.originBlockX;
+        int relBlockY = pos.getY() - this.originBlockY;
+        int relBlockZ = pos.getZ() - this.originBlockZ;
+
+        var blockEntityRenderDataMap = this.blockEntityRenderDataArrays[getLocalSectionIndex(relBlockX >> 4, relBlockY >> 4, relBlockZ >> 4)];
+
+        if (blockEntityRenderDataMap == null) {
+            return null;
+        }
+
+        return blockEntityRenderDataMap.get(getLocalBlockIndex(relBlockX & 15, relBlockY & 15, relBlockZ & 15));
     }
 }

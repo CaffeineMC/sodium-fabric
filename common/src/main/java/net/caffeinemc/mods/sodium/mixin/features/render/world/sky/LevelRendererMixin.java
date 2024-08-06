@@ -7,12 +7,16 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.level.material.FogType;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
-public class LevelRendererMixin {
+public abstract class LevelRendererMixin {
+    @Shadow
+    protected abstract boolean doesMobEffectBlockSky(Camera camera);
+
     /**
      * <p>Prevents the sky layer from rendering when the fog distance is reduced
      * from the default. This helps prevent situations where the sky can be seen
@@ -36,7 +40,7 @@ public class LevelRendererMixin {
         // This prevents the sky from being visible through chunks culled by Sodium's fog occlusion.
         // Fixes https://bugs.mojang.com/browse/MC-152504.
         // Credit to bytzo for noticing the change in 1.18.2.
-        if (camera.getFluidInCamera() == FogType.WATER) {
+        if (camera.getFluidInCamera() != FogType.NONE || this.doesMobEffectBlockSky(camera)) {
             ci.cancel();
         }
     }

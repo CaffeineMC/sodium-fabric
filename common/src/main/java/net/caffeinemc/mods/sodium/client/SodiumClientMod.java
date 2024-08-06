@@ -3,43 +3,24 @@ package net.caffeinemc.mods.sodium.client;
 import net.caffeinemc.mods.sodium.client.data.fingerprint.FingerprintMeasure;
 import net.caffeinemc.mods.sodium.client.data.fingerprint.HashedFingerprint;
 import net.caffeinemc.mods.sodium.client.gui.SodiumGameOptions;
-import net.caffeinemc.mods.sodium.client.gui.console.Console;
-import net.caffeinemc.mods.sodium.client.gui.console.message.MessageLevel;
-import net.caffeinemc.mods.sodium.client.render.frapi.SpriteFinderCache;
-import net.caffeinemc.mods.sodium.client.util.FlawlessFrames;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
+import net.caffeinemc.mods.sodium.client.console.Console;
+import net.caffeinemc.mods.sodium.client.console.message.MessageLevel;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.PackType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class SodiumClientMod implements ClientModInitializer {
+public class SodiumClientMod {
     private static SodiumGameOptions CONFIG;
-    private static Logger LOGGER;
+    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium");
 
     private static String MOD_VERSION;
 
-    @Override
-    public void onInitializeClient() {
-        ModContainer mod = FabricLoader.getInstance()
-                .getModContainer("sodium")
-                .orElseThrow(NullPointerException::new);
+    public static void onInitialization(String version) {
+        MOD_VERSION = version;
 
-        MOD_VERSION = mod.getMetadata()
-                .getVersion()
-                .getFriendlyString();
-
-        LOGGER = LoggerFactory.getLogger("Sodium");
         CONFIG = loadConfig();
-
-        FlawlessFrames.onClientInitialization();
-
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(SpriteFinderCache.ReloadListener.INSTANCE);
 
         try {
             updateFingerprint();
@@ -71,7 +52,7 @@ public class SodiumClientMod implements ClientModInitializer {
             LOGGER.error("Failed to load configuration file", e);
             LOGGER.error("Using default configuration file in read-only mode");
 
-            Console.instance().logMessage(MessageLevel.SEVERE, Component.translatable("sodium.console.config_not_loaded"), 12.5);
+            Console.instance().logMessage(MessageLevel.SEVERE, "sodium.console.config_not_loaded", true, 12.5);
 
             var config = SodiumGameOptions.defaults();
             config.setReadOnly();

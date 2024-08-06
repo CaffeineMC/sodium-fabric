@@ -21,6 +21,12 @@ public class ModelQuadFlags {
     public static final int IS_ALIGNED = 0b100;
 
     /**
+     * Number of flags.
+     */
+    public static final int FLAG_BIT_COUNT = 3;
+
+
+    /**
      * @return True if the bit-flag of {@link ModelQuadFlags} contains the given flag
      */
     public static boolean contains(int flags, int mask) {

@@ -35,8 +35,8 @@ public class ShaderInstanceMixin {
     @Unique
     private Object2IntMap<String> uniformCache;
 
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void initCache(ResourceProvider factory, String name, VertexFormat format, CallbackInfo ci) {
+    @Unique
+    private void initCache() {
         this.uniformCache = new Object2IntOpenHashMap<>();
         this.uniformCache.defaultReturnValue(-1);
 
@@ -49,6 +49,11 @@ public class ShaderInstanceMixin {
 
             this.uniformCache.put(samplerName, location);
         }
+    }
+
+    @Inject(method = "updateLocations", at = @At("RETURN"), require = 0)
+    private void initCache(CallbackInfo ci) {
+        this.initCache();
     }
 
     @Redirect(method = "apply", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/shaders/Uniform;glGetUniformLocation(ILjava/lang/CharSequence;)I"))

@@ -1,6 +1,6 @@
 package net.caffeinemc.mods.sodium.client.data.fingerprint;
 
-import net.fabricmc.loader.api.FabricLoader;
+import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
 import net.minecraft.client.Minecraft;
 import org.apache.commons.codec.binary.Hex;
 import org.jetbrains.annotations.NotNull;
@@ -17,7 +17,7 @@ public record FingerprintMeasure(@NotNull String uuid, @NotNull String path) {
 
     public static @Nullable FingerprintMeasure create() {
         var uuid = Minecraft.getInstance().getUser().getProfileId();
-        var path = FabricLoader.getInstance().getGameDir();
+        var path = PlatformInfoAccess.getInstance().getGameDirectory();
 
         if (uuid == null || path == null) {
             return null;

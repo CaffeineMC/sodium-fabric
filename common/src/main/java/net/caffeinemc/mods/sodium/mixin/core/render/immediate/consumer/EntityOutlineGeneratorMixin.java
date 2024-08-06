@@ -25,11 +25,10 @@ public abstract class EntityOutlineGeneratorMixin implements VertexBufferWriter 
     @Shadow
     @Final
     private int color;
-
     @Unique
     private boolean canUseIntrinsics;
 
-    @Inject(method = "<init>", at = @At("RETURN"))
+    @Inject(method = "<init>(Lcom/mojang/blaze3d/vertex/VertexConsumer;I)V", at = @At("RETURN"))
     private void onInit(CallbackInfo ci) {
         this.canUseIntrinsics = VertexBufferWriter.tryOf(this.delegate) != null;
     }
@@ -42,7 +41,7 @@ public abstract class EntityOutlineGeneratorMixin implements VertexBufferWriter 
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
         transform(ptr, count, format,
-                ColorARGB.toABGR(this.color));
+                this.color);
 
         VertexBufferWriter.of(this.delegate)
                 .push(stack, ptr, count, format);
@@ -63,7 +62,7 @@ public abstract class EntityOutlineGeneratorMixin implements VertexBufferWriter 
         long offsetColor = format.getElementOffset(CommonVertexAttribute.COLOR);
 
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
-            ColorAttribute.set(ptr + offsetColor, color);
+            ColorAttribute.set(ptr + offsetColor, ColorARGB.toABGR(color));
             ptr += stride;
         }
     }

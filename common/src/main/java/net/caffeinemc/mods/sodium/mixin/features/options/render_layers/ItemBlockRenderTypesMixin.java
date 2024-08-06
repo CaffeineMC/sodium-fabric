@@ -15,9 +15,11 @@ public class ItemBlockRenderTypesMixin {
     @Unique
     private static boolean leavesFancy;
 
+    // getRenderLayers is a NeoForge only function required for the leaves to properly work.
+    @SuppressWarnings("all")
     @Redirect(
-            method = { "getChunkRenderType", "getMovingBlockRenderType" },
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/ItemBlockRenderTypes;renderCutout:Z"))
+            method = { "getChunkRenderType", "getMovingBlockRenderType", "getRenderLayers" },
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/ItemBlockRenderTypes;renderCutout:Z"), require = 2)
     private static boolean redirectLeavesShouldBeFancy() {
         return leavesFancy;
     }
