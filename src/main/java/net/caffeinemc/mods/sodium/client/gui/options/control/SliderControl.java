@@ -48,6 +48,7 @@ public class SliderControl implements Control<Integer> {
         private static final int THUMB_WIDTH = 2, TRACK_HEIGHT = 1;
 
         private final Rect2i sliderBounds;
+        private int contentWidth;
         private final ControlValueFormatter formatter;
 
         private final int min;
@@ -69,53 +70,50 @@ public class SliderControl implements Control<Integer> {
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
             this.formatter = formatter;
 
-            this.sliderBounds = new Rect2i(dim.getLimitX() - 56, dim.getCenterY() - 5, 50, 10);
+            this.sliderBounds = new Rect2i(dim.getLimitX() - 96, dim.getCenterY() - 5, 90, 10);
             this.sliderHeld = false;
         }
 
         @Override
         public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+            int sliderX = this.sliderBounds.getX();
+            int sliderY = this.sliderBounds.getY();
+            int sliderWidth = this.sliderBounds.getWidth();
+            int sliderHeight = this.sliderBounds.getHeight();
+
+            Component label = this.formatter.format(this.option.getValue());
+            int labelWidth = this.font.width(label);
+
+            boolean drawSlider = this.option.isAvailable() && (this.hovered || this.isFocused());
+            if (drawSlider) {
+                this.contentWidth = sliderWidth + labelWidth;
+            } else {
+                this.contentWidth = labelWidth;
+            }
+
+            // render the label first and then the slider to prevent the highlight rect from darkening the slider
             super.render(graphics, mouseX, mouseY, delta);
 
-            if (this.option.isAvailable()) { // && (this.hovered || this.isFocused())) {
-                this.renderSlider(graphics);
+            if (drawSlider) {
+                this.thumbPosition = this.getThumbPositionForValue(this.option.getValue());
+
+                double thumbOffset = Mth.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
+
+                int thumbX = (int) (sliderX + thumbOffset - THUMB_WIDTH);
+                int trackY = (int) (sliderY + (sliderHeight / 2f) - ((double) TRACK_HEIGHT / 2));
+
+                this.drawRect(graphics, thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
+                this.drawRect(graphics, sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
+
+                this.drawString(graphics, label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
             } else {
-                this.renderStandaloneValue(graphics);
+                this.drawString(graphics, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
             }
         }
 
-        private void renderStandaloneValue(GuiGraphics graphics) {
-            int sliderX = this.sliderBounds.getX();
-            int sliderY = this.sliderBounds.getY();
-            int sliderWidth = this.sliderBounds.getWidth();
-            int sliderHeight = this.sliderBounds.getHeight();
-
-            Component label = this.formatter.format(this.option.getValue());
-            int labelWidth = this.font.width(label);
-
-            this.drawString(graphics, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
-        }
-
-        private void renderSlider(GuiGraphics graphics) {
-            int sliderX = this.sliderBounds.getX();
-            int sliderY = this.sliderBounds.getY();
-            int sliderWidth = this.sliderBounds.getWidth();
-            int sliderHeight = this.sliderBounds.getHeight();
-
-            Component label = this.formatter.format(this.option.getValue());
-            int labelWidth = this.font.width(label);
-
-            this.drawString(graphics, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
-
-            this.thumbPosition = this.getThumbPositionForValue(this.option.getValue());
-
-            double thumbOffset = Mth.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
-
-            int thumbX = (int) (sliderX + thumbOffset - THUMB_WIDTH);
-            int trackY = sliderY + sliderHeight;
-
-            this.drawRect(graphics, thumbX, trackY + 2*TRACK_HEIGHT,thumbX + (THUMB_WIDTH * 2), trackY - TRACK_HEIGHT, 0xFFFFFFFF);
-            this.drawRect(graphics, sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
+        @Override
+        public int getContentWidth() {
+            return this.contentWidth;
         }
 
         public int getIntValue() {
