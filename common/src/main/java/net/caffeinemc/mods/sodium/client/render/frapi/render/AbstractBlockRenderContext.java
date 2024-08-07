@@ -45,11 +45,16 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     private static final RenderMaterial TRANSLUCENT_MATERIAL = SodiumRenderer.INSTANCE.materialFinder().blendMode(BlendMode.TRANSLUCENT).find();
 
     static {
-        STANDARD_MATERIALS = new RenderMaterial[TriState.values().length];
+        STANDARD_MATERIALS = new RenderMaterial[AmbientOcclusionMode.values().length];
 
-        TriState[] values = TriState.values();
+        AmbientOcclusionMode[] values = AmbientOcclusionMode.values();
         for (int i = 0; i < values.length; i++) {
-            TriState state = values[i];
+            TriState state = switch (values[i]) {
+                case ENABLED -> TriState.TRUE;
+                case DISABLED -> TriState.FALSE;
+                case DEFAULT -> TriState.DEFAULT;
+            };
+
             STANDARD_MATERIALS[i] = SodiumRenderer.INSTANCE.materialFinder().ambientOcclusion(state).find();
         }
     }
@@ -226,7 +231,7 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
             final Direction cullFace = ModelHelper.faceFromIndex(i);
 
             RandomSource random = this.randomSupplier.get();
-            TriState ao = PlatformBlockAccess.getInstance().usesAmbientOcclusion(model, state, modelData, type, slice, pos);
+            AmbientOcclusionMode ao = PlatformBlockAccess.getInstance().usesAmbientOcclusion(model, state, modelData, type, slice, pos);
             if (noTransform) {
                 if (!this.isFaceCulled(cullFace)) {
                     final List<BakedQuad> quads = PlatformModelAccess.getInstance().getQuads(level, pos, model, state, cullFace, random, type, modelData);

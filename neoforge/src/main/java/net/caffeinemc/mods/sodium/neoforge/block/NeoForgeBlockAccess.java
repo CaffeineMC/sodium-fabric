@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.neoforge.block;
 
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
+import net.caffeinemc.mods.sodium.client.render.frapi.render.AmbientOcclusionMode;
 import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
@@ -17,15 +18,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 public class NeoForgeBlockAccess implements PlatformBlockAccess {
-    /**
-     * This array is used to map the TriState enum's ordinals in NeoForge to the correct Fabric API values.
-     */
-    private static final TriState[] TRI_STATES = new TriState[] {
-            TriState.TRUE,
-            TriState.DEFAULT,
-            TriState.FALSE
-    };
-
     @Override
     public int getLightEmission(BlockState state, BlockAndTintGetter level, BlockPos pos) {
         return state.getLightEmission(level, pos);
@@ -52,7 +44,11 @@ public class NeoForgeBlockAccess implements PlatformBlockAccess {
     }
 
     @Override
-    public TriState usesAmbientOcclusion(BakedModel model, BlockState state, SodiumModelData data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
-        return TRI_STATES[model.useAmbientOcclusion(state, (ModelData) (Object) data, renderType).ordinal()];
+    public AmbientOcclusionMode usesAmbientOcclusion(BakedModel model, BlockState state, SodiumModelData data, RenderType renderType, BlockAndTintGetter level, BlockPos pos) {
+        return switch (model.useAmbientOcclusion(state, (ModelData) (Object) data, renderType)) {
+            case TRUE -> AmbientOcclusionMode.ENABLED;
+            case FALSE -> AmbientOcclusionMode.DISABLED;
+            case DEFAULT -> AmbientOcclusionMode.DEFAULT;
+        };
     }
 }

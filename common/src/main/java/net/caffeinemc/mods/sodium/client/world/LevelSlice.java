@@ -156,7 +156,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
 
         this.blockEntityArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
         this.blockEntityRenderDataArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
-        this.auxLightManager = new Object[SECTION_ARRAY_SIZE];
+        this.auxLightManager = new SodiumAuxiliaryLightManager[SECTION_ARRAY_SIZE];
         this.modelMapArrays = new SodiumModelDataContainer[SECTION_ARRAY_SIZE];
 
         this.biomeSlice = new LevelBiomeSlice();
