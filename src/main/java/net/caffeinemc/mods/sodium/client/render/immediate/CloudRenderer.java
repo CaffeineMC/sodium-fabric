@@ -20,6 +20,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,6 +61,10 @@ public class CloudRenderer {
 
         // Skip rendering clouds if texture is completely blank
         if (this.textureData.isBlank) {
+            return;
+        }
+
+        if (camera.getFluidInCamera() == FogType.LAVA) {
             return;
         }
 
