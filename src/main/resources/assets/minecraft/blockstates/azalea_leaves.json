@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "waterlogged=true": {
+      "model": "minecraft:block/waterlogged/azalea_leaves"
+    },
+    "waterlogged=false": {
+      "model": "minecraft:block/azalea_leaves"
+    }
+  }
+}

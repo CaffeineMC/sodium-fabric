@@ -1,0 +1,6 @@
+{
+  "parent": "block/spruce_leaves",
+  "textures": {
+    "all": "block/waterlogged/spruce_leaves"
+  }
+}

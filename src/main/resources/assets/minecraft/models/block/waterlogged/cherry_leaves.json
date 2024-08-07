@@ -1,0 +1,6 @@
+{
+  "parent": "block/cherry_leaves",
+  "textures": {
+    "all": "block/waterlogged/cherry_leaves"
+  }
+}
