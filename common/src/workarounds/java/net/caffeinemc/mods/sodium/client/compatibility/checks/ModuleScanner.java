@@ -10,6 +10,7 @@ import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Kernel32;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.version.Version;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.NativeModuleLister;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -18,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -29,7 +29,16 @@ import java.util.regex.Pattern;
 public class ModuleScanner {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-Win32ModuleChecks");
 
-    private static final String[] RTSS_HOOKS_MODULE_NAMES = { "RTSSHooks64.dll", "RTSSHooks.dll" };
+    private static final String[] RTSS_HOOKS_MODULE_NAMES = {
+            "RTSSHooks64.dll",
+            "RTSSHooks.dll"
+    };
+
+    private static final String[] ASUS_GPU_TWEAK_MODULE_NAMES = {
+            "GTIII-OSD64-GL.dll",   "GTIII-OSD-GL.dll",
+            "GTIII-OSD64-VK.dll",   "GTIII-OSD-VK.dll",
+            "GTIII-OSD64.dll",      "GTIII-OSD.dll"
+    };
 
     public static void checkModules() {
         List<String> modules;
@@ -42,14 +51,34 @@ public class ModuleScanner {
         }
 
         if (modules.isEmpty()) {
-            // Platforms other than Windows will not return anything.
             return;
         }
 
-        // RivaTuner hooks the wglCreateContext function, and leaves itself behind as a loaded module
+        // RivaTuner hooks the wglCreateContext() function to inject itself, and injects even if the process
+        // is blacklisted in the settings. The only way to stop it from injecting is to close the server process
+        // entirely.
         if (BugChecks.ISSUE_2048 && isModuleLoaded(modules, RTSS_HOOKS_MODULE_NAMES)) {
             checkRTSSModules();
         }
+
+        // ASUS GPU Tweak III hooks SwapBuffers() function to inject itself, and does so even if the On-Screen
+        // Display (OSD) is disabled. The only way to stop it from hooking the game is to add the Java process to
+        // the blacklist, or uninstall the application entirely.
+        if (BugChecks.ISSUE_2637 && isModuleLoaded(modules, ASUS_GPU_TWEAK_MODULE_NAMES)) {
+            checkASUSGpuTweakIII();
+        }
+    }
+
+    private static List<NativeModuleLister.NativeModuleInfo> enumerateLoadedModules() {
+        List<NativeModuleLister.NativeModuleInfo> modules = null;
+
+        try {
+            modules = NativeModuleLister.listModules();
+        } catch (Throwable t) {
+            LOGGER.warn("Failed to scan the currently loaded modules", t);
+        }
+
+        return modules != null ? modules : List.of();
     }
 
     private static List<String> listModules() {
@@ -95,7 +124,7 @@ public class ModuleScanner {
 
                             For more information on how to solve this problem, click the 'Help' button.""",
                     "https://github.com/CaffeineMC/sodium-fabric/wiki/Known-Issues#rtss-incompatible");
-            
+
             throw new RuntimeException("The installed version of RivaTuner Statistics Server (RTSS) is not compatible with Sodium, " +
                     "see here for more details: https://github.com/CaffeineMC/sodium-fabric/wiki/Known-Issues#rtss-incompatible");
         }
@@ -108,6 +137,25 @@ public class ModuleScanner {
 
         // >=7.3.4
         return x > 7 || (x == 7 && y > 3) || (x == 7 && y == 3 && z >= 4);
+    }
+
+    private static void checkASUSGpuTweakIII() {
+        Window window = Minecraft.getInstance().getWindow();
+        MessageBox.showMessageBox(window, MessageBox.IconType.ERROR, "Sodium Renderer",
+                """
+                        ASUS GPU Tweak III is not compatible with Minecraft, and causes extreme performance issues and severe graphical corruption when used with Minecraft.
+                        
+                        You *must* do one of the following things to continue:
+                        
+                        a) Open the settings of ASUS GPU Tweak III, enable the Blacklist option, click "Browse from file...", and select the Java runtime (javaw.exe) which is used by Minecraft.
+                        
+                        b) Completely uninstall the ASUS GPU Tweak III application.
+                        
+                        For more information on how to solve this problem, click the 'Help' button.""",
+                "https://github.com/CaffeineMC/sodium-fabric/wiki/Known-Issues#asus-gtiii-incompatible");
+
+        throw new RuntimeException("ASUS GPU Tweak III is not compatible with Minecraft, " +
+                "see here for more details: https://github.com/CaffeineMC/sodium-fabric/wiki/Known-Issues#asus-gtiii-incompatible");
     }
 
     private static @Nullable WindowsFileVersion findRTSSModuleVersion() {
