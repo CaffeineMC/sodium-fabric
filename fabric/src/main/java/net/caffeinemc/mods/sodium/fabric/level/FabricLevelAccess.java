@@ -25,16 +25,6 @@ import java.util.function.Function;
 
 public class FabricLevelAccess implements PlatformLevelAccess {
     @Override
-    public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
-        return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
-    }
-
-    @Override
-    public boolean tryRenderFluid() {
-        return FluidRendererImpl.tryRenderFluid();
-    }
-
-    @Override
     public @Nullable Object getBlockEntityData(BlockEntity blockEntity) {
         return blockEntity.getRenderData();
     }

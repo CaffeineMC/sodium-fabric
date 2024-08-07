@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.fabric.render;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
@@ -10,30 +11,28 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRend
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
+import net.caffeinemc.mods.sodium.client.services.FluidRendererFactory;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRendering;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 
 public class FluidRendererImpl extends FluidRenderer {
-    // The current default context is set up before invoking FluidRenderHandler#renderFluid and cleared afterwards.
-    private static final ThreadLocal<DefaultRenderContext> CURRENT_DEFAULT_CONTEXT = ThreadLocal.withInitial(DefaultRenderContext::new);
-
     private final ColorProviderRegistry colorProviderRegistry;
     private final DefaultFluidRenderer defaultRenderer;
+    private final DefaultRenderContext defaultContext;
 
     public FluidRendererImpl(ColorProviderRegistry colorProviderRegistry, LightPipelineProvider lighters) {
         this.colorProviderRegistry = colorProviderRegistry;
         defaultRenderer = new DefaultFluidRenderer(colorProviderRegistry, lighters);
-    }
-
-    public static boolean tryRenderFluid() {
-        return CURRENT_DEFAULT_CONTEXT.get().renderIfSetUp();
+        defaultContext = new DefaultRenderContext();
     }
 
     public void render(LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkBuildBuffers buffers) {
@@ -70,17 +69,16 @@ public class FluidRendererImpl extends FluidRenderer {
         // To allow invoking this method from the injector, where there is no local Sodium context, the renderer and
         // parameters are bundled into a DefaultRenderContext which is stored in a ThreadLocal.
 
-        DefaultRenderContext defaultContext = CURRENT_DEFAULT_CONTEXT.get();
         defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler, hasModOverride);
 
         try {
-            handler.renderFluid(blockPos, level, meshBuilder.asFallbackVertexConsumer(material, collector), blockState, fluidState);
+            FluidRendering.render(handler, level, blockPos, meshBuilder.asFallbackVertexConsumer(material, collector), blockState, fluidState, defaultContext);
         } finally {
             defaultContext.clear();
         }
     }
 
-    private static class DefaultRenderContext {
+    private static class DefaultRenderContext implements FluidRendering.DefaultRenderer {
         private DefaultFluidRenderer renderer;
         private LevelSlice level;
         private FluidState fluidState;
@@ -130,14 +128,17 @@ public class FluidRendererImpl extends FluidRenderer {
             return FabricColorProviders.adapt(handler);
         }
 
-        public boolean renderIfSetUp() {
-            if (this.renderer != null) {
-                this.renderer.render(this.level, this.fluidState, this.blockPos, this.offset, this.collector, this.meshBuilder, this.material,
-                        getColorProvider(fluidState.getType()), handler.getFluidSprites(this.level, this.blockPos, this.fluidState));
-                return true;
-            }
+        @Override
+        public void render(FluidRenderHandler handler, BlockAndTintGetter world, BlockPos pos, VertexConsumer vertexConsumer, BlockState blockState, FluidState fluidState) {
+            this.renderer.render(this.level, this.fluidState, this.blockPos, this.offset, this.collector, this.meshBuilder, this.material,
+                    getColorProvider(fluidState.getType()), handler.getFluidSprites(this.level, this.blockPos, this.fluidState));
+        }
+    }
 
-            return false;
+    public static class FabricFactory implements FluidRendererFactory {
+        @Override
+        public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
+            return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
         }
     }
 }

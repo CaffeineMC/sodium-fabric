@@ -3,7 +3,7 @@ package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.model.light.data.ArrayLightDataCache;
-import net.caffeinemc.mods.sodium.client.services.PlatformLevelAccess;
+import net.caffeinemc.mods.sodium.client.services.FluidRendererFactory;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.Minecraft;
@@ -28,7 +28,7 @@ public class BlockRenderCache {
         var colorRegistry = new ColorProviderRegistry(minecraft.getBlockColors());
 
         this.blockRenderer = new BlockRenderer(colorRegistry, lightPipelineProvider);
-        this.fluidRenderer = PlatformLevelAccess.getInstance().createPlatformFluidRenderer(colorRegistry, lightPipelineProvider);
+        this.fluidRenderer = FluidRendererFactory.getInstance().createPlatformFluidRenderer(colorRegistry, lightPipelineProvider);
 
         this.blockModels = minecraft.getModelManager().getBlockModelShaper();
     }

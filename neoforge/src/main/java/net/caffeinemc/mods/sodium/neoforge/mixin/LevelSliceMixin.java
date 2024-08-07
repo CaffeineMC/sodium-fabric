@@ -4,6 +4,7 @@ package net.caffeinemc.mods.sodium.neoforge.mixin;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelDataContainer;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
+import net.caffeinemc.mods.sodium.client.world.SodiumAuxiliaryLightManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockAndTintGetter;
@@ -22,7 +23,7 @@ import org.spongepowered.asm.mixin.Shadow;
 public abstract class LevelSliceMixin implements BlockAndTintGetter {
     @Shadow
     @Final
-    private Object[] auxLightManager;
+    private SodiumAuxiliaryLightManager[] auxLightManager;
 
     @Shadow
     @Final
