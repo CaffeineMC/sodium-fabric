@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.TextureAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
 import net.minecraft.client.renderer.SpriteCoordinateExpander;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
@@ -33,6 +34,7 @@ public class SpriteCoordinateExpanderMixin implements VertexBufferWriter {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(VertexConsumer delegate, TextureAtlasSprite sprite, CallbackInfo ci) {
+        SpriteUtil.markSpriteActive(sprite);
         this.minU = sprite.getU0();
         this.minV = sprite.getV0();
 
