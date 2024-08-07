@@ -61,8 +61,8 @@ public class SodiumGameOptions {
     }
 
     public static class QualitySettings {
-        public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
-        public GraphicsQuality leavesQuality = GraphicsQuality.DEFAULT;
+        public WeatherQuality weatherQuality = WeatherQuality.DEFAULT;
+        public LeavesQuality leavesQuality = LeavesQuality.DEFAULT;
 
         public boolean enableVignette = true;
     }
@@ -74,8 +74,8 @@ public class SodiumGameOptions {
 
     public enum GraphicsQuality implements TextProvider {
         DEFAULT("options.gamma.default"),
-        FANCY("options.clouds.fancy"),
-        FAST("options.clouds.fast");
+        FANCY("options.graphics.fancy"),
+        FAST("options.graphics.fast");
 
         private final Component name;
 
@@ -90,6 +90,48 @@ public class SodiumGameOptions {
 
         public boolean isFancy(GraphicsStatus graphicsStatus) {
             return (this == FANCY) || (this == DEFAULT && (graphicsStatus == GraphicsStatus.FANCY || graphicsStatus == GraphicsStatus.FABULOUS));
+        }
+    }
+
+    public enum WeatherQuality implements TextProvider {
+        DEFAULT("options.gamma.default"),
+        FANCY("sodium.options.weather_quality.fancy"),
+        FAST("sodium.options.weather_quality.fast");
+
+        private final Component name;
+
+        WeatherQuality(String name) {
+            this.name = Component.translatable(name);
+        }
+
+        @Override
+        public Component getLocalizedName() {
+            return this.name;
+        }
+
+        public boolean isFancy(GraphicsStatus graphicsMode) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsStatus.FANCY || graphicsMode == GraphicsStatus.FABULOUS));
+        }
+    }
+
+    public enum LeavesQuality implements TextProvider {
+        DEFAULT("options.gamma.default"),
+        FANCY("sodium.options.leaves_quality.fancy"),
+        FAST("sodium.options.leaves_quality.fast");
+
+        private final Component name;
+
+        LeavesQuality(String name) {
+            this.name = Component.translatable(name);
+        }
+
+        @Override
+        public Component getLocalizedName() {
+            return this.name;
+        }
+
+        public boolean isFancy(GraphicsStatus graphicsMode) {
+            return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsStatus.FANCY || graphicsMode == GraphicsStatus.FABULOUS));
         }
     }
 
