@@ -9,8 +9,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.Transl
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
-import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
-import net.caffeinemc.mods.sodium.client.services.PlatformTextureAccess;
+import net.caffeinemc.mods.sodium.client.render.texture.SpriteFinderCache;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import org.jetbrains.annotations.NotNull;
@@ -144,7 +143,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
                 v += vertex.v;
             }
 
-            TextureAtlasSprite sprite = PlatformTextureAccess.getInstance().findInBlockAtlas(u * 0.25f, v * 0.25f);
+            TextureAtlasSprite sprite = SpriteFinderCache.forBlockAtlas().find(u * 0.25f, v * 0.25f);
 
             if (sprite != null) {
                 this.modelBuilder.addSprite(sprite);

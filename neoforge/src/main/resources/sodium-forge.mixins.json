@@ -15,6 +15,7 @@
     "features.model.WeightedBakedModelMixin",
     "features.render.model.block.ModelBlockRendererMixin",
     "AbstractBlockRenderContextMixin",
+    "AuxiliaryLightManagerMixin",
     "ChunkRenderTypeSetAccessor",
     "ClientHooksMixin",
     "LevelSliceMixin",

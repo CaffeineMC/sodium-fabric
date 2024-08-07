@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.caffeinemc.mods.sodium.client.services.*;
 import net.caffeinemc.mods.sodium.client.world.PalettedContainerROExtension;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
+import net.caffeinemc.mods.sodium.client.world.SodiumAuxiliaryLightManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
@@ -39,7 +40,7 @@ public class ClonedChunkSection {
     private final @Nullable Int2ReferenceMap<Object> blockEntityRenderDataMap;
 
     private final @Nullable DataLayer[] lightDataArrays;
-    private final @Nullable Object auxLightManager;
+    private final @Nullable SodiumAuxiliaryLightManager auxLightManager;
 
     private final @Nullable PalettedContainerRO<BlockState> blockData;
 
@@ -186,7 +187,7 @@ public class ClonedChunkSection {
         // were iterating over any data in that chunk.
         // See https://github.com/CaffeineMC/sodium-fabric/issues/942 for more info.
         for (var entry : Int2ReferenceMaps.fastIterable(blockEntities)) {
-            Object data = PlatformBlockAccess.getInstance().getBlockEntityData(entry.getValue());
+            Object data = PlatformLevelAccess.getInstance().getBlockEntityData(entry.getValue());
 
             if (data != null) {
                 if (blockEntityRenderDataMap == null) {
@@ -240,7 +241,7 @@ public class ClonedChunkSection {
         this.lastUsedTimestamp = timestamp;
     }
 
-    public Object getAuxLightManager() {
+    public SodiumAuxiliaryLightManager getAuxLightManager() {
         return auxLightManager;
     }
 }

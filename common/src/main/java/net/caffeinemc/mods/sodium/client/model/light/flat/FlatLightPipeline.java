@@ -47,7 +47,7 @@ public class FlatLightPipeline implements LightPipeline {
                 Arrays.fill(out.br, this.lightCache.getLevel().getShade(lightFace, shade));
             } else {
                 lightmap = getEmissiveLightmap(this.lightCache.get(pos));
-                Arrays.fill(out.br, PlatformBlockAccess.getInstance().getAccurateBlockShade(quad, this.lightCache.getLevel(), shade));
+                Arrays.fill(out.br, PlatformBlockAccess.getInstance().getNormalVectorShade(quad, this.lightCache.getLevel(), shade));
             }
         }
 

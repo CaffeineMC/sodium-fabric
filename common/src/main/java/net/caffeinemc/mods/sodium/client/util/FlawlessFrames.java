@@ -1,6 +1,4 @@
-package net.caffeinemc.mods.sodium.fabric;
-
-import net.fabricmc.loader.api.FabricLoader;
+package net.caffeinemc.mods.sodium.client.util;
 
 import java.util.Collections;
 import java.util.Set;
@@ -20,21 +18,19 @@ import java.util.function.Function;
 public class FlawlessFrames {
     private static final Set<Object> ACTIVE = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    @SuppressWarnings("unchecked")
-    public static void onClientInitialization() {
-        Function<String, Consumer<Boolean>> provider = name -> {
-            Object token = new Object();
-            return active -> {
-                if (active) {
-                    ACTIVE.add(token);
-                } else {
-                    ACTIVE.remove(token);
-                }
-            };
+    private static final Function<String, Consumer<Boolean>> PROVIDER = name -> {
+        Object token = new Object();
+        return active -> {
+            if (active) {
+                ACTIVE.add(token);
+            } else {
+                ACTIVE.remove(token);
+            }
         };
-        FabricLoader.getInstance()
-                .getEntrypoints("frex_flawless_frames", Consumer.class)
-                .forEach(api -> api.accept(provider));
+    };
+
+    public static Function<String, Consumer<Boolean>> getProvider() {
+        return PROVIDER;
     }
 
     public static boolean isActive() {

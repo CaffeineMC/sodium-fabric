@@ -144,7 +144,7 @@ dependencies {
     compileOnly(project.project(":common").sourceSets.main.get().output)
     compileOnly(project.project(":common").sourceSets.getByName("api").output)
     includeDep("org.sinytra.forgified-fabric-api:fabric-api-base:0.4.42+d1308dedd1")
-    includeDep("org.sinytra.forgified-fabric-api:fabric-renderer-api-v1:3.3.0+e3455cb4d1")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-renderer-api-v1:3.4.0+acb05a39d1")
     includeDep("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}") {
         isTransitive = false
     }

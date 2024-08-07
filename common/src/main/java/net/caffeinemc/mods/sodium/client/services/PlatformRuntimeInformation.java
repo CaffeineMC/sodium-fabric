@@ -2,10 +2,10 @@ package net.caffeinemc.mods.sodium.client.services;
 
 import java.nio.file.Path;
 
-public interface PlatformInfoAccess {
-    PlatformInfoAccess INSTANCE = Services.load(PlatformInfoAccess.class);
+public interface PlatformRuntimeInformation {
+    PlatformRuntimeInformation INSTANCE = Services.load(PlatformRuntimeInformation.class);
 
-    static PlatformInfoAccess getInstance() {
+    static PlatformRuntimeInformation getInstance() {
         return INSTANCE;
     }
 
@@ -23,11 +23,6 @@ public interface PlatformInfoAccess {
      * Returns the current configuration directory for the platform.
      */
     Path getConfigDirectory();
-
-    /**
-     * Returns if the FREX Flawless Frames API has been requested by a mod.
-     */
-    boolean isFlawlessFramesActive();
 
     /**
      * Returns if the platform has a early loading screen.

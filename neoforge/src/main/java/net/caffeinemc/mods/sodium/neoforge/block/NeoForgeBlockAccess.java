@@ -12,13 +12,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.neoforged.neoforge.client.model.data.ModelData;
-import org.jetbrains.annotations.Nullable;
 
 public class NeoForgeBlockAccess implements PlatformBlockAccess {
+    /**
+     * This array is used to map the TriState enum's ordinals in NeoForge to the correct Fabric API values.
+     */
     private static final TriState[] TRI_STATES = new TriState[] {
             TriState.TRUE,
             TriState.DEFAULT,
@@ -41,17 +42,12 @@ public class NeoForgeBlockAccess implements PlatformBlockAccess {
     }
 
     @Override
-    public @Nullable Object getBlockEntityData(BlockEntity blockEntity) {
-        return null;
-    }
-
-    @Override
     public boolean platformHasBlockData() {
         return false;
     }
 
     @Override
-    public float getAccurateBlockShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade) {
+    public float getNormalVectorShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade) {
         return level.getShade(NormI8.unpackX(quad.getFaceNormal()), NormI8.unpackY(quad.getFaceNormal()), NormI8.unpackZ(quad.getFaceNormal()), shade);
     }
 

@@ -1,7 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin;
 
 import net.caffeinemc.mods.sodium.client.data.config.MixinConfig;
-import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformRuntimeInformation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
@@ -28,7 +28,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
             throw new RuntimeException("Could not load configuration file for Sodium", e);
         }
 
-        this.dependencyResolutionFailed = PlatformInfoAccess.getInstance().isModInLoadingList("embeddium");
+        this.dependencyResolutionFailed = PlatformRuntimeInformation.getInstance().isModInLoadingList("embeddium");
 
         if (dependencyResolutionFailed) {
             this.logger.error("Not applying any Sodium mixins; dependency resolution has failed.");
@@ -40,7 +40,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public String getRefMapperConfig() {
-        return PlatformInfoAccess.getInstance().platformUsesRefmap() ? "sodium.refmap.json" : null;
+        return PlatformRuntimeInformation.getInstance().platformUsesRefmap() ? "sodium.refmap.json" : null;
     }
 
     @Override

@@ -1,5 +1,6 @@
-package net.caffeinemc.mods.sodium.neoforge.texture;
+package net.caffeinemc.mods.sodium.client.render.texture;
 
+import net.caffeinemc.mods.sodium.mixin.core.render.texture.TextureAtlasAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.ModelManager;
@@ -31,7 +32,7 @@ public class SpriteFinderCache {
         public void onResourceManagerReload(ResourceManager manager) {
             ModelManager modelManager = Minecraft.getInstance().getModelManager();
             TextureAtlas atlas = modelManager.getAtlas(TextureAtlas.LOCATION_BLOCKS);
-            blockAtlasSpriteFinder = new BlockSpriteFinder(atlas.getTextures(), atlas);
+            blockAtlasSpriteFinder = new BlockSpriteFinder(((TextureAtlasAccessor) atlas).getTexturesByName(), atlas);
         }
     }
 }

@@ -13,6 +13,13 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * This mixin is used to ensure that the Sodium resource pack is loaded before any other mod resource packs.
+ * <p>
+ * Mods like Hydrological change the Vanilla leaf textures, and these changes apply before Sodium's leaf textures are loaded by default, making them not load without this Mixin.
+ * <p>
+ * This should be removed once NeoForge implements a proper way to do this.
+ */
 @Mixin(ResourcePackLoader.class)
 public class ResourcePackLoaderMixin {
     @Unique

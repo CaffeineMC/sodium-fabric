@@ -6,9 +6,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+/**
+ * This mixin is used to fix Forge's item models having drastic seams with Sodium's changed shrink ratio.
+ */
 @Mixin(ClientHooks.class)
 public class ClientHooksMixin {
-    // TODO: This is not a proper fix at all. Figure out why Forge is causing the UV shrink ratio to go insane.
     @Redirect(method = "fixItemModelSeams", at = @At(value = "INVOKE", target =
             "Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;uvShrinkRatio()F"))
     private static float alterUvShrinkRatio(TextureAtlasSprite sprite) {

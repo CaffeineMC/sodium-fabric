@@ -24,6 +24,7 @@
     "core.render.immediate.consumer.SpriteCoordinateExpanderMixin",
     "core.render.immediate.consumer.VertexMultiConsumerMixin$DoubleMixin",
     "core.render.immediate.consumer.VertexMultiConsumerMixin$MultipleMixin",
+    "core.render.texture.TextureAtlasAccessor",
     "core.render.world.RenderBuffersMixin",
     "core.render.world.LevelRendererMixin",
     "core.world.biome.ClientLevelMixin",

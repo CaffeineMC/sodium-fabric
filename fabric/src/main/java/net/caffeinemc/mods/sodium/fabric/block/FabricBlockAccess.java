@@ -12,10 +12,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import org.jetbrains.annotations.Nullable;
 
 public class FabricBlockAccess implements PlatformBlockAccess {
     /**
@@ -71,17 +69,12 @@ public class FabricBlockAccess implements PlatformBlockAccess {
     }
 
     @Override
-    public @Nullable Object getBlockEntityData(BlockEntity blockEntity) {
-        return blockEntity.getRenderData();
-    }
-
-    @Override
     public boolean platformHasBlockData() {
         return true;
     }
 
     @Override
-    public float getAccurateBlockShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade) {
+    public float getNormalVectorShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade) {
         return normalShade(level, NormI8.unpackX(quad.getFaceNormal()), NormI8.unpackY(quad.getFaceNormal()), NormI8.unpackZ(quad.getFaceNormal()), shade);
     }
 

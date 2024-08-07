@@ -1,6 +1,6 @@
 package net.caffeinemc.mods.sodium.neoforge;
 
-import net.caffeinemc.mods.sodium.client.services.PlatformInfoAccess;
+import net.caffeinemc.mods.sodium.client.services.PlatformRuntimeInformation;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
@@ -8,7 +8,7 @@ import net.neoforged.fml.loading.LoadingModList;
 
 import java.nio.file.Path;
 
-public class NeoForgeInfoAccess implements PlatformInfoAccess {
+public class NeoForgeRuntimeInformation implements PlatformRuntimeInformation {
     @Override
     public boolean isDevelopmentEnvironment() {
         return !FMLLoader.isProduction();
@@ -22,11 +22,6 @@ public class NeoForgeInfoAccess implements PlatformInfoAccess {
     @Override
     public Path getConfigDirectory() {
         return FMLPaths.CONFIGDIR.get();
-    }
-
-    @Override
-    public boolean isFlawlessFramesActive() {
-        return false;
     }
 
     @Override

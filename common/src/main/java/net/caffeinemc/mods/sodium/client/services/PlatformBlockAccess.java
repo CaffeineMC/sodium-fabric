@@ -1,9 +1,6 @@
 package net.caffeinemc.mods.sodium.client.services;
 
-import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
-import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
-import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.FluidRenderer;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.model.BakedModel;
@@ -14,7 +11,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 public interface PlatformBlockAccess {
@@ -56,14 +52,6 @@ public interface PlatformBlockAccess {
     boolean shouldShowFluidOverlay(BlockState block, BlockAndTintGetter level, BlockPos pos, FluidState fluidState);
 
     /**
-     * Gets the specialized render data for this block entity.
-     * @param blockEntity The block entity to get the render data of.
-     * @return The specialized render data for this block entity. If the platform does not support it or there is no data, null.
-     */
-    @Nullable
-    Object getBlockEntityData(BlockEntity blockEntity);
-
-    /**
      * @return If the platform can return block entity data
      */
     boolean platformHasBlockData();
@@ -75,7 +63,7 @@ public interface PlatformBlockAccess {
      * @param shade If directional lighting should be added.
      * @return the block shade
      */
-    float getAccurateBlockShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade);
+    float getNormalVectorShade(ModelQuadView quad, BlockAndTintGetter level, boolean shade);
 
     /**
      * If the block contains forced ambient occlusion.
