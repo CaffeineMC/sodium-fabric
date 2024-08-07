@@ -3,8 +3,8 @@ package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigg
 import org.joml.Vector3fc;
 import java.util.Arrays;
 
-import com.lodborg.intervaltree.DoubleInterval;
-import com.lodborg.intervaltree.Interval.Bounded;
+import net.caffeinemc.mods.sodium.client.util.interval_tree.DoubleInterval;
+import net.caffeinemc.mods.sodium.client.util.interval_tree.Interval.Bounded;
 
 import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;

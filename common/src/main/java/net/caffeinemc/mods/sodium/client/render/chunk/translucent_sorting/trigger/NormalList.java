@@ -5,10 +5,10 @@ import java.util.Collection;
 import org.joml.Math;
 import org.joml.Vector3dc;
 
-import com.lodborg.intervaltree.DoubleInterval;
-import com.lodborg.intervaltree.Interval;
-import com.lodborg.intervaltree.Interval.Bounded;
-import com.lodborg.intervaltree.IntervalTree;
+import net.caffeinemc.mods.sodium.client.util.interval_tree.DoubleInterval;
+import net.caffeinemc.mods.sodium.client.util.interval_tree.Interval;
+import net.caffeinemc.mods.sodium.client.util.interval_tree.Interval.Bounded;
+import net.caffeinemc.mods.sodium.client.util.interval_tree.IntervalTree;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;

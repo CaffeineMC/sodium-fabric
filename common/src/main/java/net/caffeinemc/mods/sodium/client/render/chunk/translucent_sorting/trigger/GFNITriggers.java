@@ -9,9 +9,8 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigge
 import net.minecraft.core.SectionPos;
 
 /**
- * Performs Global Face Normal Indexing-based triggering as described in
- * https://hackmd.io/@douira100/sodium-sl-gfni
- *
+ * Performs triggering based on globally-indexed face planes, bucketed by their normals.
+ * <p>
  * Note on precision: Global distances are stored as doubles while
  * section-relative distances are stored as floats. The distances of the camera
  * are calculated as doubles, but using float normal vectors (furthermore normal
