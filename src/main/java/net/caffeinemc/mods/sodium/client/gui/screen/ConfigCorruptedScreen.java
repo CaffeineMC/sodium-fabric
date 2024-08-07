@@ -14,22 +14,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ConfigCorruptedScreen extends Screen {
-    private static final String TEXT_BODY_RAW = """
-        A problem occurred while trying to load the configuration file. This
-        can happen when the file has been corrupted on disk, or when trying
-        to manually edit the file by hand.
-        
-        If you continue, the configuration file will be reset back to known-good
-        defaults, and you will lose any changes that have since been made to your
-        Video Settings.
-        
-        More information about the error can be found in the log file.
-        """;
-
-    private static final List<Component> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
-            .map(Component::literal)
+    private static final List<Component> TEXT_BODY = IntStream.rangeClosed(1, 9)
+            .mapToObj(i -> Component.translatable("sodium.console.config_corrupt.contents." + i))
             .collect(Collectors.toList());
 
     private static final int BUTTON_WIDTH = 140;
@@ -41,7 +30,7 @@ public class ConfigCorruptedScreen extends Screen {
     private final Function<Screen, Screen> nextScreen;
 
     public ConfigCorruptedScreen(@Nullable Screen prevScreen, @Nullable Function<Screen, Screen> nextScreen) {
-        super(Component.literal("Sodium failed to load the configuration file"));
+        super(Component.translatable("sodium.console.config_corrupt.short"));
 
         this.prevScreen = prevScreen;
         this.nextScreen = nextScreen;
@@ -53,14 +42,14 @@ public class ConfigCorruptedScreen extends Screen {
 
         int buttonY = this.height - SCREEN_PADDING - BUTTON_HEIGHT;
 
-        this.addRenderableWidget(Button.builder(Component.literal("Continue"), (btn) -> {
+        this.addRenderableWidget(Button.builder(Component.translatable("gui.continue"), (btn) -> {
             Console.instance().logMessage(MessageLevel.INFO, Component.translatable("sodium.console.config_file_was_reset"), 3.0);
 
             SodiumClientMod.restoreDefaultOptions();
             Minecraft.getInstance().setScreen(this.nextScreen.apply(this.prevScreen));
         }).bounds(this.width - SCREEN_PADDING - BUTTON_WIDTH, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
 
-        this.addRenderableWidget(Button.builder(Component.literal("Go back"), (btn) -> {
+        this.addRenderableWidget(Button.builder(Component.translatable("gui.back"), (btn) -> {
             Minecraft.getInstance().setScreen(this.prevScreen);
         }).bounds(SCREEN_PADDING, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
@@ -69,8 +58,8 @@ public class ConfigCorruptedScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         super.render(graphics, mouseX, mouseY, delta);
 
-        graphics.drawString(this.font, Component.literal("Sodium Renderer"), 32, 32, 0xffffff);
-        graphics.drawString(this.font, Component.literal("Could not load the configuration file"), 32, 48, 0xff0000);
+        graphics.drawString(this.font, Component.translatable("sodium.name_renderer"), 32, 32, 0xffffff);
+        graphics.drawString(this.font, Component.translatable("sodium.console.config_corrupt.title"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
             if (TEXT_BODY.get(i).getString().isEmpty()) {
