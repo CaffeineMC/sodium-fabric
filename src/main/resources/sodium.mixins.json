@@ -59,6 +59,7 @@
     "features.render.model.ItemBlockRenderTypesMixin",
     "features.render.model.block.ModelBlockRendererMixin",
     "features.render.model.item.ItemRendererMixin",
+    "features.render.model.player_head.SkullBlockRendererMixin",
     "features.render.particle.SingleQuadParticleMixin",
     "features.render.world.clouds.LevelRendererMixin",
     "features.render.world.sky.FogRendererMixin",
