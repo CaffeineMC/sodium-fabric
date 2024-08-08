@@ -36,7 +36,6 @@ dependencies {
     addDependentFabricModule("fabric-rendering-data-attachment-v1")
 
     modCompileOnly("net.fabricmc.fabric-api:fabric-renderer-api-v1:3.2.9+1172e897d7")
-    implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0")
 }
 
 sourceSets {

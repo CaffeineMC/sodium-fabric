@@ -149,8 +149,6 @@ dependencies {
         isTransitive = false
     }
     includeDep("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.0.10+9afaaf8cd1")
-    includeDep("com.lodborg:interval-tree:1.0.0")
-    additionalRuntimeClasspath("com.lodborg:interval-tree:1.0.0")
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
