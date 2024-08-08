@@ -1,6 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger;
 
-import com.lodborg.intervaltree.DoubleInterval;
+import net.caffeinemc.mods.sodium.client.util.interval_tree.DoubleInterval;
 
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.AlignableNormal;
 

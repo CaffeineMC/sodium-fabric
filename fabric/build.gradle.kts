@@ -37,7 +37,6 @@ dependencies {
     addEmbeddedFabricModule("fabric-rendering-data-attachment-v1")
     addEmbeddedFabricModule("fabric-rendering-fluids-v1")
     addEmbeddedFabricModule("fabric-resource-loader-v0")
-    include(implementation(group = "com.lodborg", name = "interval-tree", version = "1.0.0"))
 
     implementation("com.google.code.findbugs:jsr305:3.0.1")
 
