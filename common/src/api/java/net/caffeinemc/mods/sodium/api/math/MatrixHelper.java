@@ -42,6 +42,22 @@ public class MatrixHelper {
 
     /**
      * @param mat The transformation matrix to apply to the normal
+     * @param x The X-coordinate of the normal vector
+     * @param y The Y-coordinate of the normal vector
+     * @param z The Z-coordinate of the normal vector
+     * @return The transformed normal vector (in packed format)
+     */
+    public static int transformSafeNormal(Matrix3f mat, float x, float y, float z) {
+        // The transformed normal vector
+        float nxt = transformNormalX(mat, x, y, z);
+        float nyt = transformNormalY(mat, x, y, z);
+        float nzt = transformNormalZ(mat, x, y, z);
+
+        return NormI8.pack(nxt, nyt, nzt);
+    }
+
+    /**
+     * @param mat The transformation matrix to apply to the normal
      * @param norm The normal vector to transform (in packed format)
      * @return The transformed normal vector (in packed format)
      */
@@ -138,15 +154,6 @@ public class MatrixHelper {
                 .rotateZYX(angleZ, angleY, angleX);
     }
 
-    /**
-     * Returns the transformed normal vector for a given unit vector (direction). This is significantly faster
-     * than transforming the vector directly (i.e. with {@link Matrix3f#transform(Vector3f)}), as it can simply
-     * extract the values from the provided matrix (rather than transforming the vertices.)
-     *
-     * @param matrix The transformation matrix
-     * @param direction The unit vector (direction) to use
-     * @return A transformed normal in packed format
-     */
     /**
      * Returns the transformed normal vector for a given unit vector (direction). This is significantly faster
      * than transforming the vector directly (i.e. with {@link Matrix3f#transform(Vector3f)}), as it can simply

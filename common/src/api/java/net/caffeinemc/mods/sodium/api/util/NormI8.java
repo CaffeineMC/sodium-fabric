@@ -116,7 +116,7 @@ public class NormI8 {
         return normAX == -normBX && normAY == -normBY && normAZ == -normBZ;
     }
 
-    public static Vector3f unpack(int i, Vector3f output) {
-        return output.set(unpackX(i), unpackY(i), unpackZ(i));
+    public static Vector3f unpack(int packed, Vector3f output) {
+        return output.set(unpackX(packed), unpackY(packed), unpackZ(packed));
     }
 }

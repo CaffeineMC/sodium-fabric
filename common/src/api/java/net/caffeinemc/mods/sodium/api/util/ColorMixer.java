@@ -63,7 +63,7 @@ public class ColorMixer {
     /**
      * Multiplies the 32-bit colors with one component
      */
-    public static int mulSingle(int a, byte b) {
+    public static int mulSingle(int a, int b) {
         // Take each 8-bit component pair, multiply them together to create intermediate 16-bit integers,
         // and then shift the high half of each 16-bit integer into 8-bit integers.
         int c0 = (((a) & 0xFF) * b) >> 8;

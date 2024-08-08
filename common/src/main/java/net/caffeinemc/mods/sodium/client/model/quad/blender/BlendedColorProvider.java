@@ -10,13 +10,13 @@ import net.minecraft.util.Mth;
 
 public abstract class BlendedColorProvider<T> implements ColorProvider<T> {
     @Override
-    public void getColors(LevelSlice slice, BlockPos pos, T state, ModelQuadView quad, int[] output) {
+    public void getColors(LevelSlice slice, BlockPos pos, BlockPos.MutableBlockPos scratchPos, T state, ModelQuadView quad, int[] output) {
         for (int vertexIndex = 0; vertexIndex < 4; vertexIndex++) {
-            output[vertexIndex] = this.getVertexColor(slice, pos, quad, vertexIndex);
+            output[vertexIndex] = this.getVertexColor(slice, pos, scratchPos, quad, vertexIndex);
         }
     }
 
-    private int getVertexColor(LevelSlice slice, BlockPos pos, ModelQuadView quad, int vertexIndex) {
+    private int getVertexColor(LevelSlice slice, BlockPos pos, BlockPos.MutableBlockPos scratchPos, ModelQuadView quad, int vertexIndex) {
         // Offset the position by -0.5f to align smooth blending with flat blending.
         final float posX = quad.getX(vertexIndex) - 0.5f;
         final float posY = quad.getY(vertexIndex) - 0.5f;
@@ -35,10 +35,10 @@ public abstract class BlendedColorProvider<T> implements ColorProvider<T> {
         final int blockIntZ = pos.getZ() + posIntZ;
 
         // Retrieve the color values for each neighboring block
-        final int c00 = this.getColor(slice, blockIntX + 0, blockIntY, blockIntZ + 0);
-        final int c01 = this.getColor(slice, blockIntX + 0, blockIntY, blockIntZ + 1);
-        final int c10 = this.getColor(slice, blockIntX + 1, blockIntY, blockIntZ + 0);
-        final int c11 = this.getColor(slice, blockIntX + 1, blockIntY, blockIntZ + 1);
+        final int c00 = this.getColor(slice, scratchPos.set(blockIntX + 0, blockIntY, blockIntZ + 0));
+        final int c01 = this.getColor(slice, scratchPos.set(blockIntX + 0, blockIntY, blockIntZ + 1));
+        final int c10 = this.getColor(slice, scratchPos.set(blockIntX + 1, blockIntY, blockIntZ + 0));
+        final int c11 = this.getColor(slice, scratchPos.set(blockIntX + 1, blockIntY, blockIntZ + 1));
 
         // Linear interpolation across the Z-axis
         int z0;
@@ -69,5 +69,5 @@ public abstract class BlendedColorProvider<T> implements ColorProvider<T> {
         return x0;
     }
 
-    protected abstract int getColor(LevelSlice slice, int x, int y, int z);
+    protected abstract int getColor(LevelSlice slice, BlockPos pos);
 }

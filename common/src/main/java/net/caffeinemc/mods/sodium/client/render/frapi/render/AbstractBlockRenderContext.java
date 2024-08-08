@@ -198,12 +198,10 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
         this.defaultLightMode = this.useAmbientOcclusion && modelAo && PlatformBlockAccess.getInstance().getLightEmission(state, level, pos) == 0 ? LightMode.SMOOTH : LightMode.FLAT;
     }
 
-    // TODO: normal-based (enhanced) AO for smooth lighting pipeline
-    // TODO: normal-based diffuse for both lighting pipelines
     protected void shadeQuad(MutableQuadViewImpl quad, LightMode lightMode, boolean emissive) {
         LightPipeline lighter = this.lighters.getLighter(lightMode);
         QuadLightData data = this.quadLightData;
-        lighter.calculate(quad, this.pos, data, quad.cullFace(), quad.lightFace(), quad.hasShade(), false);
+        lighter.calculate(quad, this.pos, data, quad.cullFace(), quad.lightFace(), quad.hasShade(), null);
 
         if (emissive) {
             for (int i = 0; i < 4; i++) {

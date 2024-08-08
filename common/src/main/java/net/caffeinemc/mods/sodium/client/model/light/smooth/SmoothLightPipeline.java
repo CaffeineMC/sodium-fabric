@@ -9,6 +9,7 @@ import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.material.FluidState;
 import org.joml.Vector3f;
 
 /**
@@ -66,7 +67,7 @@ public class SmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, boolean isFluid) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, FluidState fluidState) {
         this.updateCachedData(pos.asLong());
 
         int flags = quad.getFlags();
@@ -85,7 +86,7 @@ public class SmoothLightPipeline implements LightPipeline {
             }
         } else if ((flags & ModelQuadFlags.IS_PARALLEL) != 0) {
             this.applyParallelFace(neighborInfo, quad, pos, lightFace, out, shade);
-        } else if (isFluid) {
+        } else if (fluidState != null) {
             this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out, shade);
         } else {
             this.applyIrregularFace(pos, quad, out, shade);

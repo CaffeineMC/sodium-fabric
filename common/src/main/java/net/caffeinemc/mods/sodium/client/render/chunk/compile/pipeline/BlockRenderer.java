@@ -43,6 +43,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
     private ChunkBuildBuffers buffers;
 
     private final Vector3f posOffset = new Vector3f();
+    private final BlockPos.MutableBlockPos scratchPos = new BlockPos.MutableBlockPos();
     @Nullable
     private ColorProvider<BlockState> colorProvider;
     private TranslucentGeometryCollector collector;
@@ -138,7 +139,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
             if (colorProvider != null) {
                 int[] vertexColors = this.vertexColors;
-                colorProvider.getColors(this.slice, this.pos, this.state, quad, vertexColors);
+                colorProvider.getColors(this.slice, this.pos, this.scratchPos, this.state, quad, vertexColors);
 
                 for (int i = 0; i < 4; i++) {
                     // Set alpha to 0xFF in case a quad transform inspects the color.

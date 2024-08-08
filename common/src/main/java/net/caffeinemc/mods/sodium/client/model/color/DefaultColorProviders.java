@@ -15,8 +15,6 @@ public class DefaultColorProviders {
         return new VanillaAdapter(color);
     }
 
-    private static final ThreadLocal<BlockPos.MutableBlockPos> blockPosHolder = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
-
     public static class GrassColorProvider<T> extends BlendedColorProvider<T> {
         public static final ColorProvider<BlockState> BLOCKS = new GrassColorProvider<>();
 
@@ -25,8 +23,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return BiomeColors.getAverageGrassColor(slice, blockPosHolder.get().set(x, y, z));
+        protected int getColor(LevelSlice slice, BlockPos pos) {
+            return BiomeColors.getAverageGrassColor(slice, pos);
         }
     }
 
@@ -38,8 +36,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return BiomeColors.getAverageFoliageColor(slice, blockPosHolder.get().set(x, y, z));
+        protected int getColor(LevelSlice slice, BlockPos pos) {
+            return BiomeColors.getAverageFoliageColor(slice, pos);
         }
     }
 
@@ -52,8 +50,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, int x, int y, int z) {
-            return BiomeColors.getAverageWaterColor(slice, blockPosHolder.get().set(x, y, z));
+        protected int getColor(LevelSlice slice, BlockPos pos) {
+            return BiomeColors.getAverageWaterColor(slice, pos);
         }
     }
 
@@ -65,7 +63,7 @@ public class DefaultColorProviders {
         }
 
         @Override
-        public void getColors(LevelSlice slice, BlockPos pos, BlockState state, ModelQuadView quad, int[] output) {
+        public void getColors(LevelSlice slice, BlockPos pos, BlockPos.MutableBlockPos scratchPos, BlockState state, ModelQuadView quad, int[] output) {
             Arrays.fill(output, this.color.getColor(state, slice, pos, quad.getColorIndex()));
         }
     }

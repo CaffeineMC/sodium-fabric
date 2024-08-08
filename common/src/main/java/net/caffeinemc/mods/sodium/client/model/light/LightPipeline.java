@@ -4,6 +4,7 @@ import net.caffeinemc.mods.sodium.client.model.light.data.QuadLightData;
 import net.caffeinemc.mods.sodium.client.model.quad.ModelQuadView;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.material.FluidState;
 
 /**
  * Light pipelines allow model quads for any location in the level to be lit using various backends, including fluids
@@ -18,7 +19,7 @@ public interface LightPipeline {
      * @param cullFace The cull face of the quad
      * @param lightFace The light face of the quad
      * @param shade True if the block is shaded by ambient occlusion
-     * @param isFluid True if the block is being drawn by the fluid renderer
+     * @param fluidState The fluid state of the current rendered fluid, or {@code null} if the block is not a fluid
      */
-    void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, boolean isFluid);
+    void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, FluidState fluidState);
 }

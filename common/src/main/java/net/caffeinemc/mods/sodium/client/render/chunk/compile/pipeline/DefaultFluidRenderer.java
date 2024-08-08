@@ -382,9 +382,9 @@ public class DefaultFluidRenderer {
 
         QuadLightData light = this.quadLightData;
 
-        lighter.calculate(quad, pos, light, null, dir, false, true);
+        lighter.calculate(quad, pos, light, null, dir, false, fluidState);
 
-        colorProvider.getColors(level, pos, fluidState, quad, this.quadColors);
+        colorProvider.getColors(level, pos, scratchPos, fluidState, quad, this.quadColors);
 
         // multiply the per-vertex color against the combined brightness
         // the combined brightness is the per-vertex brightness multiplied by the block's brightness

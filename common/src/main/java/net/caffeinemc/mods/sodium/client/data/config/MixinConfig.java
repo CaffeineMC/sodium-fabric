@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.data.config;
 
+import net.caffeinemc.mods.sodium.client.services.PlatformMixinOverrides;
 import net.caffeinemc.mods.sodium.client.services.Services;
 import net.caffeinemc.mods.sodium.mixin.MixinOption;
 import org.apache.logging.log4j.LogManager;
@@ -14,7 +15,7 @@ import java.util.Properties;
  * <a href="https://github.com/CaffeineMC/sodium-fabric/wiki/Configuration-File">Documentation of these options...</a>
  */
 @SuppressWarnings("CanBeFinal")
-public abstract class MixinConfig {
+public class MixinConfig {
     protected static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
 
     protected static final String JSON_KEY_SODIUM_OPTIONS = "sodium:options";
@@ -128,23 +129,21 @@ public abstract class MixinConfig {
         }
     }
 
-    public abstract void applyModOverrides();
-
-    protected void applyModOverride(String modId, String name, boolean enabled) {
-        MixinOption option = this.options.get(name);
+    protected void applyModOverride(PlatformMixinOverrides.MixinOverride override) {
+        MixinOption option = this.options.get(override.option());
 
         if (option == null) {
-            LOGGER.warn("Mod '{}' attempted to override option '{}', which doesn't exist, ignoring", modId, name);
+            LOGGER.warn("Mod '{}' attempted to override option '{}', which doesn't exist, ignoring", override.modId(), override.option());
             return;
         }
 
         // disabling the option takes precedence over enabling
-        if (!enabled && option.isEnabled()) {
+        if (!override.enabled() && option.isEnabled()) {
             option.clearModsDefiningValue();
         }
 
-        if (!enabled || option.isEnabled() || option.getDefiningMods().isEmpty()) {
-            option.addModOverride(enabled, modId);
+        if (!override.enabled() || option.isEnabled() || option.getDefiningMods().isEmpty()) {
+            option.addModOverride(override.enabled(), override.modId());
         }
     }
 
@@ -193,8 +192,8 @@ public abstract class MixinConfig {
                 LOGGER.warn("Could not write default configuration file", e);
             }
 
-            MixinConfig config = MixinConfig.create();
-            config.applyModOverrides();
+            MixinConfig config = new MixinConfig();
+            PlatformMixinOverrides.getInstance().applyModOverrides().forEach(config::applyModOverride);
 
             return config;
         }
@@ -207,15 +206,11 @@ public abstract class MixinConfig {
             throw new RuntimeException("Could not load config file", e);
         }
 
-        MixinConfig config = MixinConfig.create();
+        MixinConfig config = new MixinConfig();
         config.readProperties(props);
-        config.applyModOverrides();
+        PlatformMixinOverrides.getInstance().applyModOverrides();
 
         return config;
-    }
-
-    private static MixinConfig create() {
-        return Services.load(MixinConfig.class);
     }
 
     private static void writeDefaultConfig(File file) throws IOException {
