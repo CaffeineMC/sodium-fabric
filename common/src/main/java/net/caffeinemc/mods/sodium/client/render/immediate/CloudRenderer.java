@@ -245,6 +245,10 @@ public class CloudRenderer {
 
         int cellColor = textureData.getCellColor(cellIndex);
 
+        if (ColorABGR.unpackAlpha(cellColor) == 0) {
+            return;
+        }
+
         float x = offsetX * 12;
         float z = offsetZ * 12;
 
