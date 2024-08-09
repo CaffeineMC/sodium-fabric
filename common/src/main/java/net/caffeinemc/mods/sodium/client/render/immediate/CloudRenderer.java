@@ -84,6 +84,11 @@ public class CloudRenderer {
             this.cachedGeometry = (geometry = rebuildGeometry(geometry, parameters, this.textureData));
         }
 
+        VertexBuffer vertexBuffer = geometry.vertexBuffer();
+        if (vertexBuffer == null) {
+            return;
+        }
+
         final float translateX = (float) (cloudCenterX - (centerCellX * 12));
         final float translateZ = (float) (cloudCenterZ - (centerCellZ * 12));
 
@@ -114,7 +119,6 @@ public class CloudRenderer {
         Vec3 colorModulator = level.getCloudColor(tickDelta);
         RenderSystem.setShaderColor((float) colorModulator.x, (float) colorModulator.y, (float) colorModulator.z, 0.8f);
 
-        VertexBuffer vertexBuffer = geometry.vertexBuffer();
         vertexBuffer.bind();
 
         RenderSystem.enableBlend();
@@ -201,17 +205,20 @@ public class CloudRenderer {
             }
         }
 
-        MeshData builtBuffer = bufferBuilder.buildOrThrow();
+        MeshData builtBuffer = bufferBuilder.build();
 
-        VertexBuffer vertexBuffer;
+        VertexBuffer vertexBuffer = null;
 
-        if (existingGeometry != null) {
-            vertexBuffer = existingGeometry.vertexBuffer();
-        } else {
-            vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
+        if (builtBuffer != null) {
+            if (existingGeometry != null) {
+                vertexBuffer = existingGeometry.vertexBuffer();
+            }
+            if (vertexBuffer == null) {
+                vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
+            }
+
+            uploadToVertexBuffer(vertexBuffer, builtBuffer);
         }
-
-        uploadToVertexBuffer(vertexBuffer, builtBuffer);
 
         Tesselator.getInstance().clear();
 
@@ -337,21 +344,16 @@ public class CloudRenderer {
             long ptr = buffer;
             int count = 0;
 
-            // -Y
-            if (CloudFaceSet.contains(faces, CloudFace.NEG_Y)) {
-                int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
+            int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
 
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
 
-                count += 4;
-            }
+            count += 4;
 
-            if (count > 0) {
-                writer.push(stack, buffer, count, ColorVertex.FORMAT);
-            }
+            writer.push(stack, buffer, count, ColorVertex.FORMAT);
         }
     }
 
