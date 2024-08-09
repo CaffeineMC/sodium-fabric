@@ -75,8 +75,9 @@ public class CloudRenderer {
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12.0));
 
         // -1 if below clouds, +1 if above clouds
-        int orientation = (int) Math.signum(pos.y() - cloudHeight);
-        var parameters = new CloudGeometryParameters(centerCellX, centerCellZ, cloudDistance, orientation, Minecraft.getInstance().options.getCloudsType());
+        var cloudType = Minecraft.getInstance().options.getCloudsType();
+        int orientation = cloudType == CloudStatus.FANCY ? (int) Math.signum(pos.y() - cloudHeight) : 0;
+        var parameters = new CloudGeometryParameters(centerCellX, centerCellZ, cloudDistance, orientation, cloudType);
 
         CloudGeometry geometry = this.cachedGeometry;
 
