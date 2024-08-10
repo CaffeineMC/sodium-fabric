@@ -27,6 +27,7 @@ import net.caffeinemc.mods.sodium.client.render.texture.SpriteFinderCache;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
+import net.fabricmc.fabric.api.renderer.v1.material.ShadeMode;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.color.block.BlockColors;
@@ -89,6 +90,7 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
         final RenderMaterial mat = quad.material();
         final int colorIndex = mat.disableColorIndex() ? -1 : quad.colorIndex();
         final TriState aoMode = mat.ambientOcclusion();
+        final ShadeMode shadeMode = mat.shadeMode();
         final LightMode lightMode;
         if (aoMode == TriState.DEFAULT) {
             lightMode = this.defaultLightMode;
@@ -98,7 +100,7 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
         final boolean emissive = mat.emissive();
 
         colorizeQuad(quad, colorIndex);
-        shadeQuad(quad, lightMode, emissive);
+        shadeQuad(quad, lightMode, emissive, shadeMode);
         bufferQuad(quad);
     }
 
@@ -113,8 +115,8 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
     }
 
     @Override
-    protected void shadeQuad(MutableQuadViewImpl quad, LightMode lightMode, boolean emissive) {
-        super.shadeQuad(quad, lightMode, emissive);
+    protected void shadeQuad(MutableQuadViewImpl quad, LightMode lightMode, boolean emissive, ShadeMode shadeMode) {
+        super.shadeQuad(quad, lightMode, emissive, shadeMode);
 
         float[] brightnesses = this.quadLightData.br;
 

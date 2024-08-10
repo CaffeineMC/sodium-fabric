@@ -23,6 +23,7 @@ import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
+import net.fabricmc.fabric.api.renderer.v1.material.ShadeMode;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -109,6 +110,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         final RenderMaterial mat = quad.material();
         final int colorIndex = mat.disableColorIndex() ? -1 : quad.colorIndex();
         final TriState aoMode = mat.ambientOcclusion();
+        final ShadeMode shadeMode = mat.shadeMode();
         final LightMode lightMode;
         if (aoMode == TriState.DEFAULT) {
             lightMode = this.defaultLightMode;
@@ -129,7 +131,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ChunkModelBuilder builder = this.buffers.get(material);
 
         this.colorizeQuad(quad, colorIndex);
-        this.shadeQuad(quad, lightMode, emissive);
+        this.shadeQuad(quad, lightMode, emissive, shadeMode);
         this.bufferQuad(quad, this.quadLightData.br, material, builder);
     }
 

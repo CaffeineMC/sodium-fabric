@@ -67,7 +67,7 @@ public class SmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, FluidState fluidState) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade, boolean enhanced) {
         this.updateCachedData(pos.asLong());
 
         int flags = quad.getFlags();
@@ -86,10 +86,10 @@ public class SmoothLightPipeline implements LightPipeline {
             }
         } else if ((flags & ModelQuadFlags.IS_PARALLEL) != 0) {
             this.applyParallelFace(neighborInfo, quad, pos, lightFace, out, shade);
-        } else if (fluidState != null) {
-            this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out, shade);
-        } else {
+        } else if (enhanced) {
             this.applyIrregularFace(pos, quad, out, shade);
+        } else {
+            this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out, shade);
         }
     }
 

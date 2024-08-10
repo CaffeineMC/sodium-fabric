@@ -28,6 +28,7 @@ public class MaterialFinderImpl extends MaterialViewImpl implements MaterialFind
         MaterialFinderImpl finder = new MaterialFinderImpl();
         finder.ambientOcclusion(TriState.DEFAULT);
         finder.glint(TriState.DEFAULT);
+        finder.shadeMode(ShadeMode.ENHANCED);
         defaultBits = finder.bits;
 
         if (!areBitsValid(defaultBits)) {
