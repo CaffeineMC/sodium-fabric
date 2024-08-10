@@ -12,6 +12,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 
@@ -33,7 +34,7 @@ public class SodiumFabricMod implements ClientModInitializer {
                 .getEntrypoints("frex_flawless_frames", Consumer.class)
                 .forEach(api -> api.accept(FlawlessFrames.getProvider()));
 
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new ResourceReload() {
             @Override
             public ResourceLocation getFabricId() {
                 return ResourceLocation.fromNamespaceAndPath("sodium", "sprite_finder");
@@ -46,4 +47,7 @@ public class SodiumFabricMod implements ClientModInitializer {
         });
         RendererAccess.INSTANCE.registerRenderer(SodiumRenderer.INSTANCE);
     }
+
+    // This workaround is required to get Loom to properly remap Sodium in a development environment.
+    public interface ResourceReload extends IdentifiableResourceReloadListener, PreparableReloadListener {}
 }
