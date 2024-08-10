@@ -35,8 +35,8 @@ import java.util.Arrays;
  * type is determined with a heuristic based on the collected metrics. This
  * determines if block face culling can be enabled.
  * - Now the {@link BuiltSectionMeshParts} is generated, which yields the vertex
- * ranges.
- * 3. The vertex ranges and the mesh parts object are used by the collector in
+ * counts.
+ * 3. The vertex counts and the mesh parts object are used by the collector in
  * the construction of the {@link TranslucentData} object. The data object
  * allocates memory for the index data and performs the first (and for static
  * sort types, only) sort.
@@ -534,7 +534,7 @@ public class TranslucentGeometryCollector {
             // doesn't matter
             if (this.sortType == SortType.NONE && oldData instanceof AnyOrderData oldAnyData
                     && oldAnyData.getQuadCount() == this.quads.length
-                    && Arrays.equals(oldAnyData.getVertexRanges(), translucentMesh.getVertexRanges())) {
+                    && Arrays.equals(oldAnyData.getVertexCounts(), translucentMesh.getVertexCounts())) {
                 return oldAnyData;
             }
 

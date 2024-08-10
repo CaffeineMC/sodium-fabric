@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
 import net.minecraft.core.SectionPos;
@@ -10,8 +9,8 @@ public abstract class DynamicData extends MixedDirectionData {
     private GeometryPlanes geometryPlanes;
     private final Vector3dc initialCameraPos;
 
-    DynamicData(SectionPos sectionPos, VertexRange range, int quadCount, GeometryPlanes geometryPlanes, Vector3dc initialCameraPos) {
-        super(sectionPos, range, quadCount);
+    DynamicData(SectionPos sectionPos, int vertexCount, int quadCount, GeometryPlanes geometryPlanes, Vector3dc initialCameraPos) {
+        super(sectionPos, vertexCount, quadCount);
         this.geometryPlanes = geometryPlanes;
         this.initialCameraPos = initialCameraPos;
     }

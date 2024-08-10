@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
@@ -20,8 +19,8 @@ import java.util.Arrays;
 public class StaticNormalRelativeData extends SplitDirectionData {
     private Sorter sorterOnce;
 
-    public StaticNormalRelativeData(SectionPos sectionPos, VertexRange[] ranges, int quadCount) {
-        super(sectionPos, ranges, quadCount);
+    public StaticNormalRelativeData(SectionPos sectionPos, int[] vertexCounts, int quadCount) {
+        super(sectionPos, vertexCounts, quadCount);
     }
 
     @Override
@@ -40,7 +39,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     }
 
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh, TQuad[] quads, SectionPos sectionPos) {
-        var snrData = new StaticNormalRelativeData(sectionPos, translucentMesh.getVertexRanges(), quads.length);
+        var snrData = new StaticNormalRelativeData(sectionPos, translucentMesh.getVertexCounts(), quads.length);
         var sorter = new StaticSorter(quads.length);
         snrData.sorterOnce = sorter;
         var indexBuffer = sorter.getIntBuffer();
@@ -82,17 +81,17 @@ public class StaticNormalRelativeData extends SplitDirectionData {
      */
     private static StaticNormalRelativeData fromMixed(BuiltSectionMeshParts translucentMesh,
                                                       TQuad[] quads, SectionPos sectionPos) {
-        var snrData = new StaticNormalRelativeData(sectionPos, translucentMesh.getVertexRanges(), quads.length);
+        var snrData = new StaticNormalRelativeData(sectionPos, translucentMesh.getVertexCounts(), quads.length);
         var sorter = new StaticSorter(quads.length);
         snrData.sorterOnce = sorter;
         var indexBuffer = sorter.getIntBuffer();
 
-        var ranges = translucentMesh.getVertexRanges();
+        var counts = translucentMesh.getVertexCounts();
         var maxQuadCount = 0;
         boolean anyNeedsSortData = false;
-        for (var range : ranges) {
-            if (range != null) {
-                var quadCount = TranslucentData.vertexCountToQuadCount(range.vertexCount());
+        for (var vertexCount : counts) {
+            if (vertexCount != -1) {
+                var quadCount = TranslucentData.vertexCountToQuadCount(vertexCount);
                 maxQuadCount = Math.max(maxQuadCount, quadCount);
                 anyNeedsSortData |= !RadixSort.useRadixSort(quadCount) && quadCount > 1;
             }
@@ -104,13 +103,8 @@ public class StaticNormalRelativeData extends SplitDirectionData {
         }
 
         int quadIndex = 0;
-        for (var range : ranges) {
-            if (range == null) {
-                continue;
-            }
-
-            int vertexCount = range.vertexCount();
-            if (vertexCount == 0) {
+        for (var vertexCount : counts) {
+            if (vertexCount == -1 || vertexCount == 0) {
                 continue;
             }
 

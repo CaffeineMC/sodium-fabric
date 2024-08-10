@@ -1,7 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
@@ -61,41 +60,45 @@ public class ChunkBuildBuffers {
         var builder = this.builders.get(pass);
 
         List<ByteBuffer> vertexBuffers = new ArrayList<>();
-        VertexRange[] vertexRanges = new VertexRange[ModelQuadFacing.COUNT];
+        int[] vertexCounts = new int[ModelQuadFacing.COUNT];
 
-        int vertexCount = 0;
+        int vertexSum = 0;
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+            var ordinal = facing.ordinal();
             var buffer = builder.getVertexBuffer(facing);
 
             if (buffer.isEmpty()) {
+                vertexCounts[ordinal] = -1;
                 continue;
             }
 
             vertexBuffers.add(buffer.slice());
             if (!forceUnassigned) {
-                vertexRanges[facing.ordinal()] = new VertexRange(vertexCount, buffer.count());
+                vertexCounts[ordinal] = buffer.count();
+            } else {
+                vertexCounts[ordinal] = -1;
             }
 
-            vertexCount += buffer.count();
+            vertexSum += buffer.count();
         }
 
-        if (vertexCount == 0) {
+        if (vertexSum == 0) {
             return null;
         }
 
         if (forceUnassigned) {
-            vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(0, vertexCount);
+            vertexCounts[ModelQuadFacing.UNASSIGNED.ordinal()] = vertexSum;
         }
 
-        var mergedBuffer = new NativeBuffer(vertexCount * this.vertexType.getVertexFormat().getStride());
+        var mergedBuffer = new NativeBuffer(vertexSum * this.vertexType.getVertexFormat().getStride());
         var mergedBufferBuilder = mergedBuffer.getDirectBuffer();
 
         for (var buffer : vertexBuffers) {
             mergedBufferBuilder.put(buffer);
         }
 
-        return new BuiltSectionMeshParts(mergedBuffer, vertexRanges);
+        return new BuiltSectionMeshParts(mergedBuffer, vertexCounts);
     }
 
     public void destroy() {

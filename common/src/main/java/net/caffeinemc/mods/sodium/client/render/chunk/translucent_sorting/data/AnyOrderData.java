@@ -1,10 +1,8 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
-import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.core.SectionPos;
 
 /**
@@ -24,8 +22,8 @@ import net.minecraft.core.SectionPos;
 public class AnyOrderData extends SplitDirectionData {
     private Sorter sorterOnce;
 
-    AnyOrderData(SectionPos sectionPos, VertexRange[] ranges, int quadCount) {
-        super(sectionPos, ranges, quadCount);
+    AnyOrderData(SectionPos sectionPos, int[] vertexCounts, int quadCount) {
+        super(sectionPos, vertexCounts, quadCount);
     }
 
     @Override
@@ -48,18 +46,18 @@ public class AnyOrderData extends SplitDirectionData {
      */
     public static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
             TQuad[] quads, SectionPos sectionPos) {
-        var ranges = translucentMesh.getVertexRanges();
-        var anyOrderData = new AnyOrderData(sectionPos, ranges, quads.length);
+        var vertexCounts = translucentMesh.getVertexCounts();
+        var anyOrderData = new AnyOrderData(sectionPos, vertexCounts, quads.length);
         var sorter = new StaticSorter(quads.length);
         anyOrderData.sorterOnce = sorter;
         var indexBuffer = sorter.getIntBuffer();
 
-        for (var range : ranges) {
-            if (range == null) {
+        for (var vertexCount : vertexCounts) {
+            if (vertexCount == -1) {
                 continue;
             }
 
-            int count = TranslucentData.vertexCountToQuadCount(range.vertexCount());
+            int count = TranslucentData.vertexCountToQuadCount(vertexCount);
             for (int i = 0; i < count; i++) {
                 TranslucentData.writeQuadVertexIndexes(indexBuffer, i);
             }

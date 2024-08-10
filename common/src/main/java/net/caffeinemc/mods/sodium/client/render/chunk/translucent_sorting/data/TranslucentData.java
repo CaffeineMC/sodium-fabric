@@ -2,9 +2,6 @@ package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import java.nio.IntBuffer;
 
-import org.joml.Vector3fc;
-
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
@@ -68,13 +65,13 @@ public abstract class TranslucentData {
         }
     }
 
-    static VertexRange getUnassignedVertexRange(BuiltSectionMeshParts translucentMesh) {
-        VertexRange range = translucentMesh.getVertexRanges()[ModelQuadFacing.UNASSIGNED.ordinal()];
+    static int getUnassignedVertexCount(BuiltSectionMeshParts translucentMesh) {
+        int vertexCount = translucentMesh.getVertexCounts()[ModelQuadFacing.UNASSIGNED.ordinal()];
 
-        if (range == null) {
+        if (vertexCount == -1) {
             throw new IllegalStateException("No unassigned data in mesh");
         }
 
-        return range;
+        return vertexCount;
     }
 }

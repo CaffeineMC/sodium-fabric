@@ -1,7 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
-import net.caffeinemc.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.core.SectionPos;
 
 /**
@@ -10,15 +8,15 @@ import net.minecraft.core.SectionPos;
  * starting at zero for each facing.
  */
 public abstract class SplitDirectionData extends PresentTranslucentData {
-    private final VertexRange[] ranges;
+    private final int[] vertexCounts;
 
-    public SplitDirectionData(SectionPos sectionPos, VertexRange[] ranges, int quadCount) {
+    public SplitDirectionData(SectionPos sectionPos, int[] vertexCounts, int quadCount) {
         super(sectionPos, quadCount);
-        this.ranges = ranges;
+        this.vertexCounts = vertexCounts;
     }
 
     @Override
-    public VertexRange[] getVertexRanges() {
-        return this.ranges;
+    public int[] getVertexCounts() {
+        return this.vertexCounts;
     }
 }

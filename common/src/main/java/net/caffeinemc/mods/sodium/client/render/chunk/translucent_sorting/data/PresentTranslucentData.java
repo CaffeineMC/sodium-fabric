@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.minecraft.core.SectionPos;
 
 /**
@@ -15,7 +14,7 @@ public abstract class PresentTranslucentData extends TranslucentData {
         this.quadCount = quadCount;
     }
 
-    public abstract VertexRange[] getVertexRanges();
+    public abstract int[] getVertexCounts();
 
     public abstract Sorter getSorter();
 
