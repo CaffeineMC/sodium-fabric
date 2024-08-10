@@ -75,13 +75,19 @@ public class CloudRenderer {
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12.0));
 
         // -1 if below clouds, +1 if above clouds
-        int orientation = (int) Math.signum(pos.y() - cloudHeight);
-        var parameters = new CloudGeometryParameters(centerCellX, centerCellZ, cloudDistance, orientation, Minecraft.getInstance().options.getCloudsType());
+        var cloudType = Minecraft.getInstance().options.getCloudsType();
+        int orientation = cloudType == CloudStatus.FANCY ? (int) Math.signum(pos.y() - cloudHeight) : 0;
+        var parameters = new CloudGeometryParameters(centerCellX, centerCellZ, cloudDistance, orientation, cloudType);
 
         CloudGeometry geometry = this.cachedGeometry;
 
         if (geometry == null || !Objects.equals(geometry.params(), parameters)) {
             this.cachedGeometry = (geometry = rebuildGeometry(geometry, parameters, this.textureData));
+        }
+
+        VertexBuffer vertexBuffer = geometry.vertexBuffer();
+        if (vertexBuffer == null) {
+            return;
         }
 
         final float translateX = (float) (cloudCenterX - (centerCellX * 12));
@@ -114,7 +120,6 @@ public class CloudRenderer {
         Vec3 colorModulator = level.getCloudColor(tickDelta);
         RenderSystem.setShaderColor((float) colorModulator.x, (float) colorModulator.y, (float) colorModulator.z, 0.8f);
 
-        VertexBuffer vertexBuffer = geometry.vertexBuffer();
         vertexBuffer.bind();
 
         RenderSystem.enableBlend();
@@ -201,17 +206,20 @@ public class CloudRenderer {
             }
         }
 
-        MeshData builtBuffer = bufferBuilder.buildOrThrow();
+        MeshData builtBuffer = bufferBuilder.build();
 
-        VertexBuffer vertexBuffer;
+        VertexBuffer vertexBuffer = null;
 
-        if (existingGeometry != null) {
-            vertexBuffer = existingGeometry.vertexBuffer();
-        } else {
-            vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
+        if (builtBuffer != null) {
+            if (existingGeometry != null) {
+                vertexBuffer = existingGeometry.vertexBuffer();
+            }
+            if (vertexBuffer == null) {
+                vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
+            }
+
+            uploadToVertexBuffer(vertexBuffer, builtBuffer);
         }
-
-        uploadToVertexBuffer(vertexBuffer, builtBuffer);
 
         Tesselator.getInstance().clear();
 
@@ -237,6 +245,10 @@ public class CloudRenderer {
         }
 
         int cellColor = textureData.getCellColor(cellIndex);
+
+        if (ColorABGR.unpackAlpha(cellColor) == 0) {
+            return;
+        }
 
         float x = offsetX * 12;
         float z = offsetZ * 12;
@@ -337,21 +349,16 @@ public class CloudRenderer {
             long ptr = buffer;
             int count = 0;
 
-            // -Y
-            if (CloudFaceSet.contains(faces, CloudFace.NEG_Y)) {
-                int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
+            int mixedColor = ColorMixer.mul(color, CloudFace.POS_Y.getColor());
 
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
-                ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
-                ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z + 12.0f, mixedColor);
+            ptr = writeVertex(ptr, x +  0.0f, 0.0f, z +  0.0f, mixedColor);
+            ptr = writeVertex(ptr, x + 12.0f, 0.0f, z +  0.0f, mixedColor);
 
-                count += 4;
-            }
+            count += 4;
 
-            if (count > 0) {
-                writer.push(stack, buffer, count, ColorVertex.FORMAT);
-            }
+            writer.push(stack, buffer, count, ColorVertex.FORMAT);
         }
     }
 
