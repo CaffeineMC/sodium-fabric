@@ -319,7 +319,7 @@ public class TranslucentGeometryCollector {
      * @return the required sort type to ensure this section always looks correct
      */
     private SortType sortTypeHeuristic() {
-        if (this.quads.length == 0) {
+        if (this.quads.length <= 1) {
             return SortType.NONE;
         }
 
@@ -461,21 +461,32 @@ public class TranslucentGeometryCollector {
         return this.sortType;
     }
 
-    private TranslucentData makeNewTranslucentData(BuiltSectionMeshParts translucentMesh, CombinedCameraPos cameraPos,
+    private static int ensureUnassignedVertexCount(int[] vertexCounts) {
+        int vertexCount = vertexCounts[ModelQuadFacing.UNASSIGNED.ordinal()];
+
+        if (vertexCount == 0) {
+            throw new IllegalStateException("No unassigned data in mesh");
+        }
+
+        return vertexCount;
+    }
+
+    private TranslucentData makeNewTranslucentData(int[] vertexCounts, CombinedCameraPos cameraPos,
                                                    TranslucentData oldData) {
         if (this.sortType == SortType.NONE) {
-            return AnyOrderData.fromMesh(translucentMesh, this.quads, this.sectionPos);
+            return AnyOrderData.fromMesh(vertexCounts, this.quads, this.sectionPos);
         }
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
             var isDoubleUnaligned = this.alignedFacingBitmap == 0;
-            return StaticNormalRelativeData.fromMesh(translucentMesh, this.quads, this.sectionPos, isDoubleUnaligned);
+            return StaticNormalRelativeData.fromMesh(vertexCounts, this.quads, this.sectionPos, isDoubleUnaligned);
         }
 
         // from this point on we know the estimated sort type requires direction mixing
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
         if (this.sortType == SortType.STATIC_TOPO) {
-            var result = StaticTopoData.fromMesh(translucentMesh, this.quads, this.sectionPos);
+            var vertexCount = ensureUnassignedVertexCount(vertexCounts);
+            var result = StaticTopoData.fromMesh(vertexCount, this.quads, this.sectionPos);
             if (result != null) {
                 return result;
             }
@@ -486,17 +497,18 @@ public class TranslucentGeometryCollector {
         this.sortType = filterSortType(this.sortType);
 
         if (this.sortType == SortType.NONE) {
-            return AnyOrderData.fromMesh(translucentMesh, this.quads, this.sectionPos);
+            return AnyOrderData.fromMesh(vertexCounts, this.quads, this.sectionPos);
         }
 
         if (this.sortType == SortType.DYNAMIC) {
+            var vertexCount = ensureUnassignedVertexCount(vertexCounts);
             try {
                 return DynamicBSPData.fromMesh(
-                        translucentMesh, cameraPos, this.quads, this.sectionPos, oldData);
+                        vertexCount, cameraPos, this.quads, this.sectionPos, oldData);
             } catch (BSPBuildFailureException e) {
                 var geometryPlanes = GeometryPlanes.fromQuadLists(this.sectionPos, this.quads);
                 return DynamicTopoData.fromMesh(
-                        translucentMesh, cameraPos, this.quads, this.sectionPos,
+                        vertexCount, cameraPos, this.quads, this.sectionPos,
                         geometryPlanes);
             }
         }
@@ -524,6 +536,8 @@ public class TranslucentGeometryCollector {
             return NoData.forNoTranslucent(this.sectionPos);
         }
 
+        var vertexCounts = translucentMesh.getVertexCounts();
+
         // re-use the original translucent data if it's the same. This reduces the
         // amount of generated and uploaded index data when sections are rebuilt without
         // relevant changes to translucent geometry. Rebuilds happen when any part of
@@ -534,7 +548,7 @@ public class TranslucentGeometryCollector {
             // doesn't matter
             if (this.sortType == SortType.NONE && oldData instanceof AnyOrderData oldAnyData
                     && oldAnyData.getQuadCount() == this.quads.length
-                    && Arrays.equals(oldAnyData.getVertexCounts(), translucentMesh.getVertexCounts())) {
+                    && Arrays.equals(oldAnyData.getVertexCounts(), vertexCounts)) {
                 return oldAnyData;
             }
 
@@ -548,7 +562,7 @@ public class TranslucentGeometryCollector {
             }
         }
 
-        var newData = makeNewTranslucentData(translucentMesh, cameraPos, oldData);
+        var newData = makeNewTranslucentData(vertexCounts, cameraPos, oldData);
         if (newData instanceof PresentTranslucentData presentData) {
             presentData.setQuadHash(getQuadHash(this.quads));
         }

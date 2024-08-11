@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.minecraft.core.SectionPos;
@@ -44,16 +43,15 @@ public class AnyOrderData extends SplitDirectionData {
     /**
      * Important: The vertex indexes must start at zero for each facing.
      */
-    public static AnyOrderData fromMesh(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, SectionPos sectionPos) {
-        var vertexCounts = translucentMesh.getVertexCounts();
+    public static AnyOrderData fromMesh(int[] vertexCounts,
+                                        TQuad[] quads, SectionPos sectionPos) {
         var anyOrderData = new AnyOrderData(sectionPos, vertexCounts, quads.length);
         var sorter = new StaticSorter(quads.length);
         anyOrderData.sorterOnce = sorter;
         var indexBuffer = sorter.getIntBuffer();
 
         for (var vertexCount : vertexCounts) {
-            if (vertexCount == -1) {
+            if (vertexCount <= 0) {
                 continue;
             }
 

@@ -250,11 +250,10 @@ public class DynamicTopoData extends DynamicData {
         }
     }
 
-    public static DynamicTopoData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static DynamicTopoData fromMesh(int vertexCount,
                                            CombinedCameraPos cameraPos, TQuad[] quads, SectionPos sectionPos,
                                            GeometryPlanes geometryPlanes) {
         var distancesByNormal = geometryPlanes.prepareAndGetDistances();
-        int vertexCount = TranslucentData.getUnassignedVertexCount(translucentMesh);
 
         return new DynamicTopoData(sectionPos, vertexCount, quads, geometryPlanes,
                 cameraPos.getAbsoluteCameraPos(), distancesByNormal);

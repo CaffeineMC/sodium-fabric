@@ -42,8 +42,7 @@ public class StaticTopoData extends MixedDirectionData {
         }
     }
 
-    public static StaticTopoData fromMesh(BuiltSectionMeshParts translucentMesh, TQuad[] quads, SectionPos sectionPos) {
-        int vertexCount = TranslucentData.getUnassignedVertexCount(translucentMesh);
+    public static StaticTopoData fromMesh(int vertexCount, TQuad[] quads, SectionPos sectionPos) {
         var sorter = new StaticSorter(quads.length);
         var indexWriter = new QuadIndexConsumerIntoBuffer(sorter.getIntBuffer());
 

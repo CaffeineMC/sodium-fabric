@@ -69,18 +69,16 @@ public class ChunkBuildBuffers {
             var buffer = builder.getVertexBuffer(facing);
 
             if (buffer.isEmpty()) {
-                vertexCounts[ordinal] = -1;
                 continue;
             }
 
             vertexBuffers.add(buffer.slice());
+            var bufferCount = buffer.count();
             if (!forceUnassigned) {
-                vertexCounts[ordinal] = buffer.count();
-            } else {
-                vertexCounts[ordinal] = -1;
+                vertexCounts[ordinal] = bufferCount;
             }
 
-            vertexSum += buffer.count();
+            vertexSum += bufferCount;
         }
 
         if (vertexSum == 0) {

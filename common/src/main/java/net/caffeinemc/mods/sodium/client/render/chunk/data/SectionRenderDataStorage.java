@@ -63,10 +63,6 @@ public class SectionRenderDataStorage {
         for (int facingIndex = 0; facingIndex < ModelQuadFacing.COUNT; facingIndex++) {
             int vertexCount = vertexCounts[facingIndex];
 
-            if (vertexCount == -1) {
-                vertexCount = 0;
-            }
-
             SectionRenderDataUnsafe.setVertexOffset(pMeshData, facingIndex, vertexOffset);
             SectionRenderDataUnsafe.setElementCount(pMeshData, facingIndex, (vertexCount >> 2) * 6);
 

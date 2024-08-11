@@ -41,7 +41,7 @@ public class DynamicBSPData extends DynamicData {
         return new DynamicBSPSorter(this.getQuadCount());
     }
 
-    public static DynamicBSPData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static DynamicBSPData fromMesh(int vertexCount,
                                           CombinedCameraPos cameraPos, TQuad[] quads, SectionPos sectionPos,
                                           TranslucentData oldData) {
         BSPNode oldRoot = null;
@@ -56,8 +56,6 @@ public class DynamicBSPData extends DynamicData {
             prepareNodeReuse = generation >= NODE_REUSE_MIN_GENERATION;
         }
         var result = BSPNode.buildBSP(quads, sectionPos, oldRoot, prepareNodeReuse);
-
-        int vertexCount = TranslucentData.getUnassignedVertexCount(translucentMesh);
 
         var dynamicData = new DynamicBSPData(sectionPos, vertexCount, result, cameraPos.getAbsoluteCameraPos(), quads, generation);
 

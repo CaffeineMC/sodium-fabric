@@ -3,7 +3,6 @@ package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 import java.nio.IntBuffer;
 
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.minecraft.core.SectionPos;
 
@@ -63,15 +62,5 @@ public abstract class TranslucentData {
         for (int quadIndexPos = 0; quadIndexPos < quadIndexes.length; quadIndexPos++) {
             writeQuadVertexIndexes(intBuffer, quadIndexes[quadIndexPos]);
         }
-    }
-
-    static int getUnassignedVertexCount(BuiltSectionMeshParts translucentMesh) {
-        int vertexCount = translucentMesh.getVertexCounts()[ModelQuadFacing.UNASSIGNED.ordinal()];
-
-        if (vertexCount == -1) {
-            throw new IllegalStateException("No unassigned data in mesh");
-        }
-
-        return vertexCount;
     }
 }
