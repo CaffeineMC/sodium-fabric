@@ -15,9 +15,11 @@ public class MathUtil {
     /**
      * Converts a float to a comparable integer value. This is used to compare
      * floating point values by their int bits (for example packed in a long).
-     * 
+     * <p>
      * The resulting integer can be treated as if it's unsigned and numbers the
      * floats from the smallest negative to the largest positive value.
+     * <p>
+     * Reference: <a href="https://stackoverflow.com/questions/23900328/are-floats-bit-patterns-ordered">StackOverflow Answer</a>
      */
     public static int floatToComparableInt(float f) {
         var bits = Float.floatToRawIntBits(f);
