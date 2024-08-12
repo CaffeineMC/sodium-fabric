@@ -26,6 +26,12 @@ public class SpriteContentsMixin {
     @Final
     private NativeImage originalImage;
 
+    @Unique
+    public boolean hasTransparentPixels = false;
+
+    @Unique
+    public boolean hasTranslucentPixels = false;
+
     // While Fabric allows us to @Inject into the constructor here, that's just a specific detail of FabricMC's mixin
     // fork. Upstream Mixin doesn't allow arbitrary @Inject usage in constructor. However, we can use @ModifyVariable
     // just fine, in a way that hopefully doesn't conflict with other mods.
@@ -51,7 +57,7 @@ public class SpriteContentsMixin {
      * black color does not leak over into sampling.
      */
     @Unique
-    private static void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
+    private void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
         final long ppPixel = NativeImageHelper.getPointerRGBA(nativeImage);
         final int pixelCount = nativeImage.getHeight() * nativeImage.getWidth();
 
@@ -79,8 +85,17 @@ public class SpriteContentsMixin {
                 b += ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(color)) * weight;
 
                 totalWeight += weight;
+
+                // track if this image has transparent or even translucent pixels
+                if (alpha < 255) {
+                    this.hasTranslucentPixels = true;
+                }
+            } else {
+                this.hasTransparentPixels = true;
             }
         }
+
+        this.hasTransparentPixels |= this.hasTranslucentPixels;
 
         // Bail if none of the pixels are semi-transparent.
         if (totalWeight == 0.0f) {
