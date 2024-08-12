@@ -115,7 +115,7 @@ public class RenderRegion {
         var storage = this.sectionRenderData.get(pass);
 
         if (storage == null) {
-            storage = new SectionRenderDataStorage(pass == DefaultTerrainRenderPasses.TRANSLUCENT);
+            storage = new SectionRenderDataStorage(pass.isTranslucent());
             this.sectionRenderData.put(pass, storage);
         }
 

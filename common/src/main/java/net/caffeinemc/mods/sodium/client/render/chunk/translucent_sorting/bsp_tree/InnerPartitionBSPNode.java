@@ -183,12 +183,17 @@ abstract class InnerPartitionBSPNode extends BSPNode {
         return oldNode;
     }
 
+    /**
+     * Encoding with {@link MathUtil#floatToComparableInt(float)} is necessary here to ensure negative distances are not sorted backwards. Simply converting potentially negative floats to int bits using {@link Float#floatToRawIntBits(float)} would sort negative floats backwards amongst themselves.
+     * <p>
+     * Note that negative floats convert to negative integers with this method which is ok, since it yields an overall negative long that gets sorted correctly before the longs that encode positive floats as distances.
+     */
     private static long encodeIntervalPoint(float distance, int quadIndex, int type) {
-        return ((long) Float.floatToRawIntBits(distance) << 32) | ((long) type << 30) | quadIndex;
+        return ((long) MathUtil.floatToComparableInt(distance) << 32) | ((long) type << 30) | quadIndex;
     }
 
     private static float decodeDistance(long encoded) {
-        return Float.intBitsToFloat((int) (encoded >>> 32));
+        return MathUtil.comparableIntToFloat((int) (encoded >>> 32));
     }
 
     private static int decodeQuadIndex(long encoded) {

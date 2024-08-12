@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightMode;
@@ -20,7 +21,6 @@ import net.caffeinemc.mods.sodium.client.render.texture.SpriteFinderCache;
 import net.caffeinemc.mods.sodium.client.services.PlatformModelAccess;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.caffeinemc.mods.sodium.client.world.LevelSlice;
-import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.material.ShadeMode;
@@ -177,8 +177,8 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         ModelQuadFacing normalFace = quad.normalFace();
 
-        if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
-            collector.appendQuad(quad.getFaceNormal(), vertices, normalFace);
+        if (material.isTranslucent() && this.collector != null) {
+            this.collector.appendQuad(quad.getFaceNormal(), vertices, normalFace);
         }
 
         ChunkMeshBufferBuilder vertexBuffer = modelBuilder.getVertexBuffer(normalFace);

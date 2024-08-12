@@ -1,7 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.trigger.GeometryPlanes;
@@ -47,10 +46,10 @@ public class DynamicTopoData extends DynamicData {
     private final TQuad[] quads;
     private final Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal;
 
-    private DynamicTopoData(SectionPos sectionPos, VertexRange range, TQuad[] quads,
+    private DynamicTopoData(SectionPos sectionPos, int vertexCount, TQuad[] quads,
                             GeometryPlanes geometryPlanes, Vector3dc initialCameraPos,
                             Object2ReferenceOpenHashMap<Vector3fc, float[]> distancesByNormal) {
-        super(sectionPos, range, quads.length, geometryPlanes, initialCameraPos);
+        super(sectionPos, vertexCount, quads.length, geometryPlanes, initialCameraPos);
         this.quads = quads;
         this.distancesByNormal = distancesByNormal;
 
@@ -251,13 +250,12 @@ public class DynamicTopoData extends DynamicData {
         }
     }
 
-    public static DynamicTopoData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static DynamicTopoData fromMesh(int vertexCount,
                                            CombinedCameraPos cameraPos, TQuad[] quads, SectionPos sectionPos,
                                            GeometryPlanes geometryPlanes) {
         var distancesByNormal = geometryPlanes.prepareAndGetDistances();
-        VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
 
-        return new DynamicTopoData(sectionPos, range, quads, geometryPlanes,
+        return new DynamicTopoData(sectionPos, vertexCount, quads, geometryPlanes,
                 cameraPos.getAbsoluteCameraPos(), distancesByNormal);
     }
 }
