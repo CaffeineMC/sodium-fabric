@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin.features.textures.mipmaps;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.SpriteContentsExtension;
 import net.caffeinemc.mods.sodium.client.util.NativeImageHelper;
 import net.caffeinemc.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.renderer.texture.SpriteContents;
@@ -20,17 +21,17 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * This Mixin is ported from Iris at <a href="https://github.com/IrisShaders/Iris/blob/41095ac23ea0add664afd1b85c414d1f1ed94066/src/main/java/net/coderbot/iris/mixin/bettermipmaps/MixinTextureAtlasSprite.java">MixinTextureAtlasSprite</a>.
  */
 @Mixin(SpriteContents.class)
-public class SpriteContentsMixin {
+public class SpriteContentsMixin implements SpriteContentsExtension {
     @Mutable
     @Shadow
     @Final
     private NativeImage originalImage;
 
     @Unique
-    public boolean hasTransparentPixels = false;
+    public boolean sodium$hasTransparentPixels = false;
 
     @Unique
-    public boolean hasTranslucentPixels = false;
+    public boolean sodium$hasTranslucentPixels = false;
 
     // While Fabric allows us to @Inject into the constructor here, that's just a specific detail of FabricMC's mixin
     // fork. Upstream Mixin doesn't allow arbitrary @Inject usage in constructor. However, we can use @ModifyVariable
@@ -88,14 +89,14 @@ public class SpriteContentsMixin {
 
                 // track if this image has transparent or even translucent pixels
                 if (alpha < 255) {
-                    this.hasTranslucentPixels = true;
+                    this.sodium$hasTranslucentPixels = true;
                 }
             } else {
-                this.hasTransparentPixels = true;
+                this.sodium$hasTransparentPixels = true;
             }
         }
 
-        this.hasTransparentPixels |= this.hasTranslucentPixels;
+        this.sodium$hasTransparentPixels |= this.sodium$hasTranslucentPixels;
 
         // Bail if none of the pixels are semi-transparent.
         if (totalWeight == 0.0f) {
@@ -121,5 +122,15 @@ public class SpriteContentsMixin {
                 MemoryUtil.memPutInt(pPixel, averageColor);
             }
         }
+    }
+
+    @Override
+    public boolean sodium$hasTransparentPixels() {
+        return this.sodium$hasTransparentPixels;
+    }
+
+    @Override
+    public boolean sodium$hasTranslucentPixels() {
+        return this.sodium$hasTranslucentPixels;
     }
 }

@@ -9,6 +9,7 @@ import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
@@ -28,6 +29,7 @@ import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -128,11 +130,9 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             material = DefaultMaterials.forRenderLayer(blendMode.blockRenderLayer == null ? type : blendMode.blockRenderLayer);
         }
 
-        ChunkModelBuilder builder = this.buffers.get(material);
-
         this.colorizeQuad(quad, colorIndex);
         this.shadeQuad(quad, lightMode, emissive, shadeMode);
-        this.bufferQuad(quad, this.quadLightData.br, material, builder);
+        this.bufferQuad(quad, this.quadLightData.br, material);
     }
 
     private void colorizeQuad(MutableQuadViewImpl quad, int colorIndex) {
@@ -152,10 +152,15 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
     }
 
-    private void bufferQuad(MutableQuadViewImpl quad, float[] brightnesses, Material material, ChunkModelBuilder modelBuilder) {
+    private void bufferQuad(MutableQuadViewImpl quad, float[] brightnesses, Material material) {
         ModelQuadOrientation orientation = defaultLightMode == LightMode.FLAT ? ModelQuadOrientation.NORMAL : ModelQuadOrientation.orientByBrightness(brightnesses, quad);
         ChunkVertexEncoder.Vertex[] vertices = this.vertices;
         Vector3f offset = this.posOffset;
+
+        float minU = 1;
+        float minV = 1;
+        float maxU = 0;
+        float maxV = 0;
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
@@ -169,11 +174,21 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             // Due to our vertex format, the alpha from the quad color is ignored entirely.
             out.color = ColorARGB.toABGR(quad.color(srcIndex), brightnesses[srcIndex]);
 
-            out.u = quad.u(srcIndex);
-            out.v = quad.v(srcIndex);
+            var u = quad.u(srcIndex);
+            var v = quad.v(srcIndex);
+            out.u = u;
+            out.v = v;
+            minU = Math.min(minU, u);
+            minV = Math.min(minV, v);
+            maxU = Math.max(maxU, u);
+            maxV = Math.max(maxV, v);
 
             out.light = quad.lightmap(srcIndex);
         }
+
+        // TODO: actually use the uv bounding box to check each quad
+        var atlasSprite = SpriteFinderCache.forBlockAtlas().find(quad.getTexU(0), quad.getTexV(0));
+        material = getDowngradedMaterial(atlasSprite, material);
 
         ModelQuadFacing normalFace = quad.normalFace();
 
@@ -181,9 +196,22 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             this.collector.appendQuad(quad.getFaceNormal(), vertices, normalFace);
         }
 
-        ChunkMeshBufferBuilder vertexBuffer = modelBuilder.getVertexBuffer(normalFace);
+        ChunkModelBuilder builder = this.buffers.get(material);
+
+        ChunkMeshBufferBuilder vertexBuffer = builder.getVertexBuffer(normalFace);
         vertexBuffer.push(vertices, material);
 
-        modelBuilder.addSprite(SpriteFinderCache.forBlockAtlas().find(quad.getTexU(0), quad.getTexV(0)));
+        builder.addSprite(atlasSprite);
+    }
+
+    private Material getDowngradedMaterial(TextureAtlasSprite sprite, Material material) {
+        var contents = (SpriteContentsExtension)(sprite.contents());
+        if (material.pass == DefaultTerrainRenderPasses.TRANSLUCENT && !contents.sodium$hasTranslucentPixels()) {
+            material = DefaultMaterials.CUTOUT_MIPPED;
+        }
+        if (material.pass == DefaultTerrainRenderPasses.CUTOUT && !contents.sodium$hasTransparentPixels()) {
+            material = DefaultMaterials.SOLID;
+        }
+        return material;
     }
 }
