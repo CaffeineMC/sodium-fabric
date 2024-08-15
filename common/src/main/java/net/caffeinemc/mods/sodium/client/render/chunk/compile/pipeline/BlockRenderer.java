@@ -191,10 +191,8 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ChunkModelBuilder builder = this.buffers.get(pass);
 
         if (material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
-            materialBits = MaterialParameters.pack(
-                    material.mipped
-                            ? AlphaCutoffParameter.HALF : AlphaCutoffParameter.ONE_TENTH,
-                    material.mipped);
+            // ONE_TENTH and HALF are functionally the same so it doesn't matter which one we take here
+            materialBits = MaterialParameters.pack(AlphaCutoffParameter.ONE_TENTH, material.mipped);
         }
 
         ChunkMeshBufferBuilder vertexBuffer = builder.getVertexBuffer(normalFace);

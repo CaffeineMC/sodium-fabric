@@ -44,7 +44,7 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
             int alpha = FastColor.ABGR32.alpha(color);
 
             // track if this image has transparent or even translucent pixels
-            if (alpha == 0) {
+            if (alpha <= 25) { // 0.1 * 255
                 this.sodium$hasTransparentPixels = true;
             } else if (alpha < 255) {
                 this.sodium$hasTranslucentPixels = true;
