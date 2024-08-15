@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.model.quad.blender.BlendedColorProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer;
@@ -16,6 +17,7 @@ import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRendering;
+import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.BlockAndTintGetter;
@@ -142,6 +144,26 @@ public class FluidRendererImpl extends FluidRenderer {
         @Override
         public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
             return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
+        }
+
+        @Override
+        public BlendedColorProvider<FluidState> getWaterColorProvider() {
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, FluidState state, BlockPos pos) {
+                    return BiomeColors.getAverageWaterColor(slice, pos) | 0xFF000000;
+                }
+            };
+        }
+
+        @Override
+        public BlendedColorProvider<BlockState> getWaterBlockColorProvider() {
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, BlockState state, BlockPos pos) {
+                    return BiomeColors.getAverageWaterColor(slice, pos) | 0xFF000000;
+                }
+            };
         }
     }
 }

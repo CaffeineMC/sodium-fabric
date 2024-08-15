@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.neoforge.render;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.model.quad.blender.BlendedColorProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer;
@@ -16,8 +17,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.client.textures.FluidSpriteCache;
+
+import java.util.Objects;
 
 public class FluidRendererImpl extends FluidRenderer {
     // The current default context is set up before invoking FluidRenderHandler#renderFluid and cleared afterwards.
@@ -130,6 +134,30 @@ public class FluidRendererImpl extends FluidRenderer {
         @Override
         public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
             return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
+        }
+
+        @Override
+        public BlendedColorProvider<FluidState> getWaterColorProvider() {
+            final IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(Fluids.WATER);
+
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, FluidState state, BlockPos pos) {
+                    return ext.getTintColor(state, slice, pos);
+                }
+            };
+        }
+
+        @Override
+        public BlendedColorProvider<BlockState> getWaterBlockColorProvider() {
+            final IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(Fluids.WATER);
+
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, BlockState state, BlockPos pos) {
+                    return ext.getTintColor(state.getFluidState().isEmpty() ? Fluids.WATER.defaultFluidState() : state.getFluidState(), slice, pos);
+                }
+            };
         }
     }
 }
