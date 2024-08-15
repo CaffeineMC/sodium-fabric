@@ -144,9 +144,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
                 colorProvider.getColors(this.slice, this.pos, this.scratchPos, this.state, quad, vertexColors);
 
                 for (int i = 0; i < 4; i++) {
-                    // Set alpha to 0xFF in case a quad transform inspects the color.
-                    // We do not support per-vertex alpha, however, so this will get discarded at vertex encoding time.
-                    quad.color(i, ColorHelper.multiplyColor(0xFF000000 | vertexColors[i], quad.color(i)));
+                    quad.color(i, ColorHelper.multiplyColor(vertexColors[i], quad.color(i)));
                 }
             }
         }
@@ -166,9 +164,8 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             out.z = quad.z(srcIndex) + offset.z;
 
             // FRAPI uses ARGB color format; convert to ABGR.
-            // Due to our vertex format, the alpha from the quad color is ignored entirely.
-            out.color = ColorARGB.toABGR(quad.color(srcIndex), brightnesses[srcIndex]);
-
+            out.color = ColorARGB.toABGR(quad.color(srcIndex));
+            out.ao = brightnesses[srcIndex];
             out.u = quad.u(srcIndex);
             out.v = quad.v(srcIndex);
 

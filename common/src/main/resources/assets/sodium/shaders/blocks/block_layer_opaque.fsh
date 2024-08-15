@@ -20,17 +20,14 @@ out vec4 fragColor; // The output fragment for the color framebuffer
 void main() {
     vec4 diffuseColor = texture(u_BlockTex, v_TexCoord, v_MaterialMipBias);
 
+    // Apply per-vertex color
+    diffuseColor *= v_Color;
+
 #ifdef USE_FRAGMENT_DISCARD
     if (diffuseColor.a < v_MaterialAlphaCutoff) {
         discard;
     }
 #endif
-
-    // Apply per-vertex color
-    diffuseColor.rgb *= v_Color.rgb;
-
-    // Apply ambient occlusion "shade"
-    diffuseColor.rgb *= v_Color.a;
 
     fragColor = _linearFog(diffuseColor, v_FragDistance, u_FogColor, u_FogStart, u_FogEnd);
 }

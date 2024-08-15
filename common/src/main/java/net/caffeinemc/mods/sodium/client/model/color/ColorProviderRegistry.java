@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import net.caffeinemc.mods.sodium.client.model.color.interop.BlockColorsExtension;
+import net.caffeinemc.mods.sodium.client.services.FluidRendererFactory;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -42,10 +43,10 @@ public class ColorProviderRegistry {
                 Blocks.OAK_LEAVES, Blocks.JUNGLE_LEAVES, Blocks.ACACIA_LEAVES,
                 Blocks.DARK_OAK_LEAVES, Blocks.VINE, Blocks.MANGROVE_LEAVES);
 
-        this.registerBlocks(DefaultColorProviders.WaterColorProvider.BLOCKS,
+        this.registerBlocks(FluidRendererFactory.getInstance().getWaterBlockColorProvider(),
                 Blocks.WATER, Blocks.BUBBLE_COLUMN);
 
-        this.registerFluids(DefaultColorProviders.WaterColorProvider.FLUIDS,
+        this.registerFluids(FluidRendererFactory.getInstance().getWaterColorProvider(),
                 Fluids.WATER, Fluids.FLOWING_WATER);
     }
 

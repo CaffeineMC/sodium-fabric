@@ -54,6 +54,7 @@ public class DefaultFluidRenderer {
 
     private final QuadLightData quadLightData = new QuadLightData();
     private final int[] quadColors = new int[4];
+    private final float[] brightness = new float[4];
 
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
     private final ColorProviderRegistry colorProviderRegistry;
@@ -385,7 +386,8 @@ public class DefaultFluidRenderer {
         // multiply the per-vertex color against the combined brightness
         // the combined brightness is the per-vertex brightness multiplied by the block's brightness
         for (int i = 0; i < 4; i++) {
-            this.quadColors[i] = ColorARGB.toABGR(this.quadColors[i], light.br[i] * brightness);
+            this.quadColors[i] = ColorARGB.toABGR(this.quadColors[i]);
+            this.brightness[i] = light.br[i] * brightness;
         }
     }
 
@@ -400,6 +402,7 @@ public class DefaultFluidRenderer {
             out.z = offset.getZ() + quad.getZ(i);
 
             out.color = this.quadColors[i];
+            out.ao = this.brightness[i];
             out.u = quad.getTexU(i);
             out.v = quad.getTexV(i);
             out.light = this.quadLightData.lm[i];

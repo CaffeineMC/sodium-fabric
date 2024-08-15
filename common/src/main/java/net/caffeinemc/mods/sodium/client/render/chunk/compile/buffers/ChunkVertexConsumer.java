@@ -43,6 +43,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
         vertex.x = x;
         vertex.y = y;
         vertex.z = z;
+        vertex.ao = 1.0f;
         this.writtenAttributes |= ATTRIBUTE_POSITION_BIT;
         return potentiallyEndVertex();
     }
@@ -51,7 +52,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     @Override
     public @NotNull VertexConsumer setColor(int red, int green, int blue, int alpha) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-        vertex.color = ColorABGR.pack(red, green, blue, 0xFF);
+        vertex.color = ColorABGR.pack(red, green, blue, alpha);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
         return potentiallyEndVertex();
     }
@@ -59,7 +60,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     @Override
     public @NotNull VertexConsumer setColor(float red, float green, float blue, float alpha) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-        vertex.color = ColorABGR.pack(red, green, blue, 1);
+        vertex.color = ColorABGR.pack(red, green, blue, alpha);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
         return potentiallyEndVertex();
     }
@@ -67,7 +68,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     @Override
     public @NotNull VertexConsumer setColor(int argb) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-        vertex.color = ColorARGB.toABGR(argb, 0xFF);
+        vertex.color = ColorARGB.toABGR(argb);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
         return potentiallyEndVertex();
     }
