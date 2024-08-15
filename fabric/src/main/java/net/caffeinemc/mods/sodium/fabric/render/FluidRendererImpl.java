@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.model.quad.blender.BlendedColorProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer;
@@ -16,6 +17,7 @@ import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRendering;
+import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.BlockAndTintGetter;
@@ -69,7 +71,7 @@ public class FluidRendererImpl extends FluidRenderer {
         // To allow invoking this method from the injector, where there is no local Sodium context, the renderer and
         // parameters are bundled into a DefaultRenderContext which is stored in a ThreadLocal.
 
-        defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler, hasModOverride);
+        defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, blockState, fluidState, blockPos, offset, collector, meshBuilder, material, handler, hasModOverride);
 
         try {
             FluidRendering.render(handler, level, blockPos, meshBuilder.asFallbackVertexConsumer(material, collector), blockState, fluidState, defaultContext);
@@ -81,6 +83,7 @@ public class FluidRendererImpl extends FluidRenderer {
     private static class DefaultRenderContext implements FluidRendering.DefaultRenderer {
         private DefaultFluidRenderer renderer;
         private LevelSlice level;
+        private BlockState blockState;
         private FluidState fluidState;
         private BlockPos blockPos;
         private BlockPos offset;
@@ -91,10 +94,11 @@ public class FluidRendererImpl extends FluidRenderer {
         private ColorProviderRegistry colorProviderRegistry;
         private boolean hasModOverride;
 
-        public void setUp(ColorProviderRegistry colorProviderRegistry, DefaultFluidRenderer renderer, LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler, boolean hasModOverride) {
+        public void setUp(ColorProviderRegistry colorProviderRegistry, DefaultFluidRenderer renderer, LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, FluidRenderHandler handler, boolean hasModOverride) {
             this.colorProviderRegistry = colorProviderRegistry;
             this.renderer = renderer;
             this.level = level;
+            this.blockState = blockState;
             this.fluidState = fluidState;
             this.blockPos = blockPos;
             this.offset = offset;
@@ -108,6 +112,7 @@ public class FluidRendererImpl extends FluidRenderer {
         public void clear() {
             this.renderer = null;
             this.level = null;
+            this.blockState = null;
             this.fluidState = null;
             this.blockPos = null;
             this.offset = null;
@@ -130,7 +135,7 @@ public class FluidRendererImpl extends FluidRenderer {
 
         @Override
         public void render(FluidRenderHandler handler, BlockAndTintGetter world, BlockPos pos, VertexConsumer vertexConsumer, BlockState blockState, FluidState fluidState) {
-            this.renderer.render(this.level, this.fluidState, this.blockPos, this.offset, this.collector, this.meshBuilder, this.material,
+            this.renderer.render(this.level, this.blockState, this.fluidState, this.blockPos, this.offset, this.collector, this.meshBuilder, this.material,
                     getColorProvider(fluidState.getType()), handler.getFluidSprites(this.level, this.blockPos, this.fluidState));
         }
     }
@@ -139,6 +144,26 @@ public class FluidRendererImpl extends FluidRenderer {
         @Override
         public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
             return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
+        }
+
+        @Override
+        public BlendedColorProvider<FluidState> getWaterColorProvider() {
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, FluidState state, BlockPos pos) {
+                    return BiomeColors.getAverageWaterColor(slice, pos) | 0xFF000000;
+                }
+            };
+        }
+
+        @Override
+        public BlendedColorProvider<BlockState> getWaterBlockColorProvider() {
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, BlockState state, BlockPos pos) {
+                    return BiomeColors.getAverageWaterColor(slice, pos) | 0xFF000000;
+                }
+            };
         }
     }
 }

@@ -28,6 +28,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.SupportType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
@@ -54,6 +55,7 @@ public class DefaultFluidRenderer {
 
     private final QuadLightData quadLightData = new QuadLightData();
     private final int[] quadColors = new int[4];
+    private final float[] brightness = new float[4];
 
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
     private final ColorProviderRegistry colorProviderRegistry;
@@ -65,13 +67,21 @@ public class DefaultFluidRenderer {
         this.colorProviderRegistry = colorProviderRegistry;
     }
 
-    private boolean isFluidOccluded(BlockAndTintGetter world, int x, int y, int z, Direction dir, Fluid fluid) {
-        var adjPos = this.scratchPos.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
-        BlockState blockState = world.getBlockState(adjPos);
-        if (blockState.getFluidState().getType().isSame(fluid)) {
+    private boolean isFluidOccluded(BlockAndTintGetter world, int x, int y, int z, Direction dir, BlockState blockState, Fluid fluid) {
+        //Test own block state first, this prevents waterlogged blocks from having hidden internal geometry
+        // which can result in z-fighting
+        var pos = this.scratchPos.set(x, y, z);
+        if (blockState.canOcclude() && blockState.isFaceSturdy(world, pos, dir, SupportType.FULL)) {
             return true;
         }
-        return blockState.canOcclude() && dir != Direction.UP && blockState.isFaceSturdy(world, adjPos, dir.getOpposite(), SupportType.FULL);
+
+        //Test neighboring block state
+        var adjPos = this.scratchPos.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
+        BlockState adjBlockState = world.getBlockState(adjPos);
+        if (adjBlockState.getFluidState().getType().isSame(fluid)) {
+            return true;
+        }
+        return adjBlockState.canOcclude() && dir != Direction.UP && adjBlockState.isFaceSturdy(world, adjPos, dir.getOpposite(), SupportType.FULL);
     }
 
     private boolean isSideExposed(BlockAndTintGetter world, int x, int y, int z, Direction dir, float height) {
@@ -94,20 +104,20 @@ public class DefaultFluidRenderer {
         return true;
     }
 
-    public void render(LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, ColorProvider<FluidState> colorProvider, TextureAtlasSprite[] sprites) {
+    public void render(LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, ColorProvider<FluidState> colorProvider, TextureAtlasSprite[] sprites) {
         int posX = blockPos.getX();
         int posY = blockPos.getY();
         int posZ = blockPos.getZ();
 
         Fluid fluid = fluidState.getType();
 
-        boolean sfUp = this.isFluidOccluded(level, posX, posY, posZ, Direction.UP, fluid);
-        boolean sfDown = this.isFluidOccluded(level, posX, posY, posZ, Direction.DOWN, fluid) ||
+        boolean sfUp = this.isFluidOccluded(level, posX, posY, posZ, Direction.UP, blockState, fluid);
+        boolean sfDown = this.isFluidOccluded(level, posX, posY, posZ, Direction.DOWN, blockState, fluid) ||
                 !this.isSideExposed(level, posX, posY, posZ, Direction.DOWN, 0.8888889F);
-        boolean sfNorth = this.isFluidOccluded(level, posX, posY, posZ, Direction.NORTH, fluid);
-        boolean sfSouth = this.isFluidOccluded(level, posX, posY, posZ, Direction.SOUTH, fluid);
-        boolean sfWest = this.isFluidOccluded(level, posX, posY, posZ, Direction.WEST, fluid);
-        boolean sfEast = this.isFluidOccluded(level, posX, posY, posZ, Direction.EAST, fluid);
+        boolean sfNorth = this.isFluidOccluded(level, posX, posY, posZ, Direction.NORTH, blockState, fluid);
+        boolean sfSouth = this.isFluidOccluded(level, posX, posY, posZ, Direction.SOUTH, blockState, fluid);
+        boolean sfWest = this.isFluidOccluded(level, posX, posY, posZ, Direction.WEST, blockState, fluid);
+        boolean sfEast = this.isFluidOccluded(level, posX, posY, posZ, Direction.EAST, blockState, fluid);
 
         if (sfUp && sfDown && sfEast && sfWest && sfNorth && sfSouth) {
             return;
@@ -385,7 +395,8 @@ public class DefaultFluidRenderer {
         // multiply the per-vertex color against the combined brightness
         // the combined brightness is the per-vertex brightness multiplied by the block's brightness
         for (int i = 0; i < 4; i++) {
-            this.quadColors[i] = ColorARGB.toABGR(this.quadColors[i], light.br[i] * brightness);
+            this.quadColors[i] = ColorARGB.toABGR(this.quadColors[i]);
+            this.brightness[i] = light.br[i] * brightness;
         }
     }
 
@@ -400,6 +411,7 @@ public class DefaultFluidRenderer {
             out.z = offset.getZ() + quad.getZ(i);
 
             out.color = this.quadColors[i];
+            out.ao = this.brightness[i];
             out.u = quad.getTexU(i);
             out.v = quad.getTexV(i);
             out.light = this.quadLightData.lm[i];

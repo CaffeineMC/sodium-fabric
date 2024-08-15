@@ -23,7 +23,7 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, BlockPos pos) {
+        protected int getColor(LevelSlice slice, T state, BlockPos pos) {
             return BiomeColors.getAverageGrassColor(slice, pos);
         }
     }
@@ -36,7 +36,7 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, BlockPos pos) {
+        protected int getColor(LevelSlice slice, T state, BlockPos pos) {
             return BiomeColors.getAverageFoliageColor(slice, pos);
         }
     }
@@ -50,7 +50,7 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, BlockPos pos) {
+        protected int getColor(LevelSlice slice, T state, BlockPos pos) {
             return BiomeColors.getAverageWaterColor(slice, pos);
         }
     }

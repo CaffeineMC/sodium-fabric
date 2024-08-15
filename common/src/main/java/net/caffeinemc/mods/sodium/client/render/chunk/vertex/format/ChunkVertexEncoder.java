@@ -8,6 +8,7 @@ public interface ChunkVertexEncoder {
         public float y;
         public float z;
         public int color;
+        public float ao;
         public float u;
         public float v;
         public int light;
