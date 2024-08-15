@@ -158,8 +158,12 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ChunkVertexEncoder.Vertex[] vertices = this.vertices;
         Vector3f offset = this.posOffset;
 
+        var pass = material.pass;
+        var attemptDowngrade = true;
+
         float uSum = 0.0f;
         float vSum = 0.0f;
+        int alphaSum = 0;
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
@@ -170,7 +174,10 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             out.z = quad.z(srcIndex) + offset.z;
 
             // FRAPI uses ARGB color format; convert to ABGR.
-            out.color = ColorARGB.toABGR(quad.color(srcIndex));
+            var color = quad.color(srcIndex);
+            alphaSum += ColorARGB.unpackAlpha(color);
+
+            out.color = ColorARGB.toABGR(color);
             out.ao = brightnesses[srcIndex];
 
             uSum += out.u = quad.u(srcIndex);
@@ -180,12 +187,20 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
 
         var atlasSprite = SpriteFinderCache.forBlockAtlas().find(uSum / 4.0f, vSum / 4.0f);
-        boolean doDowngrade = validateQuadUVs(atlasSprite);
 
-        var pass = material.pass;
-        if (doDowngrade) {
+        // don't do downgrade if some vertex is not fully opaque
+        if (pass.isTranslucent() && alphaSum < 4 * 255) {
+            attemptDowngrade = false;
+        }
+
+        if (attemptDowngrade) {
+            attemptDowngrade = validateQuadUVs(atlasSprite);
+        }
+
+        if (attemptDowngrade) {
             pass = getDowngradedPass(atlasSprite, pass);
         }
+
         var materialBits = material.bits();
 
         ModelQuadFacing normalFace = quad.normalFace();
@@ -196,7 +211,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         ChunkModelBuilder builder = this.buffers.get(pass);
 
-        if (doDowngrade && material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
+        if (attemptDowngrade && material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
             // ONE_TENTH and HALF are functionally the same so it doesn't matter which one we take here
             materialBits = MaterialParameters.pack(AlphaCutoffParameter.ONE_TENTH, material.mipped);
         }
