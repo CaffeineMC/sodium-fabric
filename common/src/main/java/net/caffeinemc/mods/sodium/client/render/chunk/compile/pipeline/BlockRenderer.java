@@ -182,21 +182,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
 
         var atlasSprite = SpriteFinderCache.forBlockAtlas().find(uSum / 4.0f, vSum / 4.0f);
-
-        // sanity check that the quad's UVs are within the sprite's bounds
-        var spriteUMin = atlasSprite.getU0();
-        var spriteUMax = atlasSprite.getU1();
-        var spriteVMin = atlasSprite.getV0();
-        var spriteVMax = atlasSprite.getV1();
-        var doDowngrade = true;
-
-        for (int i = 0; i < 4; i++) {
-            var u = vertices[i].u;
-            var v = vertices[i].v;
-            if (u < spriteUMin || u > spriteUMax || v < spriteVMin || v > spriteVMax) {
-                doDowngrade = false;
-            }
-        }
+        boolean doDowngrade = validateQuadUVs(atlasSprite);
 
         var pass = material.pass;
         if (doDowngrade) {
@@ -221,6 +207,24 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         vertexBuffer.push(vertices, materialBits);
 
         builder.addSprite(atlasSprite);
+    }
+
+    private boolean validateQuadUVs(TextureAtlasSprite atlasSprite) {
+        // sanity check that the quad's UVs are within the sprite's bounds
+        var spriteUMin = atlasSprite.getU0();
+        var spriteUMax = atlasSprite.getU1();
+        var spriteVMin = atlasSprite.getV0();
+        var spriteVMax = atlasSprite.getV1();
+
+        for (int i = 0; i < 4; i++) {
+            var u = this.vertices[i].u;
+            var v = this.vertices[i].v;
+            if (u < spriteUMin || u > spriteUMax || v < spriteVMin || v > spriteVMax) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static TerrainRenderPass getDowngradedPass(TextureAtlasSprite sprite, TerrainRenderPass pass) {
