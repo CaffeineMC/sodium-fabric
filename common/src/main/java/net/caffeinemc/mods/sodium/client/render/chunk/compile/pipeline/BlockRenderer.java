@@ -160,6 +160,9 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ChunkVertexEncoder.Vertex[] vertices = this.vertices;
         Vector3f offset = this.posOffset;
 
+        float uSum = 0.0f;
+        float vSum = 0.0f;
+
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
 
@@ -172,14 +175,33 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             // Due to our vertex format, the alpha from the quad color is ignored entirely.
             out.color = ColorARGB.toABGR(quad.color(srcIndex), brightnesses[srcIndex]);
 
-            out.u = quad.u(srcIndex);
-            out.v = quad.v(srcIndex);
+            uSum += out.u = quad.u(srcIndex);
+            vSum += out.v = quad.v(srcIndex);
 
             out.light = quad.lightmap(srcIndex);
         }
 
-        var atlasSprite = SpriteFinderCache.forBlockAtlas().find(quad.getTexU(0), quad.getTexV(0));
-        var pass = getDowngradedPass(atlasSprite, material.pass);
+        var atlasSprite = SpriteFinderCache.forBlockAtlas().find(uSum / 4.0f, vSum / 4.0f);
+
+        // sanity check that the quad's UVs are within the sprite's bounds
+        var spriteUMin = atlasSprite.getU0();
+        var spriteUMax = atlasSprite.getU1();
+        var spriteVMin = atlasSprite.getV0();
+        var spriteVMax = atlasSprite.getV1();
+        var doDowngrade = true;
+
+        for (int i = 0; i < 4; i++) {
+            var u = vertices[i].u;
+            var v = vertices[i].v;
+            if (u < spriteUMin || u > spriteUMax || v < spriteVMin || v > spriteVMax) {
+                doDowngrade = false;
+            }
+        }
+
+        var pass = material.pass;
+        if (doDowngrade) {
+            pass = getDowngradedPass(atlasSprite, pass);
+        }
         var materialBits = material.bits();
 
         ModelQuadFacing normalFace = quad.normalFace();
@@ -190,7 +212,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         ChunkModelBuilder builder = this.buffers.get(pass);
 
-        if (material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
+        if (doDowngrade && material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
             // ONE_TENTH and HALF are functionally the same so it doesn't matter which one we take here
             materialBits = MaterialParameters.pack(AlphaCutoffParameter.ONE_TENTH, material.mipped);
         }
