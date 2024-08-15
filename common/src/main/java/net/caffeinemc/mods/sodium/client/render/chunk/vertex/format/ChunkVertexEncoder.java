@@ -1,9 +1,7 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.vertex.format;
 
-import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
-
 public interface ChunkVertexEncoder {
-    long write(long ptr, Material material, Vertex[] vertices, int sectionIndex);
+    long write(long ptr, int materialBits, Vertex[] vertices, int sectionIndex);
 
     class Vertex {
         public float x;

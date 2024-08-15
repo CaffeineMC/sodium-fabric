@@ -1,52 +1,32 @@
 package net.caffeinemc.mods.sodium.mixin.features.textures.mipmaps;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.platform.NativeImage;
-import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.SpriteContentsExtension;
 import net.caffeinemc.mods.sodium.client.util.NativeImageHelper;
 import net.caffeinemc.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.renderer.texture.SpriteContents;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
  * This Mixin is ported from Iris at <a href="https://github.com/IrisShaders/Iris/blob/41095ac23ea0add664afd1b85c414d1f1ed94066/src/main/java/net/coderbot/iris/mixin/bettermipmaps/MixinTextureAtlasSprite.java">MixinTextureAtlasSprite</a>.
  */
 @Mixin(SpriteContents.class)
-public class SpriteContentsMixin implements SpriteContentsExtension {
+public class SpriteContentsMixin {
     @Mutable
     @Shadow
     @Final
     private NativeImage originalImage;
 
-    @Unique
-    public boolean sodium$hasTransparentPixels = false;
-
-    @Unique
-    public boolean sodium$hasTranslucentPixels = false;
-
-    // While Fabric allows us to @Inject into the constructor here, that's just a specific detail of FabricMC's mixin
-    // fork. Upstream Mixin doesn't allow arbitrary @Inject usage in constructor. However, we can use @ModifyVariable
-    // just fine, in a way that hopefully doesn't conflict with other mods.
-    //
-    // By doing this, we can work with upstream Mixin as well, as is used on Forge. While we don't officially
-    // support Forge, since this works well on Fabric too, it's fine to ensure that the diff between Fabric and Forge
-    // can remain minimal. Being less dependent on specific details of Fabric is good, since it means we can be more
-    // cross-platform.
-    @Redirect(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;originalImage:Lcom/mojang/blaze3d/platform/NativeImage;", opcode = Opcodes.PUTFIELD))
-    private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, ResourceLocation identifier) {
-        // We're injecting after the "info" field has been set, so this is safe even though we're in a constructor.
+    @WrapOperation(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;originalImage:Lcom/mojang/blaze3d/platform/NativeImage;", opcode = Opcodes.PUTFIELD))
+    private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, Operation<Void> original) {
         sodium$fillInTransparentPixelColors(nativeImage);
 
-        this.originalImage = nativeImage;
+        original.call(instance, nativeImage);
     }
 
     /**
@@ -58,7 +38,7 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
      * black color does not leak over into sampling.
      */
     @Unique
-    private void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
+    private static void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
         final long ppPixel = NativeImageHelper.getPointerRGBA(nativeImage);
         final int pixelCount = nativeImage.getHeight() * nativeImage.getWidth();
 
@@ -71,7 +51,7 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
         float totalWeight = 0.0f;
 
         for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
-            long pPixel = ppPixel + (pixelIndex * 4);
+            long pPixel = ppPixel + (pixelIndex * 4L);
 
             int color = MemoryUtil.memGetInt(pPixel);
             int alpha = FastColor.ABGR32.alpha(color);
@@ -86,17 +66,8 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
                 b += ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(color)) * weight;
 
                 totalWeight += weight;
-
-                // track if this image has transparent or even translucent pixels
-                if (alpha < 255) {
-                    this.sodium$hasTranslucentPixels = true;
-                }
-            } else {
-                this.sodium$hasTransparentPixels = true;
             }
         }
-
-        this.sodium$hasTransparentPixels |= this.sodium$hasTranslucentPixels;
 
         // Bail if none of the pixels are semi-transparent.
         if (totalWeight == 0.0f) {
@@ -122,15 +93,5 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
                 MemoryUtil.memPutInt(pPixel, averageColor);
             }
         }
-    }
-
-    @Override
-    public boolean sodium$hasTransparentPixels() {
-        return this.sodium$hasTransparentPixels;
-    }
-
-    @Override
-    public boolean sodium$hasTranslucentPixels() {
-        return this.sodium$hasTranslucentPixels;
     }
 }

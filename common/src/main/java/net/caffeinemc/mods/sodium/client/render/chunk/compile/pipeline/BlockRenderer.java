@@ -10,8 +10,11 @@ import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadOrientat
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.parameters.AlphaCutoffParameter;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.parameters.MaterialParameters;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
@@ -176,30 +179,39 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
 
         var atlasSprite = SpriteFinderCache.forBlockAtlas().find(quad.getTexU(0), quad.getTexV(0));
-        material = getDowngradedMaterial(atlasSprite, material);
+        var pass = getDowngradedPass(atlasSprite, material.pass);
+        var materialBits = material.bits();
 
         ModelQuadFacing normalFace = quad.normalFace();
 
-        if (material.isTranslucent() && this.collector != null) {
+        if (pass.isTranslucent() && this.collector != null) {
             this.collector.appendQuad(quad.getFaceNormal(), vertices, normalFace);
         }
 
-        ChunkModelBuilder builder = this.buffers.get(material);
+        ChunkModelBuilder builder = this.buffers.get(pass);
+
+        if (material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
+            materialBits = MaterialParameters.pack(
+                    material.mipped
+                            ? AlphaCutoffParameter.HALF : AlphaCutoffParameter.ONE_TENTH,
+                    material.mipped);
+        }
 
         ChunkMeshBufferBuilder vertexBuffer = builder.getVertexBuffer(normalFace);
-        vertexBuffer.push(vertices, material);
+        vertexBuffer.push(vertices, materialBits);
 
         builder.addSprite(atlasSprite);
     }
 
-    private Material getDowngradedMaterial(TextureAtlasSprite sprite, Material material) {
-        var contents = (SpriteContentsExtension) (sprite.contents());
-        if (material.pass == DefaultTerrainRenderPasses.TRANSLUCENT && !contents.sodium$hasTranslucentPixels()) {
-            material = DefaultMaterials.CUTOUT_MIPPED;
+    private static TerrainRenderPass getDowngradedPass(TextureAtlasSprite sprite, TerrainRenderPass pass) {
+        if (sprite.contents() instanceof SpriteContentsExtension contents) {
+            if (pass == DefaultTerrainRenderPasses.TRANSLUCENT && !contents.sodium$hasTranslucentPixels()) {
+                pass = DefaultTerrainRenderPasses.CUTOUT;
+            }
+            if (pass == DefaultTerrainRenderPasses.CUTOUT && !contents.sodium$hasTransparentPixels()) {
+                pass = DefaultTerrainRenderPasses.SOLID;
+            }
         }
-        if (material.pass == DefaultTerrainRenderPasses.CUTOUT && !contents.sodium$hasTransparentPixels()) {
-            material = DefaultMaterials.SOLID;
-        }
-        return material;
+        return pass;
     }
 }
