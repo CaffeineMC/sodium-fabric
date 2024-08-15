@@ -78,5 +78,5 @@ repositories.
 
 ## 📜 License
 
-Except where otherwise stated, the content of this repository is provided under the [Polyform Shield 1.0.0](LICENSE.md)
-license by [JellySquid](https://jellysquid.me).
+Except where otherwise stated (see [third-party license notices](thirdparty/NOTICE.txt)), the content of this repository is provided
+under the [Polyform Shield 1.0.0](LICENSE.md) license by [JellySquid](https://jellysquid.me).

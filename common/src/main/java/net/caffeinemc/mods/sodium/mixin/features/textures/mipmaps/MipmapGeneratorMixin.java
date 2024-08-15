@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Original source: https://github.com/IrisShaders/Iris/blob/41095ac23ea0add664afd1b85c414d1f1ed94066/src/main/java/net/coderbot/iris/mixin/bettermipmaps/MixinMipmapGenerator.java
+ */
 package net.caffeinemc.mods.sodium.mixin.features.textures.mipmaps;
 
 import net.caffeinemc.mods.sodium.client.util.color.ColorSRGB;
@@ -23,8 +30,6 @@ import org.spongepowered.asm.mixin.Unique;
  *         cutout textures, this results in a lot of pixels with high alpha values and dark colors, causing visual
  *         artifacts.</ul>
  * </li>
- *
- * This Mixin is ported from Iris at <a href="https://github.com/IrisShaders/Iris/blob/41095ac23ea0add664afd1b85c414d1f1ed94066/src/main/java/net/coderbot/iris/mixin/bettermipmaps/MixinMipmapGenerator.java">MixinMipmapGenerator</a>.
  */
 @Mixin(MipmapGenerator.class)
 public class MipmapGeneratorMixin {
