@@ -192,11 +192,11 @@ public class D3DKMT {
             @NotNull GraphicsAdapterVendor vendor,
             @NotNull String name,
             int adapterType,
-            String openglIcdFilePath,
-            WindowsFileVersion openglIcdVersion
+            @Nullable String openglIcdFilePath,
+            @Nullable WindowsFileVersion openglIcdVersion
     ) implements GraphicsAdapterInfo {
-        public String getOpenGlIcdName() {
-            return D3DKMT.getOpenGlIcdName(this.name);
+        public @Nullable String getOpenGlIcdName() {
+            return D3DKMT.getOpenGlIcdName(this.openglIcdFilePath);
         }
 
         @Override
@@ -206,6 +206,7 @@ public class D3DKMT {
         }
     }
 
+    // Returns (null) if input is (null).
     private static String getOpenGlIcdName(String path) {
         return FilenameUtils.removeExtension(FilenameUtils.getName(path));
     }
