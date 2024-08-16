@@ -363,7 +363,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
         return this.level.getMinBuildHeight();
     }
 
-    //@Override
+    @Override
     public @Nullable Object getBlockEntityRenderData(BlockPos pos) {
         if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
             return null;
