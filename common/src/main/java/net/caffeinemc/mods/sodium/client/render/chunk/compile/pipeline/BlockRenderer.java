@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
@@ -154,16 +155,12 @@ public class BlockRenderer extends AbstractBlockRenderContext {
     }
 
     private void bufferQuad(MutableQuadViewImpl quad, float[] brightnesses, Material material) {
-        ModelQuadOrientation orientation = defaultLightMode == LightMode.FLAT ? ModelQuadOrientation.NORMAL : ModelQuadOrientation.orientByBrightness(brightnesses, quad);
+        ModelQuadOrientation orientation = this.defaultLightMode == LightMode.FLAT ? ModelQuadOrientation.NORMAL : ModelQuadOrientation.orientByBrightness(brightnesses, quad);
         ChunkVertexEncoder.Vertex[] vertices = this.vertices;
         Vector3f offset = this.posOffset;
 
-        var pass = material.pass;
-        var attemptDowngrade = true;
-
         float uSum = 0.0f;
         float vSum = 0.0f;
-        int alphaSum = 0;
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
@@ -174,10 +171,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             out.z = quad.z(srcIndex) + offset.z;
 
             // FRAPI uses ARGB color format; convert to ABGR.
-            var color = quad.color(srcIndex);
-            alphaSum += ColorARGB.unpackAlpha(color);
-
-            out.color = ColorARGB.toABGR(color);
+            out.color = ColorARGB.toABGR(quad.color(srcIndex));
             out.ao = brightnesses[srcIndex];
 
             uSum += out.u = quad.u(srcIndex);
@@ -187,35 +181,28 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
 
         var atlasSprite = SpriteFinderCache.forBlockAtlas().find(uSum / 4.0f, vSum / 4.0f);
-
-        // don't do downgrade if some vertex is not fully opaque
-        if (pass.isTranslucent() && alphaSum < 4 * 255) {
-            attemptDowngrade = false;
-        }
-
-        if (attemptDowngrade) {
-            attemptDowngrade = validateQuadUVs(atlasSprite);
-        }
-
-        if (attemptDowngrade) {
-            pass = getDowngradedPass(atlasSprite, pass);
-        }
-
         var materialBits = material.bits();
-
         ModelQuadFacing normalFace = quad.normalFace();
 
+        // attempt render pass downgrade if possible
+        var pass = material.pass;
+        var downgradedPass = attemptPassDowngrade(quad, atlasSprite, pass);
+        if (downgradedPass != null) {
+            pass = downgradedPass;
+        }
+
+        // collect all translucent quads into the translucency sorting system if enabled
         if (pass.isTranslucent() && this.collector != null) {
             this.collector.appendQuad(quad.getFaceNormal(), vertices, normalFace);
         }
 
-        ChunkModelBuilder builder = this.buffers.get(pass);
-
-        if (attemptDowngrade && material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
+        // if there was a downgrade from translucent to cutout, the material bits' alpha cutoff needs to be updated
+        if (downgradedPass != null && material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
             // ONE_TENTH and HALF are functionally the same so it doesn't matter which one we take here
             materialBits = MaterialParameters.pack(AlphaCutoffParameter.ONE_TENTH, material.mipped);
         }
 
+        ChunkModelBuilder builder = this.buffers.get(pass);
         ChunkMeshBufferBuilder vertexBuffer = builder.getVertexBuffer(normalFace);
         vertexBuffer.push(vertices, materialBits);
 
@@ -238,6 +225,30 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
 
         return true;
+    }
+
+    private TerrainRenderPass attemptPassDowngrade(MutableQuadViewImpl quad, TextureAtlasSprite sprite, TerrainRenderPass pass) {
+        boolean attemptDowngrade = true;
+        boolean hasNonOpaqueVertex = false;
+
+        for (int i = 0; i < 4; i++) {
+            hasNonOpaqueVertex |= ColorABGR.unpackAlpha(this.vertices[i].color) != 0xFF;
+        }
+
+        // don't do downgrade if some vertex is not fully opaque
+        if (pass.isTranslucent() && hasNonOpaqueVertex) {
+            attemptDowngrade = false;
+        }
+
+        if (attemptDowngrade) {
+            attemptDowngrade = validateQuadUVs(sprite);
+        }
+
+        if (attemptDowngrade) {
+            return getDowngradedPass(sprite, pass);
+        }
+
+        return null;
     }
 
     private static TerrainRenderPass getDowngradedPass(TextureAtlasSprite sprite, TerrainRenderPass pass) {

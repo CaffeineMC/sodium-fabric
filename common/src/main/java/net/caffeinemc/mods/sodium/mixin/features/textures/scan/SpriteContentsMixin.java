@@ -12,6 +12,9 @@ import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 
+/**
+ * This mixin scans a {@link SpriteContents} for transparent and translucent pixels. This information is later used during mesh generation to reassign the render pass to either cutout if the sprite has no translucent pixels or solid if it doesn't even have any transparent pixels.
+ */
 @Mixin(SpriteContents.class)
 public class SpriteContentsMixin implements SpriteContentsExtension {
     @Mutable
@@ -25,15 +28,18 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
     @Unique
     public boolean sodium$hasTranslucentPixels = false;
 
+    /*
+     * Uses a WrapOperation here since Inject doesn't work on 1.20.1 forge.
+     */
     @WrapOperation(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;originalImage:Lcom/mojang/blaze3d/platform/NativeImage;", opcode = Opcodes.PUTFIELD))
     private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, Operation<Void> original) {
-        sodium$scanSpriteContents(nativeImage);
+        scanSpriteContents(nativeImage);
 
         original.call(instance, nativeImage);
     }
 
     @Unique
-    private void sodium$scanSpriteContents(NativeImage nativeImage) {
+    private void scanSpriteContents(NativeImage nativeImage) {
         final long ppPixel = NativeImageHelper.getPointerRGBA(nativeImage);
         final int pixelCount = nativeImage.getHeight() * nativeImage.getWidth();
 
@@ -43,7 +49,7 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
             int color = MemoryUtil.memGetInt(pPixel);
             int alpha = FastColor.ABGR32.alpha(color);
 
-            // track if this image has transparent or even translucent pixels
+            // 25 is used as the threshold since the alpha cutoff is 0.1
             if (alpha <= 25) { // 0.1 * 255
                 this.sodium$hasTransparentPixels = true;
             } else if (alpha < 255) {
