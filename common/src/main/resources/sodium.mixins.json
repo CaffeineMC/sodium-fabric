@@ -41,6 +41,7 @@
     "features.options.render_layers.LeavesBlockMixin",
     "features.options.render_layers.ItemBlockRenderTypesMixin",
     "features.options.weather.LevelRendererMixin",
+    "features.render.compositing.RenderTargetMixin",
     "features.render.entity.CubeMixin",
     "features.render.entity.ModelPartMixin",
     "features.render.entity.cull.EntityRendererMixin",
