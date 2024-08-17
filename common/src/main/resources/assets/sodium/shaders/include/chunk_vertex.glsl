@@ -25,7 +25,7 @@ const uint TEXTURE_BITS         = 15u;
 const uint TEXTURE_MAX_COORD    = 1u << TEXTURE_BITS;
 const uint TEXTURE_MAX_VALUE    = TEXTURE_MAX_COORD - 1u;
 
-const float VERTEX_SCALE = 32.0 / POSITION_MAX_COORD;
+const float VERTEX_SCALE = 32.0 / float(POSITION_MAX_COORD);
 const float VERTEX_OFFSET = -8.0;
 
 // The amount of inset the texture coordinates from the edges of the texture, to avoid texture bleeding
