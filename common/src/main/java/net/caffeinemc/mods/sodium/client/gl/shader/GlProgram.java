@@ -51,22 +51,30 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
     }
 
     @Override
-    public <U extends GlUniform<?>> U bindUniform(String name, IntFunction<U> factory) {
+    public <U extends GlUniform<?>> U bindUniform(String name, IntFunction<U> factory, boolean required) {
         int index = GL20C.glGetUniformLocation(this.handle(), name);
 
         if (index < 0) {
-            throw new NullPointerException("No uniform exists with name: " + name);
+            if (required) {
+                throw new NullPointerException("No uniform exists with name: " + name);
+            } else {
+                return null;
+            }
         }
 
         return factory.apply(index);
     }
 
     @Override
-    public GlUniformBlock bindUniformBlock(String name, int bindingPoint) {
+    public GlUniformBlock bindUniformBlock(String name, int bindingPoint, boolean required) {
         int index = GL32C.glGetUniformBlockIndex(this.handle(), name);
 
         if (index < 0) {
-            throw new NullPointerException("No uniform block exists with name: " + name);
+            if (required) {
+                throw new NullPointerException("No uniform block exists with name: " + name);
+            } else {
+                return null;
+            }
         }
 
         GL32C.glUniformBlockBinding(this.handle(), index, bindingPoint);

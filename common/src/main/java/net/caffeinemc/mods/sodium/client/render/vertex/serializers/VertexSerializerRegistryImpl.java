@@ -46,6 +46,11 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
         return serializer;
     }
 
+    @Override
+    public void registerSerializer(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat, VertexSerializer serializer) {
+        this.cache.put(createKey(srcFormat, dstFormat), serializer);
+    }
+
     private VertexSerializer create(long identifier, VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
         var stamp = this.lock.writeLock();
 

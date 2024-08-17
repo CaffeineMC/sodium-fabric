@@ -308,7 +308,7 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.LOW)
                         .setBinding((opts, value) -> opts.performance.useNoErrorGLContext = value, opts -> opts.performance.useNoErrorGLContext)
-                        .setEnabled(supportsNoErrorContext())
+                        .setEnabled(SodiumGameOptionPages::supportsNoErrorContext)
                         .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
                         .build())
                 .build());
@@ -338,13 +338,15 @@ public class SodiumGameOptionPages {
     public static OptionPage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
 
+        boolean isPersistentMappingSupported = MappedStagingBuffer.isSupported(RenderDevice.INSTANCE);
+
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(Component.translatable("sodium.options.use_persistent_mapping.name"))
                         .setTooltip(Component.translatable("sodium.options.use_persistent_mapping.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
+                        .setEnabled(() -> isPersistentMappingSupported)
                         .setBinding((opts, value) -> opts.advanced.useAdvancedStagingBuffers = value, opts -> opts.advanced.useAdvancedStagingBuffers)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()

@@ -37,10 +37,10 @@ public abstract class ChunkShaderFogComponent {
         private final GlUniformFloat uFogEnd;
 
         public Smooth(ShaderBindingContext context) {
-            this.uFogColor = context.bindUniform("u_FogColor", GlUniformFloat4v::new);
-            this.uFogShape = context.bindUniform("u_FogShape", GlUniformInt::new);
-            this.uFogStart = context.bindUniform("u_FogStart", GlUniformFloat::new);
-            this.uFogEnd = context.bindUniform("u_FogEnd", GlUniformFloat::new);
+            this.uFogColor = context.bindUniform("u_FogColor", GlUniformFloat4v::new, true);
+            this.uFogShape = context.bindUniform("u_FogShape", GlUniformInt::new, true);
+            this.uFogStart = context.bindUniform("u_FogStart", GlUniformFloat::new, true);
+            this.uFogEnd = context.bindUniform("u_FogEnd", GlUniformFloat::new, true);
         }
 
         @Override
