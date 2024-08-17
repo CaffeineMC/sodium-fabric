@@ -23,7 +23,7 @@ public class FabricColorProviders {
 
         @Override
         public void getColors(LevelSlice slice, BlockPos pos, BlockPos.MutableBlockPos scratchPos, FluidState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, 0xFF000000 |this.handler.getFluidColor(slice, pos, state));
+            Arrays.fill(output, 0xFF000000 | this.handler.getFluidColor(slice, pos, state));
         }
     }
 }
