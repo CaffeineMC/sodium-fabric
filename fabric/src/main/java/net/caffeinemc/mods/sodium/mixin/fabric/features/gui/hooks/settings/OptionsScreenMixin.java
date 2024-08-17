@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.mixin.features.gui.hooks.settings;
+package net.caffeinemc.mods.sodium.mixin.fabric.features.gui.hooks.settings;
 
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.minecraft.client.gui.screens.Screen;
@@ -17,10 +17,7 @@ public class OptionsScreenMixin extends Screen {
     }
 
     @Dynamic
-    @Inject(method = {
-            "method_19828",
-            "lambda$init$2"
-    }, require = 1, at = @At("HEAD"), cancellable = true)
+    @Inject(method = "method_19828", at = @At("HEAD"), cancellable = true)
     private void open(CallbackInfoReturnable<Screen> ci) {
         ci.setReturnValue(SodiumOptionsGUI.createScreen(this));
     }

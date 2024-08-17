@@ -10,9 +10,12 @@
     "conformVisibility": true
   },
   "client": [
+    "core.WindowMixin",
     "core.model.quad.BakedQuadMixin",
+    "features.gui.hooks.settings.OptionsScreenMixin",
     "features.model.MultiPartBakedModelMixin",
     "features.model.WeightedBakedModelMixin",
-    "features.render.model.block.ModelBlockRendererMixin"
+    "features.render.model.block.ModelBlockRendererMixin",
+    "workarounds.context_creation.WindowMixin"
   ]
 }

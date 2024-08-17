@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.mixin.features.options.render_layers;
+package net.caffeinemc.mods.sodium.neoforge.mixin.features.options.render_layers;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.minecraft.client.GraphicsStatus;
@@ -16,9 +16,8 @@ public class ItemBlockRenderTypesMixin {
     private static boolean leavesFancy;
 
     // getRenderLayers is a NeoForge only function required for the leaves to properly work.
-    @SuppressWarnings("all")
     @Redirect(
-            method = { "getChunkRenderType", "getMovingBlockRenderType" },
+            method = { "getRenderLayers" },
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/ItemBlockRenderTypes;renderCutout:Z"))
     private static boolean redirectLeavesShouldBeFancy() {
         return leavesFancy;

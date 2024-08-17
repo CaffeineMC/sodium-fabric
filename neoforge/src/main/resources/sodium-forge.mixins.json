@@ -11,9 +11,13 @@
   },
   "client" : [
     "core.model.quad.BakedQuadMixin",
+    "core.render.world.LevelRendererMixin",
+    "features.gui.hooks.settings.OptionsScreenMixin",
     "features.model.MultiPartBakedModelMixin",
     "features.model.WeightedBakedModelMixin",
+    "features.options.render_layers.ItemBlockRenderTypesMixin",
     "features.render.model.block.ModelBlockRendererMixin",
+    "workarounds.context_creation.WindowMixin",
     "AbstractBlockRenderContextMixin",
     "AuxiliaryLightManagerMixin",
     "ChunkRenderTypeSetAccessor",
