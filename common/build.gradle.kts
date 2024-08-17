@@ -25,6 +25,9 @@ dependencies {
     annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5")
     compileOnly("net.fabricmc:sponge-mixin:0.13.2+mixin.0.8.5")
 
+    // Fixes warning spam about an unknown enum constant pulled in by Fabric API
+    modCompileOnly("net.fabricmc:fabric-loader:$FABRIC_LOADER_VERSION")
+
     fun addDependentFabricModule(name: String) {
         val module = fabricApi.module(name, FABRIC_API_VERSION)
         modCompileOnly(module)
