@@ -25,13 +25,13 @@ public class DefaultShaderInterface implements ChunkShaderInterface {
     private final ChunkShaderFogComponent fogShader;
 
     public DefaultShaderInterface(ShaderBindingContext context, ChunkShaderOptions options) {
-        this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new, true);
-        this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new, true);
-        this.uniformRegionOffset = context.bindUniform("u_RegionOffset", GlUniformFloat3v::new, true);
+        this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
+        this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
+        this.uniformRegionOffset = context.bindUniform("u_RegionOffset", GlUniformFloat3v::new);
 
         this.uniformTextures = new EnumMap<>(ChunkShaderTextureSlot.class);
-        this.uniformTextures.put(ChunkShaderTextureSlot.BLOCK, context.bindUniform("u_BlockTex", GlUniformInt::new, true));
-        this.uniformTextures.put(ChunkShaderTextureSlot.LIGHT, context.bindUniform("u_LightTex", GlUniformInt::new, true));
+        this.uniformTextures.put(ChunkShaderTextureSlot.BLOCK, context.bindUniform("u_BlockTex", GlUniformInt::new));
+        this.uniformTextures.put(ChunkShaderTextureSlot.LIGHT, context.bindUniform("u_LightTex", GlUniformInt::new));
 
         this.fogShader = options.fog().getFactory().apply(context);
     }
