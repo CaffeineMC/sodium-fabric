@@ -3,10 +3,10 @@ package net.caffeinemc.mods.sodium.mixin.features.textures.scan;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.platform.NativeImage;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.SpriteContentsExtension;
 import net.caffeinemc.mods.sodium.client.util.NativeImageHelper;
 import net.minecraft.client.renderer.texture.SpriteContents;
-import net.minecraft.util.FastColor;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
@@ -44,10 +44,8 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
         final int pixelCount = nativeImage.getHeight() * nativeImage.getWidth();
 
         for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
-            long pPixel = ppPixel + (pixelIndex * 4L);
-
-            int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = FastColor.ABGR32.alpha(color);
+            int color = MemoryUtil.memGetInt(ppPixel + (pixelIndex * 4L));
+            int alpha = ColorABGR.unpackAlpha(color);
 
             // 25 is used as the threshold since the alpha cutoff is 0.1
             if (alpha <= 25) { // 0.1 * 255
