@@ -14,6 +14,8 @@ import org.spongepowered.asm.mixin.injection.At;
 
 /**
  * This mixin scans a {@link SpriteContents} for transparent and translucent pixels. This information is later used during mesh generation to reassign the render pass to either cutout if the sprite has no translucent pixels or solid if it doesn't even have any transparent pixels.
+ *
+ * @author douira
  */
 @Mixin(SpriteContents.class)
 public class SpriteContentsMixin implements SpriteContentsExtension {
@@ -55,6 +57,8 @@ public class SpriteContentsMixin implements SpriteContentsExtension {
             }
         }
 
+        // the image contains transparency also if there are translucent pixels,
+        // since translucent pixels prevent a downgrade to the opaque render pass just as transparent pixels do
         this.sodium$hasTransparentPixels |= this.sodium$hasTranslucentPixels;
     }
 
