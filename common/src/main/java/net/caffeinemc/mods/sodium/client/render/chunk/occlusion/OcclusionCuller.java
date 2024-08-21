@@ -199,10 +199,10 @@ public class OcclusionCuller {
             // below the level
             this.initOutsideWorldHeight(queue, viewport, searchDistance, frame,
                     this.level.getMinSectionY(), GraphDirection.DOWN);
-        } else if (origin.getY() >= this.level.getMaxSectionY()) {
+        } else if (origin.getY() > this.level.getMaxSectionY()) {
             // above the level
             this.initOutsideWorldHeight(queue, viewport, searchDistance, frame,
-                    this.level.getMaxSectionY() - 1, GraphDirection.UP);
+                    this.level.getMaxSectionY(), GraphDirection.UP);
         } else {
             this.initWithinWorld(visitor, queue, viewport, useOcclusionCulling, frame);
         }

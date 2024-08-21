@@ -35,7 +35,7 @@ public class BakedModelEncoder {
                 float y = quad.getY(i);
                 float z = quad.getZ(i);
 
-                int newLight = mergeLighting(quad.getLight(i), light);
+                int newLight = mergeLighting(quad.getMaxLightQuad(i), light);
 
                 // The packed transformed normal vector
                 int normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getAccurateNormal(i));

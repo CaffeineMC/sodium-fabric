@@ -48,7 +48,7 @@ public class LevelRendererMixin {
         ClientLevel level = Objects.requireNonNull(this.level);
         Camera camera = this.minecraft.gameRenderer.getMainCamera();
 
-        this.cloudRenderer.render(camera, level, projectionMatrix, modelView, this.ticks, tickDelta, color);
+        this.cloudRenderer.render(camera, level, projectionMatrix, modelView, this.ticks, this.minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false), color);
     }
 
     @Inject(method = "onResourceManagerReload(Lnet/minecraft/server/packs/resources/ResourceManager;)V", at = @At("RETURN"))

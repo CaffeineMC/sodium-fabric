@@ -723,13 +723,13 @@ public class RenderSectionManager {
     }
 
     public void onChunkAdded(int x, int z) {
-        for (int y = this.level.getMinSectionY(); y < this.level.getMaxSectionY(); y++) {
+        for (int y = this.level.getMinSectionY(); y <= this.level.getMaxSectionY(); y++) {
             this.onSectionAdded(x, y, z);
         }
     }
 
     public void onChunkRemoved(int x, int z) {
-        for (int y = this.level.getMinSectionY(); y < this.level.getMaxSectionY(); y++) {
+        for (int y = this.level.getMinSectionY(); y <= this.level.getMaxSectionY(); y++) {
             this.onSectionRemoved(x, y, z);
         }
     }

@@ -35,9 +35,9 @@ import java.util.Objects;
 
 public class CloudRenderer {
     private static final ResourceLocation CLOUDS_TEXTURE_ID = ResourceLocation.withDefaultNamespace("textures/environment/clouds.png");
+    public static final ShaderProgram CLOUDS = new ShaderProgram(ResourceLocation.fromNamespaceAndPath("sodium", "clouds"), DefaultVertexFormat.POSITION_COLOR, ShaderDefines.builder().build());
 
     private CloudTextureData textureData;
-    private CompiledShaderProgram shaderProgram;
 
     private @Nullable CloudRenderer.CloudGeometry cachedGeometry;
 
@@ -110,24 +110,18 @@ public class CloudRenderer {
             RenderSystem.disableCull();
         }
 
-        if (fabulous) {
-            Minecraft.getInstance().levelRenderer.getCloudsTarget().bindWrite(false);
-        }
-
         RenderSystem.setShaderColor(ARGB.from8BitChannel(ARGB.red(color)), ARGB.from8BitChannel(ARGB.green(color)), ARGB.from8BitChannel(ARGB.blue(color)), 1.0F);
 
         vertexBuffer.bind();
 
-        RenderSystem.enableBlend();
-        RenderSystem.enableDepthTest();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        RenderType.clouds().setupRenderState();
         RenderSystem.depthFunc(GL32C.GL_LESS);
 
-        vertexBuffer.drawWithShader(modelViewMatrix, projectionMatrix, this.shaderProgram);
+        RenderSystem.setShader(CLOUDS);
+
+        vertexBuffer.drawWithShader(modelViewMatrix, projectionMatrix, RenderSystem.getShader());
 
         RenderSystem.depthFunc(GL32C.GL_LEQUAL);
-        RenderSystem.disableBlend();
 
         VertexBuffer.unbind();
 
@@ -135,9 +129,8 @@ public class CloudRenderer {
             RenderSystem.enableCull();
         }
 
-        if (fabulous) {
-            Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
-        }
+        RenderType.clouds().clearRenderState();
+
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -408,16 +401,9 @@ public class CloudRenderer {
         this.destroy();
 
         this.textureData = loadTextureData();
-
-        this.shaderProgram = Minecraft.getInstance().getShaderManager().getProgram(new ShaderProgram(ResourceLocation.fromNamespaceAndPath("sodium", "clouds"), DefaultVertexFormat.POSITION_COLOR, ShaderDefines.builder().build()));
     }
 
     public void destroy() {
-        if (this.shaderProgram != null) {
-            this.shaderProgram.close();
-            this.shaderProgram = null;
-        }
-
         if (this.cachedGeometry != null) {
             var vertexBuffer = this.cachedGeometry.vertexBuffer();
             vertexBuffer.close();
