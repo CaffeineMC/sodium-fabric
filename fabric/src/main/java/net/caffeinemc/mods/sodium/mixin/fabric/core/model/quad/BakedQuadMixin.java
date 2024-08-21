@@ -47,7 +47,7 @@ public class BakedQuadMixin implements BakedQuadView {
     private ModelQuadFacing normalFace = null;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(int[] vertexData, int colorIndex, Direction face, TextureAtlasSprite sprite, boolean shade, CallbackInfo ci) {
+    private void init(int[] is, int i, Direction face, TextureAtlasSprite textureAtlasSprite, boolean bl, int j, CallbackInfo ci) {
         this.normal = this.calculateNormal();
         this.normalFace = ModelQuadFacing.fromPackedNormal(this.normal);
 

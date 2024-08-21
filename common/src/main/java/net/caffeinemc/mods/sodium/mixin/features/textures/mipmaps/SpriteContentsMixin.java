@@ -8,11 +8,11 @@
 package net.caffeinemc.mods.sodium.mixin.features.textures.mipmaps;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.client.util.NativeImageHelper;
 import net.caffeinemc.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.renderer.texture.SpriteContents;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
@@ -71,16 +71,16 @@ public class SpriteContentsMixin {
             long pPixel = ppPixel + (pixelIndex * 4);
 
             int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = FastColor.ABGR32.alpha(color);
+            int alpha = ColorABGR.unpackAlpha(color);
 
             // Ignore all fully-transparent pixels for the purposes of computing an average color.
             if (alpha != 0) {
                 float weight = (float) alpha;
 
                 // Make sure to convert to linear space so that we don't lose brightness.
-                r += ColorSRGB.srgbToLinear(FastColor.ABGR32.red(color)) * weight;
-                g += ColorSRGB.srgbToLinear(FastColor.ABGR32.green(color)) * weight;
-                b += ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(color)) * weight;
+                r += ColorSRGB.srgbToLinear(ColorABGR.unpackRed(color)) * weight;
+                g += ColorSRGB.srgbToLinear(ColorABGR.unpackGreen(color)) * weight;
+                b += ColorSRGB.srgbToLinear(ColorABGR.unpackBlue(color)) * weight;
 
                 totalWeight += weight;
             }
@@ -103,7 +103,7 @@ public class SpriteContentsMixin {
             long pPixel = ppPixel + (pixelIndex * 4);
 
             int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = FastColor.ABGR32.alpha(color);
+            int alpha = ColorABGR.unpackAlpha(color);
 
             // Replace the color values of pixels which are fully transparent, since they have no color data.
             if (alpha == 0) {

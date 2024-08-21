@@ -78,7 +78,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         this.posOffset.set(origin.getX(), origin.getY(), origin.getZ());
         if (state.hasOffsetFunction()) {
-            Vec3 modelOffset = state.getOffset(this.level, pos);
+            Vec3 modelOffset = state.getOffset(pos);
             this.posOffset.add((float) modelOffset.x, (float) modelOffset.y, (float) modelOffset.z);
         }
 

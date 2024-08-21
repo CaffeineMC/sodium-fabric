@@ -32,7 +32,7 @@ public class ClientLevelMixin implements BiomeSeedProvider {
                              Supplier<ProfilerFiller> profiler,
                              LevelRenderer renderer,
                              boolean isDebug,
-                             long biomeZoomSeed,
+                             long biomeZoomSeed, int k,
                              CallbackInfo ci) {
         this.biomeZoomSeed = biomeZoomSeed;
     }

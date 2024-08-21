@@ -19,8 +19,8 @@ import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.ParticleStatus;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ParticleStatus;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 
@@ -103,7 +103,7 @@ public class SodiumGameOptionPages {
                         .setControl(option -> new SliderControl(option, 10, 260, 10, ControlValueFormatter.fpsLimit()))
                         .setBinding((opts, value) -> {
                             opts.framerateLimit().set(value);
-                            Minecraft.getInstance().getWindow().setFramerateLimit(value);
+                            Minecraft.getInstance().getFramerateLimitTracker().setFramerateLimit(value);
                         }, opts -> opts.framerateLimit().get())
                         .build())
                 .build());
@@ -159,7 +159,7 @@ public class SodiumGameOptionPages {
                             if (Minecraft.useShaderTransparency()) {
                                 RenderTarget framebuffer = Minecraft.getInstance().levelRenderer.getCloudsTarget();
                                 if (framebuffer != null) {
-                                    framebuffer.clear(Minecraft.ON_OSX);
+                                    framebuffer.clear();
                                 }
                             }
                         }, opts -> opts.cloudStatus().get())

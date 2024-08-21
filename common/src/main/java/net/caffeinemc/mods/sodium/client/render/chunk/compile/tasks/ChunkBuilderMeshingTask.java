@@ -129,7 +129,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                             }
                         }
 
-                        if (blockState.isSolidRender(slice, blockPos)) {
+                        if (blockState.isSolidRender()) {
                             occluder.setOpaque(blockPos);
                         }
                     }

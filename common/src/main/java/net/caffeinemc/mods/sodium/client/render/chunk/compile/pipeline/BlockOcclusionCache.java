@@ -55,7 +55,7 @@ public class BlockOcclusionCache {
         }
 
         // The cull shape of the block being rendered
-        VoxelShape selfShape = selfState.getFaceOcclusionShape(view, selfPos, facing);
+        VoxelShape selfShape = selfState.getFaceOcclusionShape(facing);
 
         // If the block being rendered has an empty cull shape, intersection tests will always fail
         if (selfShape.isEmpty()) {
@@ -63,7 +63,7 @@ public class BlockOcclusionCache {
         }
 
         // The cull shape of the block neighboring the one being rendered
-        VoxelShape otherShape = otherState.getFaceOcclusionShape(view, otherPos, DirectionUtil.getOpposite(facing));
+        VoxelShape otherShape = otherState.getFaceOcclusionShape(DirectionUtil.getOpposite(facing));
 
         // If the other block has an empty cull shape, then it cannot hide any geometry
         if (otherShape.isEmpty()) {

@@ -87,7 +87,7 @@ public class DefaultFluidRenderer {
         BlockState blockState = world.getBlockState(pos);
 
         if (blockState.canOcclude()) {
-            VoxelShape shape = blockState.getOcclusionShape(world, pos);
+            VoxelShape shape = blockState.getOcclusionShape();
 
             // Hoist these checks to avoid allocating the shape below
             if (shape.isEmpty()) {
