@@ -20,7 +20,6 @@ import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderBindingP
 import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
-import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.render.viewport.CameraTransform;
 import net.caffeinemc.mods.sodium.client.util.BitwiseMath;
@@ -316,18 +315,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources, boolean useSharedIndexBuffer) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), new GlVertexAttributeBinding[] {
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_HI,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_HI)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_LO,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_LO)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.TEXTURE)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_MATERIAL_INDEX,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_MATERIAL_INDEX))
-                }),
+                TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), this.vertexFormat.getShaderBindings()),
                 TessellationBinding.forElementBuffer(useSharedIndexBuffer
                         ? this.sharedIndexBuffer.getBufferObject()
                         : resources.getIndexBuffer())
