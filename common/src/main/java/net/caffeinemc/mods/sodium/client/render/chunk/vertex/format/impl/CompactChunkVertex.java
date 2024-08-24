@@ -32,7 +32,7 @@ public class CompactChunkVertex implements ChunkVertexType {
 
     @Override
     public ChunkVertexEncoder getEncoder() {
-        return (ptr, material, vertices, section) -> {
+        return (ptr, materialBits, vertices, section) -> {
             // Calculate the center point of the texture region which is mapped to the quad
             float texCentroidU = 0.0f;
             float texCentroidV = 0.0f;
@@ -61,7 +61,7 @@ public class CompactChunkVertex implements ChunkVertexType {
                 MemoryUtil.memPutInt(ptr +  4L, packPositionLo(x, y, z));
                 MemoryUtil.memPutInt(ptr +  8L, ColorHelper.multiplyRGB(vertex.color, vertex.ao));
                 MemoryUtil.memPutInt(ptr + 12L, packTexture(u, v));
-                MemoryUtil.memPutInt(ptr + 16L, packLightAndData(light, material.bits(), section));
+                MemoryUtil.memPutInt(ptr + 16L, packLightAndData(light, materialBits, section));
 
                 ptr += STRIDE;
             }

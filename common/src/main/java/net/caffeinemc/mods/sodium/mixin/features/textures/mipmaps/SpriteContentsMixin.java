@@ -7,22 +7,23 @@
  */
 package net.caffeinemc.mods.sodium.mixin.features.textures.mipmaps;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.platform.NativeImage;
+import it.unimi.dsi.fastutil.longs.LongHeapPriorityQueue;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.client.util.NativeImageHelper;
-import net.caffeinemc.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.renderer.texture.SpriteContents;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
+/**
+ * This mixin fills in transparent pixels with the color of the closest non-transparent pixel to improve mipmapping. Often transparent pixels are black, which ends up as a too dark color in the mipmaps.
+ *
+ * @author douira
+ */
 @Mixin(SpriteContents.class)
 public class SpriteContentsMixin {
     @Mutable
@@ -30,85 +31,226 @@ public class SpriteContentsMixin {
     @Final
     private NativeImage originalImage;
 
-    // While Fabric allows us to @Inject into the constructor here, that's just a specific detail of FabricMC's mixin
-    // fork. Upstream Mixin doesn't allow arbitrary @Inject usage in constructor. However, we can use @ModifyVariable
-    // just fine, in a way that hopefully doesn't conflict with other mods.
-    //
-    // By doing this, we can work with upstream Mixin as well, as is used on Forge. While we don't officially
-    // support Forge, since this works well on Fabric too, it's fine to ensure that the diff between Fabric and Forge
-    // can remain minimal. Being less dependent on specific details of Fabric is good, since it means we can be more
-    // cross-platform.
-    @Redirect(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;originalImage:Lcom/mojang/blaze3d/platform/NativeImage;", opcode = Opcodes.PUTFIELD))
-    private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, ResourceLocation identifier) {
-        // We're injecting after the "info" field has been set, so this is safe even though we're in a constructor.
-        sodium$fillInTransparentPixelColors(nativeImage);
+    @WrapOperation(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/texture/SpriteContents;originalImage:Lcom/mojang/blaze3d/platform/NativeImage;", opcode = Opcodes.PUTFIELD))
+    private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, Operation<Void> original) {
+        dilateColorsToTransparentPixels(nativeImage);
 
-        this.originalImage = nativeImage;
+        original.call(instance, nativeImage);
     }
 
+    @Unique
+    private static long encodeEntry(float distance, int index) {
+        // assumes there's no more than 2^32 pixels
+        return ((long) Float.floatToRawIntBits(distance) << 32) | index;
+    }
+
+    @Unique
+    private static float decodeEntryDistance(long entry) {
+        return Float.intBitsToFloat((int) (entry >> 32));
+    }
+
+    @Unique
+    private static int decodeEntryIndex(long entry) {
+        return (int) entry;
+    }
+
+    @Unique
+    private static long encodeOrigin(float distance, int x, int y) {
+        // assumes coordinates don't exceed 2^16
+        return ((long) Float.floatToRawIntBits(distance) << 32) | ((long) y << 16) | x;
+    }
+
+    @Unique
+    private static int decodeOriginX(long origin) {
+        return (int) origin & 0xFFFF;
+    }
+
+    @Unique
+    private static int decodeOriginY(long origin) {
+        return ((int) origin >> 16) & 0xFFFF;
+    }
+
+    @Unique
+    private static float decodeOriginDistance(long entry) {
+        return Float.intBitsToFloat((int) (entry >> 32));
+    }
+
+    @Unique
+    private final static long OPAQUE = -1L;
+    @Unique
+    private final static long UNVISITED = -2L;
+
     /**
-     * Fixes a common issue in image editing programs where fully transparent pixels are saved with fully black colors.
-     *
-     * This causes issues with mipmapped texture filtering, since the black color is used to calculate the final color
-     * even though the alpha value is zero. While ideally it would be disregarded, we do not control that. Instead,
-     * this code tries to calculate a decent average color to assign to these fully-transparent pixels so that their
-     * black color does not leak over into sampling.
+     * The propagation algorithm uses a distance-keyed priority queue to generate a voronoi-like result. There's the caveat that it won't propagate thinner than one pixel wide areas if they collide with other areas of a different color.
      */
     @Unique
-    private static void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
+    private static void dilateColorsToTransparentPixels(NativeImage nativeImage) {
         final long ppPixel = NativeImageHelper.getPointerRGBA(nativeImage);
         final int pixelCount = nativeImage.getHeight() * nativeImage.getWidth();
+        var width = nativeImage.getWidth();
+        var height = nativeImage.getHeight();
 
-        // Calculate an average color from all pixels that are not completely transparent.
-        // This average is weighted based on the (non-zero) alpha value of the pixel.
-        float r = 0.0f;
-        float g = 0.0f;
-        float b = 0.0f;
+        // the non-transparent pixel so far closest to each pixel, encoded as 16-bit x and y coordinates
+        // negative values have special meanings
+        var origins = new long[pixelCount];
 
-        float totalWeight = 0.0f;
+        // approximates the required capacity
+        int nodeCount = 0;
 
         for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
-            long pPixel = ppPixel + (pixelIndex * 4);
-
+            long pPixel = ppPixel + (pixelIndex * 4L);
             int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = FastColor.ABGR32.alpha(color);
+            int alpha = ColorABGR.unpackAlpha(color);
 
-            // Ignore all fully-transparent pixels for the purposes of computing an average color.
             if (alpha != 0) {
-                float weight = (float) alpha;
-
-                // Make sure to convert to linear space so that we don't lose brightness.
-                r += ColorSRGB.srgbToLinear(FastColor.ABGR32.red(color)) * weight;
-                g += ColorSRGB.srgbToLinear(FastColor.ABGR32.green(color)) * weight;
-                b += ColorSRGB.srgbToLinear(FastColor.ABGR32.blue(color)) * weight;
-
-                totalWeight += weight;
+                origins[pixelIndex] = OPAQUE;
+            } else {
+                origins[pixelIndex] = UNVISITED;
+                nodeCount++;
             }
         }
 
-        // Bail if none of the pixels are semi-transparent.
-        if (totalWeight == 0.0f) {
+        if (nodeCount == pixelCount || nodeCount == 0) {
             return;
         }
 
-        r /= totalWeight;
-        g /= totalWeight;
-        b /= totalWeight;
+        // the queue encodes the distance and the pixel index
+        var queue = new LongHeapPriorityQueue(nodeCount);
 
-        // Convert that color in linear space back to sRGB.
-        // Use an alpha value of zero - this works since we only replace pixels with an alpha value of 0.
-        int averageColor = ColorSRGB.linearToSrgb(r, g, b, 0);
+        for (int pixelIndex = 0, x = 0, y = 0; pixelIndex < pixelCount; pixelIndex++) {
+            if (origins[pixelIndex] == OPAQUE) {
+                // check direct neighbors for being transparent
+                boolean shouldEnqueue = false;
+                if (x > 0) {
+                    shouldEnqueue |= checkInitNeighbor(origins, pixelIndex - 1);
+                }
+                if (x < width - 1) {
+                    shouldEnqueue |= checkInitNeighbor(origins, pixelIndex + 1);
+                }
+                if (y > 0) {
+                    shouldEnqueue |= checkInitNeighbor(origins, pixelIndex - width);
+                }
+                if (y < height - 1) {
+                    shouldEnqueue |= checkInitNeighbor(origins, pixelIndex + width);
+                }
 
-        for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
-            long pPixel = ppPixel + (pixelIndex * 4);
-
-            int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = FastColor.ABGR32.alpha(color);
-
-            // Replace the color values of pixels which are fully transparent, since they have no color data.
-            if (alpha == 0) {
-                MemoryUtil.memPutInt(pPixel, averageColor);
+                if (shouldEnqueue) {
+                    queue.enqueue(encodeEntry(0, pixelIndex));
+                    origins[pixelIndex] = encodeOrigin(0, x, y);
+                }
             }
+
+            if (++x == width) {
+                x = 0;
+                y++;
+            }
+        }
+
+        // perform propagation until the queue is empty
+        while (!queue.isEmpty()) {
+            long entry = queue.dequeueLong();
+            int currentIndex = decodeEntryIndex(entry);
+            var currentOrigin = origins[currentIndex];
+
+            // if the distance in the queue entry is higher than the current distance,
+            // this means it was enqueued multiple times with decreasing distances.
+            // This queue entry can be ignored since we must have already processed it with a lower distance.
+            if (decodeEntryDistance(entry) > decodeOriginDistance(currentOrigin)) {
+                continue;
+            }
+
+            int x = currentIndex % width;
+            int y = currentIndex / width;
+            var currentOriginX = decodeOriginX(currentOrigin);
+            var currentOriginY = decodeOriginY(currentOrigin);
+
+            // check and perform propagation to neighbors
+            if (x > 0) {
+                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex - 1, x - 1, y);
+            }
+            if (x < width - 1) {
+                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex + 1, x + 1, y);
+            }
+            if (y > 0) {
+                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex - width, x, y - 1);
+            }
+            if (y < height - 1) {
+                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex + width, x, y + 1);
+            }
+
+            // this block optionally does 8-neighborhood propagation
+//            if (x > 0 && y > 0) {
+//                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex - width - 1, x - 1, y - 1);
+//            }
+//            if (x < width - 1 && y > 0) {
+//                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex - width + 1, x + 1, y - 1);
+//            }
+//            if (x > 0 && y < height - 1) {
+//                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex + width - 1, x - 1, y + 1);
+//            }
+//            if (x < width - 1 && y < height - 1) {
+//                propagate(origins, queue, currentOriginX, currentOriginY, currentIndex + width + 1, x + 1, y + 1);
+//            }
+        }
+
+        // copy each transparent pixel's color from its calculated closest non-transparent pixel (the "origin")
+        for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
+            long origin = origins[pixelIndex];
+            if (origin == UNVISITED) {
+                throw new AssertionError("unvisited pixel");
+            }
+
+            if (origin == OPAQUE) {
+//                pixels[pixelIndex] = 0xFFFF0000; // red
+                continue;
+            }
+
+            int oldColor = MemoryUtil.memGetInt(ppPixel + (pixelIndex * 4L));
+            if (ColorABGR.unpackAlpha(oldColor) > 0) {
+                continue;
+            }
+
+            int originIndex = decodeOriginX(origin) + decodeOriginY(origin) * width;
+
+            // write only the color but preserve the current alpha
+//             pixels[pixelIndex] = (pixels[originIndex] & 0x00FFFFFF) | (pixels[pixelIndex] & 0xFF000000);
+//            pixels[pixelIndex] = (pixels[originIndex] & 0x00FFFFFF) | 0xFF000000;
+//            if (unpackAlpha(pixels[pixelIndex]) > 0) {
+//                // pixels[pixelIndex] = 0xFF00FF00; // green
+//            } else {
+//                pixels[pixelIndex] = (pixels[originIndex] & 0x00FFFFFF) | 0xFF000000;
+//            }
+
+//            pixels[pixelIndex] = (pixels[originIndex] & 0x00FFFFFF) | (pixels[pixelIndex] & 0xFF000000);
+            int originColor = MemoryUtil.memGetInt(ppPixel + (originIndex * 4L));
+            MemoryUtil.memPutInt(ppPixel + (pixelIndex * 4L), (originColor & 0x00FFFFFF) | (oldColor & 0xFF000000));
+        }
+
+    }
+
+    @Unique
+    private static boolean checkInitNeighbor(long[] origins, int pixelIndex) {
+        return origins[pixelIndex] == UNVISITED;
+    }
+
+    /**
+     * Checks the origin of the current pixel is closer to the neighbor than its current origin. If this is the case or
+     * the neighbor is unvisited, the origin is propagated and the neighbor is enqueued.
+     */
+    @Unique
+    private static void propagate(long[] origins, LongHeapPriorityQueue queue, int currentOriginX, int currentOriginY, int neighborIndex, int neighborX, int neighborY) {
+        long neighborOrigin = origins[neighborIndex];
+        if (neighborOrigin == OPAQUE) {
+            return;
+        }
+
+        // calculate the distance between the neighbor and the current pixel's origin
+        float dx = (float) Math.abs(neighborX - currentOriginX);
+        float dy = (float) Math.abs(neighborY - currentOriginY);
+        float newDistance = dx * dx * dx + dy * dy * dy;
+        if (neighborOrigin == UNVISITED || newDistance < decodeOriginDistance(neighborOrigin)) {
+            origins[neighborIndex] = encodeOrigin(newDistance, currentOriginX, currentOriginY);
+            queue.enqueue(encodeEntry(newDistance, neighborIndex));
         }
     }
 }
