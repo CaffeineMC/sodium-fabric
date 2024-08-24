@@ -210,7 +210,7 @@ public class MixinConfig {
 
         MixinConfig config = new MixinConfig();
         config.readProperties(props);
-        PlatformMixinOverrides.getInstance().applyModOverrides();
+        PlatformMixinOverrides.getInstance().applyModOverrides().forEach(config::applyModOverride);
 
         return config;
     }
