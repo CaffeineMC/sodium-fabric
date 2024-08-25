@@ -1,25 +1,17 @@
 package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import net.caffeinemc.mods.sodium.client.render.vertex.buffer.BufferBuilderExtension;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatRegistry;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry;
+import net.caffeinemc.mods.sodium.client.render.vertex.buffer.BufferBuilderExtension;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBuilderExtension {
@@ -40,38 +32,31 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
     @Shadow
     private int elementsToFill;
 
-    @Unique
-    private VertexFormatDescription formatDescription;
-
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void onFormatChanged(ByteBufferBuilder byteBufferBuilder, VertexFormat.Mode mode, VertexFormat format, CallbackInfo ci) {
-        this.formatDescription = VertexFormatRegistry.instance()
-                .get(format);
-    }
+    @Shadow
+    @Final
+    private VertexFormat format;
 
     @Override
     public void sodium$duplicateVertex() {
-        if (vertices == 0) return;
+        if (this.vertices == 0) {
+            return;
+        }
 
-        long dst = this.buffer.reserve(this.vertexSize);
-        MemoryIntrinsics.copyMemory(dst - this.vertexSize, dst, this.vertexSize);
-        ++this.vertices;
+        long head = this.buffer.reserve(this.vertexSize);
+        MemoryIntrinsics.copyMemory(head - this.vertexSize, head, this.vertexSize);
+
+        this.vertices++;
     }
 
     @Override
-    public boolean canUseIntrinsics() {
-        return this.formatDescription != null && this.formatDescription.isSimpleFormat();
-    }
-
-    @Override
-    public void push(MemoryStack stack, long src, int count, VertexFormatDescription format) {
+    public void push(MemoryStack stack, long src, int count, VertexFormat format) {
         var length = count * this.vertexSize;
 
         // The buffer may change in the even, so we need to make sure that the
         // pointer is retrieved *after* the resize
         var dst = this.buffer.reserve(length);
 
-        if (format == this.formatDescription) {
+        if (format == this.format) {
             // The layout is the same, so we can just perform a memory copy
             // The stride of a vertex format is always 4 bytes, so this aligned copy is always safe
             MemoryIntrinsics.copyMemory(src, dst, length);
@@ -86,9 +71,9 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter, BufferBu
     }
 
     @Unique
-    private void copySlow(long src, long dst, int count, VertexFormatDescription format) {
+    private void copySlow(long src, long dst, int count, VertexFormat format) {
         VertexSerializerRegistry.instance()
-                .get(format, this.formatDescription)
+                .get(format, this.format)
                 .serialize(src, dst, count);
     }
 }

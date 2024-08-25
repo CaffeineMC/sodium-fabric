@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.EntityVertex;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -103,22 +103,22 @@ public class EntityRenderDispatcherMixin {
         var normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, Direction.UP);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
+            long buffer = stack.nmalloc(4 * EntityVertex.STRIDE);
             long ptr = buffer;
 
             writeShadowVertex(ptr, matPosition, minX, minY, minZ, u1, v1, color, normal);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
             writeShadowVertex(ptr, matPosition, minX, minY, maxZ, u1, v2, color, normal);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
             writeShadowVertex(ptr, matPosition, maxX, minY, maxZ, u2, v2, color, normal);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
             writeShadowVertex(ptr, matPosition, maxX, minY, minZ, u2, v1, color, normal);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
-            writer.push(stack, buffer, 4, ModelVertex.FORMAT);
+            writer.push(stack, buffer, 4, EntityVertex.FORMAT);
         }
     }
 
@@ -129,6 +129,6 @@ public class EntityRenderDispatcherMixin {
         float yt = MatrixHelper.transformPositionY(matPosition, x, y, z);
         float zt = MatrixHelper.transformPositionZ(matPosition, x, y, z);
 
-        ModelVertex.write(ptr, xt, yt, zt, color, u, v, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, normal);
+        EntityVertex.write(ptr, xt, yt, zt, color, u, v, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, normal);
     }
 }

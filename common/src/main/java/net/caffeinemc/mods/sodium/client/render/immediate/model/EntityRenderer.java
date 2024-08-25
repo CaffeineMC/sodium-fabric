@@ -3,7 +3,7 @@ package net.caffeinemc.mods.sodium.client.render.immediate.model;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.EntityVertex;
 import net.minecraft.core.Direction;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -38,7 +38,7 @@ public class EntityRenderer {
 
     private static final Matrix3f lastMatrix = new Matrix3f();
 
-    private static final long SCRATCH_BUFFER = MemoryUtil.nmemAlignedAlloc(64, NUM_CUBE_FACES * NUM_FACE_VERTICES * ModelVertex.STRIDE);
+    private static final long SCRATCH_BUFFER = MemoryUtil.nmemAlignedAlloc(64, NUM_CUBE_FACES * NUM_FACE_VERTICES * EntityVertex.STRIDE);
 
     private static final Vector3f[] CUBE_CORNERS = new Vector3f[NUM_CUBE_VERTICES];
     private static final int[][] CUBE_VERTICES = new int[][] {
@@ -87,7 +87,7 @@ public class EntityRenderer {
         var vertexCount = emitQuads(cuboid, color, overlay, light);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            writer.push(stack, SCRATCH_BUFFER, vertexCount, ModelVertex.FORMAT);
+            writer.push(stack, SCRATCH_BUFFER, vertexCount, EntityVertex.FORMAT);
         }
     }
 
@@ -106,16 +106,16 @@ public class EntityRenderer {
             }
 
             emitVertex(ptr, positions[quadIndex][0], color, textures[quadIndex][0], overlay, light, normals[quadIndex]);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
             emitVertex(ptr, positions[quadIndex][1], color, textures[quadIndex][1], overlay, light, normals[quadIndex]);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
             emitVertex(ptr, positions[quadIndex][2], color, textures[quadIndex][2], overlay, light, normals[quadIndex]);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
             emitVertex(ptr, positions[quadIndex][3], color, textures[quadIndex][3], overlay, light, normals[quadIndex]);
-            ptr += ModelVertex.STRIDE;
+            ptr += EntityVertex.STRIDE;
 
             vertexCount += 4;
         }
@@ -124,7 +124,7 @@ public class EntityRenderer {
     }
 
     private static void emitVertex(long ptr, Vector3f pos, int color, Vector2f tex, int overlay, int light, int normal) {
-        ModelVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, overlay, light, normal);
+        EntityVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, overlay, light, normal);
     }
 
     private static void prepareVertices(PoseStack.Pose matrices, ModelCuboid cuboid) {

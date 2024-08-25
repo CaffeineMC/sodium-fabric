@@ -1,7 +1,7 @@
 package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
 
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import org.lwjgl.system.MemoryStack;
@@ -38,7 +38,7 @@ public class VertexMultiConsumerMixin {
         }
 
         @Override
-        public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
+        public void push(MemoryStack stack, long ptr, int count, VertexFormat format) {
             VertexBufferWriter.copyInto(VertexBufferWriter.of(this.first), stack, ptr, count, format);
             VertexBufferWriter.copyInto(VertexBufferWriter.of(this.second), stack, ptr, count, format);
         }
@@ -75,7 +75,7 @@ public class VertexMultiConsumerMixin {
         }
 
         @Override
-        public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
+        public void push(MemoryStack stack, long ptr, int count, VertexFormat format) {
             for (var delegate : this.delegates) {
                 VertexBufferWriter.copyInto(VertexBufferWriter.of(delegate), stack, ptr, count, format);
             }
