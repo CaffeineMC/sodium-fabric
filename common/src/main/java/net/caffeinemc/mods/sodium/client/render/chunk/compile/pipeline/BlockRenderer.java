@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline;
 
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
@@ -9,8 +10,12 @@ import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.parameters.AlphaCutoffParameter;
+import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.parameters.MaterialParameters;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
@@ -28,6 +33,7 @@ import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -128,11 +134,9 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             material = DefaultMaterials.forRenderLayer(blendMode.blockRenderLayer == null ? type : blendMode.blockRenderLayer);
         }
 
-        ChunkModelBuilder builder = this.buffers.get(material);
-
         this.colorizeQuad(quad, colorIndex);
         this.shadeQuad(quad, lightMode, emissive, shadeMode);
-        this.bufferQuad(quad, this.quadLightData.br, material, builder);
+        this.bufferQuad(quad, this.quadLightData.br, material);
     }
 
     private void colorizeQuad(MutableQuadViewImpl quad, int colorIndex) {
@@ -150,11 +154,14 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
     }
 
-    private void bufferQuad(MutableQuadViewImpl quad, float[] brightnesses, Material material, ChunkModelBuilder modelBuilder) {
+    private void bufferQuad(MutableQuadViewImpl quad, float[] brightnesses, Material material) {
         // TODO: Find a way to reimplement quad reorientation
         ModelQuadOrientation orientation = ModelQuadOrientation.NORMAL;
         ChunkVertexEncoder.Vertex[] vertices = this.vertices;
         Vector3f offset = this.posOffset;
+
+        float uSum = 0.0f;
+        float vSum = 0.0f;
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
@@ -167,21 +174,93 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             // FRAPI uses ARGB color format; convert to ABGR.
             out.color = ColorARGB.toABGR(quad.color(srcIndex));
             out.ao = brightnesses[srcIndex];
-            out.u = quad.u(srcIndex);
-            out.v = quad.v(srcIndex);
+
+            uSum += out.u = quad.u(srcIndex);
+            vSum += out.v = quad.v(srcIndex);
 
             out.light = quad.lightmap(srcIndex);
         }
 
+        var atlasSprite = SpriteFinderCache.forBlockAtlas().find(uSum / 4.0f, vSum / 4.0f);
+        var materialBits = material.bits();
         ModelQuadFacing normalFace = quad.normalFace();
 
-        if (material.isTranslucent() && this.collector != null) {
+        // attempt render pass downgrade if possible
+        var pass = material.pass;
+        var downgradedPass = attemptPassDowngrade(quad, atlasSprite, pass);
+        if (downgradedPass != null) {
+            pass = downgradedPass;
+        }
+
+        // collect all translucent quads into the translucency sorting system if enabled
+        if (pass.isTranslucent() && this.collector != null) {
             this.collector.appendQuad(quad.getFaceNormal(), vertices, normalFace);
         }
 
-        ChunkMeshBufferBuilder vertexBuffer = modelBuilder.getVertexBuffer(normalFace);
-        vertexBuffer.push(vertices, material);
+        // if there was a downgrade from translucent to cutout, the material bits' alpha cutoff needs to be updated
+        if (downgradedPass != null && material == DefaultMaterials.TRANSLUCENT && pass == DefaultTerrainRenderPasses.CUTOUT) {
+            // ONE_TENTH and HALF are functionally the same so it doesn't matter which one we take here
+            materialBits = MaterialParameters.pack(AlphaCutoffParameter.ONE_TENTH, material.mipped);
+        }
 
-        modelBuilder.addSprite(SpriteFinderCache.forBlockAtlas().find(quad.getTexU(0), quad.getTexV(0)));
+        ChunkModelBuilder builder = this.buffers.get(pass);
+        ChunkMeshBufferBuilder vertexBuffer = builder.getVertexBuffer(normalFace);
+        vertexBuffer.push(vertices, materialBits);
+
+        builder.addSprite(atlasSprite);
+    }
+
+    private boolean validateQuadUVs(TextureAtlasSprite atlasSprite) {
+        // sanity check that the quad's UVs are within the sprite's bounds
+        var spriteUMin = atlasSprite.getU0();
+        var spriteUMax = atlasSprite.getU1();
+        var spriteVMin = atlasSprite.getV0();
+        var spriteVMax = atlasSprite.getV1();
+
+        for (int i = 0; i < 4; i++) {
+            var u = this.vertices[i].u;
+            var v = this.vertices[i].v;
+            if (u < spriteUMin || u > spriteUMax || v < spriteVMin || v > spriteVMax) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private TerrainRenderPass attemptPassDowngrade(MutableQuadViewImpl quad, TextureAtlasSprite sprite, TerrainRenderPass pass) {
+        boolean attemptDowngrade = true;
+        boolean hasNonOpaqueVertex = false;
+
+        for (int i = 0; i < 4; i++) {
+            hasNonOpaqueVertex |= ColorABGR.unpackAlpha(this.vertices[i].color) != 0xFF;
+        }
+
+        // don't do downgrade if some vertex is not fully opaque
+        if (pass.isTranslucent() && hasNonOpaqueVertex) {
+            attemptDowngrade = false;
+        }
+
+        if (attemptDowngrade) {
+            attemptDowngrade = validateQuadUVs(sprite);
+        }
+
+        if (attemptDowngrade) {
+            return getDowngradedPass(sprite, pass);
+        }
+
+        return null;
+    }
+
+    private static TerrainRenderPass getDowngradedPass(TextureAtlasSprite sprite, TerrainRenderPass pass) {
+        if (sprite.contents() instanceof SpriteContentsExtension contents) {
+            if (pass == DefaultTerrainRenderPasses.TRANSLUCENT && !contents.sodium$hasTranslucentPixels()) {
+                pass = DefaultTerrainRenderPasses.CUTOUT;
+            }
+            if (pass == DefaultTerrainRenderPasses.CUTOUT && !contents.sodium$hasTransparentPixels()) {
+                pass = DefaultTerrainRenderPasses.SOLID;
+            }
+        }
+        return pass;
     }
 }

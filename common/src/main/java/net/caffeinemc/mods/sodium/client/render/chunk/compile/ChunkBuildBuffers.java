@@ -51,6 +51,10 @@ public class ChunkBuildBuffers {
         return this.builders.get(material.pass);
     }
 
+    public ChunkModelBuilder get(TerrainRenderPass pass) {
+        return this.builders.get(pass);
+    }
+
     /**
      * Creates immutable baked chunk meshes from all non-empty scratch buffers. This is used after all blocks
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
