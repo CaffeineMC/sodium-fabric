@@ -154,7 +154,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         }
     }
 
-    private void bufferQuad(MutableQuadViewImpl quad, float[] brightnesses, Material material, ChunkModelBuilder modelBuilder) {
+    private void bufferQuad(MutableQuadViewImpl quad, float[] brightnesses, Material material) {
         // TODO: Find a way to reimplement quad reorientation
         ModelQuadOrientation orientation = ModelQuadOrientation.NORMAL;
         ChunkVertexEncoder.Vertex[] vertices = this.vertices;
