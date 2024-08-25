@@ -58,13 +58,11 @@ public class DefaultFluidRenderer {
     private final float[] brightness = new float[4];
 
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
-    private final ColorProviderRegistry colorProviderRegistry;
 
-    public DefaultFluidRenderer(ColorProviderRegistry colorProviderRegistry, LightPipelineProvider lighters) {
+    public DefaultFluidRenderer(LightPipelineProvider lighters) {
         this.quad.setLightFace(Direction.UP);
 
         this.lighters = lighters;
-        this.colorProviderRegistry = colorProviderRegistry;
     }
 
     private boolean isFluidOccluded(BlockAndTintGetter world, int x, int y, int z, Direction dir, BlockState blockState, Fluid fluid) {

@@ -32,7 +32,7 @@ public class FluidRendererImpl extends FluidRenderer {
 
     public FluidRendererImpl(ColorProviderRegistry colorProviderRegistry, LightPipelineProvider lighters) {
         this.colorProviderRegistry = colorProviderRegistry;
-        defaultRenderer = new DefaultFluidRenderer(colorProviderRegistry, lighters);
+        defaultRenderer = new DefaultFluidRenderer(lighters);
     }
 
     public void render(LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkBuildBuffers buffers) {

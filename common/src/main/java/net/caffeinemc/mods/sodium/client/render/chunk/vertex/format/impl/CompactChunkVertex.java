@@ -1,8 +1,7 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.impl;
 
-import net.caffeinemc.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import net.caffeinemc.mods.sodium.client.gl.attribute.GlVertexFormat;
-import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
+import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
@@ -12,12 +11,12 @@ import org.lwjgl.system.MemoryUtil;
 public class CompactChunkVertex implements ChunkVertexType {
     public static final int STRIDE = 20;
 
-    public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(ChunkMeshAttribute.class, STRIDE)
-            .addElement(ChunkMeshAttribute.POSITION_HI, 0, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
-            .addElement(ChunkMeshAttribute.POSITION_LO, 4, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
-            .addElement(ChunkMeshAttribute.COLOR, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
-            .addElement(ChunkMeshAttribute.TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false, true)
-            .addElement(ChunkMeshAttribute.LIGHT_MATERIAL_INDEX, 16, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, false, true)
+    public static final GlVertexFormat VERTEX_FORMAT = GlVertexFormat.builder(STRIDE)
+            .addElement(DefaultChunkMeshAttributes.POSITION_HI, ChunkShaderBindingPoints.ATTRIBUTE_POSITION_HI, 0)
+            .addElement(DefaultChunkMeshAttributes.POSITION_LO, ChunkShaderBindingPoints.ATTRIBUTE_POSITION_LO, 4)
+            .addElement(DefaultChunkMeshAttributes.COLOR, ChunkShaderBindingPoints.ATTRIBUTE_COLOR, 8)
+            .addElement(DefaultChunkMeshAttributes.TEXTURE, ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE, 12)
+            .addElement(DefaultChunkMeshAttributes.LIGHT_MATERIAL_INDEX, ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_MATERIAL_INDEX, 16)
             .build();
 
     private static final int POSITION_MAX_VALUE = 1 << 20;
@@ -27,7 +26,7 @@ public class CompactChunkVertex implements ChunkVertexType {
     private static final float MODEL_RANGE = 32.0f;
 
     @Override
-    public GlVertexFormat<ChunkMeshAttribute> getVertexFormat() {
+    public GlVertexFormat getVertexFormat() {
         return VERTEX_FORMAT;
     }
 
