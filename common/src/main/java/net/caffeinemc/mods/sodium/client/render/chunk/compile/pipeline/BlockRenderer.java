@@ -187,7 +187,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
 
         // attempt render pass downgrade if possible
         var pass = material.pass;
-        var downgradedPass = attemptPassDowngrade(quad, atlasSprite, pass);
+        var downgradedPass = attemptPassDowngrade(atlasSprite, pass);
         if (downgradedPass != null) {
             pass = downgradedPass;
         }
@@ -228,7 +228,7 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         return true;
     }
 
-    private TerrainRenderPass attemptPassDowngrade(MutableQuadViewImpl quad, TextureAtlasSprite sprite, TerrainRenderPass pass) {
+    private TerrainRenderPass attemptPassDowngrade(TextureAtlasSprite sprite, TerrainRenderPass pass) {
         boolean attemptDowngrade = true;
         boolean hasNonOpaqueVertex = false;
 
