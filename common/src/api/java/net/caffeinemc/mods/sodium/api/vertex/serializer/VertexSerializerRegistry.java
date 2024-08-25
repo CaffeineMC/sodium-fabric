@@ -12,4 +12,6 @@ public interface VertexSerializerRegistry {
     }
 
     VertexSerializer get(VertexFormat srcFormat, VertexFormat dstFormat);
+
+    void registerSerializer(VertexFormat srcFormat, VertexFormat dstFormat, VertexSerializer serializer);
 }

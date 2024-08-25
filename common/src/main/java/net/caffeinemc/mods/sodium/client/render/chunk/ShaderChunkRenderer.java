@@ -4,14 +4,10 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.caffeinemc.mods.sodium.client.gl.attribute.GlVertexFormat;
 import net.caffeinemc.mods.sodium.client.gl.device.CommandList;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
+import net.caffeinemc.mods.sodium.client.render.chunk.shader.*;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.gl.shader.*;
-import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkFogMode;
-import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
-import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
-import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderOptions;
 import net.minecraft.resources.ResourceLocation;
 import java.util.Map;
 
@@ -19,7 +15,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private final Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
 
     protected final ChunkVertexType vertexType;
-    protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
+    protected final GlVertexFormat vertexFormat;
 
     protected final RenderDevice device;
 
@@ -60,7 +56,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                     .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE)
                     .bindAttribute("a_LightAndData", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_MATERIAL_INDEX)
                     .bindFragmentData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
-                    .link((shader) -> new ChunkShaderInterface(shader, options));
+                    .link((shader) -> new DefaultShaderInterface(shader, options));
         } finally {
             vertShader.delete();
             fragShader.delete();
@@ -79,6 +75,8 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     }
 
     protected void end(TerrainRenderPass pass) {
+        this.activeProgram.getInterface()
+                .resetState();
         this.activeProgram.unbind();
         this.activeProgram = null;
 

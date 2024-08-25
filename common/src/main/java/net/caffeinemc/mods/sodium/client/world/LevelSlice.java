@@ -7,6 +7,7 @@ import net.caffeinemc.mods.sodium.client.world.biome.LevelBiomeSlice;
 import net.caffeinemc.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.caffeinemc.mods.sodium.client.world.cloned.ClonedChunkSection;
 import net.caffeinemc.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
+import net.fabricmc.fabric.api.blockview.v2.FabricBlockView;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -46,7 +47,7 @@ import java.util.Objects;
  *
  * <p>Object pooling should be used to avoid huge allocations as this class contains many large arrays.</p>
  */
-public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlockView {
+public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlockView, FabricBlockView {
     private static final LightLayer[] LIGHT_TYPES = LightLayer.values();
 
     // The number of blocks in a section.
@@ -362,7 +363,7 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
         return this.level.getMinBuildHeight();
     }
 
-    //@Override
+    @Override
     public @Nullable Object getBlockEntityRenderData(BlockPos pos) {
         if (!this.volume.isInside(pos.getX(), pos.getY(), pos.getZ())) {
             return null;
@@ -399,12 +400,12 @@ public final class LevelSlice implements BlockAndTintGetter, RenderAttachedBlock
         return modelMap.getModelData(pos);
     }
 
-    //@Override
+    @Override
     public boolean hasBiomes() {
         return true;
     }
 
-    //@Override
+    @Override
     public Holder<Biome> getBiomeFabric(BlockPos pos) {
         return this.biomeSlice.getBiome(pos.getX(), pos.getY(), pos.getZ());
     }

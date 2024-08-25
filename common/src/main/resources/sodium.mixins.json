@@ -42,6 +42,7 @@
     "features.options.render_layers.LeavesBlockMixin",
     "features.options.render_layers.ItemBlockRenderTypesMixin",
     "features.options.weather.LevelRendererMixin",
+    "features.render.compositing.RenderTargetMixin",
     "features.render.entity.CubeMixin",
     "features.render.entity.ModelPartMixin",
     "features.render.entity.cull.EntityRendererMixin",
@@ -83,6 +84,7 @@
     "features.textures.animations.upload.SpriteContentsInterpolationMixin",
     "features.textures.mipmaps.MipmapGeneratorMixin",
     "features.textures.mipmaps.SpriteContentsMixin",
+    "features.textures.scan.SpriteContentsMixin",
     "features.world.biome.BiomeMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.event_loop.RenderSystemMixin"

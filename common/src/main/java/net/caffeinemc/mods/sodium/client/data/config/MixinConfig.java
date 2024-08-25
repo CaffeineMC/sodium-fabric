@@ -49,6 +49,8 @@ public class MixinConfig {
 
         this.addMixinRule("features.render", true);
 
+        this.addMixinRule("features.render.compositing", true);
+
         this.addMixinRule("features.render.entity", true);
         this.addMixinRule("features.render.entity.cull", true);
         this.addMixinRule("features.render.entity.shadow", true);
@@ -208,7 +210,7 @@ public class MixinConfig {
 
         MixinConfig config = new MixinConfig();
         config.readProperties(props);
-        PlatformMixinOverrides.getInstance().applyModOverrides();
+        PlatformMixinOverrides.getInstance().applyModOverrides().forEach(config::applyModOverride);
 
         return config;
     }
