@@ -8,7 +8,12 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public class BlockEntityRenderHandlerImpl implements BlockEntityRenderHandler {
     @Override
-    public <T extends BlockEntity> void setRenderPredicate(BlockEntityType<T> type, Predicate<? super T> predicate) {
-        ExtendedBlockEntityType.setRenderPredicate(type, predicate);
+    public <T extends BlockEntity> void addRenderPredicate(BlockEntityType<T> type, Predicate<? super T> predicate) {
+        ExtendedBlockEntityType.addRenderPredicate(type, predicate);
+    }
+
+    @Override
+    public <T extends BlockEntity> boolean removeRenderPredicate(BlockEntityType<T> type, Predicate<? super T> predicate) {
+        return ExtendedBlockEntityType.removeRenderPredicate(type, predicate);
     }
 }
