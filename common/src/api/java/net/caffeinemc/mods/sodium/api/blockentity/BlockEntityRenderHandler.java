@@ -26,7 +26,7 @@ public interface BlockEntityRenderHandler {
      * @param type The block entity type to associate the given predicate with.
      * @param shouldRender The predicate for the block entity to evaluate.
      */
-    <T extends BlockEntity> void addRenderPredicate(BlockEntityType<T> type, Predicate<? super T> shouldRender);
+    <T extends BlockEntity> void addRenderPredicate(BlockEntityType<T> type, BlockEntityRenderPredicate<T> shouldRender);
 
     /**
      * Removes a predicate added by {@code addRenderPredicate}. <b>It must be the same object that was added.</b>
@@ -35,5 +35,5 @@ public interface BlockEntityRenderHandler {
      * @param shouldRender The predicate to remove.
      * @return If the predicate existed and was removed.
      */
-    <T extends BlockEntity> boolean removeRenderPredicate(BlockEntityType<T> type, Predicate<? super T> shouldRender);
+    <T extends BlockEntity> boolean removeRenderPredicate(BlockEntityType<T> type, BlockEntityRenderPredicate<T> shouldRender);
 }

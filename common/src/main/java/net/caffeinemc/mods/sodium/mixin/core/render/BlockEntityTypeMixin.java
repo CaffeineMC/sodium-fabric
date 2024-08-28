@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.core.render;
 
 import java.util.function.Predicate;
 
+import net.caffeinemc.mods.sodium.api.blockentity.BlockEntityRenderPredicate;
 import net.caffeinemc.mods.sodium.client.render.chunk.ExtendedBlockEntityType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -12,24 +13,27 @@ import org.spongepowered.asm.mixin.Unique;
 @Mixin(BlockEntityType.class)
 public class BlockEntityTypeMixin<T extends BlockEntity> implements ExtendedBlockEntityType<T> {
     @Unique
-    private Predicate<? super T>[] sodium$renderPredicates = new Predicate[0];
+    private BlockEntityRenderPredicate<T>[] sodium$renderPredicates = new BlockEntityRenderPredicate[0];
 
     @Override
-    public Predicate<? super T>[] sodium$getRenderPredicates() {
+    public BlockEntityRenderPredicate<T>[] sodium$getRenderPredicates() {
         return sodium$renderPredicates;
     }
 
     @Override
-    public void sodium$addRenderPredicate(Predicate<? super T> predicate) {
+    public void sodium$addRenderPredicate(BlockEntityRenderPredicate<T> predicate) {
         sodium$renderPredicates = ArrayUtils.add(sodium$renderPredicates, predicate);
     }
 
     @Override
-    public boolean sodium$removeRenderPredicate(Predicate<? super T> predicate) {
-        int prevSize = sodium$renderPredicates.length;
+    public boolean sodium$removeRenderPredicate(BlockEntityRenderPredicate<T> predicate) {
+        int index = ArrayUtils.indexOf(sodium$renderPredicates, predicate);
 
-        sodium$renderPredicates = ArrayUtils.removeElement(sodium$renderPredicates, predicate);
+        if (index == ArrayUtils.INDEX_NOT_FOUND) {
+            return false;
+        }
 
-        return sodium$renderPredicates.length != prevSize;
+        sodium$renderPredicates = ArrayUtils.remove(sodium$renderPredicates, index);
+        return true;
     }
 }

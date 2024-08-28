@@ -123,7 +123,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                         if (blockState.hasBlockEntity()) {
                             BlockEntity entity = slice.getBlockEntity(blockPos);
 
-                            if (entity != null && ExtendedBlockEntityType.shouldRender(entity.getType(), entity)) {
+                            if (entity != null && ExtendedBlockEntityType.shouldRender(entity.getType(), slice, blockPos, entity)) {
                                 BlockEntityRenderer<BlockEntity> renderer = Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(entity);
 
                                 if (renderer != null) {
