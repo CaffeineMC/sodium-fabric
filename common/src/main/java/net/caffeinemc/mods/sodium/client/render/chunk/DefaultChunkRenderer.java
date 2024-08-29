@@ -13,19 +13,18 @@ import net.caffeinemc.mods.sodium.client.gl.tessellation.TessellationBinding;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
-import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
 import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
-import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
-import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.render.viewport.CameraTransform;
 import net.caffeinemc.mods.sodium.client.util.BitwiseMath;
 import org.lwjgl.system.MemoryUtil;
+
 import java.util.Iterator;
 
 public class DefaultChunkRenderer extends ShaderChunkRenderer {
@@ -100,8 +99,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     }
 
     private static boolean isTranslucentRenderPass(TerrainRenderPass renderPass) {
-        return renderPass == DefaultTerrainRenderPasses.TRANSLUCENT
-                && SodiumClientMod.options().performance.getSortBehavior() != SortBehavior.OFF;
+        return renderPass.isTranslucent() && SodiumClientMod.options().performance.getSortBehavior() != SortBehavior.OFF;
     }
 
     private static void fillCommandBuffer(MultiDrawBatch batch,
@@ -317,18 +315,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources, boolean useSharedIndexBuffer) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), new GlVertexAttributeBinding[] {
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_HI,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_HI)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_LO,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_LO)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.TEXTURE)),
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_MATERIAL_INDEX,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_MATERIAL_INDEX))
-                }),
+                TessellationBinding.forVertexBuffer(resources.getGeometryBuffer(), this.vertexFormat.getShaderBindings()),
                 TessellationBinding.forElementBuffer(useSharedIndexBuffer
                         ? this.sharedIndexBuffer.getBufferObject()
                         : resources.getIndexBuffer())

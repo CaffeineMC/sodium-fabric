@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.bsp_tree.BSPNode;
@@ -20,8 +19,8 @@ public class DynamicBSPData extends DynamicData {
     private final BSPNode rootNode;
     private final int generation;
 
-    private DynamicBSPData(SectionPos sectionPos, VertexRange range, BSPResult result, Vector3dc initialCameraPos, TQuad[] quads, int generation) {
-        super(sectionPos, range, quads.length, result, initialCameraPos);
+    private DynamicBSPData(SectionPos sectionPos, int vertexCount, BSPResult result, Vector3dc initialCameraPos, TQuad[] quads, int generation) {
+        super(sectionPos, vertexCount, quads.length, result, initialCameraPos);
         this.rootNode = result.getRootNode();
         this.generation = generation;
     }
@@ -42,7 +41,7 @@ public class DynamicBSPData extends DynamicData {
         return new DynamicBSPSorter(this.getQuadCount());
     }
 
-    public static DynamicBSPData fromMesh(BuiltSectionMeshParts translucentMesh,
+    public static DynamicBSPData fromMesh(int vertexCount,
                                           CombinedCameraPos cameraPos, TQuad[] quads, SectionPos sectionPos,
                                           TranslucentData oldData) {
         BSPNode oldRoot = null;
@@ -58,9 +57,7 @@ public class DynamicBSPData extends DynamicData {
         }
         var result = BSPNode.buildBSP(quads, sectionPos, oldRoot, prepareNodeReuse);
 
-        VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
-
-        var dynamicData = new DynamicBSPData(sectionPos, range, result, cameraPos.getAbsoluteCameraPos(), quads, generation);
+        var dynamicData = new DynamicBSPData(sectionPos, vertexCount, result, cameraPos.getAbsoluteCameraPos(), quads, generation);
 
         // prepare geometry planes for integration into GFNI triggering
         result.prepareIntegration();

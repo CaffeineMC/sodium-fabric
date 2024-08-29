@@ -1,9 +1,10 @@
 package net.caffeinemc.mods.sodium.client.render.vertex.serializers;
 
+import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatExtensions;
 import net.caffeinemc.mods.sodium.client.render.vertex.serializers.generated.VertexSerializerFactory;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializer;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
     private final StampedLock lock = new StampedLock();
 
     @Override
-    public VertexSerializer get(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
+    public VertexSerializer get(VertexFormat srcFormat, VertexFormat dstFormat) {
         var identifier = createKey(srcFormat, dstFormat);
         var serializer = this.find(identifier);
 
@@ -46,7 +47,12 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
         return serializer;
     }
 
-    private VertexSerializer create(long identifier, VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
+    @Override
+    public void registerSerializer(VertexFormat srcFormat, VertexFormat dstFormat, VertexSerializer serializer) {
+        this.cache.put(createKey(srcFormat, dstFormat), serializer);
+    }
+
+    private VertexSerializer create(long identifier, VertexFormat srcFormat, VertexFormat dstFormat) {
         var stamp = this.lock.writeLock();
 
         try {
@@ -76,8 +82,8 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
         }
     }
 
-    private static VertexSerializer createSerializer(VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
-        var identifier = String.format("%04X$%04X", srcVertexFormat.id(), dstVertexFormat.id());
+    private static VertexSerializer createSerializer(VertexFormat srcVertexFormat, VertexFormat dstVertexFormat) {
+        var identifier = String.format("%04X$%04X", getGlobalId(srcVertexFormat), getGlobalId(dstVertexFormat));
 
         var bytecode = VertexSerializerFactory.generate(srcVertexFormat, dstVertexFormat, identifier);
 
@@ -123,7 +129,11 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
         }
     }
 
-    private static long createKey(VertexFormatDescription a, VertexFormatDescription b) {
-        return (long) a.id() & 0xffffffffL | ((long) b.id() & 0xffffffffL) << 32;
+    private static long createKey(VertexFormat a, VertexFormat b) {
+        return (long) getGlobalId(a) & 0xffffffffL | ((long) getGlobalId(b) & 0xffffffffL) << 32;
+    }
+
+    private static int getGlobalId(VertexFormat format) {
+        return ((VertexFormatExtensions) format).sodium$getGlobalId();
     }
 }

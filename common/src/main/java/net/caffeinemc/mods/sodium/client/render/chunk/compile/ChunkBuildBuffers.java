@@ -1,7 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
@@ -52,6 +51,10 @@ public class ChunkBuildBuffers {
         return this.builders.get(material.pass);
     }
 
+    public ChunkModelBuilder get(TerrainRenderPass pass) {
+        return this.builders.get(pass);
+    }
+
     /**
      * Creates immutable baked chunk meshes from all non-empty scratch buffers. This is used after all blocks
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
@@ -61,11 +64,12 @@ public class ChunkBuildBuffers {
         var builder = this.builders.get(pass);
 
         List<ByteBuffer> vertexBuffers = new ArrayList<>();
-        VertexRange[] vertexRanges = new VertexRange[ModelQuadFacing.COUNT];
+        int[] vertexCounts = new int[ModelQuadFacing.COUNT];
 
-        int vertexCount = 0;
+        int vertexSum = 0;
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+            var ordinal = facing.ordinal();
             var buffer = builder.getVertexBuffer(facing);
 
             if (buffer.isEmpty()) {
@@ -73,29 +77,30 @@ public class ChunkBuildBuffers {
             }
 
             vertexBuffers.add(buffer.slice());
+            var bufferCount = buffer.count();
             if (!forceUnassigned) {
-                vertexRanges[facing.ordinal()] = new VertexRange(vertexCount, buffer.count());
+                vertexCounts[ordinal] = bufferCount;
             }
 
-            vertexCount += buffer.count();
+            vertexSum += bufferCount;
         }
 
-        if (vertexCount == 0) {
+        if (vertexSum == 0) {
             return null;
         }
 
         if (forceUnassigned) {
-            vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(0, vertexCount);
+            vertexCounts[ModelQuadFacing.UNASSIGNED.ordinal()] = vertexSum;
         }
 
-        var mergedBuffer = new NativeBuffer(vertexCount * this.vertexType.getVertexFormat().getStride());
+        var mergedBuffer = new NativeBuffer(vertexSum * this.vertexType.getVertexFormat().getStride());
         var mergedBufferBuilder = mergedBuffer.getDirectBuffer();
 
         for (var buffer : vertexBuffers) {
             mergedBufferBuilder.put(buffer);
         }
 
-        return new BuiltSectionMeshParts(mergedBuffer, vertexRanges);
+        return new BuiltSectionMeshParts(mergedBuffer, vertexCounts);
     }
 
     public void destroy() {

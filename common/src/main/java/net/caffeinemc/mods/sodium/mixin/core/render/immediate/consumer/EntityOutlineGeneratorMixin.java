@@ -1,11 +1,10 @@
 package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
-import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.ColorAttribute;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
@@ -39,7 +38,7 @@ public abstract class EntityOutlineGeneratorMixin implements VertexBufferWriter 
     }
 
     @Override
-    public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
+    public void push(MemoryStack stack, long ptr, int count, VertexFormat format) {
         transform(ptr, count, format,
                 this.color);
 
@@ -56,10 +55,10 @@ public abstract class EntityOutlineGeneratorMixin implements VertexBufferWriter 
      * @param color  The packed color to use for transforming the vertices
      */
     @Unique
-    private static void transform(long ptr, int count, VertexFormatDescription format,
+    private static void transform(long ptr, int count, VertexFormat format,
                                   int color) {
-        long stride = format.stride();
-        long offsetColor = format.getElementOffset(CommonVertexAttribute.COLOR);
+        long stride = format.getVertexSize();
+        long offsetColor = format.getOffset(VertexFormatElement.COLOR);
 
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
             ColorAttribute.set(ptr + offsetColor, ColorARGB.toABGR(color));

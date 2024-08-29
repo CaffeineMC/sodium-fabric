@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.neoforge.render;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
 import net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
+import net.caffeinemc.mods.sodium.client.model.quad.blender.BlendedColorProvider;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer;
@@ -16,8 +17,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.client.textures.FluidSpriteCache;
+
+import java.util.Objects;
 
 public class FluidRendererImpl extends FluidRenderer {
     // The current default context is set up before invoking FluidRenderHandler#renderFluid and cleared afterwards.
@@ -28,7 +32,7 @@ public class FluidRendererImpl extends FluidRenderer {
 
     public FluidRendererImpl(ColorProviderRegistry colorProviderRegistry, LightPipelineProvider lighters) {
         this.colorProviderRegistry = colorProviderRegistry;
-        defaultRenderer = new DefaultFluidRenderer(colorProviderRegistry, lighters);
+        defaultRenderer = new DefaultFluidRenderer(lighters);
     }
 
     public void render(LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkBuildBuffers buffers) {
@@ -59,7 +63,7 @@ public class FluidRendererImpl extends FluidRenderer {
         // parameters are bundled into a DefaultRenderContext which is stored in a ThreadLocal.
 
         DefaultRenderContext defaultContext = CURRENT_DEFAULT_CONTEXT.get();
-        defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, fluidState, blockPos, offset, collector, meshBuilder, material, handler);
+        defaultContext.setUp(this.colorProviderRegistry, this.defaultRenderer, level, blockState, fluidState, blockPos, offset, collector, meshBuilder, material, handler);
 
         try {
             if (!handler.renderFluid(fluidState, level, blockPos, meshBuilder.asFallbackVertexConsumer(material, collector), blockState)) {
@@ -73,6 +77,7 @@ public class FluidRendererImpl extends FluidRenderer {
     private static class DefaultRenderContext {
         private DefaultFluidRenderer renderer;
         private LevelSlice level;
+        private BlockState blockState;
         private FluidState fluidState;
         private BlockPos blockPos;
         private BlockPos offset;
@@ -82,10 +87,11 @@ public class FluidRendererImpl extends FluidRenderer {
         private IClientFluidTypeExtensions handler;
         private ColorProviderRegistry colorProviderRegistry;
 
-        public void setUp(ColorProviderRegistry colorProviderRegistry, DefaultFluidRenderer renderer, LevelSlice level, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, IClientFluidTypeExtensions handler) {
+        public void setUp(ColorProviderRegistry colorProviderRegistry, DefaultFluidRenderer renderer, LevelSlice level, BlockState blockState, FluidState fluidState, BlockPos blockPos, BlockPos offset, TranslucentGeometryCollector collector, ChunkModelBuilder meshBuilder, Material material, IClientFluidTypeExtensions handler) {
             this.colorProviderRegistry = colorProviderRegistry;
             this.renderer = renderer;
             this.level = level;
+            this.blockState = blockState;
             this.fluidState = fluidState;
             this.blockPos = blockPos;
             this.offset = offset;
@@ -98,6 +104,7 @@ public class FluidRendererImpl extends FluidRenderer {
         public void clear() {
             this.renderer = null;
             this.level = null;
+            this.blockState = null;
             this.fluidState = null;
             this.blockPos = null;
             this.offset = null;
@@ -118,7 +125,7 @@ public class FluidRendererImpl extends FluidRenderer {
         }
 
         public void render() {
-            this.renderer.render(this.level, this.fluidState, this.blockPos, this.offset, this.collector, this.meshBuilder, this.material,
+            this.renderer.render(this.level, this.blockState, this.fluidState, this.blockPos, this.offset, this.collector, this.meshBuilder, this.material,
                     getColorProvider(fluidState.getType()), FluidSpriteCache.getFluidSprites(level, blockPos, fluidState));
         }
     }
@@ -127,6 +134,30 @@ public class FluidRendererImpl extends FluidRenderer {
         @Override
         public FluidRenderer createPlatformFluidRenderer(ColorProviderRegistry colorRegistry, LightPipelineProvider lightPipelineProvider) {
             return new FluidRendererImpl(colorRegistry, lightPipelineProvider);
+        }
+
+        @Override
+        public BlendedColorProvider<FluidState> getWaterColorProvider() {
+            final IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(Fluids.WATER);
+
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, FluidState state, BlockPos pos) {
+                    return ext.getTintColor(state, slice, pos);
+                }
+            };
+        }
+
+        @Override
+        public BlendedColorProvider<BlockState> getWaterBlockColorProvider() {
+            final IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(Fluids.WATER);
+
+            return new BlendedColorProvider<>() {
+                @Override
+                protected int getColor(LevelSlice slice, BlockState state, BlockPos pos) {
+                    return ext.getTintColor(state.getFluidState().isEmpty() ? Fluids.WATER.defaultFluidState() : state.getFluidState(), slice, pos);
+                }
+            };
         }
     }
 }

@@ -14,6 +14,7 @@ import net.caffeinemc.mods.sodium.client.gui.options.control.TickBoxControl;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
+import net.caffeinemc.mods.sodium.client.services.PlatformRuntimeInformation;
 import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.GraphicsStatus;
@@ -307,21 +308,23 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.LOW)
                         .setBinding((opts, value) -> opts.performance.useNoErrorGLContext = value, opts -> opts.performance.useNoErrorGLContext)
-                        .setEnabled(supportsNoErrorContext())
+                        .setEnabled(SodiumGameOptionPages::supportsNoErrorContext)
                         .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
                         .build())
                 .build());
 
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(Component.translatable("sodium.options.sort_behavior.name"))
-                        .setTooltip(Component.translatable("sodium.options.sort_behavior.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.sortingEnabled = value, opts -> opts.performance.sortingEnabled)
-                        .setImpact(OptionImpact.LOW)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build())
-                .build());
+        if (PlatformRuntimeInformation.getInstance().isDevelopmentEnvironment()) {
+            groups.add(OptionGroup.createBuilder()
+                    .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                            .setName(Component.translatable("sodium.options.sort_behavior.name"))
+                            .setTooltip(Component.translatable("sodium.options.sort_behavior.tooltip"))
+                            .setControl(TickBoxControl::new)
+                            .setBinding((opts, value) -> opts.performance.sortingEnabled = value, opts -> opts.performance.sortingEnabled)
+                            .setImpact(OptionImpact.LOW)
+                            .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                            .build())
+                    .build());
+        }
 
         return new OptionPage(Component.translatable("sodium.options.pages.performance"), ImmutableList.copyOf(groups));
     }
@@ -335,13 +338,15 @@ public class SodiumGameOptionPages {
     public static OptionPage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
 
+        boolean isPersistentMappingSupported = MappedStagingBuffer.isSupported(RenderDevice.INSTANCE);
+
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(Component.translatable("sodium.options.use_persistent_mapping.name"))
                         .setTooltip(Component.translatable("sodium.options.use_persistent_mapping.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
+                        .setEnabled(() -> isPersistentMappingSupported)
                         .setBinding((opts, value) -> opts.advanced.useAdvancedStagingBuffers = value, opts -> opts.advanced.useAdvancedStagingBuffers)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()

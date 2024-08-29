@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 public class SodiumFabricMod implements ClientModInitializer {
     @Override
+    @SuppressWarnings("unchecked")
     public void onInitializeClient() {
         ModContainer mod = FabricLoader.getInstance()
                 .getModContainer("sodium")

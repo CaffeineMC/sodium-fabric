@@ -1,8 +1,8 @@
 package net.caffeinemc.mods.sodium.api.vertex.buffer;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 
@@ -61,7 +61,7 @@ public interface VertexBufferWriter {
      * @param count  The number of vertices to copy
      * @param format The format of the vertices
      */
-    void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format);
+    void push(MemoryStack stack, long ptr, int count, VertexFormat format);
 
     /**
      * If this {@link VertexBufferWriter} passes through data to nested {@link VertexConsumer} implementations,
@@ -86,9 +86,9 @@ public interface VertexBufferWriter {
      */
     static void copyInto(VertexBufferWriter writer,
                          MemoryStack stack, long ptr, int count,
-                         VertexFormatDescription format)
+                         VertexFormat format)
     {
-        var length = count * format.stride();
+        var length = count * format.getVertexSize();
         var copy = stack.nmalloc(length);
 
         MemoryIntrinsics.copyMemory(ptr, copy, length);

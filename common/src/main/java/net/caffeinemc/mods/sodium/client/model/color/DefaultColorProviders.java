@@ -23,8 +23,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, BlockPos pos) {
-            return BiomeColors.getAverageGrassColor(slice, pos);
+        protected int getColor(LevelSlice slice, T state, BlockPos pos) {
+            return 0xFF000000 | BiomeColors.getAverageGrassColor(slice, pos);
         }
     }
 
@@ -36,22 +36,8 @@ public class DefaultColorProviders {
         }
 
         @Override
-        protected int getColor(LevelSlice slice, BlockPos pos) {
-            return BiomeColors.getAverageFoliageColor(slice, pos);
-        }
-    }
-
-    public static class WaterColorProvider<T> extends BlendedColorProvider<T> {
-        public static final ColorProvider<BlockState> BLOCKS = new WaterColorProvider<>();
-        public static final ColorProvider<FluidState> FLUIDS = new WaterColorProvider<>();
-
-        private WaterColorProvider() {
-
-        }
-
-        @Override
-        protected int getColor(LevelSlice slice, BlockPos pos) {
-            return BiomeColors.getAverageWaterColor(slice, pos);
+        protected int getColor(LevelSlice slice, T state, BlockPos pos) {
+            return 0xFF000000 | BiomeColors.getAverageFoliageColor(slice, pos);
         }
     }
 
@@ -64,7 +50,7 @@ public class DefaultColorProviders {
 
         @Override
         public void getColors(LevelSlice slice, BlockPos pos, BlockPos.MutableBlockPos scratchPos, BlockState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, this.color.getColor(state, slice, pos, quad.getColorIndex()));
+            Arrays.fill(output, 0xFF000000 | this.color.getColor(state, slice, pos, quad.getColorIndex()));
         }
     }
 }

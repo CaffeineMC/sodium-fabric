@@ -1,17 +1,15 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import net.caffeinemc.mods.sodium.api.util.ColorABGR;
-import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteFinderCache;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.Direction;
 import org.jetbrains.annotations.NotNull;
 
 public class ChunkVertexConsumer implements VertexConsumer {
@@ -45,6 +43,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
         vertex.x = x;
         vertex.y = y;
         vertex.z = z;
+        vertex.ao = 1.0f;
         this.writtenAttributes |= ATTRIBUTE_POSITION_BIT;
         return potentiallyEndVertex();
     }
@@ -53,7 +52,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     @Override
     public @NotNull VertexConsumer setColor(int red, int green, int blue, int alpha) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-        vertex.color = ColorABGR.pack(red, green, blue, 0xFF);
+        vertex.color = ColorABGR.pack(red, green, blue, alpha);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
         return potentiallyEndVertex();
     }
@@ -61,7 +60,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     @Override
     public @NotNull VertexConsumer setColor(float red, float green, float blue, float alpha) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-        vertex.color = ColorABGR.pack(red, green, blue, 1);
+        vertex.color = ColorABGR.pack(red, green, blue, alpha);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
         return potentiallyEndVertex();
     }
@@ -69,7 +68,7 @@ public class ChunkVertexConsumer implements VertexConsumer {
     @Override
     public @NotNull VertexConsumer setColor(int argb) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
-        vertex.color = ColorARGB.toABGR(argb, 0xFF);
+        vertex.color = ColorARGB.toABGR(argb);
         this.writtenAttributes |= ATTRIBUTE_COLOR_BIT;
         return potentiallyEndVertex();
     }
@@ -129,8 +128,8 @@ public class ChunkVertexConsumer implements VertexConsumer {
 
             ModelQuadFacing cullFace = ModelQuadFacing.fromPackedNormal(normal);
 
-            if (material == DefaultMaterials.TRANSLUCENT && collector != null) {
-                collector.appendQuad(normal, vertices, cullFace);
+            if (this.material.isTranslucent() && this.collector != null) {
+                this.collector.appendQuad(normal, this.vertices, cullFace);
             }
 
             this.modelBuilder.getVertexBuffer(cullFace).push(this.vertices, this.material);
@@ -156,21 +155,21 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     private int calculateNormal() {
-        final float x0 = vertices[0].x;
-        final float y0 = vertices[0].y;
-        final float z0 = vertices[0].z;
+        final float x0 = this.vertices[0].x;
+        final float y0 = this.vertices[0].y;
+        final float z0 = this.vertices[0].z;
 
-        final float x1 = vertices[1].x;
-        final float y1 = vertices[1].y;
-        final float z1 = vertices[1].z;
+        final float x1 = this.vertices[1].x;
+        final float y1 = this.vertices[1].y;
+        final float z1 = this.vertices[1].z;
 
-        final float x2 = vertices[2].x;
-        final float y2 = vertices[2].y;
-        final float z2 = vertices[2].z;
+        final float x2 = this.vertices[2].x;
+        final float y2 = this.vertices[2].y;
+        final float z2 = this.vertices[2].z;
 
-        final float x3 = vertices[3].x;
-        final float y3 = vertices[3].y;
-        final float z3 = vertices[3].z;
+        final float x3 = this.vertices[3].x;
+        final float y3 = this.vertices[3].y;
+        final float z3 = this.vertices[3].z;
 
         final float dx0 = x2 - x0;
         final float dy0 = y2 - y0;

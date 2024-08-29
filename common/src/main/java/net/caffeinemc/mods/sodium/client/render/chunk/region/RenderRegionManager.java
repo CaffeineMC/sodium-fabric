@@ -124,7 +124,7 @@ public class RenderRegionManager {
             for (PendingSectionMeshUpload upload : uploads) {
                 var storage = region.createStorage(upload.pass);
                 storage.setVertexData(upload.section.getSectionIndex(),
-                        upload.vertexUpload.getResult(), upload.meshData.getVertexRanges());
+                        upload.vertexUpload.getResult(), upload.meshData.getVertexCounts());
             }
         }
 

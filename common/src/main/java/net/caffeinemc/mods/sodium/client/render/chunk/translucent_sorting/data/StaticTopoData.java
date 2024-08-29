@@ -1,6 +1,5 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.data;
 
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortType;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TQuad;
@@ -17,8 +16,8 @@ import java.util.function.IntConsumer;
 public class StaticTopoData extends MixedDirectionData {
     private Sorter sorterOnce;
 
-    StaticTopoData(SectionPos sectionPos, VertexRange range, int quadCount) {
-        super(sectionPos, range, quadCount);
+    StaticTopoData(SectionPos sectionPos, int vertexCount, int quadCount) {
+        super(sectionPos, vertexCount, quadCount);
     }
 
     @Override
@@ -43,8 +42,7 @@ public class StaticTopoData extends MixedDirectionData {
         }
     }
 
-    public static StaticTopoData fromMesh(BuiltSectionMeshParts translucentMesh, TQuad[] quads, SectionPos sectionPos) {
-        VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
+    public static StaticTopoData fromMesh(int vertexCount, TQuad[] quads, SectionPos sectionPos) {
         var sorter = new StaticSorter(quads.length);
         var indexWriter = new QuadIndexConsumerIntoBuffer(sorter.getIntBuffer());
 
@@ -53,7 +51,7 @@ public class StaticTopoData extends MixedDirectionData {
             return null;
         }
 
-        var staticTopoData = new StaticTopoData(sectionPos, range, quads.length);
+        var staticTopoData = new StaticTopoData(sectionPos, vertexCount, quads.length);
         staticTopoData.sorterOnce = sorter;
         return staticTopoData;
     }

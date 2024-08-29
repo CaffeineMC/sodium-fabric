@@ -1,7 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.data;
 
 import net.caffeinemc.mods.sodium.client.gl.arena.GlBufferSegment;
-import net.caffeinemc.mods.sodium.client.gl.util.VertexRange;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +46,7 @@ public class SectionRenderDataStorage {
     }
 
     public void setVertexData(int localSectionIndex,
-            GlBufferSegment allocation, VertexRange[] ranges) {
+            GlBufferSegment allocation, int[] vertexCounts) {
         GlBufferSegment prev = this.vertexAllocations[localSectionIndex];
 
         if (prev != null) {
@@ -62,14 +61,7 @@ public class SectionRenderDataStorage {
         int vertexOffset = allocation.getOffset();
 
         for (int facingIndex = 0; facingIndex < ModelQuadFacing.COUNT; facingIndex++) {
-            VertexRange vertexRange = ranges[facingIndex];
-            int vertexCount;
-
-            if (vertexRange != null) {
-                vertexCount = vertexRange.vertexCount();
-            } else {
-                vertexCount = 0;
-            }
+            int vertexCount = vertexCounts[facingIndex];
 
             SectionRenderDataUnsafe.setVertexOffset(pMeshData, facingIndex, vertexOffset);
             SectionRenderDataUnsafe.setElementCount(pMeshData, facingIndex, (vertexCount >> 2) * 6);

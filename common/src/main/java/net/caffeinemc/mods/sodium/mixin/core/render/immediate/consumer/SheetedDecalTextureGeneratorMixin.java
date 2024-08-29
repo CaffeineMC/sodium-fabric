@@ -2,12 +2,12 @@ package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.ColorAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.TextureAttribute;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.minecraft.core.Direction;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import org.joml.Matrix3f;
@@ -56,7 +56,7 @@ public class SheetedDecalTextureGeneratorMixin implements VertexBufferWriter {
     }
 
     @Override
-    public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
+    public void push(MemoryStack stack, long ptr, int count, VertexFormat format) {
         transform(ptr, count, format,
                 this.normalInversePose, this.cameraInversePose, this.textureScale);
 
@@ -75,14 +75,14 @@ public class SheetedDecalTextureGeneratorMixin implements VertexBufferWriter {
      * @param textureScale The amount which the overlay texture should be adjusted
      */
     @Unique
-    private static void transform(long ptr, int count, VertexFormatDescription format,
+    private static void transform(long ptr, int count, VertexFormat format,
                                   Matrix3f inverseNormalMatrix, Matrix4f inverseTextureMatrix, float textureScale) {
-        long stride = format.stride();
+        long stride = format.getVertexSize();
 
-        var offsetPosition = format.getElementOffset(CommonVertexAttribute.POSITION);
-        var offsetColor = format.getElementOffset(CommonVertexAttribute.COLOR);
-        var offsetNormal = format.getElementOffset(CommonVertexAttribute.NORMAL);
-        var offsetTexture = format.getElementOffset(CommonVertexAttribute.TEXTURE);
+        var offsetPosition = format.getOffset(VertexFormatElement.POSITION);
+        var offsetColor = format.getOffset(VertexFormatElement.COLOR);
+        var offsetNormal = format.getOffset(VertexFormatElement.NORMAL);
+        var offsetTexture = format.getOffset(VertexFormatElement.UV0);
 
         int color = ColorABGR.pack(1.0f, 1.0f, 1.0f, 1.0f);
 
