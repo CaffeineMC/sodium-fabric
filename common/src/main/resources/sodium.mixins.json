@@ -16,6 +16,7 @@
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
     "core.model.FaceBakeryMixin",
+    "core.render.BlockEntityTypeMixin",
     "core.render.VertexFormatMixin",
     "core.render.frustum.FrustumMixin",
     "core.render.immediate.consumer.BufferBuilderMixin",
