@@ -2,6 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.features.render.compositing;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
 import org.lwjgl.opengl.GL32C;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -26,6 +27,10 @@ public class RenderTargetMixin {
      */
     @Inject(method = "blitToScreen(IIZ)V", at = @At("HEAD"), cancellable = true)
     public void blitToScreen(int width, int height, boolean disableBlend, CallbackInfo ci) {
+        if (Workarounds.isWorkaroundEnabled(Workarounds.Reference.INTEL_FRAMEBUFFER_BLIT_UNSUPPORTED)) {
+            return;
+        }
+
         if (disableBlend) {
             ci.cancel();
 
