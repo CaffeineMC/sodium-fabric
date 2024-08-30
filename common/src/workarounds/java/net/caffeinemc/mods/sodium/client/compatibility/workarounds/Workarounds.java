@@ -73,8 +73,8 @@ public class Workarounds {
             if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
                 @Nullable var driverName = wddmAdapterInfo.getOpenGlIcdName();
 
-                // Intel OpenGL ICD for Generation 7.5 GPUs
-                if (driverName != null && driverName.matches("ig75icd(32|64)")) {
+                // Intel OpenGL ICD for legacy GPUs
+                if (driverName != null && driverName.matches("ig(7|75|8)icd(32|64)")) {
                     return true;
                 }
             }
