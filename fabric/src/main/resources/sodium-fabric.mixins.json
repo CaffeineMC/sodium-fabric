@@ -13,6 +13,7 @@
     "core.model.quad.BakedQuadMixin",
     "features.model.MultiPartBakedModelMixin",
     "features.model.WeightedBakedModelMixin",
+    "features.model.WeightedRandomListMixin",
     "features.render.model.block.ModelBlockRendererMixin"
   ]
 }
