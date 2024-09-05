@@ -1,34 +1,38 @@
 package net.caffeinemc.mods.sodium.client.gl.attribute;
 
+import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
+import net.caffeinemc.mods.sodium.client.render.vertex.VertexFormatAttribute;
+
 import java.util.EnumMap;
+import java.util.Map;
 
 /**
- * Provides a generic vertex format which contains the attributes defined by {@param T}. Other code can then retrieve
+ * Provides a generic vertex format which contains the attributes defined by a {@link VertexFormatAttribute}. Other code can then retrieve
  * the attributes and work with encoded data in a generic manner without needing to rely on a specific format.
- *
- * @param <T> The enumeration over the vertex attributes
  */
-public class GlVertexFormat<T extends Enum<T>> {
-    private final Class<T> attributeEnum;
-    private final EnumMap<T, GlVertexAttribute> attributesKeyed;
+public class GlVertexFormat {
+    private final Map<VertexFormatAttribute, GlVertexAttribute> attributesKeyed;
 
     private final int stride;
+    private final GlVertexAttributeBinding[] bindings;
 
-    public GlVertexFormat(Class<T> attributeEnum, EnumMap<T, GlVertexAttribute> attributesKeyed, int stride) {
-        this.attributeEnum = attributeEnum;
+    public GlVertexFormat(Map<VertexFormatAttribute, GlVertexAttribute> attributesKeyed, GlVertexAttributeBinding[] bindings, int stride) {
         this.attributesKeyed = attributesKeyed;
+        this.bindings = bindings;
         this.stride = stride;
     }
 
-    public static <T extends Enum<T>> Builder<T> builder(Class<T> type, int stride) {
-        return new Builder<>(type, stride);
+    public static Builder builder(int stride) {
+        return new Builder(stride);
     }
 
     /**
      * Returns the {@link GlVertexAttribute} of this vertex format bound to the type {@param name}.
      * @throws NullPointerException If the attribute does not exist in this format
      */
-    public GlVertexAttribute getAttribute(T name) {
+    public GlVertexAttribute getAttribute(VertexFormatAttribute name) {
         GlVertexAttribute attr = this.attributesKeyed.get(name);
 
         if (attr == null) {
@@ -47,23 +51,27 @@ public class GlVertexFormat<T extends Enum<T>> {
 
     @Override
     public String toString() {
-        return String.format("GlVertexFormat<%s>{attributes=%d,stride=%d}", this.attributeEnum.getName(),
+        return String.format("GlVertexFormat{attributes=%d,stride=%d}",
                 this.attributesKeyed.size(), this.stride);
     }
 
-    public static class Builder<T extends Enum<T>> {
-        private final EnumMap<T, GlVertexAttribute> attributes;
-        private final Class<T> type;
+    public GlVertexAttributeBinding[] getShaderBindings() {
+        return bindings;
+    }
+
+    public static class Builder {
+        private final Map<VertexFormatAttribute, GlVertexAttribute> attributes;
+        private final Object2IntMap<GlVertexAttribute> bindings;
         private final int stride;
 
-        public Builder(Class<T> type, int stride) {
-            this.type = type;
-            this.attributes = new EnumMap<>(type);
+        public Builder(int stride) {
+            this.attributes = new Object2ObjectArrayMap<>();
+            this.bindings = new Object2IntArrayMap<>();
             this.stride = stride;
         }
 
-        public Builder<T> addElement(T type, int pointer, GlVertexAttributeFormat format, int count, boolean normalized, boolean intType) {
-            return this.addElement(type, new GlVertexAttribute(format, count, normalized, pointer, this.stride, intType));
+        public Builder addElement(VertexFormatAttribute attribute, int binding, int pointer) {
+            return this.addElement(attribute, binding, new GlVertexAttribute(attribute.format(), attribute.count(), attribute.normalized(), pointer, this.stride, attribute.intType()));
         }
 
         /**
@@ -73,7 +81,7 @@ public class GlVertexFormat<T extends Enum<T>> {
          * @param attribute The attribute to bind
          * @throws IllegalStateException If an attribute is already bound to the generic type
          */
-        private Builder<T> addElement(T type, GlVertexAttribute attribute) {
+        private Builder addElement(VertexFormatAttribute type, int binding, GlVertexAttribute attribute) {
             if (attribute.getPointer() >= this.stride) {
                 throw new IllegalArgumentException("Element starts outside vertex format");
             }
@@ -86,22 +94,20 @@ public class GlVertexFormat<T extends Enum<T>> {
                 throw new IllegalStateException("Generic attribute " + type.name() + " already defined in vertex format");
             }
 
+            if (binding != -1) {
+                this.bindings.put(attribute, binding);
+            }
+
             return this;
         }
 
         /**
          * Creates a {@link GlVertexFormat} from the current builder.
          */
-        public GlVertexFormat<T> build() {
+        public GlVertexFormat build() {
             int size = 0;
 
-            for (T key : this.type.getEnumConstants()) {
-                GlVertexAttribute attribute = this.attributes.get(key);
-
-                if (attribute == null) {
-                    throw new NullPointerException("Generic attribute not assigned to enumeration " + key.name());
-                }
-
+            for (GlVertexAttribute attribute : this.attributes.values()) {
                 size = Math.max(size, attribute.getPointer() + attribute.getSize());
             }
 
@@ -111,7 +117,11 @@ public class GlVertexFormat<T extends Enum<T>> {
                 throw new IllegalArgumentException("Stride is too small");
             }
 
-            return new GlVertexFormat<>(this.type, this.attributes, this.stride);
+            GlVertexAttributeBinding[] bindings = this.bindings.object2IntEntrySet().stream()
+                    .map(entry -> new GlVertexAttributeBinding(entry.getIntValue(), entry.getKey()))
+                    .toArray(GlVertexAttributeBinding[]::new);
+
+            return new GlVertexFormat(this.attributes, bindings, this.stride);
         }
     }
 }

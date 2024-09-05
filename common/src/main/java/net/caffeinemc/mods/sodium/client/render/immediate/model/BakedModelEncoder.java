@@ -6,7 +6,7 @@ import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.EntityVertex;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -26,7 +26,7 @@ public class BakedModelEncoder {
         Matrix4f matPosition = matrices.pose();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
+            long buffer = stack.nmalloc(4 * EntityVertex.STRIDE);
             long ptr = buffer;
 
             for (int i = 0; i < 4; i++) {
@@ -45,11 +45,11 @@ public class BakedModelEncoder {
                 float yt = MatrixHelper.transformPositionY(matPosition, x, y, z);
                 float zt = MatrixHelper.transformPositionZ(matPosition, x, y, z);
 
-                ModelVertex.write(ptr, xt, yt, zt, ColorHelper.multiplyColor(color, quad.getColor(i)), quad.getTexU(i), quad.getTexV(i), overlay, newLight, normal);
-                ptr += ModelVertex.STRIDE;
+                EntityVertex.write(ptr, xt, yt, zt, ColorHelper.multiplyColor(color, quad.getColor(i)), quad.getTexU(i), quad.getTexV(i), overlay, newLight, normal);
+                ptr += EntityVertex.STRIDE;
             }
 
-            writer.push(stack, buffer, 4, ModelVertex.FORMAT);
+            writer.push(stack, buffer, 4, EntityVertex.FORMAT);
         }
     }
 
@@ -58,7 +58,7 @@ public class BakedModelEncoder {
         Matrix4f matPosition = matrices.pose();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
+            long buffer = stack.nmalloc(4 * EntityVertex.STRIDE);
             long ptr = buffer;
 
             for (int i = 0; i < 4; i++) {
@@ -98,11 +98,11 @@ public class BakedModelEncoder {
 
                 int color = ColorABGR.pack(fR, fG, fB, a);
 
-                ModelVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, light[i], normal);
-                ptr += ModelVertex.STRIDE;
+                EntityVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, light[i], normal);
+                ptr += EntityVertex.STRIDE;
             }
 
-            writer.push(stack, buffer, 4, ModelVertex.FORMAT);
+            writer.push(stack, buffer, 4, EntityVertex.FORMAT);
         }
     }
 }

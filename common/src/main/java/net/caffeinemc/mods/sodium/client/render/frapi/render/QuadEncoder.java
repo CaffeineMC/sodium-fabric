@@ -7,7 +7,7 @@ import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.EntityVertex;
 import org.joml.Math;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -27,7 +27,7 @@ public class QuadEncoder {
 
     public static void writeQuadVertices(MutableQuadViewImpl quad, VertexBufferWriter writer, int overlay, Matrix4f matPosition, boolean trustedNormals, Matrix3f matNormal) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
+            long buffer = stack.nmalloc(4 * EntityVertex.STRIDE);
             long ptr = buffer;
 
             final boolean useNormals = quad.hasVertexNormals();
@@ -56,11 +56,11 @@ public class QuadEncoder {
                     normal = MatrixHelper.transformNormal(matNormal, trustedNormals, quad.packedNormal(i));
                 }
 
-                ModelVertex.write(ptr, xt, yt, zt, ColorARGB.toABGR(quad.color(i)), quad.u(i), quad.v(i), overlay, quad.lightmap(i), normal);
-                ptr += ModelVertex.STRIDE;
+                EntityVertex.write(ptr, xt, yt, zt, ColorARGB.toABGR(quad.color(i)), quad.u(i), quad.v(i), overlay, quad.lightmap(i), normal);
+                ptr += EntityVertex.STRIDE;
             }
 
-            writer.push(stack, buffer, 4, ModelVertex.FORMAT);
+            writer.push(stack, buffer, 4, EntityVertex.FORMAT);
         }
     }
 

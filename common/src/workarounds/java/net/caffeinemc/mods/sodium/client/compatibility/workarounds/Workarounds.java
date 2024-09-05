@@ -4,6 +4,8 @@ import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterInfo;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterProbe;
 import net.caffeinemc.mods.sodium.client.compatibility.environment.probe.GraphicsAdapterVendor;
+import net.caffeinemc.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMT;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +43,10 @@ public class Workarounds {
             workarounds.add(Reference.NVIDIA_THREADED_OPTIMIZATIONS);
         }
 
+        if (checkIntelFramebufferBlitBug()) {
+            workarounds.add(Reference.INTEL_FRAMEBUFFER_BLIT_UNSUPPORTED);
+        }
+
         if (operatingSystem == OsUtils.OperatingSystem.LINUX) {
             var session = System.getenv("XDG_SESSION_TYPE");
 
@@ -56,6 +62,25 @@ public class Workarounds {
         }
 
         return Collections.unmodifiableSet(workarounds);
+    }
+
+    private static boolean checkIntelFramebufferBlitBug() {
+        if (OsUtils.getOs() != OsUtils.OperatingSystem.WIN) {
+            return false;
+        }
+
+        for (var adapter : GraphicsAdapterProbe.getAdapters()) {
+            if (adapter instanceof D3DKMT.WDDMAdapterInfo wddmAdapterInfo) {
+                @Nullable var driverName = wddmAdapterInfo.getOpenGlIcdName();
+
+                // Intel OpenGL ICD for legacy GPUs
+                if (driverName != null && driverName.matches("ig(7|75|8)icd(32|64)")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static boolean isUsingNvidiaGraphicsCard(OsUtils.OperatingSystem operatingSystem, Collection<? extends GraphicsAdapterInfo> adapters) {
@@ -82,5 +107,12 @@ public class Workarounds {
          * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1624">GitHub Issue</a>
          */
         NO_ERROR_CONTEXT_UNSUPPORTED,
+
+        /**
+         * Intel's graphics driver for Gen 7.5 GPUs seems to be faulty and causes a crash when calling
+         * glFramebufferBlit after the window loses focus.
+         * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/2727">GitHub Issue</a>
+         */
+        INTEL_FRAMEBUFFER_BLIT_UNSUPPORTED
     }
 }

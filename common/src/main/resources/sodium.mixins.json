@@ -16,6 +16,8 @@
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
     "core.model.FaceBakeryMixin",
+    "core.render.BlockEntityTypeMixin",
+    "core.render.VertexFormatMixin",
     "core.render.frustum.FrustumMixin",
     "core.render.immediate.consumer.BufferBuilderMixin",
     "core.render.immediate.consumer.EntityOutlineGeneratorMixin",
@@ -83,6 +85,7 @@
     "features.textures.animations.upload.SpriteContentsInterpolationMixin",
     "features.textures.mipmaps.MipmapGeneratorMixin",
     "features.textures.mipmaps.SpriteContentsMixin",
+    "features.textures.scan.SpriteContentsMixin",
     "features.world.biome.BiomeMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.event_loop.RenderSystemMixin"

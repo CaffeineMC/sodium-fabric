@@ -1,10 +1,11 @@
 package net.caffeinemc.mods.sodium.client.render.vertex.serializers.generated;
 
-import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializer;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.*;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
 public class VertexSerializerFactory {
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-    public static Bytecode generate(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat, String identifier) {
+    public static Bytecode generate(VertexFormat srcFormat, VertexFormat dstFormat, String identifier) {
         var memoryCopies = createMemoryTransferList(srcFormat, dstFormat);
 
         var name = "net/caffeinemc/mods/sodium/client/render/vertex/serializers/generated/VertexSerializer$Impl$" + identifier;
@@ -128,7 +129,7 @@ public class VertexSerializerFactory {
             Label labelIncrementSourcePointer = new Label();
             methodVisitor.visitLabel(labelIncrementSourcePointer);
             methodVisitor.visitVarInsn(Opcodes.LLOAD, localSrcPointer);
-            methodVisitor.visitLdcInsn((long) srcFormat.stride());
+            methodVisitor.visitLdcInsn((long) srcFormat.getVertexSize());
             methodVisitor.visitInsn(Opcodes.LADD);
             methodVisitor.visitVarInsn(Opcodes.LSTORE, localSrcPointer);
 
@@ -136,7 +137,7 @@ public class VertexSerializerFactory {
             Label labelIncrementDestinationPointer = new Label();
             methodVisitor.visitLabel(labelIncrementDestinationPointer);
             methodVisitor.visitVarInsn(Opcodes.LLOAD, localDstPointer);
-            methodVisitor.visitLdcInsn((long) dstFormat.stride());
+            methodVisitor.visitLdcInsn((long) dstFormat.getVertexSize());
             methodVisitor.visitInsn(Opcodes.LADD);
             methodVisitor.visitVarInsn(Opcodes.LSTORE, localDstPointer);
 
@@ -166,24 +167,30 @@ public class VertexSerializerFactory {
         return new Bytecode(classWriter.toByteArray());
     }
 
-    private static List<MemoryTransfer> createMemoryTransferList(VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
+    private static List<MemoryTransfer> createMemoryTransferList(VertexFormat srcVertexFormat, VertexFormat dstVertexFormat) {
         var ops = new ArrayList<MemoryTransfer>();
 
-        for (var elementType : CommonVertexAttribute.values()) {
+        for (var elementIndex = 0; elementIndex < 32; elementIndex++) {
+            var elementType = VertexFormatElement.byId(elementIndex);
+
+            if (elementType == null) {
+                continue;
+            }
+
             // Check if we need to transfer the element into the destination format
-            if (!dstVertexFormat.containsElement(elementType)) {
+            if (!dstVertexFormat.contains(elementType)) {
                 continue;
             }
 
             // If the destination format has the element, then the source format needs to have it as well
-            if (!srcVertexFormat.containsElement(elementType)) {
+            if (!srcVertexFormat.contains(elementType)) {
                 throw new RuntimeException("Source format is missing element %s as required by destination format".formatted(elementType));
             }
 
-            var srcOffset = srcVertexFormat.getElementOffset(elementType);
-            var dstOffset = dstVertexFormat.getElementOffset(elementType);
+            var srcOffset = srcVertexFormat.getOffset(elementType);
+            var dstOffset = dstVertexFormat.getOffset(elementType);
 
-            ops.add(new MemoryTransfer(srcOffset, dstOffset, elementType.getByteLength()));
+            ops.add(new MemoryTransfer(srcOffset, dstOffset, elementType.byteSize()));
         }
 
         return mergeAdjacentMemoryTransfers(ops);

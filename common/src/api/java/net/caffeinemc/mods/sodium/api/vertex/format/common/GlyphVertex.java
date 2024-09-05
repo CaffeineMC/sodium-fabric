@@ -1,16 +1,14 @@
 package net.caffeinemc.mods.sodium.api.vertex.format.common;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.ColorAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.LightAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.PositionAttribute;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
-import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatRegistry;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.TextureAttribute;
 
 public final class GlyphVertex  {
-    public static final VertexFormatDescription FORMAT = VertexFormatRegistry.instance()
-            .get(DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+    public static final VertexFormat FORMAT = DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP;
 
     public static final int STRIDE = 28;
 
