@@ -18,6 +18,7 @@
     "AuxiliaryLightManagerMixin",
     "ChunkRenderTypeSetAccessor",
     "ClientHooksMixin",
+    "EntrypointMixin",
     "LevelSliceMixin",
     "ModelDataMixin",
     "ResourcePackLoaderMixin",

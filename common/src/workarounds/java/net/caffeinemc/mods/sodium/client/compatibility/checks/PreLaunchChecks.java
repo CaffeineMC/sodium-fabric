@@ -103,7 +103,7 @@ public class PreLaunchChecks {
                 .replace("###HELP_URL###", url == null ? "" : url));
 
         // Try to show a graphical message box (if the platform supports it) and shut down the game.
-        MessageBox.showMessageBox(null, MessageBox.IconType.ERROR, title, message, url);
+        MessageBox.showMessageBox(0L, MessageBox.IconType.ERROR, title, message, url);
         System.exit(1 /* failure code */);
     }
 
