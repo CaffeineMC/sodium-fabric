@@ -1,19 +1,19 @@
-<img src="src/main/resources/assets/sodium/icon.png" width="128">
+<img src="common/src/main/resources/sodium-icon.png" width="128">
 
-# Sodium (for Fabric)
+# Sodium
 
 Sodium is a powerful rendering engine and optimization mod for the Minecraft client which improves frame rates and reduces
 micro-stutter, while fixing many graphical issues in Minecraft.
 
 ### 📥 Installation
 
-The latest releases of Sodium are published to our official [Modrinth](https://modrinth.com/mod/sodium) and
-[GitHub release](https://github.com/CaffeineMC/sodium-fabric/releases) pages. These releases are considered by our
-team to be suitable for general use, but they are not guaranteed to be free of bugs and other issues.
+The latest version of Sodium can be downloaded from our official [Modrinth](https://modrinth.com/mod/sodium) and
+[CurseForge](https://www.curseforge.com/minecraft/mc-mods/sodium) pages. 
 
-For more information about downloading and installing the mod, you can read our installation guide on
-[Modrinth](https://modrinth.com/mod/sodium#installation).
-It also contains information about any currently known compatibility issues, which are often useful to read.
+Since the release of Sodium 0.6.0, both the _Fabric_ and _NeoForge_ mod loaders are supported. We generally recommend
+that new users prefer to use the _Fabric_ mod loader, since it is more lightweight and stable (for the time being.)
+
+For more information about downloading and installing the mod, please refer to our [Installation Guide](https://github.com/CaffeineMC/sodium-fabric/wiki/Installation).
 
 ### 🐛 Reporting Issues
 
@@ -65,10 +65,10 @@ We recommend using a package manager (such as [SDKMAN](https://sdkman.io/)) to m
 them up to date. For many Linux distributions, these dependencies will be standard packages in your software
 repositories.
 
-- OpenJDK 17
+- OpenJDK 21
     - We recommend using the [Eclipse Temurin](https://adoptium.net/) distribution, as it's known to be high quality 
       and to work without issues.
-- Gradle 8.2.1 (optional)
+- Gradle 8.6.x (optional)
     - The [Gradle wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:using_wrapper) is provided
       in this repository can be used instead of installing a suitable version of Gradle yourself. However, if you are
       building many projects, you may prefer to install it yourself through a suitable package manager as to save disk
@@ -78,5 +78,5 @@ repositories.
 
 ## 📜 License
 
-Except where otherwise stated, the content of this repository is provided under the [Polyform Shield 1.0.0](LICENSE.md)
-license by [JellySquid](https://jellysquid.me).
+Except where otherwise stated (see [third-party license notices](thirdparty/NOTICE.txt)), the content of this repository is provided
+under the [Polyform Shield 1.0.0](LICENSE.md) license by [JellySquid](https://jellysquid.me).
