@@ -13,12 +13,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 @Mod("sodium")
 public class SodiumForgeMod {
     public SodiumForgeMod(IEventBus bus, ModContainer modContainer) {
-        bus.addListener(this::onResourceReload);
         modContainer.registerExtensionPoint(IConfigScreenFactory.class, (minecraft, screen) -> SodiumOptionsGUI.createScreen(screen));
         RendererAccess.INSTANCE.registerRenderer(SodiumRenderer.INSTANCE);
-    }
-
-    public void onResourceReload(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener(SpriteFinderCache.ReloadListener.INSTANCE);
     }
 }
