@@ -11,7 +11,6 @@
   },
   "client": [
     "core.MinecraftMixin",
-    "core.WindowMixin",
     "core.gui.LevelLoadStatusManagerMixin",
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
@@ -38,7 +37,6 @@
     "core.world.map.ClientLevelMixin",
     "features.gui.hooks.console.GameRendererMixin",
     "features.gui.hooks.debug.DebugScreenOverlayMixin",
-    "features.gui.hooks.settings.OptionsScreenMixin",
     "features.gui.screen.LevelLoadingScreenMixin",
     "features.options.overlays.GuiMixin",
     "features.options.render_layers.LeavesBlockMixin",
