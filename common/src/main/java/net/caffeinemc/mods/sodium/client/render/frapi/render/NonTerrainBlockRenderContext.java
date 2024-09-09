@@ -127,6 +127,6 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
 
     private void bufferQuad(MutableQuadViewImpl quad) {
         QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
-        SpriteUtil.markSpriteActive(SpriteFinderCache.forBlockAtlas().find(quad.getTexU(0), quad.getTexV(0)));
+        SpriteUtil.markSpriteActive(quad.sprite(SpriteFinderCache.forBlockAtlas()));
     }
 }
