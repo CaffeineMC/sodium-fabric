@@ -87,4 +87,6 @@ tasks {
 
         manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
     }
+
+    remapJar.get().destinationDirectory = rootDir.resolve("build").resolve("libs")
 }
