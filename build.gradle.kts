@@ -3,7 +3,7 @@ plugins {
     id("fabric-loom") version ("1.7.3") apply (false)
 }
 
-val MINECRAFT_VERSION by extra { "24w36a" }
+val MINECRAFT_VERSION by extra { "24w37a" }
 val NEOFORGE_VERSION by extra { "21.0.163" }
 val FABRIC_LOADER_VERSION by extra { "0.16.5" }
 val FABRIC_API_VERSION by extra { "0.104.1+1.21.2" }
