@@ -37,6 +37,10 @@ public class WindowMixin {
     @Final
     private static Logger LOGGER;
 
+    @Shadow
+    @Final
+    private long window;
+
     @Unique
     private long wglPrevContext = MemoryUtil.NULL;
 
@@ -95,7 +99,7 @@ public class WindowMixin {
         }
 
         PostLaunchChecks.onContextInitialized();
-        ModuleScanner.checkModules();
+        ModuleScanner.checkModules(this.window);
     }
 
     @Inject(method = "updateDisplay", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;flipFrame(J)V", shift = At.Shift.AFTER))
@@ -117,7 +121,7 @@ public class WindowMixin {
 
         // Likely, this indicates a module was injected into the current process. We should check that
         // nothing problematic was just installed.
-        ModuleScanner.checkModules();
+        ModuleScanner.checkModules(this.window);
 
         // If we didn't find anything problematic (which would have thrown an exception), then let's just record
         // the new context pointer and carry on.

@@ -7,7 +7,7 @@ import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.EntityVertex;
-import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
+import net.caffeinemc.mods.sodium.client.services.PlatformRuntimeInformation;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
@@ -20,6 +20,8 @@ public class BakedModelEncoder {
         int skyLight = Math.max((stored >> 16) & 0xFFFF, (calculated >> 16) & 0xFFFF);
         return blockLight | (skyLight << 16);
     }
+
+    private static final boolean MULTIPLY_ALPHA = PlatformRuntimeInformation.getInstance().usesAlphaMultiplication();
 
     public static void writeQuadVertices(VertexBufferWriter writer, PoseStack.Pose matrices, ModelQuadView quad, int color, int light, int overlay) {
         Matrix3f matNormal = matrices.normal();
@@ -45,7 +47,7 @@ public class BakedModelEncoder {
                 float yt = MatrixHelper.transformPositionY(matPosition, x, y, z);
                 float zt = MatrixHelper.transformPositionZ(matPosition, x, y, z);
 
-                EntityVertex.write(ptr, xt, yt, zt, ColorHelper.multiplyColor(color, quad.getColor(i)), quad.getTexU(i), quad.getTexV(i), overlay, newLight, normal);
+                EntityVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, newLight, normal);
                 ptr += EntityVertex.STRIDE;
             }
 
@@ -75,6 +77,7 @@ public class BakedModelEncoder {
                 float fR;
                 float fG;
                 float fB;
+                float fA;
 
                 var normal = MatrixHelper.transformNormal(matNormal, matrices.trustedNormals, quad.getAccurateNormal(i));
 
@@ -90,13 +93,21 @@ public class BakedModelEncoder {
                     fR = oR * brightness * r;
                     fG = oG * brightness * g;
                     fB = oB * brightness * b;
+
+                    if (MULTIPLY_ALPHA) {
+                        float oA = ColorU8.byteToNormalizedFloat(ColorABGR.unpackAlpha(color));
+                        fA = oA * a;
+                    } else {
+                        fA = a;
+                    }
                 } else {
                     fR = brightness * r;
                     fG = brightness * g;
                     fB = brightness * b;
+                    fA = a;
                 }
 
-                int color = ColorABGR.pack(fR, fG, fB, a);
+                int color = ColorABGR.pack(fR, fG, fB, fA);
 
                 EntityVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, light[i], normal);
                 ptr += EntityVertex.STRIDE;

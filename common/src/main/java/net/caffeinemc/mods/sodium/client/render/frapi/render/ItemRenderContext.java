@@ -204,7 +204,7 @@ public class ItemRenderContext extends AbstractRenderContext {
 
     private void bufferQuad(MutableQuadViewImpl quad, VertexConsumer vertexConsumer) {
         QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
-        SpriteUtil.markSpriteActive(SpriteFinderCache.forBlockAtlas().find(quad.getTexU(0), quad.getTexV(0)));
+        SpriteUtil.markSpriteActive(quad.sprite(SpriteFinderCache.forBlockAtlas()));
     }
 
     /**

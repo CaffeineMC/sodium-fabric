@@ -23,6 +23,10 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
+tasks.jar {
+    enabled = false
+}
+
 subprojects {
     apply(plugin = "maven-publish")
 

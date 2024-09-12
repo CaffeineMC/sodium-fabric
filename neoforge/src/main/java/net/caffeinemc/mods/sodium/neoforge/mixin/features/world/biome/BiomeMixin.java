@@ -1,4 +1,4 @@
-package net.caffeinemc.mods.sodium.mixin.features.world.biome;
+package net.caffeinemc.mods.sodium.neoforge.mixin.features.world.biome;
 
 import net.caffeinemc.mods.sodium.client.world.biome.BiomeColorMaps;
 import net.minecraft.util.Mth;
@@ -12,8 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Biome.class)
 public abstract class BiomeMixin {
     @Shadow
-    @Final
-    private BiomeSpecialEffects specialEffects;
+    public abstract BiomeSpecialEffects getModifiedSpecialEffects();
 
     @Shadow
     @Final
@@ -44,20 +43,24 @@ public abstract class BiomeMixin {
 
     @Unique
     private void setupColors() {
-        this.cachedSpecialEffects = specialEffects;
+        this.cachedSpecialEffects = getModifiedSpecialEffects();
 
-        var grassColor = this.specialEffects.getGrassColorOverride();
+        var grassColor = this.cachedSpecialEffects.getGrassColorOverride();
 
         if (grassColor.isPresent()) {
             this.hasCustomGrassColor = true;
             this.customGrassColor = grassColor.get();
+        } else {
+            this.hasCustomGrassColor = false;
         }
 
-        var foliageColor = this.specialEffects.getFoliageColorOverride();
+        var foliageColor = this.cachedSpecialEffects.getFoliageColorOverride();
 
         if (foliageColor.isPresent()) {
             this.hasCustomFoliageColor = true;
             this.customFoliageColor = foliageColor.get();
+        } else {
+            this.hasCustomFoliageColor = false;
         }
 
         this.defaultColorIndex = this.getDefaultColorIndex();
@@ -69,7 +72,7 @@ public abstract class BiomeMixin {
      */
     @Overwrite
     public int getGrassColor(double x, double z) {
-        if (this.specialEffects != this.cachedSpecialEffects) {
+        if (this.getModifiedSpecialEffects() != this.cachedSpecialEffects) {
             setupColors();
         }
 
@@ -81,7 +84,7 @@ public abstract class BiomeMixin {
             color = BiomeColorMaps.getGrassColor(this.defaultColorIndex);
         }
 
-        var modifier = this.specialEffects.getGrassColorModifier();
+        var modifier = this.cachedSpecialEffects.getGrassColorModifier();
 
         if (modifier != BiomeSpecialEffects.GrassColorModifier.NONE) {
             color = modifier.modifyColor(x, z, color);
@@ -96,7 +99,7 @@ public abstract class BiomeMixin {
      */
     @Overwrite
     public int getFoliageColor() {
-        if (this.specialEffects != this.cachedSpecialEffects) {
+        if (this.getModifiedSpecialEffects() != this.cachedSpecialEffects) {
             setupColors();
         }
 

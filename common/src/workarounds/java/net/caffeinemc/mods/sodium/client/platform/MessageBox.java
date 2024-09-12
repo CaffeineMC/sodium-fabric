@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import com.mojang.blaze3d.platform.Window;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.awt.*;
@@ -21,7 +20,7 @@ import java.util.Objects;
 public class MessageBox {
     private static final @Nullable MessageBoxImpl IMPL = MessageBoxImpl.chooseImpl();
 
-    public static void showMessageBox(@Nullable Window window,
+    public static void showMessageBox(long window,
                                       IconType icon, String title,
                                       String description,
                                       @Nullable String helpUrl)
@@ -42,7 +41,7 @@ public class MessageBox {
             }
         }
 
-        void showMessageBox(@Nullable Window window,
+        void showMessageBox(long window,
                             IconType icon, String title,
                             String description,
                             @Nullable String helpUrl);
@@ -53,7 +52,7 @@ public class MessageBox {
         private static final String NOTICE = "\n\nFor more information, click OK; otherwise, click Cancel.";
 
         @Override
-        public void showMessageBox(@Nullable Window window, IconType icon, String title, String description, @Nullable String helpUrl) {
+        public void showMessageBox(long window, IconType icon, String title, String description, @Nullable String helpUrl) {
             boolean clicked = TinyFileDialogs.tinyfd_messageBox(title, helpUrl == null ? description : description + NOTICE, helpUrl == null ? "ok" : "okcancel", icon.name().toLowerCase(Locale.ROOT), false);
 
             if (clicked && helpUrl != null) {
@@ -68,7 +67,7 @@ public class MessageBox {
 
     private static class WindowsMessageBoxImpl implements MessageBoxImpl {
         @Override
-        public void showMessageBox(@Nullable Window window,
+        public void showMessageBox(long window,
                                    IconType icon, String title,
                                    String description,
                                    @Nullable String helpUrl) {
@@ -92,8 +91,8 @@ public class MessageBox {
 
             final long hWndOwner;
 
-            if (window != null) {
-                hWndOwner = GLFWNativeWin32.glfwGetWin32Window(window.getWindow());
+            if (window != 0L) {
+                hWndOwner = GLFWNativeWin32.glfwGetWin32Window(window);
             } else {
                 hWndOwner = MemoryUtil.NULL;
             }

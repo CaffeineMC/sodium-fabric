@@ -160,9 +160,6 @@ public class BlockRenderer extends AbstractBlockRenderContext {
         ChunkVertexEncoder.Vertex[] vertices = this.vertices;
         Vector3f offset = this.posOffset;
 
-        float uSum = 0.0f;
-        float vSum = 0.0f;
-
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
 
@@ -175,13 +172,13 @@ public class BlockRenderer extends AbstractBlockRenderContext {
             out.color = ColorARGB.toABGR(quad.color(srcIndex));
             out.ao = brightnesses[srcIndex];
 
-            uSum += out.u = quad.u(srcIndex);
-            vSum += out.v = quad.v(srcIndex);
+            out.u = quad.u(srcIndex);
+            out.v = quad.v(srcIndex);
 
             out.light = quad.lightmap(srcIndex);
         }
 
-        var atlasSprite = SpriteFinderCache.forBlockAtlas().find(uSum / 4.0f, vSum / 4.0f);
+        var atlasSprite = quad.sprite(SpriteFinderCache.forBlockAtlas());
         var materialBits = material.bits();
         ModelQuadFacing normalFace = quad.normalFace();
 

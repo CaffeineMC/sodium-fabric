@@ -9,9 +9,6 @@ import net.caffeinemc.mods.sodium.client.platform.MessageBox;
 import net.caffeinemc.mods.sodium.client.platform.windows.WindowsFileVersion;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.Kernel32;
 import net.caffeinemc.mods.sodium.client.platform.windows.api.version.Version;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.NativeModuleLister;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Utility class for determining whether the current process has been injected into or otherwise modified. This should
@@ -40,7 +36,7 @@ public class ModuleScanner {
             "GTIII-OSD64.dll",      "GTIII-OSD.dll"
     };
 
-    public static void checkModules() {
+    public static void checkModules(long window) {
         List<String> modules;
 
         try {
@@ -58,27 +54,15 @@ public class ModuleScanner {
         // is blacklisted in the settings. The only way to stop it from injecting is to close the server process
         // entirely.
         if (BugChecks.ISSUE_2048 && isModuleLoaded(modules, RTSS_HOOKS_MODULE_NAMES)) {
-            checkRTSSModules();
+            checkRTSSModules(window);
         }
 
         // ASUS GPU Tweak III hooks SwapBuffers() function to inject itself, and does so even if the On-Screen
         // Display (OSD) is disabled. The only way to stop it from hooking the game is to add the Java process to
         // the blacklist, or uninstall the application entirely.
         if (BugChecks.ISSUE_2637 && isModuleLoaded(modules, ASUS_GPU_TWEAK_MODULE_NAMES)) {
-            checkASUSGpuTweakIII();
+            checkASUSGpuTweakIII(window);
         }
-    }
-
-    private static List<NativeModuleLister.NativeModuleInfo> enumerateLoadedModules() {
-        List<NativeModuleLister.NativeModuleInfo> modules = null;
-
-        try {
-            modules = NativeModuleLister.listModules();
-        } catch (Throwable t) {
-            LOGGER.warn("Failed to scan the currently loaded modules", t);
-        }
-
-        return modules != null ? modules : List.of();
     }
 
     private static List<String> listModules() {
@@ -97,7 +81,7 @@ public class ModuleScanner {
         }
     }
 
-    private static void checkRTSSModules() {
+    private static void checkRTSSModules(long window) {
         LOGGER.warn("RivaTuner Statistics Server (RTSS) has injected into the process! Attempting to apply workarounds for compatibility...");
 
         @Nullable WindowsFileVersion version = null;
@@ -115,7 +99,6 @@ public class ModuleScanner {
         }
 
         if (version == null || !isRTSSCompatible(version)) {
-            Window window = Minecraft.getInstance().getWindow();
             MessageBox.showMessageBox(window, MessageBox.IconType.ERROR, "Sodium Renderer",
                     """
                             You appear to be using an older version of RivaTuner Statistics Server (RTSS) which is not compatible with Sodium.
@@ -139,8 +122,7 @@ public class ModuleScanner {
         return x > 7 || (x == 7 && y > 3) || (x == 7 && y == 3 && z >= 4);
     }
 
-    private static void checkASUSGpuTweakIII() {
-        Window window = Minecraft.getInstance().getWindow();
+    private static void checkASUSGpuTweakIII(long window) {
         MessageBox.showMessageBox(window, MessageBox.IconType.ERROR, "Sodium Renderer",
                 """
                         ASUS GPU Tweak III is not compatible with Minecraft, and causes extreme performance issues and severe graphical corruption when used with Minecraft.
