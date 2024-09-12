@@ -32,6 +32,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.profiling.Profiler;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -57,6 +59,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
     @Override
     public ChunkBuildOutput execute(ChunkBuildContext buildContext, CancellationToken cancellationToken) {
+        ProfilerFiller profiler = Profiler.get();
         BuiltSectionInfo.Builder renderData = new BuiltSectionInfo.Builder();
         VisGraph occluder = new VisGraph();
 
@@ -89,6 +92,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockRenderer blockRenderer = cache.getBlockRenderer();
         blockRenderer.prepare(buffers, slice, collector);
 
+        profiler.push("render blocks");
         try {
             for (int y = minY; y < maxY; y++) {
                 if (cancellationToken.isCancelled()) {
@@ -143,6 +147,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             // Create a new crash report for other exceptions (e.g. thrown in getQuads)
             throw fillCrashInfo(CrashReport.forThrowable(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
+        profiler.popPush("mesh appenders");
 
         PlatformLevelRenderHooks.INSTANCE.runChunkMeshAppenders(renderContext.getRenderers(), type -> buffers.get(DefaultMaterials.forRenderLayer(type)).asFallbackVertexConsumer(DefaultMaterials.forRenderLayer(type), collector),
                 slice);
@@ -155,6 +160,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         }
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
+        profiler.popPush("meshing");
 
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             // consolidate all translucent geometry into UNASSIGNED so that it's rendered
@@ -170,10 +176,13 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         // cancellation opportunity right before translucent sorting
         if (cancellationToken.isCancelled()) {
             meshes.forEach((pass, mesh) -> mesh.getVertexData().free());
+            profiler.pop();
             return null;
         }
 
         renderData.setOcclusionData(occluder.resolve());
+
+        profiler.popPush("translucency sorting");
 
         boolean reuseUploadedData = false;
         TranslucentData translucentData = null;
@@ -185,6 +194,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         }
 
         var output = new ChunkBuildOutput(this.render, this.submitTime, translucentData, renderData.build(), meshes);
+
         if (collector != null) {
             if (reuseUploadedData) {
                 output.markAsReusingUploadedData();
@@ -194,6 +204,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                 output.copyResultFrom(sorter);
             }
         }
+
+        profiler.pop();
 
         return output;
     }

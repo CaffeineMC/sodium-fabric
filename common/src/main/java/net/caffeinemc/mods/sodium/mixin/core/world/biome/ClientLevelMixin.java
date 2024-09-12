@@ -29,7 +29,6 @@ public class ClientLevelMixin implements BiomeSeedProvider {
                              Holder<DimensionType> dimensionType,
                              int loadDistance,
                              int simulationDistance,
-                             Supplier<ProfilerFiller> profiler,
                              LevelRenderer renderer,
                              boolean isDebug,
                              long biomeZoomSeed, int k,
