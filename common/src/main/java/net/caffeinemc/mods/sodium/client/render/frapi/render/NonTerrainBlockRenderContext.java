@@ -18,13 +18,13 @@ package net.caffeinemc.mods.sodium.client.render.frapi.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.caffeinemc.mods.sodium.api.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.model.light.LightMode;
 import net.caffeinemc.mods.sodium.client.model.light.LightPipelineProvider;
 import net.caffeinemc.mods.sodium.client.model.light.data.SingleBlockLightDataCache;
 import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteFinderCache;
-import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.services.SodiumModelData;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.material.ShadeMode;
@@ -127,6 +127,6 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
 
     private void bufferQuad(MutableQuadViewImpl quad) {
         QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
-        SpriteUtil.markSpriteActive(quad.sprite(SpriteFinderCache.forBlockAtlas()));
+        SpriteUtil.INSTANCE.markSpriteActive(quad.sprite(SpriteFinderCache.forBlockAtlas()));
     }
 }

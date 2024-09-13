@@ -2,7 +2,7 @@ package net.caffeinemc.mods.sodium.mixin.features.textures.animations.tracking;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
+import net.caffeinemc.mods.sodium.api.texture.SpriteUtil;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.core.BlockPos;
@@ -22,6 +22,6 @@ public class ModelBlockRendererMixin {
      */
     @Inject(method = "putQuadData", at = @At("HEAD"))
     private void preRenderQuad(BlockAndTintGetter level, BlockState state, BlockPos pos, VertexConsumer vertexConsumer, PoseStack.Pose matrices, BakedQuad quad, float brightness0, float brightness1, float brightness2, float brightness3, int light0, int light1, int light2, int light3, int overlay, CallbackInfo ci) {
-        SpriteUtil.markSpriteActive(quad.getSprite());
+        SpriteUtil.INSTANCE.markSpriteActive(quad.getSprite());
     }
 }

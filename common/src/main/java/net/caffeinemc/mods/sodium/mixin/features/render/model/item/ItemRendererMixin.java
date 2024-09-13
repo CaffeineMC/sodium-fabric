@@ -1,8 +1,8 @@
 package net.caffeinemc.mods.sodium.mixin.features.render.model.item;
 
+import net.caffeinemc.mods.sodium.api.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.model.quad.BakedQuadView;
 import net.caffeinemc.mods.sodium.client.render.immediate.model.BakedModelEncoder;
-import net.caffeinemc.mods.sodium.client.render.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.client.model.color.interop.ItemColorsExtension;
 import net.caffeinemc.mods.sodium.client.util.DirectionUtil;
@@ -94,7 +94,7 @@ public class ItemRendererMixin {
 
             BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
 
-            SpriteUtil.markSpriteActive(quad.getSprite());
+            SpriteUtil.INSTANCE.markSpriteActive(quad.getSprite());
         }
     }
 }
