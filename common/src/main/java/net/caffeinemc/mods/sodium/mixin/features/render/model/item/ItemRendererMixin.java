@@ -94,7 +94,8 @@ public class ItemRendererMixin {
 
             BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
 
-            SpriteUtil.INSTANCE.markSpriteActive(quad.getSprite());
+            if (quad.getSprite() != null)
+                SpriteUtil.INSTANCE.markSpriteActive(quad.getSprite());
         }
     }
 }
