@@ -32,6 +32,7 @@ import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
@@ -127,6 +128,9 @@ public class NonTerrainBlockRenderContext extends AbstractBlockRenderContext {
 
     private void bufferQuad(MutableQuadViewImpl quad) {
         QuadEncoder.writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
-        SpriteUtil.INSTANCE.markSpriteActive(quad.sprite(SpriteFinderCache.forBlockAtlas()));
+        TextureAtlasSprite sprite = quad.sprite(SpriteFinderCache.forBlockAtlas());
+        if (sprite != null) {
+            SpriteUtil.INSTANCE.markSpriteActive(sprite);
+        }
     }
 }

@@ -15,7 +15,7 @@ public class SpriteUtilImpl implements SpriteUtil {
     }
 
     @Override
-    public boolean hasAnimation(TextureAtlasSprite sprite) {
+    public boolean hasAnimation(@NotNull TextureAtlasSprite sprite) {
         return ((SpriteContentsExtension) sprite.contents()).sodium$hasAnimation();
     }
 }

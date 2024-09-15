@@ -23,5 +23,5 @@ public interface SpriteUtil {
      * @param sprite The sprite you want to check
      * @return true if the provided sprite has an animation, false if it doesn't
      */
-    boolean hasAnimation(TextureAtlasSprite sprite);
+    boolean hasAnimation(@NotNull TextureAtlasSprite sprite);
 }

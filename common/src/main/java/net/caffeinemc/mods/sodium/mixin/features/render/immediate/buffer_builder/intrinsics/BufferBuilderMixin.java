@@ -9,6 +9,9 @@ import net.caffeinemc.mods.sodium.client.render.immediate.model.BakedModelEncode
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import org.checkerframework.common.returnsreceiver.qual.This;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,8 +27,13 @@ public abstract class BufferBuilderMixin implements VertexConsumer {
     public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float r, float g, float b, float a, int light, int overlay) {
         if (!this.fastFormat) {
             VertexConsumer.super.putBulkData(matrices, bakedQuad, r, g, b, a, light, overlay);
-            
-            SpriteUtil.INSTANCE.markSpriteActive(bakedQuad.getSprite());
+
+            TextureAtlasSprite sprite = bakedQuad.getSprite();
+            // This can be null
+            //noinspection ConstantValue
+            if (sprite != null) {
+                SpriteUtil.INSTANCE.markSpriteActive(sprite);
+            }
 
             return;
         }
@@ -41,16 +49,23 @@ public abstract class BufferBuilderMixin implements VertexConsumer {
         int color = ColorABGR.pack(r, g, b, a);
         BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
 
-        if (quad.getSprite() != null)
-            SpriteUtil.INSTANCE.markSpriteActive(quad.getSprite());
+        TextureAtlasSprite sprite = quad.getSprite();
+        if (sprite != null) {
+            SpriteUtil.INSTANCE.markSpriteActive(sprite);
+        }
     }
 
     @Override
     public void putBulkData(PoseStack.Pose matrices, BakedQuad bakedQuad, float[] brightnessTable, float r, float g, float b, float a, int[] light, int overlay, boolean colorize) {
         if (!this.fastFormat) {
             VertexConsumer.super.putBulkData(matrices, bakedQuad, brightnessTable, r, g, b, a, light, overlay, colorize);
-            
-            SpriteUtil.INSTANCE.markSpriteActive(bakedQuad.getSprite());
+
+            TextureAtlasSprite sprite = bakedQuad.getSprite();
+            // This can be null
+            //noinspection ConstantValue
+            if (sprite != null) {
+                SpriteUtil.INSTANCE.markSpriteActive(sprite);
+            }
 
             return;
         }
@@ -65,7 +80,9 @@ public abstract class BufferBuilderMixin implements VertexConsumer {
 
         BakedModelEncoder.writeQuadVertices(writer, matrices, quad, r, g, b, a, brightnessTable, colorize, light, overlay);
 
-        if (quad.getSprite() != null)
-            SpriteUtil.INSTANCE.markSpriteActive(quad.getSprite());
+        TextureAtlasSprite sprite = quad.getSprite();
+        if (sprite != null) {
+            SpriteUtil.INSTANCE.markSpriteActive(sprite);
+        }
     }
 }
