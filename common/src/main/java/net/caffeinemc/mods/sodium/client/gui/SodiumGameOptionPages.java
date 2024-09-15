@@ -5,6 +5,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Monitor;
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.platform.Window;
+import net.caffeinemc.mods.sodium.client.compatibility.environment.OsUtils;
 import net.caffeinemc.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
 import net.caffeinemc.mods.sodium.client.gui.options.*;
@@ -94,7 +95,7 @@ public class SodiumGameOptionPages {
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Component.translatable("options.fullscreen.resolution"))
-                        .setTooltip(Component.translatable("options.fullscreen.resolution"))
+                        .setTooltip(Component.translatable("sodium.options.fullscreen_resolution.tooltip"))
                         .setControl(option -> new SliderControl(option, 0, null != monitor? monitor.getModeCount(): 0, 1, ControlValueFormatter.resolution()))
                         .setBinding((options, value) -> {
                             if (null != monitor) {
@@ -109,7 +110,7 @@ public class SodiumGameOptionPages {
                                 return optional.map((videoMode) -> monitor.getVideoModeIndex(videoMode) + 1).orElse(0);
                             }
                         })
-                        .setImpact(OptionImpact.HIGH)
+                        .setEnabled(() -> OsUtils.getOs() == OsUtils.OperatingSystem.WIN && Minecraft.getInstance().getWindow().findBestMonitor() != null)
                         .setFlags(OptionFlag.REQUIRES_VIDEOMODE_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)

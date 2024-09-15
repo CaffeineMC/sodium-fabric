@@ -3,9 +3,10 @@ package net.caffeinemc.mods.sodium.client.gui.options.control;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.caffeinemc.mods.sodium.client.gui.options.Option;
 import net.caffeinemc.mods.sodium.client.util.Dim2i;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.Mth;
 import org.apache.commons.lang3.Validate;
 
@@ -81,7 +82,15 @@ public class SliderControl implements Control<Integer> {
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
 
-            Component label = this.formatter.format(this.option.getValue());
+            var label = this.formatter.format(this.option.getValue())
+                    .copy();
+
+            if (!this.option.isAvailable()) {
+                label.setStyle(Style.EMPTY
+                        .withColor(ChatFormatting.GRAY)
+                        .withItalic(true));
+            }
+
             int labelWidth = this.font.width(label);
 
             boolean drawSlider = this.option.isAvailable() && (this.hovered || this.isFocused());
