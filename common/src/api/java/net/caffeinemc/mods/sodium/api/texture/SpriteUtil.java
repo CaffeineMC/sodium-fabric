@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
+@ApiStatus.Experimental
 @ApiStatus.AvailableSince("0.6.0")
 public interface SpriteUtil {
     SpriteUtil INSTANCE = DependencyInjection.load(SpriteUtil.class,
