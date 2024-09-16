@@ -15,7 +15,7 @@
     "core.gui.LevelLoadStatusManagerMixin",
     "core.model.colors.BlockColorsMixin",
     "core.model.colors.ItemColorsMixin",
-    "core.model.FaceBakeryMixin",
+    "core.model.TextureAtlasSpriteMixin",
     "core.render.BlockEntityTypeMixin",
     "core.render.TextureAtlasMixin",
     "core.render.VertexFormatMixin",
@@ -87,7 +87,6 @@
     "features.textures.mipmaps.MipmapGeneratorMixin",
     "features.textures.mipmaps.SpriteContentsMixin",
     "features.textures.scan.SpriteContentsMixin",
-    "features.world.biome.BiomeMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.event_loop.RenderSystemMixin"
   ]

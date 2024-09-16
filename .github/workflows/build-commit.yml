@@ -27,7 +27,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
 
@@ -38,6 +38,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sodium-artifacts-${{ steps.ref.outputs.branch }}
-          path: |
-            neoforge/build/libs/*.jar
-            fabric/build/libs/*.jar
+          path: build/libs/*.jar

@@ -14,6 +14,7 @@
     "features.model.MultiPartBakedModelMixin",
     "features.model.WeightedBakedModelMixin",
     "features.render.model.block.ModelBlockRendererMixin",
+    "features.world.biome.BiomeMixin",
     "AbstractBlockRenderContextMixin",
     "AuxiliaryLightManagerMixin",
     "ChunkRenderTypeSetAccessor",

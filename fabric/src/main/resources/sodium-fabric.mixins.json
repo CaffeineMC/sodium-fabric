@@ -13,6 +13,7 @@
     "core.model.quad.BakedQuadMixin",
     "features.model.MultiPartBakedModelMixin",
     "features.model.WeightedBakedModelMixin",
-    "features.render.model.block.ModelBlockRendererMixin"
+    "features.render.model.block.ModelBlockRendererMixin",
+    "features.world.biome.BiomeMixin"
   ]
 }

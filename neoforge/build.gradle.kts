@@ -1,6 +1,6 @@
 plugins {
     id("idea")
-    id("net.neoforged.moddev") version "1.0.15"
+    id("net.neoforged.moddev") version "2.0.28-beta"
     id("java-library")
 }
 
@@ -97,13 +97,17 @@ tasks.jar {
     manifest.attributes["Main-Class"] = "net.caffeinemc.mods.sodium.desktop.LaunchWarn"
 }
 
+tasks.jar.get().destinationDirectory = rootDir.resolve("build").resolve("libs")
+
 neoForge {
     // Specify the version of NeoForge to use.
     version = NEOFORGE_VERSION
 
-    parchment {
-        mappingsVersion = PARCHMENT_VERSION
-        minecraftVersion = MINECRAFT_VERSION
+    if (PARCHMENT_VERSION != null) {
+        parchment {
+            minecraftVersion = MINECRAFT_VERSION
+            mappingsVersion = PARCHMENT_VERSION
+        }
     }
 
     runs {
@@ -143,12 +147,10 @@ tasks.named("compileTestJava").configure {
 dependencies {
     compileOnly(project.project(":common").sourceSets.main.get().output)
     compileOnly(project.project(":common").sourceSets.getByName("api").output)
-    includeDep("org.sinytra.forgified-fabric-api:fabric-api-base:0.4.42+d1308dedd1")
-    includeDep("org.sinytra.forgified-fabric-api:fabric-renderer-api-v1:3.4.0+acb05a39d1")
-    includeDep("net.fabricmc:fabric_rendering_data_attachment_v1:0.3.46+${MINECRAFT_VERSION}") {
-        isTransitive = false
-    }
-    includeDep("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.0.10+9afaaf8cd1")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-api-base:0.4.42+d1308ded19")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-renderer-api-v1:3.4.0+acb05a3919")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-rendering-data-attachment-v1:0.3.48+73761d2e19")
+    includeDep("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.0.10+9afaaf8c19")
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)

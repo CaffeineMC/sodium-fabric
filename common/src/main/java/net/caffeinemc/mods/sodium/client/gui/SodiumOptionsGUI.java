@@ -355,6 +355,10 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
             client.delayTextureReload();
         }
 
+        if (flags.contains(OptionFlag.REQUIRES_VIDEOMODE_RELOAD)) {
+            client.getWindow().changeFullscreenVideoMode();
+        }
+
         if (flags.contains(OptionFlag.REQUIRES_GAME_RESTART)) {
             Console.instance().logMessage(MessageLevel.WARN,
                     "sodium.console.game_restart", true, 10.0);
