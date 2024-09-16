@@ -7,7 +7,6 @@ import net.minecraft.client.resources.model.MultiPartBakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
-import org.apache.commons.lang3.tuple.Pair;
 import org.spongepowered.asm.mixin.*;
 
 import java.util.ArrayList;
@@ -15,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.StampedLock;
-import java.util.function.Predicate;
 
 @Mixin(MultiPartBakedModel.class)
 public class MultiPartBakedModelMixin {
@@ -26,7 +24,7 @@ public class MultiPartBakedModelMixin {
 
     @Shadow
     @Final
-    private List<Pair<Predicate<BlockState>, BakedModel>> selectors;
+    private List<MultiPartBakedModel.Selector> selectors;
 
     /**
      * @author JellySquid
@@ -52,9 +50,9 @@ public class MultiPartBakedModelMixin {
             try {
                 List<BakedModel> modelList = new ArrayList<>(this.selectors.size());
 
-                for (Pair<Predicate<BlockState>, BakedModel> pair : this.selectors) {
-                    if (pair.getLeft().test(state)) {
-                        modelList.add(pair.getRight());
+                for (MultiPartBakedModel.Selector selector : this.selectors) {
+                    if (selector.condition().test(state)) {
+                        modelList.add(selector.model());
                     }
                 }
 
