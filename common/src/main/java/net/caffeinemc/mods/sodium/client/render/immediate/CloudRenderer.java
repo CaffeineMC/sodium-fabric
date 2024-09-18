@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.immediate;
 
+import com.mojang.blaze3d.buffers.BufferUsage;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -204,7 +205,7 @@ public class CloudRenderer {
                 vertexBuffer = existingGeometry.vertexBuffer();
             }
             if (vertexBuffer == null) {
-                vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
+                vertexBuffer = new VertexBuffer(BufferUsage.DYNAMIC_WRITE);
             }
 
             uploadToVertexBuffer(vertexBuffer, builtBuffer);

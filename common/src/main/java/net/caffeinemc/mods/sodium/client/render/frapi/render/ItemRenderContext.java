@@ -69,9 +69,6 @@ public class ItemRenderContext extends AbstractRenderContext {
         }
     };
 
-    @Deprecated
-    private final BakedModelConsumerImpl vanillaModelConsumer = new BakedModelConsumerImpl();
-
     private final ItemColors colorMap;
     private final VanillaModelBufferer vanillaBufferer;
 
@@ -121,13 +118,6 @@ public class ItemRenderContext extends AbstractRenderContext {
     @Override
     public ItemDisplayContext itemTransformationMode() {
         return transformMode;
-    }
-
-    @SuppressWarnings("removal")
-    @Deprecated
-    @Override
-    public BakedModelConsumer bakedModelConsumer() {
-        return vanillaModelConsumer;
     }
 
     public void renderModel(ItemStack itemStack, ItemDisplayContext transformMode, boolean invert, PoseStack poseStack, MultiBufferSource bufferSource, int lightmap, int overlay, BakedModel model) {
@@ -282,20 +272,6 @@ public class ItemRenderContext extends AbstractRenderContext {
             VanillaModelEncoder.emitItemQuads(model, state, randomSupplier, ItemRenderContext.this);
         } else {
             vanillaBufferer.accept(model, itemStack, lightmap, overlay, poseStack, defaultVertexConsumer);
-        }
-    }
-
-    @SuppressWarnings("removal")
-    @Deprecated
-    private class BakedModelConsumerImpl implements BakedModelConsumer {
-        @Override
-        public void accept(BakedModel model) {
-            accept(model, null);
-        }
-
-        @Override
-        public void accept(BakedModel model, @Nullable BlockState state) {
-            bufferDefaultModel(model, state);
         }
     }
 
