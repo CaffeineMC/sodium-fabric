@@ -46,7 +46,7 @@ public class ModelBlockRendererMixin {
 
             int color = quad.hasColor() ? defaultColor : 0xFFFFFFFF;
 
-            BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
+            BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay, false);
 
             SpriteUtil.markSpriteActive(quad.getSprite());
         }
