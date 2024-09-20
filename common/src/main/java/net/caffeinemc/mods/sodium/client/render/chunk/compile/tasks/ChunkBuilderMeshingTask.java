@@ -163,7 +163,9 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             // consolidate all translucent geometry into UNASSIGNED so that it's rendered
             // all together if it needs to share an index buffer between the directions
-            BuiltSectionMeshParts mesh = buffers.createMesh(pass, visibleSlices, pass.isTranslucent() && sortType.needsDirectionMixing, !isTranslucent);
+            boolean forceUnassigned = pass.isTranslucent() && sortType.needsDirectionMixing;
+            boolean sliceReordering = !pass.isTranslucent();
+            BuiltSectionMeshParts mesh = buffers.createMesh(pass, visibleSlices, forceUnassigned, sliceReordering);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);

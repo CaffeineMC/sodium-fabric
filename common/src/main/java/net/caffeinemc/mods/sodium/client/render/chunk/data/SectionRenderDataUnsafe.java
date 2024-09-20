@@ -108,4 +108,16 @@ public class SectionRenderDataUnsafe {
     public static int getFacing(int value) {
         return value >>> 29;
     }
+
+    public static int encodeVertexSegment(int vertexCount, int facing) {
+        return vertexCount | (facing << 29);
+    }
+
+    public static int decodeFacing(int value) {
+        return value >>> 29;
+    }
+
+    public static int decodeVertexCount(int value) {
+        return value & 0x1FFFFFFF;
+    }
 }

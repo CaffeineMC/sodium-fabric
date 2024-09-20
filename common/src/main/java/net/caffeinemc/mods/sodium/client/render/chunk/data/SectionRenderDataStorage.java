@@ -46,7 +46,7 @@ public class SectionRenderDataStorage {
     }
 
     public void setVertexData(int localSectionIndex,
-            GlBufferSegment allocation, int[] vertexCounts) {
+            GlBufferSegment allocation, int[] vertexSegments) {
         GlBufferSegment prev = this.vertexAllocations[localSectionIndex];
 
         if (prev != null) {
@@ -61,16 +61,10 @@ public class SectionRenderDataStorage {
         int vertexOffset = allocation.getOffset();
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            VertexRange vertexRange = ranges[i];
-            int vertexCount;
-            int facing = -1;
-
-            if (vertexRange != null) {
-                vertexCount = vertexRange.vertexCount();
-                facing = vertexRange.facing();
-            } else {
-                vertexCount = 0;
-            }
+            var segment = vertexSegments[i];
+            var vertexCount = SectionRenderDataUnsafe.decodeVertexCount(segment);
+            // TODO: -1 here necessary? otherwise the renderer gets lots of 0 facings which is not a null-signal
+            var facing = vertexCount == 0 ? -1 : SectionRenderDataUnsafe.decodeFacing(segment);
 
             SectionRenderDataUnsafe.setVertexOffset(pMeshData, i, vertexOffset);
             SectionRenderDataUnsafe.setElementCountAndFacing(pMeshData, i, (vertexCount >> 2) * 6, facing);

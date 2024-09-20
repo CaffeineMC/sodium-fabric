@@ -6,6 +6,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.BakedChunk
 import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import net.caffeinemc.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import net.caffeinemc.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
@@ -58,26 +59,19 @@ public class ChunkBuildBuffers {
      */
     public BuiltSectionMeshParts createMesh(TerrainRenderPass pass, int visibleSlices, boolean forceUnassigned, boolean sliceReordering) {
         var builder = this.builders.get(pass);
-
-        List<ByteBuffer> vertexBuffers = new ArrayList<>();
-        int[] vertexCounts = new int[ModelQuadFacing.COUNT];
-
-        int vertexSum = 0;
+        int[] vertexSegments = new int[ModelQuadFacing.COUNT];
+        int vertexTotal = 0;
 
         // get the total vertex count to initialize the buffer
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-            vertexCount += builder.getVertexBuffer(facing).count();
+            vertexTotal += builder.getVertexBuffer(facing).count();
         }
 
-        if (vertexSum == 0) {
+        if (vertexTotal == 0) {
             return null;
         }
 
-        if (forceUnassigned) {
-            vertexCounts[ModelQuadFacing.UNASSIGNED.ordinal()] = vertexSum;
-        }
-
-        var mergedBuffer = new NativeBuffer(vertexSum * this.vertexType.getVertexFormat().getStride());
+        var mergedBuffer = new NativeBuffer(vertexTotal * this.vertexType.getVertexFormat().getStride());
         var mergedBufferBuilder = mergedBuffer.getDirectBuffer();
 
         if (sliceReordering) {
@@ -87,7 +81,7 @@ public class ChunkBuildBuffers {
             // start with unassigned as it will never become invisible
             var unassignedBuffer = builder.getVertexBuffer(ModelQuadFacing.UNASSIGNED);
             int vertexRangeCount = 0;
-            vertexRanges[vertexRangeCount++] = new VertexRange(unassignedBuffer.count(), ModelQuadFacing.UNASSIGNED.ordinal());
+            vertexSegments[vertexRangeCount++] = SectionRenderDataUnsafe.encodeVertexSegment(unassignedBuffer.count(), ModelQuadFacing.UNASSIGNED.ordinal());
             if (!unassignedBuffer.isEmpty()) {
                 mergedBufferBuilder.put(unassignedBuffer.slice());
             }
@@ -103,7 +97,7 @@ public class ChunkBuildBuffers {
                     var buffer = builder.getVertexBuffer(facing);
 
                     // generate empty ranges to prevent SectionRenderData storage from making up indexes for null ranges
-                    vertexRanges[vertexRangeCount++] = new VertexRange(buffer.count(), facingIndex);
+                    vertexSegments[vertexRangeCount++] = SectionRenderDataUnsafe.encodeVertexSegment(buffer.count(), facingIndex);
 
                     if (!buffer.isEmpty()) {
                         mergedBufferBuilder.put(buffer.slice());
@@ -114,7 +108,7 @@ public class ChunkBuildBuffers {
             // forceUnassigned implies !sliceReordering
 
             if (forceUnassigned) {
-                vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = new VertexRange(vertexCount, ModelQuadFacing.UNASSIGNED.ordinal());
+                vertexSegments[ModelQuadFacing.UNASSIGNED.ordinal()] = SectionRenderDataUnsafe.encodeVertexSegment(vertexTotal, ModelQuadFacing.UNASSIGNED.ordinal());
             }
 
             for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
@@ -122,14 +116,14 @@ public class ChunkBuildBuffers {
                 if (!buffer.isEmpty()) {
                     if (!forceUnassigned) {
                         var facingIndex = facing.ordinal();
-                        vertexRanges[facingIndex] = new VertexRange(buffer.count(), facingIndex);
+                        vertexSegments[facingIndex] = SectionRenderDataUnsafe.encodeVertexSegment(buffer.count(), facingIndex);
                     }
                     mergedBufferBuilder.put(buffer.slice());
                 }
             }
         }
 
-        return new BuiltSectionMeshParts(mergedBuffer, vertexCounts);
+        return new BuiltSectionMeshParts(mergedBuffer, vertexSegments);
     }
 
     public void destroy() {
