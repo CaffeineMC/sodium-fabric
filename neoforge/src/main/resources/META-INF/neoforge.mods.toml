@@ -1,0 +1,45 @@
+modLoader = "javafml"
+loaderVersion = "*"
+license = "Polyform-Shield-1.0.0"
+
+[[mods]]
+modId = "sodium"
+
+version = "${version}"
+displayName = "Sodium"
+
+logoFile = "sodium-icon.png" #optional
+
+authors = "JellySquid, IMS212"
+
+credits = "@bytzo, @PepperCode1, @FlashyReese, @altrisi, @Grayray75, @Madis0, @Johni0702, @comp500, @coderbot16, @Moulberry, @MCRcortex, @Altirix, @embeddedt, @pajicadvance, @Kroppeb, @douira, @burgerindividual, @TwistedZero, @Leo40Git, @haykam821"
+
+description = '''
+Sodium is a powerful rendering engine for Minecraft which improves frame rates and reduces lag spikes.
+'''
+
+provides = ["indium"]
+
+[modproperties.sodium]
+"fabric-renderer-api-v1:contains_renderer" = true
+
+[[dependencies.sodium]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21,1.21.1]"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.sodium]]
+modId = "embeddium"
+type = "incompatible"
+reason = "Sodium and Embeddium cannot be used together. Please remove Embeddium."
+versionRange = "[0.0.1,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[mixins]]
+config = "sodium.mixins.json"
+
+[[mixins]]
+config = "sodium-forge.mixins.json"
