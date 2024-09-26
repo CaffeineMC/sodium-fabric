@@ -171,8 +171,6 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-//     private static final int MAX_EXTRA_ELEMENTS_PER_AVOIDED_DRAW = 32;
-
     /**
      * Generates the draw commands for a chunk's meshes using the shared index buffer.
      */
@@ -184,7 +182,6 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         int size = batch.size;
         int groupElementCount = 0;
-//        int excessElementCount = 0;
         int groupBaseVertex = 0;
         int lastMaskBit = 0;
 
@@ -196,34 +193,16 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
             if (maskBit == 0) {
                 if (lastMaskBit == 1) {
-                    // don't write out draw command if we can continue this one
-                    // to avoid splitting commands across facings with no or only little geometry.
-                    // this is disabled for the last facing, as we need to write out the command then at the latest.
-//                    if (i != ModelQuadFacing.COUNT) {
-//                        excessElementCount += SectionRenderDataUnsafe.getElementCount(elementCountAndFacing);
-//                        if (excessElementCount <= MAX_EXTRA_ELEMENTS_PER_AVOIDED_DRAW) {
-//                            // continue without setting lastMaskBit (1) to maskBit (0).
-//                            // this results in lastMaskBit being 1 again for the next iteration
-//                            // so the "end of group" test for the next facing gets repeated.
-//                            continue;
-//                        } else {
-//                            // aggressive draw command combining failed, reset and allow draw command to be written out
-//                            excessElementCount = 0;
-//                        }
-//                    }
-
                     // delay writing out draw command if there's a zero-size group
                     if (i != ModelQuadFacing.COUNT && SectionRenderDataUnsafe.getElementCount(elementCountAndFacing) == 0) {
                         continue;
                     }
 
-                    // MemoryUtil.memPutInt(pElementCount + (size << 2), groupElementCount + excessElementCount);
                     MemoryUtil.memPutInt(pElementCount + (size << 2), groupElementCount);
                     MemoryUtil.memPutInt(pBaseVertex + (size << 2), groupBaseVertex);
                     MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
                     size++;
                     groupElementCount = 0;
-//                    excessElementCount = 0;
                 }
             } else {
                 groupElementCount += SectionRenderDataUnsafe.getElementCount(elementCountAndFacing);
