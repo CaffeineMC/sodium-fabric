@@ -63,14 +63,14 @@ public class SectionRenderDataStorage {
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
             var segment = vertexSegments[i];
             var vertexCount = SectionRenderDataUnsafe.decodeVertexCount(segment);
-            // TODO: -1 here necessary? otherwise the renderer gets lots of 0 facings which is not a null-signal
-            var facing = vertexCount == 0 ? -1 : SectionRenderDataUnsafe.decodeFacing(segment);
+            var facing = SectionRenderDataUnsafe.decodeFacing(segment);
 
-            SectionRenderDataUnsafe.setVertexOffset(pMeshData, i, vertexOffset);
             SectionRenderDataUnsafe.setElementCountAndFacing(pMeshData, i, (vertexCount >> 2) * 6, facing);
 
             if (vertexCount > 0) {
                 sliceMask |= 1 << facing;
+
+                SectionRenderDataUnsafe.setVertexOffset(pMeshData, i, vertexOffset);
             }
 
             vertexOffset += vertexCount;

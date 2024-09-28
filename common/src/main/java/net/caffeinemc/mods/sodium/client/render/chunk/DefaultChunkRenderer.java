@@ -186,20 +186,23 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         int lastMaskBit = 0;
 
         for (int i = 0; i <= ModelQuadFacing.COUNT; i++) {
-            // if the stored data is -1, that results in a facing of 7, which will not have a 1 bit in the mask, so it gets treated as "invisible"
             var maskBit = 0;
             var elementCount = 0;
             if (i < ModelQuadFacing.COUNT) {
                 var elementCountAndFacing = SectionRenderDataUnsafe.getElementCountAndFacing(pMeshData, i);
                 elementCount = SectionRenderDataUnsafe.getElementCount(elementCountAndFacing);
-                var facing = SectionRenderDataUnsafe.getFacing(elementCountAndFacing);
-                maskBit = (mask >> facing) & 1;
+
+                // if there's no elements, the mask bit is just 0
+                if (elementCount != 0) {
+                    var facing = SectionRenderDataUnsafe.getFacing(elementCountAndFacing);
+                    maskBit = (mask >> facing) & 1;
+                }
             }
 
             if (maskBit == 0) {
                 if (lastMaskBit == 1) {
                     // delay writing out draw command if there's a zero-size group
-                    if (i != ModelQuadFacing.COUNT && elementCount == 0) {
+                    if (i < ModelQuadFacing.COUNT && elementCount == 0) {
                         continue;
                     }
 
