@@ -187,14 +187,19 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         for (int i = 0; i <= ModelQuadFacing.COUNT; i++) {
             // if the stored data is -1, that results in a facing of 7, which will not have a 1 bit in the mask, so it gets treated as "invisible"
-            var elementCountAndFacing = i == ModelQuadFacing.COUNT ? -1 : SectionRenderDataUnsafe.getElementCountAndFacing(pMeshData, i);
-            int facing = SectionRenderDataUnsafe.getFacing(elementCountAndFacing);
-            final int maskBit = (mask >> facing) & 1;
+            var maskBit = 0;
+            var elementCount = 0;
+            if (i < ModelQuadFacing.COUNT) {
+                var elementCountAndFacing = SectionRenderDataUnsafe.getElementCountAndFacing(pMeshData, i);
+                elementCount = SectionRenderDataUnsafe.getElementCount(elementCountAndFacing);
+                var facing = SectionRenderDataUnsafe.getFacing(elementCountAndFacing);
+                maskBit = (mask >> facing) & 1;
+            }
 
             if (maskBit == 0) {
                 if (lastMaskBit == 1) {
                     // delay writing out draw command if there's a zero-size group
-                    if (i != ModelQuadFacing.COUNT && SectionRenderDataUnsafe.getElementCount(elementCountAndFacing) == 0) {
+                    if (i != ModelQuadFacing.COUNT && elementCount == 0) {
                         continue;
                     }
 
@@ -205,7 +210,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                     groupElementCount = 0;
                 }
             } else {
-                groupElementCount += SectionRenderDataUnsafe.getElementCount(elementCountAndFacing);
+                groupElementCount += elementCount;
                 if (lastMaskBit == 0) {
                     groupBaseVertex = SectionRenderDataUnsafe.getVertexOffset(pMeshData, i);
                 }
