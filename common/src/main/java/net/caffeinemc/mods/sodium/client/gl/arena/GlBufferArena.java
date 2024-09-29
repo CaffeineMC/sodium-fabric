@@ -261,7 +261,7 @@ public class GlBufferArena {
         // A linked list is used as we'll be randomly removing elements and want O(1) performance
         List<PendingUpload> queue = stream.collect(Collectors.toCollection(LinkedList::new));
 
-        // Try to upload all of the data into free segments first
+        // Try to upload all the data into free segments first
         this.tryUploads(commandList, queue);
 
         // If we weren't able to upload some buffers, they will have been left behind in the queue

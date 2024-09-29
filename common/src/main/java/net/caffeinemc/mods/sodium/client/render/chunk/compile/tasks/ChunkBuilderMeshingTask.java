@@ -83,7 +83,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
         TranslucentGeometryCollector collector;
         if (SodiumClientMod.options().performance.getSortBehavior() != SortBehavior.OFF) {
-            collector = new TranslucentGeometryCollector(render.getPosition());
+            collector = new TranslucentGeometryCollector(this.render.getPosition());
         } else {
             collector = null;
         }
@@ -145,7 +145,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             throw fillCrashInfo(CrashReport.forThrowable(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
-        PlatformLevelRenderHooks.INSTANCE.runChunkMeshAppenders(renderContext.getRenderers(), type -> buffers.get(DefaultMaterials.forRenderLayer(type)).asFallbackVertexConsumer(DefaultMaterials.forRenderLayer(type), collector),
+        PlatformLevelRenderHooks.INSTANCE.runChunkMeshAppenders(this.renderContext.getRenderers(), type -> buffers.get(DefaultMaterials.forRenderLayer(type)).asFallbackVertexConsumer(DefaultMaterials.forRenderLayer(type), collector),
                 slice);
 
         blockRenderer.release();
