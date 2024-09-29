@@ -28,7 +28,7 @@ import org.lwjgl.system.MemoryUtil;
 // }
 
 public class SectionRenderDataUnsafe {
-    public static final int BASE_ELEMENT_MSB = 1 << 31;
+    public static final int LOCAL_INDEXED_MASK = 1 << 31;
 
     /**
      * When the "base element" field is not specified (indicated by setting the MSB to 0), the indices for the geometry set

@@ -165,7 +165,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             // consolidate all translucent geometry into UNASSIGNED
             boolean translucentBehavior = collector != null && pass.isTranslucent();
             boolean forceUnassigned = translucentBehavior && sortType.needsDirectionMixing;
-            boolean sliceReordering = !translucentBehavior;
+            boolean sliceReordering = !translucentBehavior || sortType.allowSliceReordering;
             BuiltSectionMeshParts mesh = buffers.createMesh(pass, visibleSlices, forceUnassigned, sliceReordering);
 
             if (mesh != null) {
@@ -198,7 +198,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             } else if (translucentData instanceof PresentTranslucentData present) {
                 var sorter = present.getSorter();
                 sorter.writeIndexBuffer(this, true);
-                output.copyResultFrom(sorter);
+                output.setSorter(sorter);
             }
         }
 

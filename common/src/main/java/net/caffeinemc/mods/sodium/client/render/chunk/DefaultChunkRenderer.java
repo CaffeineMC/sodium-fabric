@@ -1,7 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk;
 
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
-import net.caffeinemc.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import net.caffeinemc.mods.sodium.client.gl.device.CommandList;
 import net.caffeinemc.mods.sodium.client.gl.device.DrawCommandList;
 import net.caffeinemc.mods.sodium.client.gl.device.MultiDrawBatch;
@@ -16,7 +15,6 @@ import net.caffeinemc.mods.sodium.client.render.chunk.data.SectionRenderDataUnsa
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
-import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBehavior;
@@ -164,10 +162,10 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         int elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData);
 
         // If high bit is set, the indices should be sourced from the arena's index buffer
-        if ((elementOffset & SectionRenderDataUnsafe.BASE_ELEMENT_MSB) != 0) {
-            addIndexedDrawCommands(batch, pMeshData, mask);
+        if ((elementOffset & SectionRenderDataUnsafe.LOCAL_INDEXED_MASK) != 0) {
+            addLocalIndexedDrawCommands(batch, pMeshData, mask);
         } else {
-            addNonIndexedDrawCommands(batch, pMeshData, mask);
+            addSharedIndexedDrawCommands(batch, pMeshData, mask);
         }
     }
 
@@ -175,10 +173,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
      * Generates the draw commands for a chunk's meshes using the shared index buffer.
      */
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
-    private static void addNonIndexedDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
+    private static void addSharedIndexedDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
         final var pElementPointer = batch.pElementPointer;
         final var pBaseVertex = batch.pBaseVertex;
         final var pElementCount = batch.pElementCount;
+
+        // this is either zero (global shared index buffer) or the offset to the location of the shared element buffer (region shared index buffer)
+        final var elementOffsetBytes = (SectionRenderDataUnsafe.getBaseElement(pMeshData)
+                & ~SectionRenderDataUnsafe.LOCAL_INDEXED_MASK) << 2;
 
         int size = batch.size;
         int groupElementCount = 0;
@@ -208,7 +210,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
                     MemoryUtil.memPutInt(pElementCount + (size << 2), groupElementCount);
                     MemoryUtil.memPutInt(pBaseVertex + (size << 2), groupBaseVertex);
-                    MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
+                    MemoryUtil.memPutAddress(pElementPointer + (size << 3), elementOffsetBytes);
                     size++;
                     groupElementCount = 0;
                 }
@@ -230,7 +232,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
      * when rendering translucent geometry, as each geometry set needs a sorted index buffer.
      */
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
-    private static void addIndexedDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
+    private static void addLocalIndexedDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
         final var pElementPointer = batch.pElementPointer;
         final var pBaseVertex = batch.pBaseVertex;
         final var pElementCount = batch.pElementCount;
@@ -238,7 +240,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         int size = batch.size;
 
         int elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData)
-                & ~SectionRenderDataUnsafe.BASE_ELEMENT_MSB;
+                & ~SectionRenderDataUnsafe.LOCAL_INDEXED_MASK;
 
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
             final var elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);

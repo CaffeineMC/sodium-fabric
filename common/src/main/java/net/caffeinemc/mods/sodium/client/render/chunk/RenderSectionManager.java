@@ -327,9 +327,9 @@ public class RenderSectionManager {
                     result.render.setTranslucentData(chunkBuildOutput.translucentData);
                 }
             } else if (result instanceof ChunkSortOutput sortOutput
-                    && sortOutput.getTopoSorter() != null
+                    && sortOutput.getDynamicSorter() != null
                     && result.render.getTranslucentData() instanceof DynamicTopoData data) {
-                this.sortTriggering.applyTriggerChanges(data, sortOutput.getTopoSorter(), result.render.getPosition(), this.cameraPosition);
+                this.sortTriggering.applyTriggerChanges(data, sortOutput.getDynamicSorter(), result.render.getPosition(), this.cameraPosition);
             }
 
             var job = result.render.getTaskCancellationToken();
