@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BakedQuad.class)
-public class BakedQuadMixin implements BakedQuadView {
+public abstract class BakedQuadMixin implements BakedQuadView {
     @Shadow
     @Final
     protected int[] vertices;
@@ -36,6 +36,9 @@ public class BakedQuadMixin implements BakedQuadView {
     @Shadow
     @Final
     private boolean shade;
+
+    @Shadow
+    public abstract boolean hasAmbientOcclusion();
 
     @Unique
     private int flags;
@@ -130,5 +133,10 @@ public class BakedQuadMixin implements BakedQuadView {
     @Unique(silent = true) // The target class has a function with the same name in a remapped environment
     public boolean hasShade() {
         return this.shade;
+    }
+
+    @Override
+    public boolean hasAO() {
+        return this.hasAmbientOcclusion();
     }
 }
