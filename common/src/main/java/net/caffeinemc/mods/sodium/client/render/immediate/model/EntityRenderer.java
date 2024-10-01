@@ -27,6 +27,9 @@ public class EntityRenderer {
             FACE_NEG_Z = 3, // NORTH
             FACE_POS_X = 4, // EAST
             FACE_POS_Z = 5; // SOUTH
+    // Conversion table from quad indices to face indices (in renderDirection order, required to pass into
+    // ModelCuboid.shouldDrawFace)
+    private static final int[] FACE_INDICES = new int[] { 0, 1, 4, 2, 5, 3};
 
     private static final int
             VERTEX_X1_Y1_Z1 = 0,
@@ -103,7 +106,7 @@ public class EntityRenderer {
         long ptr = SCRATCH_BUFFER;
 
         for (int quadIndex = 0; quadIndex < NUM_CUBE_FACES; quadIndex++) {
-            if (!cuboid.shouldDrawFace(quadIndex)) {
+            if (!cuboid.shouldDrawFace(FACE_INDICES[quadIndex])) {
                 continue;
             }
 
