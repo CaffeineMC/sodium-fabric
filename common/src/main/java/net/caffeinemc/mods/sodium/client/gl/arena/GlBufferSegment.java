@@ -4,6 +4,9 @@ public class GlBufferSegment {
     private final GlBufferArena arena;
 
     private boolean free = false;
+    private int refCount = 1;
+    private long hash;
+    private boolean isHashed = false;
 
     private int offset;
     private int length;
@@ -18,7 +21,11 @@ public class GlBufferSegment {
     }
 
     public void delete() {
-        this.arena.free(this);
+        // only actually free if there's no more users
+        if (--this.refCount == 0) {
+            this.arena.free(this);
+            this.isHashed = false;
+        }
     }
 
     protected int getEnd() {
@@ -49,8 +56,33 @@ public class GlBufferSegment {
         this.offset = offset;
     }
 
+    public void setHash(long hash) {
+        this.hash = hash;
+        this.isHashed = true;
+    }
+
+    public long getHash() {
+        return this.hash;
+    }
+
+    public boolean isHashed() {
+        return this.isHashed;
+    }
+
+    public void addRef() {
+        if (this.isFree()) {
+            throw new IllegalStateException("Cannot add ref to free segment");
+        }
+        this.refCount++;
+    }
+
     protected void setFree(boolean free) {
         this.free = free;
+        if (this.free) {
+            this.refCount = 0;
+        } else {
+            this.refCount = Math.max(this.refCount, 1);
+        }
     }
 
     protected boolean isFree() {
