@@ -23,14 +23,8 @@ public class BuiltSectionMeshParts {
     public int[] computeVertexCounts() {
         var vertexCounts = new int[ModelQuadFacing.COUNT];
 
-        for (int i : this.vertexSegments) {
-            var count = SectionRenderDataUnsafe.decodeVertexCount(i);
-
-            // it's important to only write non-zero vertex counts since the decoded facing is wrong if the count is zero
-            // (the whole segment is just zero, which decodes to the first facing, but it's not actually that facing, just no vertexes)
-            if (count > 0) {
-                vertexCounts[SectionRenderDataUnsafe.decodeFacing(i)] = count;
-            }
+        for (int i = 0; i < this.vertexSegments.length; i += 2) {
+            vertexCounts[this.vertexSegments[i + 1]] = this.vertexSegments[i];
         }
 
         return vertexCounts;

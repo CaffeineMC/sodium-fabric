@@ -55,7 +55,7 @@ public final class MultiDrawBatch {
 
         // since there's command combining, all facings might be rendered at the same time with a single command which requires a bigger index buffer
         for (var index = 0; index < this.size; index++) {
-            elements += MemoryUtil.memGetInt(this.pElementCount + ((long) index * Integer.BYTES));
+            elements = Math.max(elements, MemoryUtil.memGetInt(this.pElementCount + ((long) index * Integer.BYTES)));
         }
 
         return elements;

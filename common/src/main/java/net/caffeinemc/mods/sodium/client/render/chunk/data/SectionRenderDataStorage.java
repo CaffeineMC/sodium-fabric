@@ -67,26 +67,25 @@ public class SectionRenderDataStorage {
         var pMeshData = this.getDataPointer(localSectionIndex);
 
         int sliceMask = 0;
-
-        long vertexOffset = allocation.getOffset();
+        long facingList = 0;
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            var segment = vertexSegments[i];
-            long vertexCount = SectionRenderDataUnsafe.decodeVertexCount(segment);
-            long facing = SectionRenderDataUnsafe.decodeFacing(segment);
+            var segmentIndex = i << 1;
 
-            SectionRenderDataUnsafe.setElementCountAndFacing(pMeshData, i, UInt32.downcast((vertexCount >> 2) * 6), UInt32.downcast(facing));
+            int facing = vertexSegments[segmentIndex + 1];
+            facingList |= (long) facing << (i * 8);
+
+            long vertexCount = UInt32.upcast(vertexSegments[segmentIndex]);
+            SectionRenderDataUnsafe.setVertexCount(pMeshData, i, vertexCount);
 
             if (vertexCount > 0) {
                 sliceMask |= 1 << facing;
-
-                SectionRenderDataUnsafe.setVertexOffset(pMeshData, i, UInt32.downcast(vertexOffset));
             }
-
-            vertexOffset += vertexCount;
         }
 
+        SectionRenderDataUnsafe.setBaseVertex(pMeshData, allocation.getOffset());
         SectionRenderDataUnsafe.setSliceMask(pMeshData, sliceMask);
+        SectionRenderDataUnsafe.setFacingList(pMeshData, facingList);
     }
 
     public void setIndexData(int localSectionIndex, GlBufferSegment allocation) {
@@ -104,8 +103,7 @@ public class SectionRenderDataStorage {
 
         var pMeshData = this.getDataPointer(localSectionIndex);
 
-        SectionRenderDataUnsafe.setBaseElement(pMeshData,
-                allocation.getOffset());
+        SectionRenderDataUnsafe.setLocalBaseElement(pMeshData, allocation.getOffset());
     }
 
     public void setSharedIndexUsage(int localSectionIndex, int newUsage) {
@@ -123,7 +121,8 @@ public class SectionRenderDataStorage {
         } else {
             // just set the base element since no update is happening
             var sharedBaseElement = this.sharedIndexAllocation.getOffset();
-            SectionRenderDataUnsafe.setBaseElement(this.getDataPointer(localSectionIndex), sharedBaseElement);
+            var pMeshData = this.getDataPointer(localSectionIndex);
+            SectionRenderDataUnsafe.setSharedBaseElement(pMeshData, sharedBaseElement);
         }
 
         this.sharedIndexUsage[localSectionIndex] = newUsage;
@@ -180,7 +179,7 @@ public class SectionRenderDataStorage {
             var sharedBaseElement = this.sharedIndexAllocation.getOffset();
             for (int i = 0; i < RenderRegion.REGION_SIZE; i++) {
                 if (this.sharedIndexUsage[i] > 0) {
-                    SectionRenderDataUnsafe.setBaseElement(this.getDataPointer(i), sharedBaseElement);
+                    SectionRenderDataUnsafe.setSharedBaseElement(this.getDataPointer(i), sharedBaseElement);
                 }
             }
         }
@@ -219,7 +218,7 @@ public class SectionRenderDataStorage {
         SectionRenderDataUnsafe.clear(pMeshData);
 
         if (retainIndexData) {
-            SectionRenderDataUnsafe.setBaseElement(pMeshData, baseElement);
+            SectionRenderDataUnsafe.setLocalBaseElement(pMeshData, baseElement);
         }
     }
 
@@ -252,19 +251,13 @@ public class SectionRenderDataStorage {
             return;
         }
 
-        long offset = allocation.getOffset();
         var data = this.getDataPointer(sectionIndex);
-
-        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            SectionRenderDataUnsafe.setVertexOffset(data, i, offset);
-
-            var count = SectionRenderDataUnsafe.getElementCount(data, i);
-            offset += (count / 6) * 4; // convert elements back into vertices
-        }
+        long offset = allocation.getOffset();
+        SectionRenderDataUnsafe.setBaseVertex(data, offset);
     }
 
     public void onIndexBufferResized() {
-        var sharedBaseElement = 0;
+        long sharedBaseElement = 0;
         if (this.sharedIndexAllocation != null) {
             sharedBaseElement = this.sharedIndexAllocation.getOffset();
         }
@@ -272,12 +265,12 @@ public class SectionRenderDataStorage {
         for (int i = 0; i < RenderRegion.REGION_SIZE; i++) {
             if (this.sharedIndexUsage[i] > 0) {
                 // update index sharing sections to use the new shared index buffer's offset
-                SectionRenderDataUnsafe.setBaseElement(this.getDataPointer(i), sharedBaseElement);
+                SectionRenderDataUnsafe.setSharedBaseElement(this.getDataPointer(i), sharedBaseElement);
             } else if (this.elementAllocations != null) {
                 var allocation = this.elementAllocations[i];
 
                 if (allocation != null) {
-                    SectionRenderDataUnsafe.setBaseElement(this.getDataPointer(i), allocation.getOffset());
+                    SectionRenderDataUnsafe.setLocalBaseElement(this.getDataPointer(i), allocation.getOffset());
                 }
             }
         }

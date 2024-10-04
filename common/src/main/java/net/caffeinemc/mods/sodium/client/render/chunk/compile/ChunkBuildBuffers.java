@@ -59,7 +59,7 @@ public class ChunkBuildBuffers {
      */
     public BuiltSectionMeshParts createMesh(TerrainRenderPass pass, int visibleSlices, boolean forceUnassigned, boolean sliceReordering) {
         var builder = this.builders.get(pass);
-        int[] vertexSegments = new int[ModelQuadFacing.COUNT];
+        int[] vertexSegments = new int[ModelQuadFacing.COUNT << 1];
         int vertexTotal = 0;
 
         // get the total vertex count to initialize the buffer
@@ -80,8 +80,9 @@ public class ChunkBuildBuffers {
             // write all currently visible slices first, and then the rest.
             // start with unassigned as it will never become invisible
             var unassignedBuffer = builder.getVertexBuffer(ModelQuadFacing.UNASSIGNED);
-            int vertexRangeCount = 0;
-            vertexSegments[vertexRangeCount++] = SectionRenderDataUnsafe.encodeVertexSegment(unassignedBuffer.count(), ModelQuadFacing.UNASSIGNED.ordinal());
+            int vertexSegmentCount = 0;
+            vertexSegments[vertexSegmentCount++] = unassignedBuffer.count();
+            vertexSegments[vertexSegmentCount++] = ModelQuadFacing.UNASSIGNED.ordinal();
             if (!unassignedBuffer.isEmpty()) {
                 mergedBufferBuilder.put(unassignedBuffer.slice());
             }
@@ -97,7 +98,8 @@ public class ChunkBuildBuffers {
                     var buffer = builder.getVertexBuffer(facing);
 
                     // generate empty ranges to prevent SectionRenderData storage from making up indexes for null ranges
-                    vertexSegments[vertexRangeCount++] = SectionRenderDataUnsafe.encodeVertexSegment(buffer.count(), facingIndex);
+                    vertexSegments[vertexSegmentCount++] = buffer.count();
+                    vertexSegments[vertexSegmentCount++] = facingIndex;
 
                     if (!buffer.isEmpty()) {
                         mergedBufferBuilder.put(buffer.slice());
@@ -108,7 +110,9 @@ public class ChunkBuildBuffers {
             // forceUnassigned implies !sliceReordering
 
             if (forceUnassigned) {
-                vertexSegments[ModelQuadFacing.UNASSIGNED.ordinal()] = SectionRenderDataUnsafe.encodeVertexSegment(vertexTotal, ModelQuadFacing.UNASSIGNED.ordinal());
+                var segmentIndex = ModelQuadFacing.UNASSIGNED.ordinal() << 1;
+                vertexSegments[segmentIndex] = vertexTotal;
+                vertexSegments[segmentIndex + 1] = ModelQuadFacing.UNASSIGNED.ordinal();
             }
 
             for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
@@ -116,7 +120,9 @@ public class ChunkBuildBuffers {
                 if (!buffer.isEmpty()) {
                     if (!forceUnassigned) {
                         var facingIndex = facing.ordinal();
-                        vertexSegments[facingIndex] = SectionRenderDataUnsafe.encodeVertexSegment(buffer.count(), facingIndex);
+                        var segmentIndex = facingIndex << 1;
+                        vertexSegments[segmentIndex] = buffer.count();
+                        vertexSegments[segmentIndex + 1] = facingIndex;
                     }
                     mergedBufferBuilder.put(buffer.slice());
                 }
