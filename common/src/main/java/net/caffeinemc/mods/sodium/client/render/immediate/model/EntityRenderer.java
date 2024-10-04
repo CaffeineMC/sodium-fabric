@@ -18,13 +18,15 @@ public class EntityRenderer {
     private static final int NUM_CUBE_FACES = 6;
     private static final int NUM_FACE_VERTICES = 4;
 
+    // The ordering needs to be the same as Minecraft, otherwise some core shader replacements
+    // will be unable to identify the facing.
     private static final int
             FACE_NEG_Y = 0, // DOWN
             FACE_POS_Y = 1, // UP
-            FACE_NEG_Z = 2, // NORTH
-            FACE_POS_Z = 3, // SOUTH
-            FACE_NEG_X = 4, // WEST
-            FACE_POS_X = 5; // EAST
+            FACE_NEG_X = 2, // WEST
+            FACE_NEG_Z = 3, // NORTH
+            FACE_POS_X = 4, // EAST
+            FACE_POS_Z = 5; // SOUTH
 
     private static final int
             VERTEX_X1_Y1_Z1 = 0,
@@ -41,14 +43,7 @@ public class EntityRenderer {
     private static final long SCRATCH_BUFFER = MemoryUtil.nmemAlignedAlloc(64, NUM_CUBE_FACES * NUM_FACE_VERTICES * EntityVertex.STRIDE);
 
     private static final Vector3f[] CUBE_CORNERS = new Vector3f[NUM_CUBE_VERTICES];
-    private static final int[][] CUBE_VERTICES = new int[][] {
-            { VERTEX_X2_Y1_Z2, VERTEX_X1_Y1_Z2, VERTEX_X1_Y1_Z1, VERTEX_X2_Y1_Z1 },
-            { VERTEX_X2_Y2_Z1, VERTEX_X1_Y2_Z1, VERTEX_X1_Y2_Z2, VERTEX_X2_Y2_Z2 },
-            { VERTEX_X2_Y1_Z1, VERTEX_X1_Y1_Z1, VERTEX_X1_Y2_Z1, VERTEX_X2_Y2_Z1 },
-            { VERTEX_X1_Y1_Z2, VERTEX_X2_Y1_Z2, VERTEX_X2_Y2_Z2, VERTEX_X1_Y2_Z2 },
-            { VERTEX_X2_Y1_Z2, VERTEX_X2_Y1_Z1, VERTEX_X2_Y2_Z1, VERTEX_X2_Y2_Z2 },
-            { VERTEX_X1_Y1_Z1, VERTEX_X1_Y1_Z2, VERTEX_X1_Y2_Z2, VERTEX_X1_Y2_Z1 },
-    };
+    private static final int[][] CUBE_VERTICES = new int[NUM_CUBE_FACES][];
 
     private static final Vector3f[][] VERTEX_POSITIONS = new Vector3f[NUM_CUBE_FACES][NUM_FACE_VERTICES];
     private static final Vector3f[][] VERTEX_POSITIONS_MIRRORED = new Vector3f[NUM_CUBE_FACES][NUM_FACE_VERTICES];
@@ -60,6 +55,13 @@ public class EntityRenderer {
     private static final int[] CUBE_NORMALS_MIRRORED = new int[NUM_CUBE_FACES];
 
     static {
+        CUBE_VERTICES[FACE_NEG_Y] = new int[] { VERTEX_X2_Y1_Z2, VERTEX_X1_Y1_Z2, VERTEX_X1_Y1_Z1, VERTEX_X2_Y1_Z1 };
+        CUBE_VERTICES[FACE_POS_Y] = new int[] { VERTEX_X2_Y2_Z1, VERTEX_X1_Y2_Z1, VERTEX_X1_Y2_Z2, VERTEX_X2_Y2_Z2 };
+        CUBE_VERTICES[FACE_NEG_Z] = new int[] { VERTEX_X2_Y1_Z1, VERTEX_X1_Y1_Z1, VERTEX_X1_Y2_Z1, VERTEX_X2_Y2_Z1 };
+        CUBE_VERTICES[FACE_POS_Z] = new int[] { VERTEX_X1_Y1_Z2, VERTEX_X2_Y1_Z2, VERTEX_X2_Y2_Z2, VERTEX_X1_Y2_Z2 };
+        CUBE_VERTICES[FACE_NEG_X] = new int[] { VERTEX_X2_Y1_Z2, VERTEX_X2_Y1_Z1, VERTEX_X2_Y2_Z1, VERTEX_X2_Y2_Z2 };
+        CUBE_VERTICES[FACE_POS_X] = new int[] { VERTEX_X1_Y1_Z1, VERTEX_X1_Y1_Z2, VERTEX_X1_Y2_Z2, VERTEX_X1_Y2_Z1 };
+
         for (int cornerIndex = 0; cornerIndex < NUM_CUBE_VERTICES; cornerIndex++) {
             CUBE_CORNERS[cornerIndex] = new Vector3f();
         }

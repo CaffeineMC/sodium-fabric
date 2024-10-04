@@ -7,6 +7,7 @@ import net.caffeinemc.mods.sodium.client.gl.device.CommandList;
 import net.caffeinemc.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.caffeinemc.mods.sodium.client.render.chunk.SharedQuadIndexBuffer;
 import net.caffeinemc.mods.sodium.client.render.chunk.region.RenderRegion;
+import net.caffeinemc.mods.sodium.client.util.UInt32;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,19 +67,20 @@ public class SectionRenderDataStorage {
         var pMeshData = this.getDataPointer(localSectionIndex);
 
         int sliceMask = 0;
-        int vertexOffset = allocation.getOffset();
+
+        long vertexOffset = allocation.getOffset();
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
             var segment = vertexSegments[i];
-            var vertexCount = SectionRenderDataUnsafe.decodeVertexCount(segment);
-            var facing = SectionRenderDataUnsafe.decodeFacing(segment);
+            long vertexCount = SectionRenderDataUnsafe.decodeVertexCount(segment);
+            long facing = SectionRenderDataUnsafe.decodeFacing(segment);
 
-            SectionRenderDataUnsafe.setElementCountAndFacing(pMeshData, i, (vertexCount >> 2) * 6, facing);
+            SectionRenderDataUnsafe.setElementCountAndFacing(pMeshData, i, UInt32.downcast((vertexCount >> 2) * 6), UInt32.downcast(facing));
 
             if (vertexCount > 0) {
                 sliceMask |= 1 << facing;
 
-                SectionRenderDataUnsafe.setVertexOffset(pMeshData, i, vertexOffset);
+                SectionRenderDataUnsafe.setVertexOffset(pMeshData, i, UInt32.downcast(vertexOffset));
             }
 
             vertexOffset += vertexCount;
@@ -103,7 +105,7 @@ public class SectionRenderDataStorage {
         var pMeshData = this.getDataPointer(localSectionIndex);
 
         SectionRenderDataUnsafe.setBaseElement(pMeshData,
-                allocation.getOffset() | SectionRenderDataUnsafe.LOCAL_INDEXED_MASK);
+                allocation.getOffset());
     }
 
     public void setSharedIndexUsage(int localSectionIndex, int newUsage) {
@@ -250,7 +252,7 @@ public class SectionRenderDataStorage {
             return;
         }
 
-        var offset = allocation.getOffset();
+        long offset = allocation.getOffset();
         var data = this.getDataPointer(sectionIndex);
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
@@ -275,8 +277,7 @@ public class SectionRenderDataStorage {
                 var allocation = this.elementAllocations[i];
 
                 if (allocation != null) {
-                    SectionRenderDataUnsafe.setBaseElement(this.getDataPointer(i),
-                            allocation.getOffset() | SectionRenderDataUnsafe.LOCAL_INDEXED_MASK);
+                    SectionRenderDataUnsafe.setBaseElement(this.getDataPointer(i), allocation.getOffset());
                 }
             }
         }

@@ -129,4 +129,9 @@ public class BakedQuadMixin implements BakedQuadView {
     public boolean hasShade() {
         return this.shade;
     }
+
+    @Override
+    public boolean hasAO() {
+        return true;
+    }
 }

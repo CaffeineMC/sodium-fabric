@@ -1,5 +1,6 @@
 package net.caffeinemc.mods.sodium.client.render.chunk.data;
 
+import net.caffeinemc.mods.sodium.client.util.UInt32;
 import org.lwjgl.system.MemoryUtil;
 
 // This code is a terrible hack to get around the fact that we are so incredibly memory bound, and that we
@@ -28,8 +29,6 @@ import org.lwjgl.system.MemoryUtil;
 // }
 
 public class SectionRenderDataUnsafe {
-    public static final int LOCAL_INDEXED_MASK = 1 << 31;
-
     /**
      * When the "base element" field is not specified (indicated by setting the MSB to 0), the indices for the geometry set
      * should be sourced from a monotonic sequence (see {@link net.caffeinemc.mods.sodium.client.render.chunk.SharedQuadIndexBuffer}).
@@ -73,51 +72,51 @@ public class SectionRenderDataUnsafe {
         return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_MASK);
     }
 
-    public static void setBaseElement(long ptr, int value) {
-        MemoryUtil.memPutInt(ptr + OFFSET_BASE_ELEMENT, value);
+    public static void setBaseElement(long ptr, long value) {
+        MemoryUtil.memPutInt(ptr + OFFSET_BASE_ELEMENT, UInt32.downcast(value));
     }
 
-    public static int getBaseElement(long ptr) {
-        return MemoryUtil.memGetInt(ptr + OFFSET_BASE_ELEMENT);
+    public static long getBaseElement(long ptr) {
+        return Integer.toUnsignedLong(MemoryUtil.memGetInt(ptr + OFFSET_BASE_ELEMENT));
     }
 
-    public static void setVertexOffset(long ptr, int facing, int value) {
-        MemoryUtil.memPutInt(ptr + OFFSET_SLICE_RANGES + (facing * 8L) + 0L, value);
+    public static void setVertexOffset(long ptr, int facing, long value /* Uint32 */) {
+        MemoryUtil.memPutInt(ptr + OFFSET_SLICE_RANGES + (facing * 8L) + 0L, UInt32.downcast(value));
     }
 
-    public static int getVertexOffset(long ptr, int facing) {
-        return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (facing * 8L) + 0L);
+    public static long /* Uint32 */ getVertexOffset(long ptr, int facing) {
+        return UInt32.upcast(MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (facing * 8L) + 0L));
     }
 
-    public static void setElementCountAndFacing(long ptr, int index, int count, int facing) {
-        MemoryUtil.memPutInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L, count | (facing << 29));
+    public static void setElementCountAndFacing(long ptr, int index, long count /* Uint32 */, long facing /* Uint32 */) {
+        MemoryUtil.memPutInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L, UInt32.downcast(count | (facing << 29)));
     }
 
-    public static int getElementCountAndFacing(long ptr, int index) {
-        return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L);
+    public static long /* Uint32 */ getElementCountAndFacing(long ptr, int index) {
+        return UInt32.upcast(MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L));
     }
 
     public static int getElementCount(long ptr, int index) {
-        return MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L) & 0x1FFFFFFF;
+        return UInt32.upcast(MemoryUtil.memGetInt(ptr + OFFSET_SLICE_RANGES + (index * 8L) + 4L) & 0x1FFFFFFF);
     }
 
-    public static int getElementCount(int value) {
-        return value & 0x1FFFFFFF;
+    public static long /* Uint32 */ getElementCount(int value) {
+        return UInt32.upcast(value & 0x1FFFFFFF);
     }
 
-    public static int getFacing(int value) {
+    public static long /* Uint32 */ getFacing(long value) {
         return value >>> 29;
     }
 
-    public static int encodeVertexSegment(int vertexCount, int facing) {
+    public static long /* Uint32 */ encodeVertexSegment(long vertexCount, long facing) {
         return vertexCount | (facing << 29);
     }
 
-    public static int decodeFacing(int value) {
+    public static long /* Uint32 */ decodeFacing(long value) {
         return value >>> 29;
     }
 
-    public static int decodeVertexCount(int value) {
+    public static long /* Uint32 */ decodeVertexCount(long value) {
         return value & 0x1FFFFFFF;
     }
 }

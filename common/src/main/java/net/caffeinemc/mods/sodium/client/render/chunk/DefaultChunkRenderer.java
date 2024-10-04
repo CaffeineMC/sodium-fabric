@@ -21,6 +21,7 @@ import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.SortBe
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.render.viewport.CameraTransform;
 import net.caffeinemc.mods.sodium.client.util.BitwiseMath;
+import net.caffeinemc.mods.sodium.client.util.UInt32;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.Iterator;
@@ -146,26 +147,11 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            addDrawCommands(batch, pMeshData, slices);
-        }
-    }
-
-    /**
-     * Add the draw command into the multi draw batch of the current region for one
-     * section. The section's mesh data is given as a pointer into the render data
-     * storage's allocated memory. It goes through each direction and writes the
-     * offsets and lengths of the already uploaded vertex and index data. The multi
-     * draw batch provides pointers to arrays where each of the section's data is
-     * stored. The batch's size counts how many commands it contains.
-     */
-    private static void addDrawCommands(MultiDrawBatch batch, long pMeshData, int mask) {
-        int elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData);
-
-        // If high bit is set, the indices should be sourced from the arena's index buffer
-        if ((elementOffset & SectionRenderDataUnsafe.LOCAL_INDEXED_MASK) != 0) {
-            addLocalIndexedDrawCommands(batch, pMeshData, mask);
-        } else {
-            addSharedIndexedDrawCommands(batch, pMeshData, mask);
+            if (pass.isTranslucent()) {
+                addLocalIndexedDrawCommands(batch, pMeshData, slices);
+            } else {
+                addSharedIndexedDrawCommands(batch, pMeshData, slices);
+            }
         }
     }
 
@@ -179,19 +165,18 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         final var pElementCount = batch.pElementCount;
 
         // this is either zero (global shared index buffer) or the offset to the location of the shared element buffer (region shared index buffer)
-        final var elementOffsetBytes = (SectionRenderDataUnsafe.getBaseElement(pMeshData)
-                & ~SectionRenderDataUnsafe.LOCAL_INDEXED_MASK) << 2;
+        final var elementOffsetBytes = SectionRenderDataUnsafe.getBaseElement(pMeshData) << 2;
 
         int size = batch.size;
-        int groupElementCount = 0;
-        int groupBaseVertex = 0;
+        long groupElementCount = 0;
+        long groupBaseVertex = 0;
         int lastMaskBit = 0;
 
         for (int i = 0; i <= ModelQuadFacing.COUNT; i++) {
             var maskBit = 0;
             var elementCount = 0;
             if (i < ModelQuadFacing.COUNT) {
-                var elementCountAndFacing = SectionRenderDataUnsafe.getElementCountAndFacing(pMeshData, i);
+                long elementCountAndFacing = SectionRenderDataUnsafe.getElementCountAndFacing(pMeshData, i);
                 elementCount = SectionRenderDataUnsafe.getElementCount(elementCountAndFacing);
 
                 // if there's no elements, the mask bit is just 0
@@ -208,8 +193,9 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                         continue;
                     }
 
-                    MemoryUtil.memPutInt(pElementCount + (size << 2), groupElementCount);
-                    MemoryUtil.memPutInt(pBaseVertex + (size << 2), groupBaseVertex);
+                    // Uint32 -> Int32 cast is always safe and should be optimized away
+                    MemoryUtil.memPutInt(pElementCount + (size << 2), (int) groupElementCount);
+                    MemoryUtil.memPutInt(pBaseVertex + (size << 2), (int) groupBaseVertex);
                     MemoryUtil.memPutAddress(pElementPointer + (size << 3), elementOffsetBytes);
                     size++;
                     groupElementCount = 0;
@@ -239,16 +225,17 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         int size = batch.size;
 
-        int elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData)
-                & ~SectionRenderDataUnsafe.LOCAL_INDEXED_MASK;
+        long elementOffset = SectionRenderDataUnsafe.getBaseElement(pMeshData);
 
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-            final var elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
+            final long vertexOffset = SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing);
+            final long elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
 
-            MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
-            MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
+            // Uint32 -> Int32 cast is always safe and should be optimized away
+            MemoryUtil.memPutInt(pBaseVertex + (size << 2), UInt32.uncheckedDowncast(vertexOffset));
+            MemoryUtil.memPutInt(pElementCount + (size << 2), UInt32.uncheckedDowncast(elementCount));
 
-            // * 4 to convert to bytes (the buffer contains 32-bit integers)
+            // * 4 to convert to bytes (the index buffer contains integers)
             // the section render data storage for the indices stores the offset in indices (also called elements)
             MemoryUtil.memPutAddress(pElementPointer + (size << 3), elementOffset << 2);
 
