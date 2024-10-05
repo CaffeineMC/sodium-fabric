@@ -78,8 +78,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
             // When the shared index buffer is being used, we must ensure the storage has been allocated *before*
             // the tessellation is prepared.
-            if (true) { //!useIndexedTessellation) {
-                this.sharedIndexBuffer.ensureCapacity(commandList, 1000); // this.batch.getIndexBufferSize());
+            if (!useIndexedTessellation) {
+                this.sharedIndexBuffer.ensureCapacity(commandList, this.batch.getIndexBufferSize());
             }
 
             GlTessellation tessellation;
