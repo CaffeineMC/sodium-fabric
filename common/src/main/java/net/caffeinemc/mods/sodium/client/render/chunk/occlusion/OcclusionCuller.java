@@ -61,7 +61,6 @@ public class OcclusionCuller {
 
             {
                 if (useOcclusionCulling) {
-                    var incomingDirections = section.getIncomingDirections();
                     var sectionVisibilityData = section.getVisibilityData();
 
                     // occlude paths through the section if it's being viewed at an angle where
@@ -71,7 +70,7 @@ public class OcclusionCuller {
                     // When using occlusion culling, we can only traverse into neighbors for which there is a path of
                     // visibility through this chunk. This is determined by taking all the incoming paths to this chunk and
                     // creating a union of the outgoing paths from those.
-                    connections = VisibilityEncoding.getConnections(sectionVisibilityData, incomingDirections);
+                    connections = VisibilityEncoding.getConnections(sectionVisibilityData, section.getIncomingDirections());
                 } else {
                     // Not using any occlusion culling, so traversing in any direction is legal.
                     connections = GraphDirectionSet.ALL;
