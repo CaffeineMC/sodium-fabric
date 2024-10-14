@@ -28,14 +28,16 @@ sourceSets {
 }
 
 repositories {
-    maven("https://maven.pkg.github.com/ims212/Forge_Fabric_API") {
-        credentials {
-            username = "IMS212"
-            // Read only token
-            password = "ghp_" + "DEuGv0Z56vnSOYKLCXdsS9svK4nb9K39C1Hn"
+    maven("https://prmaven.neoforged.net/NeoForge/pr1590") {
+        name = "Maven for PR #1590" // https://github.com/neoforged/NeoForge/pull/1590
+        content {
+            includeModule("net.neoforged", "testframework")
+            includeModule("net.neoforged", "neoforge")
         }
     }
+    mavenLocal()
     maven("https://maven.su5ed.dev/releases")
+    maven("https://libraries.minecraft.net/")
     maven("https://maven.neoforged.net/releases/")
 
     exclusiveContent {
@@ -148,7 +150,7 @@ dependencies {
     compileOnly(project.project(":common").sourceSets.main.get().output)
     compileOnly(project.project(":common").sourceSets.getByName("api").output)
     includeDep("org.sinytra.forgified-fabric-api:fabric-api-base:0.4.42+d1308ded19")
-    includeDep("org.sinytra.forgified-fabric-api:fabric-renderer-api-v1:3.4.0+acb05a3919")
+    includeDep("net.fabricmc:fabric_renderer_api_v1:3.3.0+1.21.2-pre1")
     includeDep("org.sinytra.forgified-fabric-api:fabric-rendering-data-attachment-v1:0.3.48+73761d2e19")
     includeDep("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.0.10+9afaaf8c19")
 }

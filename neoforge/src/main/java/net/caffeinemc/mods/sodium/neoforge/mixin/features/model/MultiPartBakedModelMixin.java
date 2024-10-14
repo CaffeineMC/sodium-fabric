@@ -36,14 +36,14 @@ public class MultiPartBakedModelMixin {
 
     @Shadow
     @Final
-    private List<Pair<Predicate<BlockState>, BakedModel>> selectors;
+    private List<MultiPartBakedModel.Selector> selectors;
 
     @Unique
     private boolean canSkipRenderTypeCheck;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void storeClassInfo(List<Pair<Predicate<BlockState>, BakedModel>> list, CallbackInfo ci) {
-        this.canSkipRenderTypeCheck = this.selectors.stream().allMatch(model -> (model.getRight() instanceof SimpleBakedModel simpleModel && ((SimpleBakedModelAccessor) simpleModel).getBlockRenderTypes() == null));
+        this.canSkipRenderTypeCheck = this.selectors.stream().allMatch(model -> (model.model() instanceof SimpleBakedModel simpleModel && ((SimpleBakedModelAccessor) simpleModel).getBlockRenderTypes() == null));
     }
 
     /**
@@ -70,9 +70,9 @@ public class MultiPartBakedModelMixin {
             try {
                 List<BakedModel> modelList = new ArrayList<>(this.selectors.size());
 
-                for (Pair<Predicate<BlockState>, BakedModel> pair : this.selectors) {
-                    if (pair.getLeft().test(state)) {
-                        modelList.add(pair.getRight());
+                for (MultiPartBakedModel.Selector selector : this.selectors) {
+                    if (selector.condition().test(state)) {
+                        modelList.add(selector.model());
                     }
                 }
 
@@ -123,9 +123,9 @@ public class MultiPartBakedModelMixin {
             try {
                 List<BakedModel> modelList = new ArrayList<>(this.selectors.size());
 
-                for (Pair<Predicate<BlockState>, BakedModel> pair : this.selectors) {
-                    if (pair.getLeft().test(state)) {
-                        modelList.add(pair.getRight());
+                for (MultiPartBakedModel.Selector selector : this.selectors) {
+                    if (selector.condition().test(state)) {
+                        modelList.add(selector.model());
                     }
                 }
 

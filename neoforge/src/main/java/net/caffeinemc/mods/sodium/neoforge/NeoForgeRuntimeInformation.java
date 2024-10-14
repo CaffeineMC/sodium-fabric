@@ -26,7 +26,7 @@ public class NeoForgeRuntimeInformation implements PlatformRuntimeInformation {
 
     @Override
     public boolean platformHasEarlyLoadingScreen() {
-        return FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL);
+        return true;
     }
 
     @Override
