@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("idea")
-    id("fabric-loom") version ("1.8.2")
+    id("fabric-loom") version ("1.8.10")
 }
 
 repositories {
@@ -74,6 +74,7 @@ sourceSets {
 loom {
     mixin {
         defaultRefmapName = "sodium.refmap.json"
+        useLegacyMixinAp = false
     }
 
     accessWidenerPath = file("src/main/resources/sodium.accesswidener")

@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("idea")
-    id("fabric-loom") version ("1.8.2")
+    id("fabric-loom") version ("1.8.10")
 }
 
 val MINECRAFT_VERSION: String by rootProject.extra
@@ -58,7 +58,10 @@ loom {
         accessWidenerPath.set(project(":common").file("src/main/resources/sodium.accesswidener"))
 
     @Suppress("UnstableApiUsage")
-    mixin { defaultRefmapName.set("sodium-fabric.refmap.json") }
+    mixin {
+        defaultRefmapName.set("sodium-fabric.refmap.json")
+        useLegacyMixinAp = false
+    }
 
     runs {
         named("client") {

@@ -1,6 +1,6 @@
 plugins {
     id("idea")
-    id("net.neoforged.moddev") version "2.0.28-beta"
+    id("net.neoforged.moddev") version "2.0.36-beta"
     id("java-library")
 }
 
@@ -37,7 +37,6 @@ repositories {
     }
     mavenLocal()
     maven("https://maven.su5ed.dev/releases")
-    maven("https://libraries.minecraft.net/")
     maven("https://maven.neoforged.net/releases/")
 
     exclusiveContent {

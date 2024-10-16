@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("fabric-loom") version ("1.8.2") apply (false)
+    id("fabric-loom") version ("1.8.10") apply (false)
 }
 
 val MINECRAFT_VERSION by extra { "1.21.2-pre1" }
