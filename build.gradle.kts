@@ -24,6 +24,10 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
+// Disable the default publish task if it exists
+tasks.replace("publish").dependsOn(":fabric:publish", ":neoforge:publish")
+tasks.replace("publishToMavenLocal").dependsOn(":fabric:publishToMavenLocal", ":neoforge:publishToMavenLocal")
+
 tasks.jar {
     enabled = false
 }

@@ -90,3 +90,15 @@ tasks {
 
     remapJar.get().destinationDirectory = rootDir.resolve("build").resolve("libs")
 }
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "net.caffeinemc"
+            artifactId = "sodium-fabric"
+            version = project.version.toString()
+
+            from(components["java"])
+        }
+    }
+}

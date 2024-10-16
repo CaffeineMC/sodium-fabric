@@ -73,6 +73,18 @@ dependencies {
     jarJar(project(":neoforge", "serviceConfig"))
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "net.caffeinemc"
+            artifactId = "sodium-neoforge"
+            version = project.version.toString()
+
+            from(components["java"])
+        }
+    }
+}
+
 tasks.jar {
     val api = project.project(":common").sourceSets.getByName("api")
     from(api.output.classesDirs)
