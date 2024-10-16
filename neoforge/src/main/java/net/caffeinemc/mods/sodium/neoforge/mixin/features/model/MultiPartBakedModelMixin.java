@@ -15,7 +15,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.MultipartModelData;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -42,7 +41,7 @@ public class MultiPartBakedModelMixin {
     private boolean canSkipRenderTypeCheck;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void storeClassInfo(List<Pair<Predicate<BlockState>, BakedModel>> list, CallbackInfo ci) {
+    private void storeClassInfo(List<MultiPartBakedModel.Selector> selectors, CallbackInfo ci) {
         this.canSkipRenderTypeCheck = this.selectors.stream().allMatch(model -> (model.model() instanceof SimpleBakedModel simpleModel && ((SimpleBakedModelAccessor) simpleModel).getBlockRenderTypes() == null));
     }
 
