@@ -162,6 +162,8 @@ public class OcclusionCuller {
         float dy = nearestToZero(oy, oy + 16) - camera.fracY;
         float dz = nearestToZero(oz, oz + 16) - camera.fracZ;
 
+        maxDistance += DISTANCE_EPSILON;
+
         // vanilla's "cylindrical fog" algorithm
         // max(length(distance.xz), abs(distance.y))
         return (((dx * dx) + (dz * dz)) < (maxDistance * maxDistance)) && (Math.abs(dy) < maxDistance);
@@ -179,7 +181,13 @@ public class OcclusionCuller {
     // The bounding box of a chunk section must be large enough to contain all possible geometry within it. Block models
     // can extend outside a block volume by +/- 1.0 blocks on all axis. Additionally, we make use of a small epsilon
     // to deal with floating point imprecision during a frustum check (see GH#2132).
-    private static final float CHUNK_SECTION_SIZE = 8.0f /* chunk bounds */ + 1.0f /* maximum model extent */ + 0.125f /* epsilon */;
+    private static final float CHUNK_SECTION_SIZE = 8.0f /* chunk bounds */ + 1.0f /* maximum model extent */
+            + 0.125f /* fp error epsilon */;
+
+    // Because we're working in 3 axis, we need to use the distance formula to get the maximum distance
+    // a model can extend out of a chunk.
+    public static final float DISTANCE_EPSILON = Math.sqrt(3.0f) /* maximum model extent distance */
+            + 0.125f /* fp error epsilon */;
 
     public static boolean isWithinFrustum(Viewport viewport, RenderSection section) {
         return viewport.isBoxVisible(section.getCenterX(), section.getCenterY(), section.getCenterZ(),
