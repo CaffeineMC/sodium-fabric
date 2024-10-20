@@ -180,8 +180,7 @@ public class OcclusionCuller {
     // The bounding box of a chunk section must be large enough to contain all possible geometry within it. Block models
     // can extend outside a block volume by +/- 1.0 blocks on all axis. Additionally, we make use of a small epsilon
     // to deal with floating point imprecision during a frustum check (see GH#2132).
-    private static final float CHUNK_SECTION_SIZE = 8.0f /* chunk bounds */ + 1.0f /* maximum model extent */
-            + 0.125f /* fp error epsilon */;
+    private static final float CHUNK_SECTION_SIZE = 8.0f /* chunk bounds */ + 1.0f /* maximum model extent */ + 0.125f /* epsilon */;
 
     public static boolean isWithinFrustum(Viewport viewport, RenderSection section) {
         return viewport.isBoxVisible(section.getCenterX(), section.getCenterY(), section.getCenterZ(),
