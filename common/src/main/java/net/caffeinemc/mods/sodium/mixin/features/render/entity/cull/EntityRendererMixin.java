@@ -20,6 +20,8 @@ public abstract class EntityRendererMixin<T extends Entity> {
             return original.call(instance, aABB);
         }
 
-        return renderer.isEntityVisible(entity) && original.call(instance, aABB);
+        // Allow entities to render if they are visible, even if their chunk is culled
+        return original.call(instance, aABB) || renderer.isEntityVisible(entity);
     }
 }
+
