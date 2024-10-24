@@ -44,7 +44,7 @@ public abstract class BakedQuadMixin implements BakedQuadView {
     private int flags;
 
     @Unique
-    private int normal;
+    private int normal = -1;
 
     @Unique
     private ModelQuadFacing normalFace = null;
@@ -53,9 +53,6 @@ public abstract class BakedQuadMixin implements BakedQuadView {
             "<init>([IILnet/minecraft/core/Direction;Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;ZZ)V"
     }, at = @At("RETURN"))
     private void init(int[] is, int i, Direction face, TextureAtlasSprite arg2, boolean bl, boolean hasAmbientOcclusion, CallbackInfo ci) {
-        this.normal = this.calculateNormal();
-        this.normalFace = ModelQuadFacing.fromPackedNormal(this.normal);
-
         this.flags = ModelQuadFlags.getQuadFlags(this, face);
     }
 
@@ -116,11 +113,19 @@ public abstract class BakedQuadMixin implements BakedQuadView {
 
     @Override
     public ModelQuadFacing getNormalFace() {
+        if (this.normalFace == null) {
+            this.normalFace = ModelQuadFacing.fromPackedNormal(this.getFaceNormal());
+        }
+
         return this.normalFace;
     }
 
     @Override
     public int getFaceNormal() {
+        if (this.normal == -1) {
+            this.normal = this.calculateNormal();
+        }
+
         return this.normal;
     }
 
